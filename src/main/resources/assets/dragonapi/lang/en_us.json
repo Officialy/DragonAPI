@@ -1,0 +1,7 @@
+{
+  "dragonapi.donatorcommand": "Thank you to all these people whose donations made the following mods possible:\n",
+  "dragonapi.checkram": "Memory Usage Info: \n",
+  "dragonapi.checkram1": "Used Memory: ",
+  "dragonapi.checkram2": "Allocated Memory: ",
+  "dragonapi.uuidcommand": "UUID is: "
+}
