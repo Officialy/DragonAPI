@@ -13,10 +13,12 @@
 //import com.mojang.blaze3d.platform.Window;
 //import com.mojang.blaze3d.vertex.PoseStack;
 //import net.minecraft.client.Minecraft;
+//import net.minecraft.client.model.HumanoidModel;
+//import net.minecraft.client.model.Model;
 //import net.minecraft.world.entity.player.Player;
 //import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 //
-//public abstract class ModifiedPlayerModel extends ModelBiped {
+//public abstract class ModifiedPlayerModel extends HumanoidModel<Player> {
 //
 //	public ModifiedPlayerModel() {
 //		super();
@@ -46,7 +48,7 @@
 //
 //	public abstract void renderBodyParts(PoseStack stack, Player ep, float tick);
 //
-//	protected final void setRotation(ModelRenderer model, float x, float y, float z) {
+//	protected final void setRotation(Model model, float x, float y, float z) {
 //		model.rotateAngleX = x;
 //		model.rotateAngleY = y;
 //		model.rotateAngleZ = z;

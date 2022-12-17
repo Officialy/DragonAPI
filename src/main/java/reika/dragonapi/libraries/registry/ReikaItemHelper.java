@@ -108,7 +108,7 @@ public class ReikaItemHelper {
 
     }
 
-    /** Suitable for either raw ItemStacks or lists thereof, like what is found inside an OreRecipe. */
+    /** Suitable for either raw RotaryItems or lists thereof, like what is found inside an OreRecipe. */
     private static class ItemListComparator implements Comparator<Object> {
 
         @Override

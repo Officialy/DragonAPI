@@ -24,7 +24,7 @@ public enum PowerTypes implements Dependency {
     RF(),
     FE(),
     EU("ic2.api.energy.tile.IEnergyTile", "ic2.api.item.IElectricItem"),
-    ROTARYCRAFT("reika.rotarycraft.API.Power.ShaftMachine"),
+    ROTARYCRAFT("reika.rotarycraft.api.Power.ShaftMachine"),
     PNEUMATIC("pneumaticCraft.api.BlockEntity.IPneumaticMachine"),
     HYDRAULIC(),
     STEAM(TagManager.getTagDir(FluidTags.create(new ResourceLocation("forge", "steam")).registry()).isEmpty()),

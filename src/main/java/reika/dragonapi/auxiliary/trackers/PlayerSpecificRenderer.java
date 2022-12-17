@@ -12,27 +12,25 @@
 //import com.mojang.blaze3d.platform.Window;
 //import com.mojang.blaze3d.systems.RenderSystem;
 //import com.mojang.blaze3d.vertex.PoseStack;
-//import com.mojang.math.Quaternion;
+//import com.mojang.math.Axis;
 //import net.minecraft.client.player.AbstractClientPlayer;
 //import net.minecraft.client.renderer.MultiBufferSource;
 //import net.minecraft.client.renderer.entity.EntityRendererProvider;
 //import net.minecraftforge.client.event.ScreenEvent;
+//import org.joml.Quaternionf;
 //import reika.dragonapi.DragonAPI;
 //import reika.dragonapi.DragonOptions;
 //import reika.dragonapi.extras.ModifiedPlayerModel;
 //import reika.dragonapi.extras.ReikaModel;
 //import reika.dragonapi.instantiable.data.maps.MultiMap;
-//import reika.dragonapi.instantiable.rendering.model.ModelBase;
-//import reika.dragonapi.instantiable.rendering.model.ModelRenderer;
 //import reika.dragonapi.interfaces.PlayerRenderObj;
 //import reika.dragonapi.io.ReikaFileReader;
-//import reika.dragonapi.libraries.io.ReikaTextureHelper;
+//import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 //import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 //import net.minecraft.client.Minecraft;
 //import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 //import net.minecraft.world.entity.LivingEntity;
 //import net.minecraft.world.entity.player.Player;
-//import net.minecraftforge.client.MinecraftForgeClient;
 //import org.lwjgl.opengl.GL11;
 //
 //import javax.imageio.ImageIO;
@@ -119,7 +117,7 @@
 //        if (ep.getUUID() == DragonAPI.Reika_UUID) {
 ////     todo       ReikaShader.instance.prepareRender(ep);
 //        }
-//        if (ep == Minecraft.getInstance().player && !DragonOptions.CLIENT.CUSTOMRENDER.get())
+//        if (ep == Minecraft.getInstance().player && !DragonOptions.CUSTOMRENDER.getState())
 //            return;
 //        Collection<PlayerRenderObj> c = renders.get(ep.getUUID());
 //        if (c != null) {
@@ -275,16 +273,15 @@
 //        /**
 //         * Compensates for in-inventory rendering
 //         */
-//        ScreenEvent.MouseInputEvent event; //todo see if this works or is fucked cause its not initialized?
+//        ScreenEvent.MouseButtonPressed event; //todo see if this works or is fucked cause its not initialized?
 //        private float renderYaw;
 //        private float renderYawHead;
 //        private float renderPitch;
 //
-//        //
 ////            pitch = x
 ////            yaw = y
 ////            roll = z
-////            prev = 0
+////            prev = O
 //        private PlayerRotationData(Player ep, float ptick) {
 //            rotationPitch = ep.getXRot();
 //            rotationYaw = ep.getYRot();
@@ -378,7 +375,7 @@
 //                stack.translate(0, 1.6, 0);
 //                stack.scale(1, -1, 1);
 //                if (ep.isCrouching()) {
-//                    stack.mulPose(new Quaternion(22.5f, 1, 0, 0));
+//                    stack.mulPose(new Quaternionf(Axis.XP.rotationDegrees(22.5f)));
 //                    stack.translate(-0.02, 0.1, -0.05);
 //                }
 ////todo                GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);

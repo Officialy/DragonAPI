@@ -65,11 +65,10 @@ public class ReikaRenderHelper {
 
         //if (renderer.isDrawing)
         //    renderer.draw();
-        renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION); //GL11.GL_LINE_LOOP
-        renderer.color(rgba, rgba >> 24 & 255, rgba, rgba); //TODO fix coloring
+        renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR); //GL11.GL_LINE_LOOP
         for (int i = 0; i < 360; i += step) {
             double a = Math.toRadians(i);
-            renderer.vertex(x + r * Math.cos(a), y, z + r * Math.sin(a));
+            renderer.vertex(x + r * Math.cos(a), y, z + r * Math.sin(a)).color(rgba, rgba >> 24 & 255, rgba, rgba).endVertex();
         }
         //renderer.draw();
         tessellator.end();
@@ -165,10 +164,8 @@ public class ReikaRenderHelper {
     }
 
     public static void renderTube(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int c1, int c2, double r1, double r2, int sides) {
-
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder renderer = tessellator.getBuilder();
-
 
         double dx = x2 - x1;
         double dy = y2 - y1;
@@ -186,7 +183,7 @@ public class ReikaRenderHelper {
         stack.mulPose(new Quaternionf((float) ang1, 0, 1, 0));
         stack.mulPose(new Quaternionf((float) ang2, 1, 0, 0));
 
-        renderer.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION); //GL11.GL_TRIANGLE_STRIP
+        renderer.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR); //GL11.GL_TRIANGLE_STRIP
         //renderer.setBrightness(240); todo fix brightness
         for (int i = 0; i <= sides; i++) {
             double f11a = r1 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
@@ -194,10 +191,8 @@ public class ReikaRenderHelper {
             double f11b = r2 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
             double f12b = r2 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
             double f13 = i % sides * 1 / sides;
-            renderer.color(c1 & 0xffffff, c1 >> 24 & 255, c1, c1); //todo fix color
-            renderer.vertex(f11a, f12a, 0).endVertex();
-            renderer.color(c2 & 0xffffff, c2 >> 24 & 255, c2, c2);
-            renderer.vertex(f11b, f12b, f8).endVertex();
+            renderer.vertex(f11a, f12a, 0).color(c1 & 0xffffff, c1 >> 24 & 255, c1, c1).endVertex();
+            renderer.vertex(f11b, f12b, f8).color(c2 & 0xffffff, c2 >> 24 & 255, c2, c2).endVertex();
         }
         tessellator.end();
 

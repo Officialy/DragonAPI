@@ -15,7 +15,6 @@
 //import net.minecraft.world.entity.player.Player;
 //import reika.dragonapi.DragonAPI;
 //import reika.dragonapi.libraries.ReikaPlayerAPI;
-//import reika.dragonapi.libraries.io.ReikaTextureHelper;
 //
 //public class ReikaModel extends ModifiedPlayerModel {
 //

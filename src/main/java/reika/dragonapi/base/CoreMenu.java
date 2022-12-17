@@ -70,15 +70,15 @@ public class CoreMenu<T extends BlockEntityBase> extends AbstractContainerMenu {
         System.arraycopy(inv, 0, oldInv, 0, oldInv.length);
     }
 
-    protected void addPlayerInventoryWithOffset(Inventory player, int dx, int dy) {
+    protected void addPlayerInventoryWithOffset(Inventory inv, int dx, int dy) {
         for (int i = 0; i < 3; i++) {
             for (int k = 0; k < 9; k++) {
-                this.addSlot(new Slot(player, k + i * 9 + 9, dx + 8 + k * 18, dy + 84 + i * 18));
+                this.addSlot(new Slot(inv, k + i * 9 + 9, dx + 8 + k * 18, dy + 84 + i * 18));
             }
         }
 
         for (int j = 0; j < 9; j++) {
-            this.addSlot(new Slot(player, j, dx + 8 + j * 18, dy + 142));
+            this.addSlot(new Slot(inv, j, dx + 8 + j * 18, dy + 142));
         }
     }
 
