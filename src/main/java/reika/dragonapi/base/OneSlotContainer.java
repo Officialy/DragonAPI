@@ -13,11 +13,11 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
 
-public class OneSlotMenu<T extends BlockEntityBase> extends CoreMenu<T> {
+public class OneSlotContainer<T extends BlockEntityBase> extends CoreContainer<T> {
 
     private final Container inv;
 
-    public OneSlotMenu(MenuType<?> type, int id, Inventory inv, T te, int offsetY) {
+    public OneSlotContainer(MenuType<?> type, int id, Inventory inv, T te, int offsetY) {
         super(type, id, inv, te, null);
         this.inv = (Container) te;
 

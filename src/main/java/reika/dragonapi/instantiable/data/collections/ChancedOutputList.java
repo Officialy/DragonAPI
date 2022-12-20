@@ -213,22 +213,22 @@ public final class ChancedOutputList {
         }
 
     }
-//
-//    public static ChancedOutputList parseFromArray(boolean allowOver100, Object[] arr) {
-//        if (arr.length%2 != 0)
-//            throw new MisuseException("Every item must have a specified chance!");
-//        ChancedOutputList c = new ChancedOutputList(allowOver100);
-//        for (int i = 0; i < arr.length; i += 2) {
-//            ItemStack is = ReikaItemHelper.parseItem(arr[i]);
-//            if (is != null) {
-//                Object chance = arr[i+1];
-//                if (chance instanceof Integer)
-//                    chance = Float.valueOf((Integer)chance);
-//                c.addItem(is, (Float)chance);
-//            }
-//        }
-//        return c;
-//    }
+
+    public static ChancedOutputList parseFromArray(boolean allowOver100, Object[] arr) {
+        if (arr.length%2 != 0)
+            throw new MisuseException("Every item must have a specified chance!");
+        ChancedOutputList c = new ChancedOutputList(allowOver100);
+        for (int i = 0; i < arr.length; i += 2) {
+            ItemStack is = ReikaItemHelper.parseItem(arr[i]);
+            if (is != null) {
+                Object chance = arr[i+1];
+                if (chance instanceof Integer)
+                    chance = Float.valueOf((Integer)chance);
+                c.addItem(is, (Float)chance);
+            }
+        }
+        return c;
+    }
 
     public static class ItemWithChance {
 

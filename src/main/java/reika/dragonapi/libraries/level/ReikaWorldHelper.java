@@ -9,6 +9,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -662,6 +663,31 @@ public class ReikaWorldHelper {
         return true;
     }
 
+    /** Takes a specified amount of XP and splits it randomly among a bunch of orbs.
+     *Args: World, x, y, z, amount */
+    public static void splitAndSpawnXP(Level world, double x, double y, double z, int xp) {
+        splitAndSpawnXP(world, x, y, z, xp, 6000);
+    }
+
+    /** Takes a specified amount of XP and splits it randomly among a bunch of orbs.
+     *Args: World, x, y, z, amount, life */
+    public static void splitAndSpawnXP(Level world, double x, double y, double z, int xp, int life) {
+        int max = xp/5+1;
+
+        while (xp > 0) {
+            int value = rand.nextInt(max)+1;
+            while (value > xp)
+                value = rand.nextInt(max)+1;
+            xp -= value;
+            ExperienceOrb orb = new ExperienceOrb(world, x, y, z, value);
+            orb.setDeltaMovement(-0.2+0.4*rand.nextFloat(), 0.3*rand.nextFloat(), -0.2+0.4*rand.nextFloat());
+//       todo     orb.xpOrbAge = 6000-life;
+            if (!world.isClientSide) {
+//                orb.velocityChanged = true;
+                world.addFreshEntity(orb);
+            }
+        }
+    }
     public static WorldID getCurrentWorldID(Level world) {
         if (world.isClientSide())
             throw new MisuseException("This cannot be called from the client side!");

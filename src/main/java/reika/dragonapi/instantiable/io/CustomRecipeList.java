@@ -250,6 +250,7 @@ public class CustomRecipeList {
     }
 
 
+
     public static Recipe<?> parseCraftingRecipe(LuaBlock lb, ItemStack output) {
         boolean shaped = lb.getBoolean("shaped");
         if (shaped) {
@@ -292,7 +293,7 @@ public class CustomRecipeList {
                     array[i][k] = parseObjectString(item);
                 }
             }
-            return new ShapedRecipe(null, null, 1, 1, ReikaRecipeHelper.decode2DArray(array), output);// ReikaRecipeHelper.decode2DArray(array)); //todo fix nulls
+            return new ShapedRecipe(null, null, null,1, 1, null /*todo was array*/, output);// ReikaRecipeHelper.decode2DArray(array)); //todo fix nulls
         }
         else {
             String input = lb.getString("input").replaceAll(" ", "");
@@ -309,9 +310,10 @@ public class CustomRecipeList {
                 }
                 inputs[i] = o;
             }
-            return new ShapelessRecipe(null, null, output, null);// inputs); //todo nulls
+            return new ShapelessRecipe(null, null, null, output, null);// inputs); //todo nulls
         }
     }
+
 
 
     public static String fullID(Object o) {

@@ -461,9 +461,9 @@ public class ReikaInventoryHelper {
      * Returns the location (array index) of an itemstack in the specified inventory.
      * Returns -1 if not present. Args: Itemstack to check, Inventory, Match size T/F
      */
-    public static int locateInInventory(ItemStack is, IItemHandler inv, boolean matchsize) {
-        for (int i = 0; i < inv.getSlots(); i++) {
-            ItemStack in = inv.getStackInSlot(i);
+    public static int locateInInventory(ItemStack is, Container inv, boolean matchsize) {
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack in = inv.getItem(i);
             if (in != null) {
                 if (in.getItem() instanceof ActivatedInventoryItem) {
                     if (checkForItemStack(is, ((ActivatedInventoryItem) in.getItem()).getInventory(in), matchsize))
@@ -637,10 +637,10 @@ public class ReikaInventoryHelper {
 
     /**
      * Intelligently decrements a stack in an inventory, setting it to null if necessary.
-     * Also performs sanity checks. Args: Inventory, Slot, Amount
+     * Also performs sanity checks. Args: Slot, Container, Amount
      */
-    public static void decrStack(int slot, IItemHandler inv, int amount) {
-        if (slot >= inv.getSlots()) {
+    public static void decrStack(int slot, Container inv, int amount) {
+        if (slot >= inv.getContainerSize()) {
             ReikaChatHelper.write("Tried to access Slot " + slot + ", which is larger than the inventory.");
             return;
         }
@@ -648,7 +648,7 @@ public class ReikaInventoryHelper {
             ReikaChatHelper.write("Tried to access Slot " + slot + ", which is < 0.");
             return;
         }
-        ItemStack in = inv.getStackInSlot(slot);
+        ItemStack in = inv.getItem(slot);
         if (in == null) {
             ReikaChatHelper.write("Tried to access Slot " + slot + ", which is empty.");
             return;
@@ -658,7 +658,7 @@ public class ReikaInventoryHelper {
         if (in.getCount() > amount)
             in.setCount(count -= amount);
         else
-            inv.insertItem(slot, null, false);
+            inv.setItem(slot, ItemStack.EMPTY);
         //ReikaJavaLibrary.pConsole("post: "+inv.getItem(slot)+" w "+amount);
 
     }
@@ -1004,12 +1004,12 @@ public class ReikaInventoryHelper {
         return true;
     }
 
-    public static void removeFromInventory(ItemHashMap<Integer> map, IItemHandler ii) {
+    public static void removeFromInventory(ItemHashMap<Integer> map, Container ii) {
         for (ItemStack is : map.keySet()) {
             int need = map.get(is);
             int loc = locateInInventory(is, ii, false);
             while (loc >= 0 && need > 0) {
-                ItemStack in = ii.getStackInSlot(loc);
+                ItemStack in = ii.getItem(loc);
                 int max = Math.min(need, in.getCount());
                 decrStack(loc, ii, max);
                 need -= max;

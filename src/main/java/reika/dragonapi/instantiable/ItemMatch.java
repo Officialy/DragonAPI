@@ -82,7 +82,7 @@ public class ItemMatch {
     public boolean match(ItemStack is) {
 		/*
 		for (KeyedItemStack in : items) {
-			if (ReikaItemHelper.matchStacks(in, is) && (in.stackTagCompound == null || ItemStack.areItemStackTagsEqual(in, is))) {
+			if (ReikaItemHelper.matchStacks(in, is) && (in.stackTagCompound == null || ItemStack.isSameItemSameTags(in, is))) {
 				return true;
 			}
 		}

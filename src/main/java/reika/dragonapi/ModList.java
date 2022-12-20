@@ -73,7 +73,7 @@ public enum ModList implements ModEntry, Dependency {
 	TRANSITIONAL("TransitionalAssistance", "modTA.Core.TACore"), //mod dead
 	ENDERSTORAGE("EnderStorage"),
 	TREECAPITATOR("TreeCapitator"),
-	HARVESTCRAFT("harvestcraft", "com.pam.harvestcraft.BlockRegistry", "com.pam.harvestcraft.ItemRegistry"),
+	HARVESTCRAFT("harvestcraft", "com.pam.harvestcraft.BlockRegistry", "com.pam.harvestcraft.RotaryItems"),
 	MYSTCRAFT("Mystcraft", new String[]{"com.xcompwiz.mystcraft.api.MystObjects$Blocks", "com.xcompwiz.mystcraft.api.MystObjects"}, new String[]{"com.xcompwiz.mystcraft.api.MystObjects$Items", "com.xcompwiz.mystcraft.api.MystObjects"}),
 	MAGICCROPS("magicalcrops", new String[]{"com.mark719.magicalcrops.MagicalCrops", "com.mark719.magicalcrops.handlers.MBlocks"}, new String[]{"com.mark719.magicalcrops.MagicalCrops", "com.mark719.magicalcrops.handlers.MItems"}),
 	MIMICRY("Mimicry", "com.sparr.mimicry.block.MimicryBlock", "com.sparr.mimicry.item.MimicryItem"),
@@ -111,7 +111,7 @@ public enum ModList implements ModEntry, Dependency {
 	FLUXEDCRYSTALS("fluxedcrystals", "fluxedCrystals.init.FCBlocks", "fluxedCrystals.init.FCItems"),
 	HUNGEROVERHAUL("HungerOverhaul"),
 	CHISEL("chisel", new String[]{"com.cricketcraft.chisel.init.ChiselBlocks", "team.chisel.init.ChiselBlocks"}, new String[]{"com.cricketcraft.chisel.init.ChiselItems", "team.chisel.init.ChiselItems"}),
-	CARPENTER("CarpentersBlocks", "com.carpentersblocks.util.registry.BlockRegistry", "com.carpentersblocks.util.registry.ItemRegistry"),
+	CARPENTER("CarpentersBlocks", "com.carpentersblocks.util.registry.BlockRegistry", "com.carpentersblocks.util.registry.RotaryItems"),
 	ENDEREXPANSION("HardcoreEnderExpansion"),
 	AGRICRAFT("AgriCraft", "com.InfinityRaider.AgriCraft.init.Blocks", "com.InfinityRaider.AgriCraft.init.Items"),
 	THAUMICTINKER("ThaumicTinkerer"),
@@ -125,7 +125,7 @@ public enum ModList implements ModEntry, Dependency {
 	TROPICRAFT("tropicraft", "net.tropicraft.registry.TCBlockRegistry", "net.tropicraft.registry.TCItemRegistry"),
 	EREBUS("erebus", "erebus.ModBlocks", "erebus.ModItems"),
 	BETWEENLANDS("thebetweenlands", "thebetweenlands.Blocks.BLBLOCKREGISTRY", "thebetweenlands.items.BLItemRegistry"),
-	NETHERPAM("harvestthenether", "com.pam.harvestthenether.BlockRegistry", "com.pam.harvestthenether.ItemRegistry"),
+	NETHERPAM("harvestthenether", "com.pam.harvestthenether.BlockRegistry", "com.pam.harvestthenether.RotaryItems"),
 	AETHER("aether", "net.aetherteam.aether.Blocks.AETHERBLOCKS", "net.aetherteam.aether.items.AetherItems");
 
 	public static final ModList[] modList = values();

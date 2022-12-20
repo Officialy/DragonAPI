@@ -1,7 +1,6 @@
 package reika.dragonapi.base;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -25,7 +24,7 @@ import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
 import java.util.*;
 
-public class CoreMenu<T extends BlockEntityBase> extends AbstractContainerMenu {
+public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerMenu {
 
     private static final ChestBlockEntity fakeChest = new ChestBlockEntity(BlockPos.ZERO, Blocks.CHEST.defaultBlockState());
     public final T tile;
@@ -38,7 +37,7 @@ public class CoreMenu<T extends BlockEntityBase> extends AbstractContainerMenu {
     int posZ;
     private boolean alwaysCan = false;
 
-    public CoreMenu(MenuType<?> type, int id, final Inventory playerInv, T te, Container i) {
+    public CoreContainer(MenuType<?> type, int id, final Inventory playerInv, T te, Container i) {
         super(type, id);
         tile = te;
         posX = tile.getBlockPos().getX();
@@ -49,12 +48,12 @@ public class CoreMenu<T extends BlockEntityBase> extends AbstractContainerMenu {
         ii = i;
     }
 
-    public CoreMenu<T> setAlwaysInteractable() {
+    public CoreContainer<T> setAlwaysInteractable() {
         alwaysCan = true;
         return this;
     }
 
-    public CoreMenu<T> addSlotRelay(Inventory inv, int slot) {
+    public CoreContainer<T> addSlotRelay(Inventory inv, int slot) {
         relaySlots.add(new InventorySlot(slot, inv));
         return this;
     }

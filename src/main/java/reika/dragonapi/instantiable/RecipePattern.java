@@ -1,21 +1,12 @@
 package reika.dragonapi.instantiable;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.IContainerFactory;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import reika.dragonapi.DragonAPI;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
-import net.minecraft.world.inventory.CraftingContainer;
-
-import java.util.function.Supplier;
 
 
 public final class RecipePattern extends CraftingContainer {
