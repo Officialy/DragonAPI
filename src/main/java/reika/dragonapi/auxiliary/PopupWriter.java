@@ -219,6 +219,7 @@ public class PopupWriter extends Screen {
 //            }
 //        }
 //    }
+
     @SubscribeEvent
     public static void keyHandle(InputEvent.Key evt) {
         if (!list.isEmpty()) {
@@ -265,4 +266,5 @@ public class PopupWriter extends Screen {
         }
 
     }
+
 }

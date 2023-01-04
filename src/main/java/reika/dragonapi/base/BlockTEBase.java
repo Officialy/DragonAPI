@@ -87,7 +87,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
     public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
         BlockEntityBase te = (BlockEntityBase) pLevel.getBlockEntity(pPos);
         te.syncAllData(true);
-        return InteractionResult.PASS;
+        return super.use(pState, pLevel, pPos, pPlayer, pHand, pHit);
     }
 
 

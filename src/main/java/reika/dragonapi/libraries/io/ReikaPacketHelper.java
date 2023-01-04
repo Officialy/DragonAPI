@@ -1323,7 +1323,7 @@ public class ReikaPacketHelper {
 
         var side = FMLLoader.getDist();
         if (side == Dist.DEDICATED_SERVER) {
-            DragonAPI.LOGGER.info(te + " sent a tank sync packet from the server.");
+            DragonAPI.LOGGER.info(te + " sent a tank sync packet from the server, this is good.");
             new PacketTarget.RadiusTarget(te, 24).dispatch(pipe, pack);
         } else if (side == Dist.CLIENT) {
             DragonAPI.LOGGER.error(te + " sent a sync packet from the client! This is not allowed!");

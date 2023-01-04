@@ -1,10 +1,12 @@
 package reika.dragonapi.libraries;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.animal.*;
@@ -130,7 +132,39 @@ public class ReikaEntityHelper {
             return ReikaPhysicsHelper.getBlockDensity(((FallingBlockEntity) ent).getBlockState().getBlock());//.func_145805_f()); //2 g/cc
         return 100;
     }
-
+    
+    /** Gets a direction from an entity's look direction. Args: Entity, allow vertical yes/no */
+    public static Direction getDirectionFromEntityLook(LivingEntity e, boolean vertical) {
+        if (Mth.abs(e.getXRot()) < 60 || !vertical) {
+            int i = Mth.floor((e.getYRot() * 4F) / 360F + 0.5D);
+            while (i > 3)
+                i -= 4;
+            while (i < 0)
+                i += 4;
+            switch (i) {
+                case 0 -> {
+                    return Direction.SOUTH;
+                }
+                case 1 -> {
+                    return Direction.WEST;
+                }
+                case 2 -> {
+                    return Direction.NORTH;
+                }
+                case 3 -> {
+                    return Direction.EAST;
+                }
+            }
+        }
+        else { //Looking up/down
+            if (e.getXRot() > 0)
+                return Direction.DOWN; //set to up
+            else
+                return Direction.UP; //set to down
+        }
+        return Direction.NORTH; //todo default to north?
+    }
+    
     public static boolean isSolidEntity(Entity e) {
 //        if (e instanceof EtherealEntity)
 //            return false;

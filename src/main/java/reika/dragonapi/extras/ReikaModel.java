@@ -88,18 +88,18 @@
 //		back2.render(stack, f5);
 //		back3.render(stack, f5);
 //		/*
-//		if (ep.isSneaking()) {
+//		if (ep.isShiftKeyDown()) {
 //			GL11.glRotated(this.getWingAngle()*180/3.14, 0, 1, 0);
 //			GL11.glRotated(-20, 0, 0, 1);
 //		}*/
 //		wingR.render(stack, f5);/*
-//		if (ep.isSneaking()) {
+//		if (ep.isShiftKeyDown()) {
 //			GL11.glRotated(20, 0, 0, 1);
 //			GL11.glRotated(-2*this.getWingAngle()*180/3.14, 0, 1, 0);
 //			GL11.glRotated(20, 0, 0, 1);
 //		}*/
 //		wingL.render(stack, f5);/*
-//		if (ep.isSneaking()) {
+//		if (ep.isShiftKeyDown()) {
 //			GL11.glRotated(-20, 0, 0, 1);
 //			GL11.glRotated(this.getWingAngle()*180/3.14, 0, 1, 0);
 //		}*/

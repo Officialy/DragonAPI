@@ -77,7 +77,7 @@ public final class ReikaNBTHelper extends DragonAPI {
         return FluidStack.loadFluidStackFromNBT(nbt);
     }
 
-    @Deprecated //Can likely use f.saveAdditional(nbt); //TODO: Remove
+    @Deprecated //Can likely use f.writeToNBT(nbt); //TODO: Remove
     public static void writeFluidToNBT(CompoundTag nbt, FluidStack f) {
         f.writeToNBT(nbt);
     }

@@ -1,8 +1,5 @@
 package reika.dragonapi.instantiable;
 
-
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
@@ -110,14 +107,21 @@ public class HybridTank extends FluidTank {
     }
 
     public void addLiquid(int amt, Fluid type) {
-        if (type == null)
+        if (type == null){
+            DragonAPI.LOGGER.info("Cannot add null fluid!");
             return;
-        if (amt > capacity)
+        }
+        if (amt > capacity) {
             amt = capacity;
-        if (this.getFluid() == null) {
+        }
+        if (this.getFluid().isEmpty()) {
+//            DragonAPI.LOGGER.info("Adding liquid to tank "+this+" of type "+type+" and amount "+amt);
             this.fill(new FluidStack(type, amt), FluidAction.EXECUTE);
         } else if (type.equals(this.getFluid().getFluid())) {
+//            DragonAPI.LOGGER.info("Adding liquid to tank "+this+" of type "+type+" and amount "+amt);
             this.fill(new FluidStack(this.getFluid().getFluid(), amt), FluidAction.EXECUTE);
+        } else {
+            DragonAPI.LOGGER.info("Cannot add liquid of type "+type+" to tank "+this+" of type "+this.getFluid().getFluid());
         }
     }
 

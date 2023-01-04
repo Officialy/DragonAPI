@@ -603,7 +603,7 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
     }
 
     public final BlockState getBlockType() {
-        //DragonAPICore.log(this.blockType);
+        //DragonAPI.LOGGER.info(this.blockType);
         if (getBlockState() != null)
             return getBlockState();
         if (this.isInWorld()) {

@@ -7,7 +7,7 @@
  * Distribution of the software in any form is only allowed with
  * explicit, prior permission from the owner.
  ******************************************************************************/
-package reika.dragonapi.instantiable.gui.Slot;
+package reika.dragonapi.instantiable.gui.slot;
 
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;

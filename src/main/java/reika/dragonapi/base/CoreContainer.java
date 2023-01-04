@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.instantiable.data.immutable.InventorySlot;
-import reika.dragonapi.instantiable.gui.Slot.SlotNoClick;
+import reika.dragonapi.instantiable.gui.slot.SlotNoClick;
 import reika.dragonapi.interfaces.blockentity.MultiPageInventory;
 import reika.dragonapi.interfaces.blockentity.XPProducer;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
