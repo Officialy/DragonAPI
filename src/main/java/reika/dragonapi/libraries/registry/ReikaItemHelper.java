@@ -282,7 +282,7 @@ public class ReikaItemHelper {
     }
 
     public static ItemStack lookupItem(String mod, String item) {
-        Item i = GameRegistry.findItem(mod, item);
+        Item i = ForgeRegistries.ITEMS.getValue(new ResourceLocation(mod, item);
         return i != null ? new ItemStack(i, 1) : null;
     }
 

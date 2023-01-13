@@ -288,7 +288,7 @@
 //            PoseStack stack = new PoseStack();
 //            int f5 = 0;
 //            //GL11.glPushMatrix();
-//            //GL11.glTranslated(offsetX*f5, offsetY*f5, offsetZ*f5);
+//            //stack.translate(offsetX*f5, offsetY*f5, offsetZ*f5);
 //            //v5.addTranslation(offsetX*f5, offsetY*f5, offsetZ*f5);
 //            //ReikaJavaLibrary.pConsole(this+" > "+rotationX+" / "+rotationY+" / "+rotationZ);
 //            /*if (rotationX != 0 || rotationY != 0 || rotationZ != 0) {

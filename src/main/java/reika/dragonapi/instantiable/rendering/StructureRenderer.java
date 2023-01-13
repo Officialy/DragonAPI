@@ -264,7 +264,7 @@
 //            CoordStack is = render.get(vec);
 //            if (is.item != null && is.item.getItem() != null) {
 //                GL11.glPushMatrix();
-//                GL11.glTranslated(0, 0, is.coord.zCoord);
+//                stack.translate(0, 0, is.coord.zCoord);
 //                double scale = 1;
 //                int ox2 = 0;
 //                int oy2 = 0;
@@ -299,7 +299,7 @@
 //        if (transl) {
 //            int sc = ReikaRenderHelper.getGUIScale();
 //            GuiScreen scr = Minecraft.getInstance().currentScreen;
-//            GL11.glTranslated(j*0+scr.width/2D+16/sc, k*0+scr.height/2D+16/sc, 256);
+//            stack.translate(j*0+scr.width/2D+16/sc, k*0+scr.height/2D+16/sc, 256);
 //
 //            double s = 12;
 //
@@ -334,18 +334,18 @@
 //            //double drz = (array.getMidZ()-array.getMinZ());//-2.75/d;
 //
 //            double dr = -5.75*d;
-//            //GL11.glTranslated(drx, dry, drz);
-//            GL11.glTranslated(dr, dr, dr);
+//            //stack.translate(drx, dry, drz);
+//            stack.translate(dr, dr, dr);
 //            GL11.glRotated(rx, 1, 0, 0);
 //            GL11.glRotated(ry, 0, 1, 0);
 //            GL11.glRotated(rz, 0, 0, 1);
-//            GL11.glTranslated(-dr, -dr, -dr);
-//            //GL11.glTranslated(-drx, -dry, -drz);
+//            stack.translate(-dr, -dr, -dr);
+//            //stack.translate(-drx, -dry, -drz);
 //
 //            GL11.glScaled(-d*s, -d*s, -d*s);
 //        }
 //
-//        //GL11.glTranslated(-array.getMinX(), -array.getMinY(), -array.getMinZ());
+//        //stack.translate(-array.getMinX(), -array.getMinY(), -array.getMinZ());
 //
 //        tileRendering = true;
 //        tileRenderingReal = !transl;

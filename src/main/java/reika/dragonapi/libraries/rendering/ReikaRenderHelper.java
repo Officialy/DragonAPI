@@ -2,6 +2,7 @@ package reika.dragonapi.libraries.rendering;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.TerrainParticle;
@@ -302,7 +303,7 @@ public class ReikaRenderHelper {
         stack.translate(0.5F, 0.5F, 0.5F);
         float f11 = 0.76F;
         RenderSystem.setShaderColor(0.5F * f11, 0.25F * f11, 0.8F * f11, 1.0F);
-        GL11.glRotatef(rotation, 0.0F, 1.0F, 0.0F);
+        stack.mulPose(Axis.YP.rotationDegrees(rotation));
         GL11.glDepthMask(false);
 
         GL11.glDisable(GL11.GL_LIGHTING);

@@ -23,7 +23,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -667,6 +666,7 @@ public class ReikaPacketHelper {
     }
 
     public static void sendSoundPacket(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten, int range) {
+        DragonAPI.LOGGER.info("Sending sound packet for "+s+" @ "+x+", "+y+", "+z);
         int length = 0;
         ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         DataOutputStream outputStream = new DataOutputStream(bos);
@@ -1301,7 +1301,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(x);
             outputStream.writeInt(y);
             outputStream.writeInt(z);
-            outputStream.writeInt(tank.getLevel());
+            outputStream.writeInt(tank.getFluidLevel());
         } catch (ClassCastException ex) {
 //            ex.printStackTrace();
             DragonAPI.LOGGER.error(te + " tried to sync its tank, but it is not a HybridTank instance!");

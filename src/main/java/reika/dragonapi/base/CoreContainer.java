@@ -88,12 +88,12 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     @Override
     public void broadcastChanges() { //todo reika commented out code so its not even used, see what it did?
         super.broadcastChanges();
-		/*
-		for (int i = 0; i < slots.size(); ++i) {
+
+		/*for (int i = 0; i < slots.size(); ++i) {
 			ItemStack itemstack = ((Slot)slots.get(i)).getStack();
 			ItemStack itemstack1 = (ItemStack)inventoryItemStacks.get(i);
 			//DragonAPI.LOGGER.info("TRY: "+itemstack+":"+itemstack1, itemstack != null && itemstack1 != null);
-			if (!ItemStack.areItemStacksEqual(itemstack1, itemstack) || true) { //the true is to force a sync
+			if (!ItemStack.matches(itemstack1, itemstack) || true) { //the true is to force a sync
 				itemstack1 = itemstack == null ? null : itemstack.copy();
 				inventoryItemStacks.set(i, itemstack1);
 				for (int j = 0; j < crafters.size(); ++j) {
@@ -101,8 +101,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
 					((ICrafting)crafters.get(j)).sendSlotContents(this, i, itemstack1);
 				}
 			}
-		}
-		 */
+		}*/
 
         //for (int i = 0; i < crafters.size(); i++) {
         //	ICrafting icrafting = (ICrafting)crafters.get(i);
@@ -132,14 +131,14 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     public ItemStack quickMoveStack(Player player, int slot) {
         Slot islot = slots.get(slot);
         if (!this.allowShiftClicking(player, slot, islot.getItem()))
-            return null;
+            return ItemStack.EMPTY;
         ItemStack ret = this.onShiftClickSlot(player, slot, islot.getItem());
-        if (ret != null)
+        if (!ret.isEmpty())
             return ret;
-        ItemStack is = null;
+        ItemStack is;
         Slot fromSlot = islot;
         if (!(tile instanceof Container))
-            return null;
+            return ItemStack.EMPTY;
         int invsize = ((Container) tile).getContainerSize();
         int base = 0;
         if (tile instanceof MultiPageInventory) {
@@ -188,7 +187,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
                 } else {
                     fromSlot.set(is.copy());
                 }
-                is = null;
+                is = ItemStack.EMPTY;
                 return is;
             } else {
                 List<Slot> list = this.getOrderedSlotList();
@@ -223,12 +222,12 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
                 } else {
                     fromSlot.set(is.copy());
                 }
-                is = null;
+                is = ItemStack.EMPTY;
                 return is;
             }
         }
 
-        return null;
+        return ItemStack.EMPTY;
     }
 
     public boolean allowShiftClicking(Player player, int slot, ItemStack stack) {
@@ -236,14 +235,14 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     }
 
     /**
-     * Return non-null here to stop all normal shift-click behavior
+     * Return empty here to stop all normal shift-click behavior
      */
     protected ItemStack onShiftClickSlot(Player player, int slot, ItemStack is) {
-        return null;
+        return ItemStack.EMPTY;
     }
 
     private boolean canAdd(ItemStack is, ItemStack inslot) {
-        if (inslot == null)
+        if (inslot.isEmpty())
             return true;
         return ReikaItemHelper.matchStacks(is, inslot) && ItemStack.tagMatches(is, inslot);
     }

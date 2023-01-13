@@ -84,7 +84,7 @@ public class HybridTank extends FluidTank {
         return this.getFluid() != null && this.getFluid().getAmount() >= this.getCapacity();
     }
 
-    public int getLevel() {
+    public int getFluidLevel() {
         if (this.getFluid() == null)
             return 0;
         return this.getFluid().getAmount();
@@ -126,11 +126,11 @@ public class HybridTank extends FluidTank {
     }
 
     public void empty() {
-        this.drain(this.getLevel(), FluidAction.EXECUTE);
+        this.drain(this.getFluidLevel(), FluidAction.EXECUTE);
     }
 
     public void setFluidType(Fluid type) {
-        int amt = this.getLevel();
+        int amt = this.getFluidLevel();
         this.drain(amt, FluidAction.EXECUTE);
         this.fill(new FluidStack(type, amt), FluidAction.EXECUTE);
     }
@@ -147,18 +147,18 @@ public class HybridTank extends FluidTank {
     }
 
     public float getFraction() {
-        return this.getLevel() / (float) this.getCapacity();
+        return this.getFluidLevel() / (float) this.getCapacity();
     }
 
     @Override
     public String toString() {
         if (this.isEmpty())
             return "Empty Tank " + name;
-        return "Tank " + name + ", containing " + this.getLevel() + " mB of " + this.getActualFluid().getFluid();
+        return "Tank " + name + ", containing " + this.getFluidLevel() + " mB of " + this.getActualFluid().getFluid();
     }
 
     public int getRemainingSpace() {
-        return capacity - this.getLevel();
+        return capacity - this.getFluidLevel();
     }
 
     public boolean canTakeIn(int amt) {
