@@ -1521,7 +1521,7 @@ public class ReikaPacketHelper {
         public void encode(FriendlyByteBuf data) {
             super.encode(data);
             data.writeBytes(bytes);
-            DragonAPI.LOGGER.info("sent " + this);
+//            DragonAPI.LOGGER.info("sent " + this);
         }
 
         public CompoundTag asNBT() {

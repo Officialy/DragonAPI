@@ -314,12 +314,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     private List<Slot> getOrderedSlotList() {
         List<Slot> copy = new ArrayList<>(slots);
         copy.sort(new SlotComparator());
-        Iterator<Slot> it = copy.iterator();
-        while (it.hasNext()) {
-            Slot s = it.next();
-            if (s.container instanceof Inventory)
-                it.remove();
-        }
+        copy.removeIf(s -> s.container instanceof Inventory);
 
 //		StringBuilder sb = new StringBuilder();
 //		sb.append("[");
