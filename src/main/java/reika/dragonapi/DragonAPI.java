@@ -57,7 +57,6 @@ public class DragonAPI extends DragonAPIMod {
     public static final String NAME = "DragonAPI";
     public static final Random rand = new Random();
     public static DragonAPI instance;
-
     public static ControlledConfig config;
     public static final GameProfile serverProfile = new GameProfile(UUID.fromString("b9a1b954-6651-4bb8-af54-452a4d9fd5a4"), "[SERVER]");
     public static final String FORUM_PAGE = "http://www.minecraftforum.net/topic/1969694-";
