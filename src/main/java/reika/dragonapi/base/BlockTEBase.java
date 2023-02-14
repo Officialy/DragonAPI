@@ -119,7 +119,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
             drops &= ((ConditionBreakDropsInventory) te).dropsInventoryOnBroken();
         }
         if (drops)
-            ReikaItemHelper.dropInventory((Level) level, pos);
+            ReikaItemHelper.dropInventory(level, pos);
         if (te instanceof BreakAction) {
             ((BreakAction) te).breakBlock();
         }

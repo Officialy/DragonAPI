@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Material;
@@ -37,9 +38,12 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.IFluidBlock;
 import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.server.ServerLifecycleHooks;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jetbrains.annotations.Nullable;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
+import reika.dragonapi.auxiliary.trackers.SpecialDayTracker;
 import reika.dragonapi.base.BlockTieredResource;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.extras.BlockProperties;
@@ -48,6 +52,7 @@ import reika.dragonapi.instantiable.TemperatureEffect;
 import reika.dragonapi.instantiable.data.collections.RelativePositionList;
 import reika.dragonapi.instantiable.data.collections.TimedSet;
 import reika.dragonapi.instantiable.data.immutable.WorldChunk;
+import reika.dragonapi.instantiable.math.noise.Simplex3DGenerator;
 import reika.dragonapi.interfaces.callbacks.PositionCallable;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.ReikaFluidHelper;
@@ -74,43 +79,108 @@ public class ReikaWorldHelper {
 
     private static final HashMap<Material, TemperatureEffect> temperatureBlockEffects = new HashMap<>();
     private static final HashMap<String, WorldID> worldIDMap = new HashMap<>();
+    private static final HashMap<ImmutablePair<ResourceKey<Level>, Long>, Simplex3DGenerator> tempNoise = new HashMap<>();
+    private static final double TEMP_NOISE_BASE = 10;
 
-    public static int getAmbientTemperatureAt(Level world, BlockPos pos) {
-        int btemp = ReikaBiomeHelper.getBiomeTemp(world, pos); //todo better temperature checking
-        float temp = btemp;
+    static {
+        try {
+//            moddedGeneratorList = GameRegistry.class.getDeclaredField("sortedGeneratorList");
+//            moddedGeneratorList.setAccessible(true);
 
-//        if (!world.hasNoSky) {
-        if (world.canSeeSky(pos.above())) {
-            float sun = getSunIntensity(world, true, 0);
-            int mult = world.isRaining() ? 10 : 20;
-            temp += (sun - 0.75F) * mult;
+//            computeModdedGeneratorList = GameRegistry.class.getDeclaredMethod("computeSortedGeneratorList");
+//            computeModdedGeneratorList.setAccessible(true);
+
+            temperatureBlockEffects.put(Material.STONE, TemperatureEffect.rockMelting);
+            temperatureBlockEffects.put(Material.METAL, TemperatureEffect.rockMelting);
+            temperatureBlockEffects.put(Material.ICE, TemperatureEffect.iceMelting);
+            temperatureBlockEffects.put(Material.SNOW, TemperatureEffect.snowVaporization);
+            temperatureBlockEffects.put(Material.TOP_SNOW, TemperatureEffect.snowVaporization);
+            temperatureBlockEffects.put(Material.POWDER_SNOW, TemperatureEffect.snowVaporization);
+            temperatureBlockEffects.put(Material.CLOTH_DECORATION, TemperatureEffect.woolIgnition);
+            temperatureBlockEffects.put(Material.WOOL, TemperatureEffect.woolIgnition);
+            temperatureBlockEffects.put(Material.WOOD, TemperatureEffect.woodIgnition);
+            temperatureBlockEffects.put(Material.GRASS, TemperatureEffect.groundGlassing);
+            temperatureBlockEffects.put(Material.SAND, TemperatureEffect.groundGlassing);
+            temperatureBlockEffects.put(Material.DIRT, TemperatureEffect.groundGlassing);
+            temperatureBlockEffects.put(Material.LEAVES, TemperatureEffect.plantIgnition);
+            temperatureBlockEffects.put(Material.PLANT, TemperatureEffect.plantIgnition);
+            temperatureBlockEffects.put(Material.WATER_PLANT, TemperatureEffect.plantIgnition);
+            temperatureBlockEffects.put(Material.REPLACEABLE_PLANT, TemperatureEffect.plantIgnition);
+            temperatureBlockEffects.put(Material.REPLACEABLE_WATER_PLANT, TemperatureEffect.plantIgnition);
+            temperatureBlockEffects.put(Material.WEB, TemperatureEffect.plantIgnition);
+            temperatureBlockEffects.put(Material.EXPLOSIVE, TemperatureEffect.tntIgnition);
         }
-        if (!isVoidWorld(world, pos)) {
-            double h = world.getBlockFloorHeight(pos);
-            double dy = h - pos.getY();
-            if (dy > 0) {
-                if (dy < 20) {
-                    temp -= dy;
-                    temp = Math.max(temp, btemp - 20);
-                } else if (dy < 25) {
-                    temp -= 2 * (25 - dy);
-                    temp = Math.max(temp, btemp - 20);
-                } else {
-                    temp += 100 * (dy - 20) / h;
-                    temp = Math.min(temp, btemp + 70);
-                }
-            }
-            if (pos.getY() > 96) {
-                temp -= (pos.getY() - 96) / 4;
-            }
+        catch (Exception e) {
+            throw new RuntimeException("Could not find GameRegistry IWorldGenerator data!", e);
         }
-//        }
-
-//        return (int) world.getBiomeManager().getBiome(pos).value().getBaseTemperature();
-
-        return (int) temp;
     }
 
+    public static int getAmbientTemperatureAt(Level world, BlockPos pos) {
+        return getAmbientTemperatureAt(world, pos, 1);
+    }
+
+    public static int getAmbientTemperatureAt(Level world, BlockPos pos, float varFactor) {
+        int bTemp = ReikaBiomeHelper.getBiomeTemp(world, pos); //todo better temperature checking
+        float temp = bTemp;
+
+        if (SpecialDayTracker.instance.isWinterEnabled() && world.dimension() != Level.NETHER) {
+            temp -= 10;
+        }
+
+        if (varFactor > 0) {
+            Simplex3DGenerator gen = getOrCreateTemperatureNoise(world);
+            //ReikaJavaLibrary.pConsole(new Coordinate(x, y, z)+" > "+gen.getValue(x, y, z));
+            temp += gen.getValue(pos.getX(), pos.getY(), pos.getZ())*varFactor*TEMP_NOISE_BASE;
+        }
+
+        if (world.dimension() == Level.NETHER) {
+            if (pos.getY() > 128) {
+                temp -= 50;
+            }
+            if (pos.getY() < 45) {
+                int d = pos.getY() <= 30 ? 15 : 45-pos.getY();
+                temp += 20*d;
+            }
+        }
+        else {
+            if (world.canSeeSky(pos.above())) {
+                float sun = getSunIntensity(world, true, 0);
+                int mult = world.isRaining() ? 10 : 20;
+                temp += (sun - 0.75F) * mult;
+            }
+            if (!isVoidWorld(world, pos)) {
+                double h = world.getBlockFloorHeight(pos);
+                double dy = h - pos.getY();
+                if (dy > 0) {
+                    if (dy < 20) {
+                        temp -= dy;
+                        temp = Math.max(temp, bTemp - 20);
+                    } else if (dy < 25) {
+                        temp -= 2 * (25 - dy);
+                        temp = Math.max(temp, bTemp - 20);
+                    } else {
+                        temp += 100 * (dy - 20) / h;
+                        temp = Math.min(temp, bTemp + 70);
+                    }
+                }
+                if (pos.getY() > 96) {
+                    temp -= (pos.getY() - 96) / 4;
+                }
+            }
+        }
+        return (int) temp;
+    }
+    private static Simplex3DGenerator getOrCreateTemperatureNoise(Level world) {
+        ImmutablePair<ResourceKey<Level>, Long> pair = new ImmutablePair<>(world.dimension(), ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
+        Simplex3DGenerator gen = tempNoise.get(pair);
+        if (gen == null | true) {
+            gen = new Simplex3DGenerator(ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
+            gen.setFrequency(1/20D);
+//            gen.addOctave(3.7, 0.17, 117.6);
+            tempNoise.put(pair, gen);
+        }
+        return gen;
+    }
     public static void dropAndDestroyBlockAt(Level world, BlockPos pos, @Nullable Player ep, boolean breakAll, boolean FX) {
         BlockState b = world.getBlockState(pos);
         if (b.getDestroySpeed(world, pos) < 0 && !breakAll)
@@ -663,24 +733,28 @@ public class ReikaWorldHelper {
         return true;
     }
 
-    /** Takes a specified amount of XP and splits it randomly among a bunch of orbs.
-     *Args: World, x, y, z, amount */
+    /**
+     * Takes a specified amount of XP and splits it randomly among a bunch of orbs.
+     * Args: World, x, y, z, amount
+     */
     public static void splitAndSpawnXP(Level world, double x, double y, double z, int xp) {
         splitAndSpawnXP(world, x, y, z, xp, 6000);
     }
 
-    /** Takes a specified amount of XP and splits it randomly among a bunch of orbs.
-     *Args: World, x, y, z, amount, life */
+    /**
+     * Takes a specified amount of XP and splits it randomly among a bunch of orbs.
+     * Args: World, x, y, z, amount, life
+     */
     public static void splitAndSpawnXP(Level world, double x, double y, double z, int xp, int life) {
-        int max = xp/5+1;
+        int max = xp / 5 + 1;
 
         while (xp > 0) {
-            int value = rand.nextInt(max)+1;
+            int value = rand.nextInt(max) + 1;
             while (value > xp)
-                value = rand.nextInt(max)+1;
+                value = rand.nextInt(max) + 1;
             xp -= value;
             ExperienceOrb orb = new ExperienceOrb(world, x, y, z, value);
-            orb.setDeltaMovement(-0.2+0.4*rand.nextFloat(), 0.3*rand.nextFloat(), -0.2+0.4*rand.nextFloat());
+            orb.setDeltaMovement(-0.2 + 0.4 * rand.nextFloat(), 0.3 * rand.nextFloat(), -0.2 + 0.4 * rand.nextFloat());
 //       todo     orb.xpOrbAge = 6000-life;
             if (!world.isClientSide) {
 //                orb.velocityChanged = true;
@@ -688,6 +762,7 @@ public class ReikaWorldHelper {
             }
         }
     }
+
     public static WorldID getCurrentWorldID(Level world) {
         if (world.isClientSide())
             throw new MisuseException("This cannot be called from the client side!");
