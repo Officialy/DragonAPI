@@ -137,23 +137,18 @@ public class ReikaRenderHelper {
     /**
      * Renders a line between two points in the world. Args: Start xyz, End xyz, rgb
      */
-    public static void renderLine(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int rgba) {
-//        GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        stack.pushPose();
+    public static void renderLine(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int[] color) {
+        RenderSystem.disableCull();
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
 
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder renderer = tessellator.getBuilder();
 
-        //if (renderer.isDrawing)
-        //    renderer.draw();
-        renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION); //GL11.GL_LINE_LOOP
-        renderer.color(rgba & 0xffffff, rgba >> 24 & 255, rgba, rgba); //TODO fix coloring
-        renderer.vertex(x1, y1, z1).endVertex();
-        renderer.vertex(x2, y2, z2).endVertex();
-
+        RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
+        renderer.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR_NORMAL); //GL11.GL_LINE_LOOP
+        renderer.vertex(stack.last().pose(), (float) x1, (float) y1, (float) z1).color(color[0], color[1], color[2], color[3]).normal(stack.last().normal(), 1, 1, 1).endVertex();
+        renderer.vertex(stack.last().pose(), (float) x2, (float) y2, (float) z2).color(color[0], color[1], color[2], color[3]).normal(stack.last().normal(), 1, 1, 1).endVertex();
         tessellator.end();
-        stack.popPose();
 
         //GL11.glDisable(GL12.GL_RESCALE_NORMAL);
         //GL11.glEnable(GL11.GL_CULL_FACE);

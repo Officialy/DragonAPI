@@ -214,7 +214,7 @@ public final class ReikaChatHelper {
         String[] parts = sg.split("\\n");
         for (int i = 0; i < parts.length; i++) {
             Component chat = Component.literal(parts[i]);
-            ep.displayClientMessage(chat, false);
+            ep.displayClientMessage(chat, true);
         }
     }
 /*

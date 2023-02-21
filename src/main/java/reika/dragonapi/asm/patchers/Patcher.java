@@ -69,7 +69,7 @@ public abstract class Patcher {
         catch (Exception e) {
             ReikaASMHelper.log("ASM handler "+this+" threw "+e+" during application; class bytecode is below");
             ReikaASMHelper.log("\n"+ReikaASMHelper.clearString(cn));
-            Throwables.propagate(e);
+            throw e;
         }
         ReikaASMHelper.log("Successfully applied " + this + " ASM handler!");
         int flags = ClassWriter.COMPUTE_MAXS;
