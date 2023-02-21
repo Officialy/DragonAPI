@@ -23,6 +23,7 @@ import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.items.ItemStackHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.base.BlockTieredResource;
@@ -195,7 +196,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         public int fortune = 0;
         public boolean silkTouch = false;
         public boolean drops = true;
-        public Container dropInventory = null;
+        public ItemStackHandler dropInventory = new ItemStackHandler();
         public Player player;
         public float hungerFactor = 1;
         public BlockBox bounds = BlockBox.infinity();
