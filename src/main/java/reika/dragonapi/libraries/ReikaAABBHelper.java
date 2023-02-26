@@ -2,6 +2,7 @@ package reika.dragonapi.libraries;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -11,6 +12,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
+import org.joml.Matrix4f;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 
@@ -20,124 +22,125 @@ public class ReikaAABBHelper {
      * Renders an AABB bounding box in the world. Very useful for debug purposes, or as a user-friendliness feature.
      * Args: World, AABB, Render par2,4,6, x,y,z of machine, root alpha value (-ve for solid color), RGB, solid outline yes/no
      */
-    public static void renderAABB(PoseStack stack, AABB box, double par2, double par4, double par6, int x, int y, int z, int a, int r, int g, int b, boolean line) {
+    public static void renderAABB(PoseStack stack, AABB box, int x, int y, int z, int a, int r, int g, int b, boolean line) {
         int[] color = {r, g, b, a};
+        float par2 = 0;
+        float par4 = 0;
+        float par6 = 0;
         ReikaRenderHelper.prepareGeoDraw(true);
-        stack.pushPose();
-        stack.translate((float) par2, (float) par4 + 2.0F, (float) par6 + 1.0F);
-        stack.scale(1.0F, -1.0F, -1.0F);
-        stack.translate(0.5F, 0.5F, 0.5F);
-        stack.popPose();
-//        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.disableCull();
+
+        PoseStack stack2 = new PoseStack();
+
+        stack2.pushPose();
+        stack2.scale(1.0F, -1.0F, -1.0F);
+        stack2.translate(0.5F, 0.5F, 0.5F);
+        Matrix4f mat = stack2.last().pose();
+
+//        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         if (color[3] > 255 && color[3] > 0)
             color[3] = 255;
         if (color[3] < 0)
             color[3] *= -1;
         boolean filled = true;
         Tesselator tess = Tesselator.getInstance();
-        BufferBuilder var5 = tess.getBuilder();
+        BufferBuilder builder = tess.getBuilder();
 
-        double xdiff = box.minX - x;
-        double ydiff = box.minY - y;
-        double zdiff = box.minZ - z;
-        double xdiff2 = box.maxX - x;
-        double ydiff2 = box.maxY - y;
-        double zdiff2 = box.maxZ - z;
+        float xdiff = (float) box.minX;// - x;
+        float ydiff = (float) box.minY;// - y;
+        float zdiff = (float) (box.minZ );//- z);
+        float xdiff2 = (float) (box.maxX) ;//- x);
+        float ydiff2 = (float) box.maxY;// - y;
+        float zdiff2 = (float) box.maxZ;// - z;
 
-        double px = par2 + xdiff;
-        double py = par4 + ydiff;
-        double pz = par6 + zdiff;
-        double px2 = par2 + xdiff2;
-        double py2 = par4 + ydiff2;
-        double pz2 = par6 + zdiff2;
-        if (var5.building())
-            var5.end();
+        float px = par2 + xdiff;
+        float py = par4 + ydiff;
+        float pz = par6 + zdiff;
+        float px2 = par2 + xdiff2;
+        float py2 = par4 + ydiff2;
+        float pz2 = par6 + zdiff2;
+//        if (builder.building())
+//            builder.end();
         if (line) {
-            var5.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
-//            var5.setBrightness(240);
-            var5.color(color[0], color[1], color[2], color[3]);
-            var5.vertex(px2, py2, pz);
-            var5.vertex(px, py2, pz);
-            var5.vertex(px, py2, pz2);
-            var5.vertex(px2, py2, pz2);
-            var5.end();
-            var5.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
-//            var5.setBrightness(240);
-            var5.color(color[0], color[1], color[2], color[3]);
-            var5.vertex(px2, py, pz);
-            var5.vertex(px, py, pz);
-            var5.vertex(px, py, pz2);
-            var5.vertex(px2, py, pz2);
-            var5.end();
-            var5.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
-//            var5.setBrightness(240);
-            var5.color(color[0], color[1], color[2], color[3]);
-            var5.vertex(px, py, pz);
-            var5.vertex(px, py2, pz);
-            var5.end();
-            var5.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
-//            var5.setBrightness(240);
-            var5.color(color[0], color[1], color[2], color[3]);
-            var5.vertex(px2, py, pz);
-            var5.vertex(px2, py2, pz);
-            var5.end();
-            var5.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
-//            var5.setBrightness(240);
-            var5.color(color[0], color[1], color[2], color[3]);
-            var5.vertex(px2, py, pz2);
-            var5.vertex(px2, py2, pz2);
-            var5.end();
-            var5.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
-//            var5.setBrightness(240);
-            var5.color(color[0], color[1], color[2], color[3]);
-            var5.vertex(px, py, pz2);
-            var5.vertex(px, py2, pz2);
-            var5.end();
+            RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
+            builder.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
+            builder.vertex(mat, px2, py2, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px, py2, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px, py2, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px2, py2, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            tess.end();
+
+            builder.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
+            builder.vertex(mat, px2, py, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px, py, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px, py, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px2, py, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            tess.end();
+
+            builder.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
+            builder.vertex(mat, px, py, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px, py2, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            tess.end();
+
+            builder.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
+            builder.vertex(mat, px2, py, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px2, py2, pz).color(color[0], color[1], color[2], color[3]).endVertex();
+            tess.end();
+
+            builder.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
+            builder.vertex(mat, px2, py, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px2, py2, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            tess.end();
+
+            builder.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
+            builder.vertex(mat, px, py, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            builder.vertex(mat, px, py2, pz2).color(color[0], color[1], color[2], color[3]).endVertex();
+            tess.end();
         }
         if (filled) {
-            var5.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION); //LINES_LOOP
-//            var5.setBrightness(240);
-            //var5.setBrightness(255);
-            var5.color(color[0], color[1], color[2], (int) (color[3] * 0.375F));
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
+            builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR); //LINES_LOOP
 
-            var5.vertex(px, py, pz);
-            var5.vertex(px2, py, pz);
-            var5.vertex(px2, py, pz2);
-            var5.vertex(px, py, pz2);
+            builder.vertex(mat, px, py, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
 
-            var5.vertex(px2, py, pz);
-            var5.vertex(px2, py2, pz);
-            var5.vertex(px2, py2, pz2);
-            var5.vertex(px2, py, pz2);
+            builder.vertex(mat, px2, py, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py2, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py2, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
 
-            var5.vertex(px, py2, pz);
-            var5.vertex(px, py, pz);
-            var5.vertex(px, py, pz2);
-            var5.vertex(px, py2, pz2);
+            builder.vertex(mat, px, py2, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py2, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
 
-            var5.vertex(px, py2, pz2);
-            var5.vertex(px, py, pz2);
-            var5.vertex(px2, py, pz2);
-            var5.vertex(px2, py2, pz2);
+            builder.vertex(mat, px, py2, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py2, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
 
-            var5.vertex(px, py, pz);
-            var5.vertex(px, py2, pz);
-            var5.vertex(px2, py2, pz);
-            var5.vertex(px2, py, pz);
+            builder.vertex(mat, px, py, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py2, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py2, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
 
-            var5.vertex(px2, py2, pz);
-            var5.vertex(px, py2, pz);
-            var5.vertex(px, py2, pz2);
-            var5.vertex(px2, py2, pz2);
-            var5.end();
+            builder.vertex(mat, px2, py2, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py2, pz).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px, py2, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            builder.vertex(mat, px2, py2, pz2).color(color[0], color[1], color[2], (int) (color[3] * 0.375F)).endVertex();
+            tess.end();
         }
 
         ReikaRenderHelper.exitGeoDraw();
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
         RenderSystem.enableDepthTest();
+        stack2.popPose();
     }
 
     public static AABB getBlockAABB(BlockPos te) {

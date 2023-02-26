@@ -306,7 +306,6 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
             try {
                 if (isNaturalTick)
                     this.updateBlockEntity();
-//                this.updateEntity(level, worldPosition);
             } catch (IndexOutOfBoundsException | NullPointerException | ClassCastException | ArithmeticException |
                      IllegalArgumentException e) {
                 this.writeError(e);
@@ -333,7 +332,6 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
             tileAge++;
         }
     }
-
 
     private void updateBlockEntity() {
         this.animateWithTick(level, worldPosition);

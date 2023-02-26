@@ -80,6 +80,7 @@ public class APIPacketHandler implements PacketHandler {
             PacketTypes packetType = packet.getType();
             switch (packetType) {
                 case SOUND -> {
+                    DragonAPI.LOGGER.info("Received sound packet");
                     int lib = inputStream.readInt();
                     control = inputStream.readInt();
                     SoundEnum s = ReikaSoundHelper.lookupSound(lib, control);
@@ -201,7 +202,7 @@ public class APIPacketHandler implements PacketHandler {
                 case BIOMECHANGE:
                     ReikaWorldHelper.setBiomeForXZ(world, x, z, (Biome) world.registryAccess().registryOrThrow(Registries.BIOME).stream().toArray()[data[0]]);
 //                    world.markBlockRangeForRenderUpdate(x, 0, z, x, world.getHeight(), z);
-                    world.blockUpdated(new BlockPos(x, 0, z), world.getBlockState(new BlockPos(x, world.getHeight(), z)).getBlock());
+                    world.sendBlockUpdated(new BlockPos(x, 0, z), world.getBlockState(new BlockPos(x, world.getHeight(), z)), world.getBlockState(new BlockPos(x, world.getHeight(), z)), 3);
                     break;
                 case KEYUPDATE:
                     if (data.length < 2) {
@@ -339,7 +340,7 @@ public class APIPacketHandler implements PacketHandler {
                     ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, PacketIDs.SENDLATENCY.ordinal(), (ServerPlayer) ep, data[0], data[1], l[0], l[1]);
                     break;
                 case ENTITYVERIFY:
-                    ReikaEntityHelper.performEntityVerification((ServerPlayer) ep, data[0], null/*data[1]*/, data[2]); //todo dimension is null for now as i need to figure out how to get it with the new system
+                    ReikaEntityHelper.performEntityVerification((ServerPlayer) ep, data[0], world.dimension()/*data[1]*/, data[2]); //todo dimension is null for now as i need to figure out how to get it with the new system
                     break;
                 case ENTITYVERIFYFAIL:
                     Entity e = world.getEntity(data[0]);

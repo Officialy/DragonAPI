@@ -5,11 +5,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.sounds.SoundManager;
+import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import reika.dragonapi.DragonAPI;
@@ -25,7 +27,7 @@ import java.util.stream.Stream;
 @OnlyIn(Dist.CLIENT)
 public class DirectResourceManager implements ResourceManager, ResourceManagerReloadListener {
 
-//    private final HashMap<String, SoundEventAccessorComposite> accessors = new HashMap<>();
+    //    private final HashMap<String, SoundEventAccessorComposite> accessors = new HashMap<>();
     private final HashMap<String, RemoteSourcedAsset> dynamicAssets = new HashMap<>();
     private final HashSet<String> streamedPaths = new HashSet<>();
 
@@ -60,17 +62,17 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
         dynamicAssets.put(path, a);
     }
 
-//    public void registerCustomPath(String path, SoundSource cat, boolean streaming) {
-//        ResourceLocation rl = new ResourceLocation(TAG, path);
-////        SoundPoolEntry spe = new SoundPoolEntry(rl, 1, 1, streaming);
-//        WeighedSoundEvents pos = new WeighedSoundEvents(rl, null);
+    public void registerCustomPath(String path, SoundSource cat, boolean streaming) {
+        ResourceLocation rl = new ResourceLocation(TAG, path);
+//        SoundPoolEntry spe = new SoundPoolEntry(rl, 1, 1, streaming);
+        WeighedSoundEvents pos = new WeighedSoundEvents(rl, null);
 //        SoundEventAccessorComposite cmp = new SoundEventAccessorComposite(rl, 1, 1, cat);
 //        cmp.addSoundToEventPool(pos);
 //        accessors.put(path, cmp);
-//        if (streaming) {
-//            streamedPaths.add(path);
-//        }
-//    }
+        if (streaming) {
+            streamedPaths.add(path);
+        }
+    }
 
     public void initToSoundRegistry() {
         SoundManager sh = Minecraft.getInstance().getSoundManager();
@@ -78,7 +80,7 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
             DragonAPI.LOGGER.error("Attempted to initialize sound entries before the sound handler was created!");
             return;
         }
-//  todo      SoundRegistry srg = sh.sndRegistry;
+//        SoundRegistry srg = sh.sndRegistry;
 //        if (srg == null) {
 //            DragonAPI.LOGGER.error("Attempted to initialize sound entries before the sound registry was created!");
 //            return;

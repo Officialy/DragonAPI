@@ -125,6 +125,7 @@ public class ReikaSoundHelper {
 
     @OnlyIn(Dist.CLIENT)
     public static SoundInstance playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch, boolean att) {
+        DragonAPI.LOGGER.info("Playing sound "+s+" at "+x+", "+y+", "+z);
         float v = vol * s.getModulatedVolume();
         if (v <= 0)
             return null;
