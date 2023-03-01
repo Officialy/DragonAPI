@@ -16,32 +16,23 @@ import java.util.*;
 
 public class NestedMap<K, M, V> {
 
-	private final HashMap<K, HashMap<M, V>> data = new HashMap();
-	private final MultiMap<M, K> innerSet = new MultiMap(MultiMap.CollectionType.HASHSET);
-	private final HashMap<V, Integer> valueSet = new HashMap();
+	private final HashMap<K, HashMap<M, V>> data = new HashMap<>();
+	private final MultiMap<M, K> innerSet = new MultiMap<>(MultiMap.CollectionType.HASHSET);
+	private final HashMap<V, Integer> valueSet = new HashMap<>();
 
 	public NestedMap() {
 
 	}
 
 	public V put(K key, M inner, V value) {
-		HashMap<M, V> map = data.get(key);
-		if (map == null) {
-			map = new HashMap();
-			data.put(key, map);
-		}
+		HashMap<M, V> map = data.computeIfAbsent(key, k -> new HashMap<>());
 		innerSet.addValue(inner, key);
 		this.addValue(value);
 		return map.put(inner, value);
 	}
 
 	private void addValue(V value) {
-		Integer get = this.valueSet.get(value);
-		if (get == null) {
-			this.valueSet.put(value, 1);
-		} else {
-			this.valueSet.put(value, get + 1);
-		}
+		this.valueSet.merge(value, 1, Integer::sum);
 	}
 
 	private void removeValue(V value) {

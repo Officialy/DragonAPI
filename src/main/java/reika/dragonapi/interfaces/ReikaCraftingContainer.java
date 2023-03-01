@@ -25,7 +25,7 @@ public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends 
     public final boolean isGUI;
 
     public ReikaCraftingContainer(MenuType<?> type, int id, final Inventory playerInv, CraftingTile<V> te, Level worldObj, boolean gui) {
-        super(type, id, playerInv, te.getToCraft(), te);
+        super(type, id, playerInv, te.getToCraft());
         world = worldObj;
         crafter = te;
         this.isGUI = gui;

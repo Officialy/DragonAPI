@@ -18,10 +18,10 @@ public class OneSlotContainer<T extends BlockEntityBase> extends CoreContainer<T
     private final Container inv;
 
     public OneSlotContainer(MenuType<?> type, int id, Inventory inv, T te, int offsetY) {
-        super(type, id, inv, te, null);
+        super(type, id, inv, te);
         this.inv = (Container) te;
 
-        //this.addPlayerInventoryWithOffset(player, 0, offsetY);
+        this.addPlayerInventoryWithOffset(inv, 0, offsetY);
     }
 
 }

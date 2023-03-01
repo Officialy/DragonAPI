@@ -13,16 +13,18 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.SlotItemHandler;
 
 /**
  * Identical to Slot but disallows item insertion.
  */
-public class SlotNoClick extends Slot {
+public class SlotNoClick extends SlotItemHandler {
 
     public final boolean allowInsertion;
     public final boolean allowExtraction;
 
-    public SlotNoClick(Container ii, int id, int x, int y, boolean add, boolean take) {
+    public SlotNoClick(IItemHandler ii, int id, int x, int y, boolean add, boolean take) {
         super(ii, id, x, y);
         allowInsertion = add;
         allowExtraction = take;

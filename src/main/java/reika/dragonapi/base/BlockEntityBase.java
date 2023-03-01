@@ -642,11 +642,10 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
     }
 
     public final String getName() {
-        return this.getTEName();
-    }
-
-    public void writeMenu(ServerPlayer player, FriendlyByteBuf buf) {
-        buf.writeBlockPos(worldPosition);
+        if (this.getTEName() != null)
+            return this.getTEName();
+        else
+            return "Unnamed BlockEntity";
     }
 
 }

@@ -115,7 +115,7 @@ public class ReikaSoundHelper {
     }
 
     private static void sendSound(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten) {
-        ReikaPacketHelper.sendSoundPacket(s, world, x, y, z, vol, pitch, atten);
+//   todo     ReikaPacketHelper.sendSoundPacket(s, world, x, y, z, vol, pitch, atten);
     }
 
     @OnlyIn(Dist.CLIENT)

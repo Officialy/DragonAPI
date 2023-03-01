@@ -12,6 +12,10 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.items.SlotItemHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.instantiable.data.immutable.InventorySlot;
@@ -28,7 +32,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
 
     private static final ChestBlockEntity fakeChest = new ChestBlockEntity(BlockPos.ZERO, Blocks.CHEST.defaultBlockState());
     public final T tile;
-    protected final Container ii;
+    protected final IItemHandler ii;
     private final ArrayList<InventorySlot> relaySlots = new ArrayList<>();
     protected Inventory epInv;
     protected ItemStack[] oldInv;
@@ -37,15 +41,14 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     int posZ;
     private boolean alwaysCan = false;
 
-    public CoreContainer(MenuType<?> type, int id, final Inventory playerInv, T te, Container i) {
+    public CoreContainer(MenuType<?> type, int id, final Inventory playerInv, T te) {
         super(type, id);
         tile = te;
         posX = tile.getBlockPos().getX();
         posY = tile.getBlockPos().getY();
         posZ = tile.getBlockPos().getZ();
         epInv = playerInv;
-//        this.broadcastChanges();
-        ii = i;
+        ii = te.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
     }
 
     public CoreContainer<T> setAlwaysInteractable() {
@@ -280,7 +283,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     protected void addSlot(int i, int x, int y) {
         if (ii == null)
             return;
-        this.addSlot(new Slot(ii, i, x, y));
+        this.addSlot(new SlotItemHandler(ii, i, x, y));
     }
 
     protected void addSlotNoClick(int i, int x, int y) {
@@ -298,7 +301,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         //DragonAPI.LOGGER.info(ID, Dist.DEDICATED_SERVER);
 //        ItemStack is = super.slotClick(id, button, type, ep);
         if (ii != null && tile instanceof XPProducer) {
-            if (id < ii.getContainerSize()) {
+            if (id < ii.getSlots()) {
                 float xp = ((XPProducer) tile).getXP();
                 if (xp > 0) {
                     ep.giveExperiencePoints((int) xp); //todo might be levels
