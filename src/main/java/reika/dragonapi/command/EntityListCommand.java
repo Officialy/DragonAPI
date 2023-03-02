@@ -62,7 +62,7 @@ public class EntityListCommand {
         }));
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void dumpClientside() {
         ArrayList<String> data = getData(Minecraft.getInstance().player, Dist.CLIENT);
         for (String s : data) {

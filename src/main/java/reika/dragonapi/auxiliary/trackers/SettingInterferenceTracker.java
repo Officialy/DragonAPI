@@ -208,7 +208,7 @@ public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatc
         /**
          * Draw the icon at the specified position and size. The tessellator is not running, in case you want to bind your own textures.
          */
-        @OnlyIn(Dist.CLIENT)
+
         public void drawIcon(PoseStack stack, int x, int y, int size);
 
         public String getDescription();

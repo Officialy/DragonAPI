@@ -109,7 +109,7 @@ public class CompoundSyncPacket implements DataSync, Packet {
         return changes.get(loc).isEmpty();
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public void readForSync(BlockEntity te, CompoundTag NBT) {
         if (dispatch) {
             if (DragonOptions.LOGSYNCCME.getState()) {
@@ -257,7 +257,7 @@ public class CompoundSyncPacket implements DataSync, Packet {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
+
     public void handle(PacketListener inh) { //Ignore default handling
         Level world = Minecraft.getInstance().level;
         for (WorldLocation loc : data.keySet()) {

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.audio.Library;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -115,15 +116,15 @@ public class ReikaSoundHelper {
     }
 
     private static void sendSound(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten) {
-//   todo     ReikaPacketHelper.sendSoundPacket(s, world, x, y, z, vol, pitch, atten);
+        ReikaPacketHelper.sendSoundPacket(s, world, x, y, z, vol, pitch, atten);
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static SoundInstance playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch) {
         return playClientSound(s, x, y, z, vol, pitch, true);
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static SoundInstance playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch, boolean att) {
         DragonAPI.LOGGER.info("Playing sound "+s+" at "+x+", "+y+", "+z);
         float v = vol * s.getModulatedVolume();
@@ -138,23 +139,23 @@ public class ReikaSoundHelper {
         return es;
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static SoundInstance playClientSound(SoundEnum s, Entity e, float vol, float pitch, boolean att) {
         return playClientSound(s, e.getX(), e.getY(), e.getZ(), vol, pitch, att);
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void playClientSound(SoundEvent snd, double x, double y, double z, float vol, float pitch, boolean atten) {
         Minecraft.getInstance().level.playLocalSound(x, y, z, snd, SoundSource.AMBIENT, vol, pitch, atten);
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void playNormalClientSound(Level world, double x, double y, double z, SoundEvent name, float vol, float pitch, boolean flag) {
         world.playLocalSound(x, y, z, name, SoundSource.AMBIENT, vol, pitch, flag);
     }
 
     public static void broadcastSound(SoundEnum s, float vol, float pitch) {
-        if (FMLLoader.getDist() == Dist.CLIENT)
+        if (FMLLoader.getDist() == Dist.CLIENT) //todo getdist wont work in this context
             throw new MisuseException("You cannot call this from the client!");
 //   todo Level[] worlds = DimensionManager.getLevels();
 //        for (Level world : worlds) {

@@ -76,11 +76,11 @@ public class APIPacketHandler implements PacketHandler {
         String stringdata = null;
 //        System.out.print(packet.length);
         try {
-            ReikaJavaLibrary.pConsole(inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt());
             PacketTypes packetType = packet.getType();
+//            ReikaJavaLibrary.pConsole("Recieved packet type: " + packetType + "\n" + "Containing data: " + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt());
+            DragonAPI.LOGGER.info("Recieved packet type: " + packetType + "\n" + "Containing data: " + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt());
             switch (packetType) {
                 case SOUND -> {
-                    DragonAPI.LOGGER.info("Received sound packet");
                     int lib = inputStream.readInt();
                     control = inputStream.readInt();
                     SoundEnum s = ReikaSoundHelper.lookupSound(lib, control);
@@ -166,7 +166,7 @@ public class APIPacketHandler implements PacketHandler {
             switch (pack) {
                 case BLOCKUPDATE:
                     //ReikaJavaLibrary.pConsole(x+", "+y+", "+z, Dist.CLIENT);
-                    world.sendBlockUpdated(new BlockPos(x, y, z), world.getBlockState(new BlockPos(x, y, z)), world.getBlockState(new BlockPos(x, y, z)),3); //todo check if this works
+                    world.sendBlockUpdated(new BlockPos(x, y, z), world.getBlockState(new BlockPos(x, y, z)), world.getBlockState(new BlockPos(x, y, z)), 3); //todo check if this works
 //             todo figure out this func       world.func_147479_m(x, y, z);
                     break;
                 case PARTICLE:
@@ -430,7 +430,6 @@ public class APIPacketHandler implements PacketHandler {
         PLAYERDATSYNC(),
         PLAYERDATSYNC_CLIENT(),
         PLAYERDATSYNCREQ_CLIENT(),
-        //PLAYERATTRSYNC(),
         RERENDER(),
         COLOREDPARTICLE(),
         NUMBERPARTICLE(),
@@ -484,7 +483,8 @@ public class APIPacketHandler implements PacketHandler {
                 case PARTICLE, ENTITYVERIFYFAIL, REDSTONECHANGE, GETLATENCY, BREAKPARTICLES, KEYUPDATE -> 2;
                 case PARTICLEWITHPOS -> 2 + 2 * 3;
                 case PARTICLEWITHPOSVEL -> 2 + 2 * 6;
-                case NUMBERPARTICLE, POPUP, MODULARLOGGER, LOGIN, BIOMEPNGEND, IDDUMP, CONFIGSYNC, ITEMDROPPER, ITEMDROPPERREQUEST, TILESYNC, BIOMECHANGE -> 1;
+                case NUMBERPARTICLE, POPUP, MODULARLOGGER, LOGIN, BIOMEPNGEND, IDDUMP, CONFIGSYNC, ITEMDROPPER, ITEMDROPPERREQUEST, TILESYNC, BIOMECHANGE ->
+                        1;
                 case COLOREDPARTICLE, PLAYERINTERACT -> 5;
                 case BIOMEPNGSTART -> 8;
                 case BIOMEPNGDAT -> 1 + 3 * BiomeMapCommand.PACKET_COMPILE;

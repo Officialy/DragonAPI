@@ -34,7 +34,7 @@ public class ModFileVersionChecker {
     }
 
     @SubscribeEvent
-    @OnlyIn(Dist.CLIENT)
+    
     public void dispatch(ClientLoginEvent evt) {
         for (String mod : data.keySet()) {
             String s = mod+":"+data.get(mod);

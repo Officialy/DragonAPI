@@ -78,13 +78,13 @@ public class ReikaRenderHelper {
         RenderSystem.enableDepthTest();
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void spawnDropParticles(ClientLevel world, int x, int y, int z, Block b) {
         int n = 12 + DragonAPI.rand.nextInt(12);
         spawnDropParticles(world, x, y, z, b, n);
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void spawnDropParticles(ClientLevel world, int x, int y, int z, Block b, int n) {
         for (int i = 0; i < n; i++) {
             double vx = ReikaRandomHelper.getRandomPlusMinus(0D, 0.25);

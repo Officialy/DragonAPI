@@ -19,7 +19,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
@@ -43,6 +42,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -56,19 +56,20 @@ public class ReikaPacketHelper {
     public static void registerPacketHandler(DragonAPIMod mod, String channel, PacketHandler handler) {
         SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation(mod.getModId(), channel.toLowerCase()), () -> DragonAPI.last_API_Version, DragonAPI.last_API_Version::equals, DragonAPI.last_API_Version::equals);
         PacketPipeline p = new PacketPipeline(mod, channel, handler, INSTANCE);
-        p.registerPacket(DataPacket.class);
+        p.registerPacket(DataPacket.class, DataPacket::encode, DataPacket::decode);
 //        p.registerPacket(NBTPacket.class);
         handlers.put(handlerID, handler);
         pipelines.put(channel, p);
         handlerID++;
+        DragonAPI.LOGGER.info("Registered packet handler " + handler + " for channel " + channel + " with ID " + (handlerID - 1));
     }
 
-    public static void registerPacketClass(String channel, Class<? extends PacketObj> c) {
+/*todo    public static void registerPacketClass(String channel, Class<? extends PacketObj> c, Function<FriendlyByteBuf, ? extends PacketObj> decoder) {
         PacketPipeline pipe = pipelines.get(channel);
         if (pipe == null)
             throw new MisuseException("Cannot register a packet class to a null pipeline!");
-        pipe.registerPacket(c);
-    }
+        pipe.registerPacket(c, decoder);
+    }*/
 
     private static short getHandlerID(PacketHandler handler) {
         return handlers.containsValue(handler) ? handlers.inverse().get(handler) : -1;
@@ -119,7 +120,6 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.PREFIXED, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
         p.dispatch(pipe, pack);
     }
 
@@ -140,7 +140,7 @@ public class ReikaPacketHelper {
         DataPacket pack = new DataPacket();
         pack.init(PacketTypes.RAW, pipe);
         pack.setData(dat);
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLLoader.getDist(); //TODO WONT WORK ON SERVER FIND FIX
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
 
@@ -165,7 +165,7 @@ public class ReikaPacketHelper {
         DataPacket pack = new DataPacket();
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLLoader.getDist(); //TODO WONT WORK ON SERVER FIND FIX
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
 
@@ -260,7 +260,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
 
         if (side == Dist.DEDICATED_SERVER) {
             pipe.sendToPlayer(pack, ep);
@@ -306,7 +306,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
 
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
@@ -356,7 +356,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLLoader.getDist(); //todo WONT WORK ON SERVER FIND FIX
 
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
@@ -405,7 +405,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLLoader.getDist(); //todo WONT WORK ON SERVER FIND FIX
 
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
@@ -501,7 +501,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
@@ -542,7 +542,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
@@ -560,12 +560,12 @@ public class ReikaPacketHelper {
         sendDataPacketToEntireServer(ch, id, ReikaJavaLibrary.makeIntListFromArray(data));
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void sendPacketToServer(String ch, int id, int... data) {
         sendDataPacket(ch, id, Minecraft.getInstance().level, 0, 0, 0, PacketTarget.server, ReikaJavaLibrary.makeIntListFromArray(data));
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void sendPacketToServer(String ch, int id, BlockEntity te, int... data) {
         sendDataPacket(ch, id, te.getLevel(), te.getBlockPos().getX(), te.getBlockPos().getY(), te.getBlockPos().getZ(), PacketTarget.server, ReikaJavaLibrary.makeIntListFromArray(data));
     }
@@ -636,7 +636,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.FULLSOUND, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //ServerPlayer player2 = (ServerPlayer) player;
@@ -704,7 +704,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.SOUND, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             pipe.sendToAllAround(pack, world, x, y, z, range);
@@ -776,7 +776,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -820,7 +820,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -868,7 +868,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRINGINT, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = ep.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -916,7 +916,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRINGINTLOC, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -994,7 +994,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLLoader.getDist();    //todo THIS WONT WORK ON SERVERS - FIND AN ALTERNATIVE ASAP
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -1037,7 +1037,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -1114,7 +1114,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.FLOAT, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -1163,7 +1163,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.POS, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -1217,10 +1217,15 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.SYNC, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        if (te.getLevel() == null) {
+            DragonAPI.LOGGER.error(te + "has a null level, this is an issue, cannot perform sync packet!");
+            return;
+        }
+        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, te.level.provider.dimensionId);
             new PacketTarget.RadiusTarget(te, 24).dispatch(pipe, pack);
+            DragonAPI.LOGGER.info("Sending sync packet for " + field + " to " + te + " at " + x + ", " + y + ", " + z);
         } else if (side == Dist.CLIENT) {
             if (forceClient)
                 PacketTarget.server.dispatch(pipe, pack);
@@ -1321,9 +1326,13 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.TANK, pipe);
         pack.setData(dat);
 
-        var side = FMLLoader.getDist();
+        if (te.getLevel() == null) {
+            DragonAPI.LOGGER.error(te + "has a null level, this is an issue, cannot perform sync packet!");
+            return;
+        }
+        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
-            DragonAPI.LOGGER.info(te + " sent a tank sync packet from the server, this is good.");
+//            DragonAPI.LOGGER.info(te + " sent a tank sync packet from the server, this is good.");
             new PacketTarget.RadiusTarget(te, 24).dispatch(pipe, pack);
         } else if (side == Dist.CLIENT) {
             DragonAPI.LOGGER.error(te + " sent a sync packet from the client! This is not allowed!");
@@ -1341,7 +1350,6 @@ public class ReikaPacketHelper {
             return;
         }
         pack.init(PacketTypes.NBT, pipe);
-        Dist side = FMLLoader.getDist();
         pt.dispatch(pipe, pack);
     }
 
@@ -1357,7 +1365,7 @@ public class ReikaPacketHelper {
             return;
         }
         pack.init(PacketTypes.NBT, pipe);
-        Dist side = FMLLoader.getDist();
+        Dist side = e.level.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             pipe.sendToAllAround(pack, e, range);
         } else if (side == Dist.CLIENT) {
@@ -1485,19 +1493,33 @@ public class ReikaPacketHelper {
     }
 
     public static class DataPacket extends PacketObj {
-        protected byte[] bytes;
+        protected static byte[] bytes;
         private DataInputStream in;
 
         public DataPacket() {
             super();
         }
+        public DataPacket(byte[] data) {
+            super();
+            setData(data);
+        }
+        public static DataPacket decode(FriendlyByteBuf data) {
+            short id = readShort(data);
+            handler = getHandlerFromID(id);
+            byte type2 = readByte(data);
+            type = PacketTypes.getPacketType(type2);
 
-        public DataPacket(FriendlyByteBuf data) {
-//            super.decode(data);
             byte[] dat = data.array();
             bytes = new byte[dat.length - byteIndex - 1];
             System.arraycopy(dat, byteIndex + 1, bytes, 0, bytes.length);
-            DragonAPI.LOGGER.info("received " + this);
+
+            return new DataPacket(bytes);
+        }
+
+        @Override
+        public void encode(FriendlyByteBuf data) {
+            super.encode(data);
+            data.writeBytes(bytes);
         }
 
         private void setData(byte[] data) {
@@ -1515,13 +1537,6 @@ public class ReikaPacketHelper {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-
-        @Override
-        public void encode(FriendlyByteBuf data) {
-            super.encode(data);
-            data.writeBytes(bytes);
-//            DragonAPI.LOGGER.info("sent " + this);
         }
 
         public CompoundTag asNBT() {
@@ -1557,15 +1572,16 @@ public class ReikaPacketHelper {
 
     public static abstract class PacketObj {
 
-        protected PacketHandler handler;
-        protected PacketTypes type;
-        protected int byteIndex = 0;
+        protected static PacketHandler handler;
+        protected static PacketTypes type;
+        protected static int byteIndex = 0;
 
         protected PacketObj() {
 
         }
 
         protected PacketObj(FriendlyByteBuf data) {
+
         }
 
         public final void fromBytes(FriendlyByteBuf buf) {
@@ -1588,17 +1604,17 @@ public class ReikaPacketHelper {
             handler = l.getHandler();
         }
 
-        protected int readInt(FriendlyByteBuf data) {
+        protected static int readInt(FriendlyByteBuf data) {
             byteIndex += 4;
             return data.readInt();
         }
 
-        protected short readShort(FriendlyByteBuf data) {
+        protected static short readShort(FriendlyByteBuf data) {
             byteIndex += 2;
             return data.readShort();
         }
 
-        protected byte readByte(FriendlyByteBuf data) {
+        protected static byte readByte(FriendlyByteBuf data) {
             byteIndex += 1;
             return data.readByte();
         }
@@ -1608,28 +1624,24 @@ public class ReikaPacketHelper {
             data.writeByte(type.ordinal());
         }
 
-        public boolean handleClient(Supplier<NetworkEvent.Context> ctx) {
-            final var success = new AtomicBoolean(false);
+        public void handleClient(Supplier<NetworkEvent.Context> ctx) {
             try {
-                this.handler.handleData(this, Minecraft.getInstance().level, Minecraft.getInstance().player);
+                ctx.get().enqueueWork(() -> this.handler.handleData(this, Minecraft.getInstance().level, Minecraft.getInstance().player));
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            ctx.get().setPacketHandled(true);
             this.close();
-            return success.get();
+            ctx.get().setPacketHandled(true);
         }
 
-        public boolean handleServer(Supplier<NetworkEvent.Context> ctx) {
-            final var success = new AtomicBoolean(false);
+        public void handleServer(Supplier<NetworkEvent.Context> ctx) {
             try {
                 this.handler.handleData(this, ctx.get().getSender().getLevel(), ctx.get().getSender());
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            ctx.get().setPacketHandled(true);
             this.close();
-            return success.get();
+            ctx.get().setPacketHandled(true);
         }
 
         @Override

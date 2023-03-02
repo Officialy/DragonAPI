@@ -65,7 +65,7 @@ public class ReikaPlayerAPI {
         return ep.getServer().getPlayerList().isOp(ep.getGameProfile());
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public static void kickPlayerClientside(Player ep, String reason) {
         ReikaPacketHelper.sendStringPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERKICK.ordinal(), reason, PacketTarget.server);
     }

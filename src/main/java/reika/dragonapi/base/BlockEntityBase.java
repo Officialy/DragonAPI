@@ -141,7 +141,7 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
 
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public final void onRedstoneChangedClientside(boolean redstone, boolean last) {
         if (redstone && !last)
             this.onPositiveRedstoneEdge();

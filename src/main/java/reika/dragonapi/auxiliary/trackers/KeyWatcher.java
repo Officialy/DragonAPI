@@ -92,7 +92,7 @@ public class KeyWatcher {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
+    
     private enum Keys {
         JUMP(Minecraft.getInstance().options.keyJump),
         SNEAK(Minecraft.getInstance().options.keyShift),
@@ -189,7 +189,7 @@ public class KeyWatcher {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
+    
     public static class KeyTicker implements TickRegistry.TickHandler {
 
         public static final KeyTicker instance = new KeyTicker();

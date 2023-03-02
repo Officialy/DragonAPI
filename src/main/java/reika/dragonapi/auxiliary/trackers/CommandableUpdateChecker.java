@@ -330,7 +330,7 @@ public class CommandableUpdateChecker {
         return new UpdateHash(ep.getUUID(), ReikaFileReader.getRealPath(mod.getModContainer().getModInfo().getOwningFile().getFile().getFilePath().toFile()), System.currentTimeMillis()); //todo get real path
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public void onClientLogin(ClientLoginEvent evt) {
         this.genHashes(evt.player);
     }
@@ -341,7 +341,7 @@ public class CommandableUpdateChecker {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
+
     public void onClientReceiveOldModID(String s) {
         Collection<DragonAPIMod> c = s.startsWith("URL_") ? dispatchedURLMods : dispatchedOldMods;
         if (s.startsWith("URL_"))
@@ -352,7 +352,7 @@ public class CommandableUpdateChecker {
     }
 
     @SubscribeEvent
-    @OnlyIn(Dist.CLIENT)
+
     public void onClientReceiveOldModsNote(ClientLoginEvent evt) {
         if (evt.newLogin) {
             ArrayList<String> li = new ArrayList<>();

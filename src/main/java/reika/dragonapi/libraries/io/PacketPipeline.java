@@ -1,6 +1,7 @@
 package reika.dragonapi.libraries.io;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +14,7 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import reika.dragonapi.DragonAPI;
+import reika.dragonapi.auxiliary.PacketTypes;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
@@ -21,6 +23,8 @@ import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.ReikaPacketHelper.PacketObj;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class PacketPipeline {
@@ -39,12 +43,16 @@ public class PacketPipeline {
         this.wrapper = wrapper;
     }
 
-    public void registerPacket(Class<? extends PacketObj> cl) {
+    public <MSG extends PacketObj> void registerPacket(Class<MSG> cl, BiConsumer<MSG, FriendlyByteBuf> encoder, Function<FriendlyByteBuf, MSG> decoder) {
         int id = packets.size();
 
-        wrapper.messageBuilder(cl, id).encoder(PacketObj::readData).encoder(PacketObj::encode).consumerNetworkThread(PacketObj::handleClient).add(); //todo check if these should be mainThread or networkThread
-        wrapper.messageBuilder(cl, id).encoder(PacketObj::readData).encoder(PacketObj::encode).consumerNetworkThread(PacketObj::handleServer).add();
-
+        wrapper.registerMessage(id, cl, encoder, decoder, (msg, ctx) -> {
+            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+                msg.handleClient(ctx);
+            } else {
+                msg.handleServer(ctx);
+            }
+        });
         packets.add(cl);
     }
 
@@ -131,6 +139,7 @@ public class PacketPipeline {
 //        channels.get(Dist.CLIENT).writeAndFlush(p);
         wrapper.sendToServer(p);
     }
+
 
     public static class InternalHandler {
 

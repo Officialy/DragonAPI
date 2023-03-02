@@ -559,19 +559,19 @@
 //        }
 //
 //        @Override
-//        @OnlyIn(Dist.CLIENT)
+//
 //        public Biome getBiomeGenForCoords(int x, int z) {
 //            return Biome.ocean;
 //        }
 //
 //        @Override
-//        @OnlyIn(Dist.CLIENT)
+//
 //        public int getHeight() {
 //            return 0;
 //        }
 //
 //        @Override
-//        @OnlyIn(Dist.CLIENT)
+//
 //        public boolean extendedLevelsInChunkCache() {
 //            return false;
 //        }

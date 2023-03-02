@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-@OnlyIn(Dist.CLIENT)
+
 public class DirectResourceManager implements ResourceManager, ResourceManagerReloadListener {
 
     //    private final HashMap<String, SoundEventAccessorComposite> accessors = new HashMap<>();

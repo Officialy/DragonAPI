@@ -110,7 +110,7 @@ public class ReikaJVMParser {
         return FMLLoader.getDist() == Dist.CLIENT ? getLauncherClient() : "Server";
     }
 
-//    @OnlyIn(Dist.CLIENT)
+//
     public static String getLauncherClient() {
         try {
             Field f = Minecraft.class.getDeclaredField("launchedVersion");

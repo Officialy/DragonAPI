@@ -288,7 +288,7 @@
 //        return this.hasBlock(x, y, z) ? data.get(new BlockPos(x, y, z)).asBlockKey().blockID : null;
 //    }
 //
-//    @OnlyIn(Dist.CLIENT)
+//
 //    public BlockEntity getBlockEntityAt(int x, int y, int z) {
 //        if (!this.hasBlock(x, y, z))
 //            return null;
