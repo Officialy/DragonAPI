@@ -41,7 +41,7 @@ public class SoundLoader {
     private void addToMap(SoundEnum s) {
         soundMap.put(s, new SoundResource(s));
         if (s instanceof VariableSound) {
-            for (SoundVariant var : ((VariableSound)s).getVariants()) {
+            for (SoundVariant<?> var : ((VariableSound) s).getVariants()) {
                 this.addToMap(var);
             }
         }
@@ -49,33 +49,35 @@ public class SoundLoader {
 
     private void init() {
         if (soundClass == SingleSound.class) {
-            for (SoundEnum s : soundMap.keySet())
-                ReikaSoundHelper.registerSingleSound((SingleSound)s);
-        }
-        else {
+            for (SoundEnum s : soundMap.keySet()) {
+                ReikaSoundHelper.registerSingleSound((SingleSound) s);
+                DragonAPI.LOGGER.info("Registered sound "+s+" as a single sound");
+            }
+        } else {
             ReikaSoundHelper.registerSoundSet(soundClass);
+            DragonAPI.LOGGER.info("Registered sound set "+soundClass.getSimpleName());
         }
     }
 
     public final void register() {
         for (Map.Entry<SoundEnum, SoundResource> et : soundMap.entrySet()) {
             this.registerSound(et.getKey(), et.getValue());
+            DragonAPI.LOGGER.info("Registered sound enum: "+et.getKey() + " as " + et.getValue().reference);
         }
     }
 
     private void registerSound(SoundEnum e, SoundResource sr) {
-        String p = e.getPath();
-        boolean stream = e instanceof StreamableSound && ((StreamableSound)e).isStreamed();
-        DirectResourceManager.getInstance().registerCustomPath(p, e.getCategory(), stream);
+        ResourceLocation p = e.getPath();
+        boolean stream = e instanceof StreamableSound && ((StreamableSound) e).isStreamed();
+//        DirectResourceManager.getInstance().registerCustomPath(p, e.getCategory(), stream);
         this.onRegister(e, p);
         if (e.preload()) {
             try {
-                sr.resource = (DirectResource)DirectResourceManager.getInstance().getResource(sr.reference).orElseThrow();
+                sr.resource = (DirectResource) DirectResourceManager.getInstance().getResource(sr.reference).orElseThrow();
                 if (stream)
                     sr.resource.cacheData = false;
-            }
-            catch (NoSuchElementException ex) {
-                DragonAPI.LOGGER.error("Caught error when preloading sound '"+e+"':");
+            } catch (NoSuchElementException ex) {
+                DragonAPI.LOGGER.error("Caught error when preloading sound '" + e + "':");
                 ex.printStackTrace();
             }
         }
@@ -85,7 +87,7 @@ public class SoundLoader {
         return soundMap.get(sound).reference;
     }
 
-    protected void onRegister(SoundEnum e, String p) {
+    protected void onRegister(SoundEnum e, ResourceLocation p) {
 
     }
 
@@ -102,7 +104,7 @@ public class SoundLoader {
         }
 
         private static ResourceLocation getReference(SoundEnum s) {
-            return DirectResourceManager.getResource(s.getPath());
+            return s.getPath();
         }
 
     }

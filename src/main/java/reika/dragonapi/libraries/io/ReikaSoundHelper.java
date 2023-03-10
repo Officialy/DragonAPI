@@ -1,20 +1,16 @@
 package reika.dragonapi.libraries.io;
 
-import com.mojang.blaze3d.audio.Library;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLLoader;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -28,14 +24,13 @@ import reika.dragonapi.interfaces.registry.VariableSound;
 import reika.dragonapi.libraries.java.ReikaArrayHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 public class ReikaSoundHelper {
 
     private static final MultiMap<SoundEnum, SoundPlay> plays = new MultiMap<>();
-    private static final HashMap<Class, SoundEnumSet> soundSets = new HashMap<>();
-    private static final HashMap<Integer, Class> soundSetIDs = new HashMap<>();
+    private static final HashMap<Class<?>, SoundEnumSet> soundSets = new HashMap<>();
+    private static final HashMap<Integer, Class<?>> soundSetIDs = new HashMap<>();
 
     public static void playBreakSound(Level world, BlockPos pos, Block b) {
         playBreakSound(world, pos.getX(), pos.getY(), pos.getZ(), b);
@@ -139,11 +134,9 @@ public class ReikaSoundHelper {
         return es;
     }
 
-
     public static SoundInstance playClientSound(SoundEnum s, Entity e, float vol, float pitch, boolean att) {
         return playClientSound(s, e.getX(), e.getY(), e.getZ(), vol, pitch, att);
     }
-
 
     public static void playClientSound(SoundEvent snd, double x, double y, double z, float vol, float pitch, boolean atten) {
         Minecraft.getInstance().level.playLocalSound(x, y, z, snd, SoundSource.AMBIENT, vol, pitch, atten);
@@ -197,7 +190,7 @@ public class ReikaSoundHelper {
     }
 
     public static SoundEnum lookupSound(int lib, int idx) {
-        Class type = soundSetIDs.get(lib);
+        Class<?> type = soundSetIDs.get(lib);
         SoundEnumSet set = soundSets.get(type);
         if (type == null || set == null) {
             DragonAPI.LOGGER.error("Tried to play an unregistered sound!");
@@ -224,7 +217,7 @@ public class ReikaSoundHelper {
             }
             soundSets.put(c, set);
             if (set instanceof SoundEnumSetWithVariants) {
-                for (Class c2 : ((SoundEnumSetWithVariants) set).variantClasses) {
+                for (Class<?> c2 : ((SoundEnumSetWithVariants) set).variantClasses) {
                     soundSets.put(c2, set);
                 }
             }
@@ -253,14 +246,7 @@ public class ReikaSoundHelper {
 
         private final ArrayList<SingleSound> soundList = new ArrayList<>();
         private final HashSet<String> nameSet = new HashSet<>();
-        private final Comparator<SingleSound> sorter = new Comparator<SingleSound>() {
-
-            @Override
-            public int compare(SingleSound o1, SingleSound o2) {
-                return String.CASE_INSENSITIVE_ORDER.compare(o1.name, o2.name);
-            }
-
-        };
+        private final Comparator<SingleSound> sorter = (o1, o2) -> String.CASE_INSENSITIVE_ORDER.compare(o1.name, o2.name);
 
         private SingleSoundSet() {
             super(SingleSound.class, 0);
@@ -270,7 +256,7 @@ public class ReikaSoundHelper {
             if (!nameSet.add(s.name))
                 throw new MisuseException("Sound name '" + s.name + "' already occupied!");
             soundList.add(s);
-            Collections.sort(soundList, sorter);
+            soundList.sort(sorter);
         }
 
         @Override
@@ -287,29 +273,22 @@ public class ReikaSoundHelper {
 
     private static class SoundEnumSetWithVariants extends SoundEnumSet {
 
-        private static final Comparator<SoundVariant> sorter = new Comparator<SoundVariant>() {
+        private static final Comparator<SoundVariant<?>> sorter = (o1, o2) -> String.CASE_INSENSITIVE_ORDER.compare(o1.getName(), o2.getName());
 
-            @Override
-            public int compare(SoundVariant o1, SoundVariant o2) {
-                return String.CASE_INSENSITIVE_ORDER.compare(o1.getName(), o2.getName());
-            }
-
-        };
-
-        private final HashMap<SoundEnum, SoundVariant[]> variants = new HashMap<>();
-        private final HashSet<Class> variantClasses = new HashSet<>();
+        private final HashMap<SoundEnum, SoundVariant<?>[]> variants = new HashMap<>();
+        private final HashSet<Class<?>> variantClasses = new HashSet<>();
 
         private SoundEnumSetWithVariants(Class<? extends VariableSound> c, int idx) {
             super(c, idx);
 
             for (SoundEnum e : sounds) {
                 VariableSound v = (VariableSound) e;
-                Collection<SoundVariant> cv = v.getVariants();
+                Collection<SoundVariant<?>> cv = v.getVariants();
                 if (cv != null && !cv.isEmpty()) {
-                    SoundVariant[] arr = cv.toArray(new SoundVariant[cv.size()]);
+                    SoundVariant<?>[] arr = cv.toArray(new SoundVariant[cv.size()]);
                     Arrays.sort(arr, sorter);
                     variants.put(e, arr);
-                    for (SoundVariant sv : arr) {
+                    for (SoundVariant<?> sv : arr) {
                         variantClasses.add(sv.getClass());
                     }
                 }
@@ -322,7 +301,7 @@ public class ReikaSoundHelper {
             int variant = (idx >> 16) & 32767;
             SoundEnum e = super.getSound(base);
             if (variant > 0) {
-                SoundVariant[] arr = variants.get(e);
+                SoundVariant<?>[] arr = variants.get(e);
                 e = arr[variant - 1];
             }
             return e;
@@ -333,11 +312,11 @@ public class ReikaSoundHelper {
             SoundEnum parent = s;
             boolean var = s instanceof SoundVariant;
             if (var) {
-                parent = ((SoundVariant) s).root;
+                parent = ((SoundVariant<?>) s).root;
             }
             int val = super.getSoundIndex(parent);
             if (var) {
-                SoundVariant[] arr = variants.get(parent);
+                SoundVariant<?>[] arr = variants.get(parent);
                 int offset = arr == null ? 0 : 1 + ReikaArrayHelper.indexOf(arr, s);
                 if (offset == 0) {
                     DragonAPI.LOGGER.error("Could not find variant index for " + s + " in " + Arrays.toString(arr) + " from " + parent);

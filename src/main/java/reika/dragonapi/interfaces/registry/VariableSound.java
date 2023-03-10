@@ -7,8 +7,8 @@ import java.util.Collection;
 
 public interface VariableSound extends SoundEnum {
 
-	Collection<SoundVariant> getVariants();
+	Collection<SoundVariant<?>> getVariants();
 
-	SoundVariant getVariant(String name);
+	SoundVariant<?> getVariant(String name);
 
 }

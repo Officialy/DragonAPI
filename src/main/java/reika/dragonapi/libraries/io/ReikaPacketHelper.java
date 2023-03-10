@@ -27,7 +27,6 @@ import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.PacketTypes;
 import reika.dragonapi.base.DragonAPIMod;
-import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.HybridTank;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.instantiable.io.PacketTarget;
@@ -41,8 +40,6 @@ import reika.dragonapi.libraries.java.ReikaReflectionHelper;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -1499,21 +1496,10 @@ public class ReikaPacketHelper {
         public DataPacket() {
             super();
         }
+
         public DataPacket(byte[] data) {
             super();
             setData(data);
-        }
-        public static DataPacket decode(FriendlyByteBuf data) {
-            short id = readShort(data);
-            handler = getHandlerFromID(id);
-            byte type2 = readByte(data);
-            type = PacketTypes.getPacketType(type2);
-
-            byte[] dat = data.array();
-            bytes = new byte[dat.length - byteIndex - 1];
-            System.arraycopy(dat, byteIndex + 1, bytes, 0, bytes.length);
-
-            return new DataPacket(bytes);
         }
 
         @Override
@@ -1522,7 +1508,21 @@ public class ReikaPacketHelper {
             data.writeBytes(bytes);
         }
 
+        public static DataPacket decode(FriendlyByteBuf data) {
+            int byteIndex = data.readVarInt();
+
+            byte[] dat = data.array();
+            bytes = new byte[dat.length - byteIndex - 1];
+            System.arraycopy(dat, byteIndex + 1, bytes, 0, bytes.length);
+            readData(data);
+            return new DataPacket(bytes);
+        }
+
         private void setData(byte[] data) {
+            if (data == bytes) {
+//                DragonAPI.LOGGER.info("DataPacket.setData() called with same data! This is a bug!");
+                return;
+            }
             bytes = new byte[data.length];
             System.arraycopy(data, 0, bytes, 0, bytes.length);
         }
@@ -1559,8 +1559,9 @@ public class ReikaPacketHelper {
 
         @Override
         public DataInputStream getDataIn() {
-            if (in == null)
+            if (in == null) {
                 in = new DataInputStream(new ByteArrayInputStream(bytes));
+            }
             return in;
         }
 
@@ -1574,29 +1575,10 @@ public class ReikaPacketHelper {
 
         protected static PacketHandler handler;
         protected static PacketTypes type;
-        protected static int byteIndex = 0;
+        private static int byteIndex = 0;
 
         protected PacketObj() {
 
-        }
-
-        protected PacketObj(FriendlyByteBuf data) {
-
-        }
-
-        public final void fromBytes(FriendlyByteBuf buf) {
-            this.readData(buf);
-        }
-
-        public void readData(FriendlyByteBuf data) {
-            short id = this.readShort(data);
-            handler = getHandlerFromID(id);
-            byte type = this.readByte(data);
-            this.type = PacketTypes.getPacketType(type);
-        }
-
-        public final void toBytes(FriendlyByteBuf buf) {
-            this.encode(buf);
         }
 
         public void init(PacketTypes p, PacketPipeline l) {
@@ -1604,29 +1586,23 @@ public class ReikaPacketHelper {
             handler = l.getHandler();
         }
 
-        protected static int readInt(FriendlyByteBuf data) {
-            byteIndex += 4;
-            return data.readInt();
-        }
-
-        protected static short readShort(FriendlyByteBuf data) {
-            byteIndex += 2;
-            return data.readShort();
-        }
-
-        protected static byte readByte(FriendlyByteBuf data) {
-            byteIndex += 1;
-            return data.readByte();
-        }
-
         public void encode(FriendlyByteBuf data) {
             data.writeShort(getHandlerID(handler));
             data.writeByte(type.ordinal());
+            data.writeVarInt(byteIndex);
+        }
+
+        public static void readData(FriendlyByteBuf data) {
+            short id = data.readShort();
+            byte typeByte = data.readByte();
+            handler = getHandlerFromID(id);
+            type = PacketTypes.getPacketType(typeByte);
+            byteIndex = data.readVarInt();
         }
 
         public void handleClient(Supplier<NetworkEvent.Context> ctx) {
             try {
-                ctx.get().enqueueWork(() -> this.handler.handleData(this, Minecraft.getInstance().level, Minecraft.getInstance().player));
+                ctx.get().enqueueWork(() -> handler.handleData(this, Minecraft.getInstance().level, Minecraft.getInstance().player));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1636,7 +1612,7 @@ public class ReikaPacketHelper {
 
         public void handleServer(Supplier<NetworkEvent.Context> ctx) {
             try {
-                this.handler.handleData(this, ctx.get().getSender().getLevel(), ctx.get().getSender());
+                handler.handleData(this, ctx.get().getSender().getLevel(), ctx.get().getSender());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1644,13 +1620,19 @@ public class ReikaPacketHelper {
             ctx.get().setPacketHandled(true);
         }
 
-        @Override
+     /*   @Override
         public String toString() {
             String hd = handler.getClass().getCanonicalName() + " (ID " + this.handlerID() + ")";
             return "type " + this.getType() + "; Data: " + this.getDataAsString() + " from " + hd;
+        }*/
+
+        public final PacketTypes getType() {
+            return type;
         }
 
-        protected abstract String getDataAsString();
+        protected final int handlerID() {
+            return handlers.inverse().get(handler);
+        }
 
         private void close() {
             try {
@@ -1662,6 +1644,8 @@ public class ReikaPacketHelper {
         }
 
         public abstract DataInputStream getDataIn();
+
+        protected abstract String getDataAsString();
 
         public final String readString() {
             try {
@@ -1715,13 +1699,6 @@ public class ReikaPacketHelper {
             return var3;
         }
 
-        public final PacketTypes getType() {
-            return type;
-        }
-
-        protected final int handlerID() {
-            return handlers.inverse().get(handler);
-        }
     }
 
 //    public static void registerVanillaPacketType(DragonAPIMod mod, int id, Class<? extends Packet> c, Dist s, EnumConnectionState state) {
@@ -1742,10 +1719,12 @@ public class ReikaPacketHelper {
 //    }
 
     public static void syncBlockEntity(BlockEntity tile) {
-        CompoundTag NBT = new CompoundTag();
-        tile.load(NBT); //todo was save
-        List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).expandTowards(4, 4, 4)); //todo inflate or expandtowards
-        for (ServerPlayer ep : li)
-            sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.VTILESYNC.ordinal(), NBT, new PacketTarget.PlayerTarget(ep));
+        if (tile != null && tile.getLevel() != null) {
+            CompoundTag NBT = new CompoundTag();
+            tile.load(NBT);
+            List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).expandTowards(4, 4, 4)); //todo inflate or expandtowards
+            for (ServerPlayer ep : li)
+                sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.VTILESYNC.ordinal(), NBT, new PacketTarget.PlayerTarget(ep));
+        }
     }
 }

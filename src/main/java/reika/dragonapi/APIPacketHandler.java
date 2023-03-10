@@ -53,6 +53,7 @@ import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 
 public class APIPacketHandler implements PacketHandler {
@@ -63,6 +64,7 @@ public class APIPacketHandler implements PacketHandler {
 
     public void handleData(ReikaPacketHelper.PacketObj packet, Level world, Player ep) {
         DataInputStream inputStream = packet.getDataIn();
+
         int control;
         int len;
         int[] data = new int[0];
@@ -71,14 +73,13 @@ public class APIPacketHandler implements PacketHandler {
         int x = 0;
         int y = 0;
         int z = 0;
-        boolean readinglong = false;
+        boolean readinglong;
         CompoundTag NBT = null;
         String stringdata = null;
-//        System.out.print(packet.length);
+        PacketTypes packetType = packet.getType();
+        DragonAPI.LOGGER.info("Packet: " + packet + inputStream.toString());
         try {
-            PacketTypes packetType = packet.getType();
-//            ReikaJavaLibrary.pConsole("Recieved packet type: " + packetType + "\n" + "Containing data: " + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt());
-            DragonAPI.LOGGER.info("Recieved packet type: " + packetType + "\n" + "Containing data: " + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt() + ":" + inputStream.readInt());
+            DragonAPI.LOGGER.info("Recieved packet type: " + packet.getType() + " Containing data: " + Arrays.toString(inputStream.readAllBytes()));
             switch (packetType) {
                 case SOUND -> {
                     int lib = inputStream.readInt();
@@ -158,7 +159,7 @@ public class APIPacketHandler implements PacketHandler {
                 z = inputStream.readInt();
             }
         } catch (IOException e) {
-            DragonAPI.LOGGER.error("Error when handling " + pack + " packet [" + packet + "]: " + e);
+            DragonAPI.LOGGER.error("Error when handling " + packet.getType() + " packet [" + packet + "]: " + e);
             e.printStackTrace();
             return;
         }

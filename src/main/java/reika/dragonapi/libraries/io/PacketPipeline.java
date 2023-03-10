@@ -101,9 +101,6 @@ public class PacketPipeline {
 
     public void sendToAllAround(PacketObj p, ResourceKey<Level> world, double x, double y, double z, double range) {
         PacketDistributor.TargetPoint pt = new PacketDistributor.TargetPoint(x, y, z, range, world);
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.ALLAROUNDPOINT);
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(pt);
-//        channels.get(Dist.DEDICATED_SERVER).writeAndFlush(p);
         wrapper.send(PacketDistributor.NEAR.with(() -> pt), p);
     }
 
@@ -140,22 +137,4 @@ public class PacketPipeline {
         wrapper.sendToServer(p);
     }
 
-
-    public static class InternalHandler {
-
-        public InternalHandler() {
-
-        }
-
-        public boolean handle(PacketObj message, Supplier<NetworkEvent.Context> ctx) {
-            final var success = new AtomicBoolean(false);
-            switch (ctx.get().getDirection()) {
-                case PLAY_TO_CLIENT -> message.handleClient(ctx);
-                case PLAY_TO_SERVER -> message.handleServer(ctx);
-            }
-            ctx.get().setPacketHandled(true);
-            return success.get(); //return a packetObj if sending a reply
-        }
-
-    }
 }

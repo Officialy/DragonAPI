@@ -1,5 +1,6 @@
 package reika.dragonapi.instantiable.io;
 
+import net.minecraft.resources.ResourceLocation;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.api.distmarker.Dist;
@@ -11,9 +12,9 @@ public abstract class SoundVariant<S extends SoundEnum> implements SoundEnum {
     protected final String key;
 
     private final String name;
-    private final String path;
+    private final ResourceLocation path;
 
-    protected SoundVariant(S s, String k, String p) {
+    protected SoundVariant(S s, String k, ResourceLocation p) {
         key = k;
         root = s;
 
@@ -27,7 +28,7 @@ public abstract class SoundVariant<S extends SoundEnum> implements SoundEnum {
     }
 
     @Override
-    public final String getPath() {
+    public final ResourceLocation getPath() {
         return path;
     }
 

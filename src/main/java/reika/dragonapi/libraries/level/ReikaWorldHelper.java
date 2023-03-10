@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -38,6 +39,9 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.IFluidBlock;
 import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fml.ModContainer;
+import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jetbrains.annotations.Nullable;
@@ -700,10 +704,11 @@ public class ReikaWorldHelper {
             double f = (pos.getY() - 128) / (256D - 192D);
             Pamb *= 1 - 0.4 * f;
         }
-       /*todo new world height is 319 if (pos.getY() > 319) {
+       //todo new world height is 319
+       if (pos.getY() > 319) {
             double f = (pos.getY() - 128) / (256D - 319D);
             Pamb *= 1 - 0.4 * f;
-        }*/
+        }
         /*Pamb *= AtmosphereHandler.getAtmoDensity(world); //higher for thin atmo
         if (checkLiquidColumn) {
             double fluid = getFluidColumnPressure(world, pos.above());
@@ -724,8 +729,8 @@ public class ReikaWorldHelper {
         int z1 = (pos.getZ() >> 4) + radius;
         for (int dx = x0; dx <= x1; dx++) {
             for (int dz = z0; dz <= z1; dz++) {
-                if (!world.hasChunkAt(new BlockPos(dx, 0, dz))) {
-                    DragonAPI.LOGGER.info("Chunk not loaded: " + dx + ", " + dz);
+                if (!world.hasChunk(dx, dz)) {
+//    todo log spam                DragonAPI.LOGGER.info("Chunk not loaded: " + dx + ", " + dz);
                     return false;
                 }
             }
@@ -755,9 +760,12 @@ public class ReikaWorldHelper {
             xp -= value;
             ExperienceOrb orb = new ExperienceOrb(world, x, y, z, value);
             orb.setDeltaMovement(-0.2 + 0.4 * rand.nextFloat(), 0.3 * rand.nextFloat(), -0.2 + 0.4 * rand.nextFloat());
-//       todo     orb.xpOrbAge = 6000-life;
+            CompoundTag nbt = new CompoundTag();
+            orb.addAdditionalSaveData(nbt);
+            nbt.putInt("Age", 6000-life);
+            orb.readAdditionalSaveData(nbt);
             if (!world.isClientSide) {
-//                orb.velocityChanged = true;
+//                orb.velocityChanged = true; no longer a thing
                 world.addFreshEntity(orb);
             }
         }
@@ -981,9 +989,9 @@ public class ReikaWorldHelper {
 
         private static HashSet<String> getModList() {
             HashSet<String> ret = new HashSet<>();
-            //for (ModContainer mc : Loader.instance.getActiveModList()) {
-            //    ret.add(mc.getModId());
-            //}
+            for (ModInfo mc : FMLLoader.getLoadingModList().getMods()) {
+                ret.add(mc.getModId());
+            }
             return ret;
         }
 
@@ -993,7 +1001,7 @@ public class ReikaWorldHelper {
 
         private static WorldID readFile(File f) {
             try (FileInputStream in = new FileInputStream(f)) {
-                CompoundTag data = new CompoundTag(); //CompressedStreamTools.readCompressed(in);
+                CompoundTag data = NbtIo.readCompressed(in);
                 long c = data.getLong("creationTime");
                 long s = data.getLong("sourceSession");
                 String folder = data.getString("originalFolder");
@@ -1022,7 +1030,7 @@ public class ReikaWorldHelper {
             data.putString("originalFolder", originalFolder);
             data.putString("creatingPlayer", creatingPlayer);
             try (FileOutputStream out = new FileOutputStream(f)) {
-                //CompressedStreamTools.writeCompressed(data, out);
+                NbtIo.writeCompressed(data, out);
             } catch (Exception e) {
                 e.printStackTrace();
             }

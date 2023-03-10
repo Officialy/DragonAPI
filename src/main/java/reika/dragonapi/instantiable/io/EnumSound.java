@@ -35,7 +35,7 @@ public class EnumSound implements SoundInstance {
 
     public EnumSound(SoundEnum obj, double x, double y, double z, float vol, float p, boolean att) {
         sound = obj;
-        res = DirectResourceManager.getResource(obj.getPath());
+        res = obj.getPath();
         posX = x;
         posY = y;
         posZ = z;
@@ -53,7 +53,8 @@ public class EnumSound implements SoundInstance {
     public ResourceLocation getLocation() {
         return res;
     }
-//todo FIX THESE NULLS
+
+    //todo FIX THESE NULLS
     @Nullable
     @Override
     public WeighedSoundEvents resolve(SoundManager pManager) {

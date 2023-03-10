@@ -33,18 +33,12 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
 
     private static final DirectResourceManager instance = new DirectResourceManager();
 
-    private static final String TAG = "custom_path";
-
     private DirectResourceManager() {
         super();
     }
 
     public static DirectResourceManager getInstance() {
         return instance;
-    }
-
-    public static ResourceLocation getResource(String path) {
-        return new ResourceLocation(TAG, path);
     }
 
     @Override
@@ -63,12 +57,7 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
     }
 
     public void registerCustomPath(String path, SoundSource cat, boolean streaming) {
-        ResourceLocation rl = new ResourceLocation(TAG, path);
-//        SoundPoolEntry spe = new SoundPoolEntry(rl, 1, 1, streaming);
-        WeighedSoundEvents pos = new WeighedSoundEvents(rl, null);
-//        SoundEventAccessorComposite cmp = new SoundEventAccessorComposite(rl, 1, 1, cat);
-//        cmp.addSoundToEventPool(pos);
-//        accessors.put(path, cmp);
+
         if (streaming) {
             streamedPaths.add(path);
         }
@@ -98,7 +87,7 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
 
     @Override
     public Set<String> getNamespaces() {
-        return ImmutableSet.of(TAG);
+        return null;
     }
 
     @Override
