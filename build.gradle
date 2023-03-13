@@ -66,6 +66,8 @@ jar {
     rename 'mixin.refmap.json', "dragonapi.mixin-refmap.json"
 }
 
+jar.finalizedBy('reobfJar')
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

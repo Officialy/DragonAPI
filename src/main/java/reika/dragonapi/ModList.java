@@ -140,7 +140,8 @@ public enum ModList implements ModEntry, Dependency {
 
 	ModList(String label, String[] blocks, String[] items) {
 		modid = label;
-		condition = FMLLoader.getLoadingModList().getMods().contains(modid);
+		var modList = FMLLoader.getLoadingModList().getMods();
+		condition = modList.stream().anyMatch(modContainer -> modContainer.getModId().equals(modid));
 		itemClasses = items;
 		blockClasses = blocks;
 		if (condition) {
