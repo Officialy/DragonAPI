@@ -14,17 +14,14 @@ import reika.dragonapi.interfaces.registry.TreeType;
 import reika.dragonapi.libraries.java.ReikaStringParser;
 import reika.dragonapi.modregistry.ModWoodList;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 public enum ReikaTreeHelper implements TreeType {
 
-    OAK(Blocks.OAK_LOG, Blocks.OAK_LEAVES, Blocks.OAK_SAPLING),
-    SPRUCE(Blocks.SPRUCE_LOG, Blocks.SPRUCE_LEAVES, Blocks.SPRUCE_SAPLING),
-    BIRCH(Blocks.BIRCH_LOG, Blocks.BIRCH_LEAVES, Blocks.BIRCH_SAPLING),
-    JUNGLE(Blocks.JUNGLE_LOG, Blocks.JUNGLE_LEAVES, Blocks.JUNGLE_SAPLING),
-    ACACIA(Blocks.ACACIA_LOG, Blocks.ACACIA_LEAVES, Blocks.ACACIA_SAPLING),
-    DARKOAK(Blocks.DARK_OAK_LOG, Blocks.DARK_OAK_LEAVES, Blocks.DARK_OAK_SAPLING);
+    OAK(Blocks.OAK_LOG, Blocks.OAK_PLANKS, Blocks.OAK_LEAVES, Blocks.OAK_SAPLING),
+    SPRUCE(Blocks.SPRUCE_LOG, Blocks.SPRUCE_PLANKS, Blocks.SPRUCE_LEAVES, Blocks.SPRUCE_SAPLING),
+    BIRCH(Blocks.BIRCH_LOG, Blocks.BIRCH_PLANKS, Blocks.BIRCH_LEAVES, Blocks.BIRCH_SAPLING),
+    JUNGLE(Blocks.JUNGLE_LOG, Blocks.JUNGLE_PLANKS, Blocks.JUNGLE_LEAVES, Blocks.JUNGLE_SAPLING),
+    ACACIA(Blocks.ACACIA_LOG, Blocks.ACACIA_PLANKS, Blocks.ACACIA_LEAVES, Blocks.ACACIA_SAPLING),
+    DARKOAK(Blocks.DARK_OAK_LOG, Blocks.DARK_OAK_PLANKS, Blocks.DARK_OAK_LEAVES, Blocks.DARK_OAK_SAPLING);
 
     public static final ReikaTreeHelper[] treeList = ReikaTreeHelper.values();
     public static final int TREE_MIN_LOG = 2;
@@ -47,9 +44,11 @@ public enum ReikaTreeHelper implements TreeType {
     private Block leaf;
     private Block log;
     private Block sapling;
+    private Block plank;
 
-    ReikaTreeHelper(Block wood, Block leaves, Block tree) {
+    ReikaTreeHelper(Block wood, Block plank, Block leaves, Block tree) {
         log = wood;
+        this.plank = plank;
         leaf = leaves;
         sapling = tree;
     }
@@ -123,6 +122,9 @@ public enum ReikaTreeHelper implements TreeType {
     public BlockKey getLeaf() {
         return new BlockKey(leaf);
     }
+    public BlockKey getPlank() {
+        return new BlockKey(plank);
+    }
 
     public BlockKey getSapling() {
         return new BlockKey(sapling);
@@ -178,6 +180,10 @@ public enum ReikaTreeHelper implements TreeType {
         return sapling;
     }
 
+    @Override
+    public Block getPlankID() {
+        return plank;
+    }
 
     @Override
     public boolean canBePlacedSideways() {

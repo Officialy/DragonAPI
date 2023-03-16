@@ -338,6 +338,11 @@ public enum ModWoodList implements TreeType {
         return saplingID;
     }
 
+    @Override
+    public Block getPlankID() {
+        return null; //todo fix null
+    }
+
 
     public static ModWoodList getModWood(Block id) {
         return logMappings.get(id);

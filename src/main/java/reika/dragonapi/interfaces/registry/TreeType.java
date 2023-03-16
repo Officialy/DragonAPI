@@ -14,6 +14,8 @@ public interface TreeType {
 
     Block getSaplingID();
 
+    Block getPlankID();
+
     boolean canBePlacedSideways();
 
     boolean exists();
