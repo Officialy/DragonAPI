@@ -208,7 +208,7 @@
 //		}
 //	}
 //
-//	public static ItemStack getRecipeOutput(Object recipe) {
+//	public static ItemStack getResult(Object recipe) {
 //		if (!isLoaded)
 //			return null;
 //		if (recipe == null || recipe.getClass() != castingRecipe)

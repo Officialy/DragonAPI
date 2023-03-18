@@ -19,6 +19,7 @@ import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 import reika.dragonapi.base.DragonAPIMod;
+import reika.dragonapi.interfaces.IReikaRecipe;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.ReikaNBTHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
@@ -251,7 +252,7 @@ public class CustomRecipeList {
 
 
 
-    public static Recipe<?> parseCraftingRecipe(LuaBlock lb, ItemStack output) {
+    public static IReikaRecipe parseCraftingRecipe(LuaBlock lb, ItemStack output) {
         boolean shaped = lb.getBoolean("shaped");
         if (shaped) {
             String input1 = lb.containsKey("input_top") ? lb.getString("input_top").replaceAll(" ", "") : null;
