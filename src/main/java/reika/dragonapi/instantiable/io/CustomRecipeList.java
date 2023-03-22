@@ -22,6 +22,7 @@ import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.interfaces.IReikaRecipe;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.ReikaNBTHelper;
+import reika.dragonapi.libraries.ReikaRecipe;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
@@ -76,6 +77,7 @@ public class CustomRecipeList {
     public final LuaBlock createExample(String s) {
         return new ExampleLuaBlock(s, exampleBlock, exampleBlock.tree);
     }
+
     /*
     public final void addToExample(LuaBlock b) {
         exampleBlock.addChild(b.name);
@@ -83,11 +85,10 @@ public class CustomRecipeList {
      */
     public final void createExampleFile() {
         try {
-            File f = new File(this.getBaseFilepath(), "example"+this.getExtension());
+            File f = new File(this.getBaseFilepath(), "example" + this.getExtension());
             f.createNewFile();
             ReikaFileReader.writeLinesToFile(f, exampleBlock.writeToStrings(), true);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -119,16 +120,15 @@ public class CustomRecipeList {
         for (LuaBlock b : root.getChildren()) {
             try {
                 data.addBlock(b.getString("type"), b);
-                mod.getModLogger().debug("Loaded recipe prototype:\n"+b.getString("type"));
+                mod.getModLogger().debug("Loaded recipe prototype:\n" + b.getString("type"));
                 entries.add(b);
-            }
-            catch (Exception e) {
-                mod.getModLogger().error("Could not parse custom recipe section "+b.getString("type")+": ");
+            } catch (Exception e) {
+                mod.getModLogger().error("Could not parse custom recipe section " + b.getString("type") + ": ");
                 e.printStackTrace();
             }
         }
         if (!Strings.isNullOrEmpty(recipeType))
-            mod.getModLogger().info("All custom "+recipeType+" recipe entries parsed.");
+            mod.getModLogger().info("All custom " + recipeType + " recipe entries parsed.");
     }
 
     public final Collection<LuaBlock> getEntries() {
@@ -136,7 +136,7 @@ public class CustomRecipeList {
     }
 
     private File getBaseFilepath() {
-        return new File(mod.getConfigFolder(), mod.getDisplayName()+"_"+this.getFolderName());
+        return new File(mod.getConfigFolder(), mod.getDisplayName() + "_" + this.getFolderName());
     }
 
     protected String getFolderName() {
@@ -144,7 +144,7 @@ public class CustomRecipeList {
     }
 
     protected String getExtension() {
-        return ".recipes_"+recipeType;
+        return ".recipes_" + recipeType;
     }
 
     public static Object parseObjectString(String item) {
@@ -158,7 +158,7 @@ public class CustomRecipeList {
     public static void writeItem(LuaBlock lb, ItemStack is) {
         String base = ForgeRegistries.ITEMS.getKey(is.getItem()).getPath();
         if (is.getCount() > 1) {
-            base = base+"*"+is.getCount();
+            base = base + "*" + is.getCount();
         }
         lb.putData("item", base);
         if (is.getTag() != null) {
@@ -173,11 +173,10 @@ public class CustomRecipeList {
                 s = s.substring("ore:".length());
                 ArrayList<ItemStack> li = null;//OreDictionary.getOres(s);
                 if (li.isEmpty() && !tolerateNull)
-                    throw new IllegalArgumentException("Ore dictionary tag '"+s+"' has no items!");
+                    throw new IllegalArgumentException("Ore dictionary tag '" + s + "' has no items!");
                 else
                     c.addAll(li);
-            }
-            else {
+            } else {
                 ItemStack is = parseItemString(s, null, tolerateNull);
                 if (is != null)
                     c.add(is);
@@ -203,37 +202,34 @@ public class CustomRecipeList {
             lookup = m.group(1);
             amt = Integer.parseInt(m.group(2));
             if (amt > 64) {
-                throw new IllegalArgumentException("Stack size of "+amt+" is too large!");
+                throw new IllegalArgumentException("Stack size of " + amt + " is too large!");
             }
             if (amt <= 0) {
-                throw new IllegalArgumentException("Stack size of "+amt+" is zero!");
+                throw new IllegalArgumentException("Stack size of " + amt + " is zero!");
             }
         }
 
         String key = s.substring(0, s.indexOf(':'));
         if (key.equals("delegate")) {
-            lookup = lookup.substring(key.length()+1);
+            lookup = lookup.substring(key.length() + 1);
             DelegateLookup delegate = delegateCalls.get(lookup);
             if (delegate == null)
-                throw new IllegalArgumentException("No such Delegate Lookup '"+lookup+"'!");
+                throw new IllegalArgumentException("No such Delegate Lookup '" + lookup + "'!");
             ItemStack is = delegate.getItem(nbt);
             if (is == null && !tolerateNull)
-                throw new IllegalArgumentException("Delegate Lookup '"+lookup+"' yielded no item!");
+                throw new IllegalArgumentException("Delegate Lookup '" + lookup + "' yielded no item!");
             return is;
-        }
-        else if (lookups.containsKey(key)) {
+        } else if (lookups.containsKey(key)) {
             try {
-                lookup = lookup.substring(key.length()+1);
-                ret = (ItemStack)lookups.get(key).getField(lookup).get(null);
+                lookup = lookup.substring(key.length() + 1);
+                ret = (ItemStack) lookups.get(key).getField(lookup).get(null);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("No internal stack '" + lookup + "'");
             }
-            catch (Exception e) {
-                throw new IllegalArgumentException("No internal stack '"+lookup+"'");
-            }
-        }
-        else {
+        } else {
             ret = ReikaItemHelper.lookupItem(lookup);
             if (ret == null && !tolerateNull) {
-                throw new IllegalArgumentException("No such item '"+lookup+"'");
+                throw new IllegalArgumentException("No such item '" + lookup + "'");
             }
         }
 
@@ -249,7 +245,6 @@ public class CustomRecipeList {
 
         return ret;
     }
-
 
 
     public static IReikaRecipe parseCraftingRecipe(LuaBlock lb, ItemStack output) {
@@ -294,9 +289,8 @@ public class CustomRecipeList {
                     array[i][k] = parseObjectString(item);
                 }
             }
-            return new ShapedRecipe(null, null, null,1, 1, null /*todo was array*/, output);// ReikaRecipeHelper.decode2DArray(array)); //todo fix nulls
-        }
-        else {
+            return new ReikaRecipe(output, decode2DArray(array)); //todo fix nulls
+        } else {
             String input = lb.getString("input").replaceAll(" ", "");
             String[] parts = input.split(",");
             if (parts.length > 9)
@@ -311,21 +305,20 @@ public class CustomRecipeList {
                 }
                 inputs[i] = o;
             }
-            return new ShapelessRecipe(null, null, null, output, null);// inputs); //todo nulls
+            return new ReikaRecipe(output, inputs);
         }
     }
 
 
-
     public static String fullID(Object o) {
         if (o instanceof ItemStack)
-            return fullID((ItemStack)o);
+            return fullID((ItemStack) o);
         if (o instanceof Collection)
-            return ((Collection)o).stream().map(e -> fullID(e)).collect(Collectors.toList()).toString();
+            return ((Collection) o).stream().map(e -> fullID(e)).collect(Collectors.toList()).toString();
         if (o instanceof Item)
-            return ForgeRegistries.ITEMS.getKey((Item) o)+"["+ForgeRegistries.ITEMS.getKey((Item)o).getNamespace()+"]";
+            return ForgeRegistries.ITEMS.getKey((Item) o) + "[" + ForgeRegistries.ITEMS.getKey((Item) o).getNamespace() + "]";
         if (o instanceof Block)
-            return ForgeRegistries.BLOCKS.getKey((Block) o)+"["+ForgeRegistries.BLOCKS.getKey((Block)o).getNamespace()+"]";
+            return ForgeRegistries.BLOCKS.getKey((Block) o) + "[" + ForgeRegistries.BLOCKS.getKey((Block) o).getNamespace() + "]";
         return String.valueOf(o);
     }
 
@@ -334,7 +327,7 @@ public class CustomRecipeList {
             return "[null]";
         else if (is.getItem() == null)
             return "[null-item stack]";
-        return is.getCount()+"x"+ ForgeRegistries.ITEMS.getKey(is.getItem())+"{"+is.getTag()+"}"+"["+ForgeRegistries.ITEMS.getKey(is.getItem()).getNamespace()+"]";
+        return is.getCount() + "x" + ForgeRegistries.ITEMS.getKey(is.getItem()) + "{" + is.getTag() + "}" + "[" + ForgeRegistries.ITEMS.getKey(is.getItem()).getNamespace() + "]";
     }
 
     private static class ExampleLuaBlock extends LuaBlock {
@@ -349,74 +342,74 @@ public class CustomRecipeList {
         ItemStack getItem(LuaBlock data);
     }
 
-/*
-    private static class MystPageLookup implements DelegateLookup {
+    /*
+        private static class MystPageLookup implements DelegateLookup {
 
-        @Override
-        public ItemStack getItem(LuaBlock data) {
-            return ReikaMystcraftHelper.getSymbolPage(data.getString("symbol"));
+            @Override
+            public ItemStack getItem(LuaBlock data) {
+                return ReikaMystcraftHelper.getSymbolPage(data.getString("symbol"));
+            }
+
         }
 
-    }
 
 
+        private static class BeeLookup implements DelegateLookup {
 
-    private static class BeeLookup implements DelegateLookup {
+            @Override
+            public ItemStack getItem(LuaBlock data) {
+                EnumBeeType type = EnumBeeType.valueOf(data.getString("class").toUpperCase(Locale.ENGLISH));
+                ItemStack ret = ReikaBeeHelper.getBeeItem(data.getString("species"), type);
+                for (int i = 0; i < EnumBeeChromosome.values().length; i++) {
+                    EnumBeeChromosome ec = EnumBeeChromosome.values()[i];
+                    if (ec != EnumBeeChromosome.SPECIES) {
+                        String key = ec.name().toLowerCase(Locale.ENGLISH);
 
-        @Override
-        public ItemStack getItem(LuaBlock data) {
-            EnumBeeType type = EnumBeeType.valueOf(data.getString("class").toUpperCase(Locale.ENGLISH));
-            ItemStack ret = ReikaBeeHelper.getBeeItem(data.getString("species"), type);
-            for (int i = 0; i < EnumBeeChromosome.values().length; i++) {
-                EnumBeeChromosome ec = EnumBeeChromosome.values()[i];
-                if (ec != EnumBeeChromosome.SPECIES) {
-                    String key = ec.name().toLowerCase(Locale.ENGLISH);
+                        if (data.containsKey(key)) {
+                            IAllele ia = null;
 
-                    if (data.containsKey(key)) {
-                        IAllele ia = null;
+                            switch(ec) {
+                                case CAVE_DWELLING:
+                                case NOCTURNAL:
+                                case TOLERANT_FLYER:
+                                    ia = ReikaBeeHelper.getBooleanAllele(data.getBoolean(key));
+                                    break;
+                                case EFFECT:
+                                case FERTILITY:
+                                case FLOWER_PROVIDER:
+                                case FLOWERING:
+                                case LIFESPAN:
+                                case SPEED:
+                                case TERRITORY:
+                                    String val = data.getString(key);
+                                    BeeGene bg = BeeAlleleRegistry.getEnum(ec, val);
+                                    ia = bg.getAllele();
+                                    break;
+                                case HUMIDITY_TOLERANCE:
+                                case TEMPERATURE_TOLERANCE:
+                                    EnumTolerance et = EnumTolerance.valueOf(data.getString(key).toUpperCase(Locale.ENGLISH));
+                                    ia = ReikaBeeHelper.getToleranceGene(et);
+                                    break;
+                                case SPECIES:
+                                case HUMIDITY:
+                                default:
+                                    break;
+                            }
 
-                        switch(ec) {
-                            case CAVE_DWELLING:
-                            case NOCTURNAL:
-                            case TOLERANT_FLYER:
-                                ia = ReikaBeeHelper.getBooleanAllele(data.getBoolean(key));
-                                break;
-                            case EFFECT:
-                            case FERTILITY:
-                            case FLOWER_PROVIDER:
-                            case FLOWERING:
-                            case LIFESPAN:
-                            case SPEED:
-                            case TERRITORY:
-                                String val = data.getString(key);
-                                BeeGene bg = BeeAlleleRegistry.getEnum(ec, val);
-                                ia = bg.getAllele();
-                                break;
-                            case HUMIDITY_TOLERANCE:
-                            case TEMPERATURE_TOLERANCE:
-                                EnumTolerance et = EnumTolerance.valueOf(data.getString(key).toUpperCase(Locale.ENGLISH));
-                                ia = ReikaBeeHelper.getToleranceGene(et);
-                                break;
-                            case SPECIES:
-                            case HUMIDITY:
-                            default:
-                                break;
-                        }
-
-                        if (ia != null) {
-                            IBeeGenome ibg = (IBeeGenome)ReikaBeeHelper.getGenome(ret);
-                            ReikaBeeHelper.setGene(ret, ibg, ec, ia, false);
-                            ReikaBeeHelper.setGene(ret, ibg, ec, ia, true);
+                            if (ia != null) {
+                                IBeeGenome ibg = (IBeeGenome)ReikaBeeHelper.getGenome(ret);
+                                ReikaBeeHelper.setGene(ret, ibg, ec, ia, false);
+                                ReikaBeeHelper.setGene(ret, ibg, ec, ia, true);
+                            }
                         }
                     }
                 }
+                return ret;
             }
-            return ret;
         }
-    }
 
 
-    /** Not yet implemented. */
+        /** Not yet implemented. */
 /*
     private static class TreeLookup implements DelegateLookup {
 
@@ -527,5 +520,26 @@ public class CustomRecipeList {
         }
     }
 */
-
+    public static Object[] decode2DArray(Object[][] array) {
+        String[] input = new String[array.length];
+        ArrayList objects = new ArrayList();
+        ArrayList entries = new ArrayList();
+        for (int i = 0; i < array.length; i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int k = 0; k < array[i].length; k++) {
+                Object o = array[i][k];
+                char c = o == null ? ' ' : (char) ('a' + (i * 3 + k));
+                sb.append(String.valueOf(c));
+                if (o != null) {
+                    entries.add(c);
+                    entries.add(o);
+                }
+            }
+            input[i] = sb.toString();
+        }
+        for (int i = 0; i < input.length; i++)
+            objects.add(input[i]);
+        objects.addAll(entries);
+        return objects.toArray(new Object[objects.size()]);
+    }
 }
