@@ -76,7 +76,7 @@ public class ControlledConfig {
             return comp == 0 ? s1.compareToIgnoreCase(s2) : comp;
         }
 
-    };
+    }
 
     private final Comparator entryComparator = new Comparator<Object>() {
 
@@ -183,7 +183,7 @@ public class ControlledConfig {
     private String getLabel(ConfigList cfg) {
         String s = cfg.getLabel();
         if (cfg instanceof UserSpecificConfig && ((UserSpecificConfig)cfg).isUserSpecific()) {
-            s = "["+Character.toUpperCase(s.charAt(0))+this.getUserHash(s)+"] "+s; //First char prefix is to keep original sorting
+            s = "["+Character.toUpperCase(s.charAt(0))+ getUserHash(s)+"] "+s; //First char prefix is to keep original sorting
         }
         return s;
     }
@@ -210,7 +210,7 @@ public class ControlledConfig {
                 f.set(null, value);
             }
             catch (Exception e) {
-                queuedExceptions.add("Could not set config value property "+property+": "+e.toString());
+                queuedExceptions.add("Could not set config value property "+property+": "+ e);
             }
         }
     }
@@ -287,7 +287,6 @@ public class ControlledConfig {
             DragonAPI.LOGGER.info(configMod.getDisplayName().toUpperCase()+": Config File Format Changed. Resetting...");
             this.resetConfigFile();
             this.initProps();
-            return;
         }
     }
 
@@ -314,8 +313,7 @@ public class ControlledConfig {
         if (optionList != null) {
             for (int i = 0; i < optionList.length; i++) {
                 ConfigList c = optionList[i];
-                if (c instanceof SegmentedConfigList) {
-                    SegmentedConfigList sg = (SegmentedConfigList)c;
+                if (c instanceof SegmentedConfigList sg) {
                     String s = sg.getCustomConfigFile();
                     if (s != null) {
                         s = this.parseFileString(s);
@@ -426,8 +424,10 @@ public class ControlledConfig {
                     continue;
                 boolean flag = true;
                 for (String s : orphanExclusions) {
-                    if (s.startsWith(s1) || s1.startsWith(s))
+                    if (s.startsWith(s1) || s1.startsWith(s)) {
                         flag = false;
+                        break;
+                    }
                 }
                 if (flag)
                     catNames.add(cat);
@@ -621,8 +621,7 @@ public class ControlledConfig {
         Property prop = config.get(this.getCategory(cfg), this.getLabel(cfg), cfg.getDefaultState());
         if (cfg.isEnforcingDefaults())
             prop.set(cfg.getDefaultState());
-        if (cfg instanceof SelectiveConfig) {
-            SelectiveConfig sfg = (SelectiveConfig)cfg;
+        if (cfg instanceof SelectiveConfig sfg) {
             if (!sfg.saveIfUnspecified() && prop.getBoolean(cfg.getDefaultState()) == cfg.getDefaultState()) {
                 this.removeConfigEntry(cfg);
                 return cfg.getDefaultState();
@@ -639,8 +638,7 @@ public class ControlledConfig {
         Property prop = config.get(this.getCategory(cfg), this.getLabel(cfg), cfg.getDefaultValue());
         if (cfg.isEnforcingDefaults())
             prop.set(cfg.getDefaultValue());
-        if (cfg instanceof SelectiveConfig) {
-            SelectiveConfig sfg = (SelectiveConfig)cfg;
+        if (cfg instanceof SelectiveConfig sfg) {
             if (!sfg.saveIfUnspecified() && prop.getInt(cfg.getDefaultValue()) == cfg.getDefaultValue()) {
                 this.removeConfigEntry(cfg);
                 return cfg.getDefaultValue();
@@ -657,8 +655,7 @@ public class ControlledConfig {
         Property prop = config.get(this.getCategory(cfg), this.getLabel(cfg), cfg.getDefaultFloat());
         if (cfg.isEnforcingDefaults())
             prop.set(cfg.getDefaultFloat());
-        if (cfg instanceof SelectiveConfig) {
-            SelectiveConfig sfg = (SelectiveConfig)cfg;
+        if (cfg instanceof SelectiveConfig sfg) {
             if (!sfg.saveIfUnspecified() && (float)prop.getDouble(cfg.getDefaultFloat()) == cfg.getDefaultFloat()) {
                 this.removeConfigEntry(cfg);
                 return cfg.getDefaultFloat();
@@ -675,8 +672,7 @@ public class ControlledConfig {
         Property prop = config.get(this.getCategory(cfg), this.getLabel(cfg), cfg.getDefaultString());
         if (cfg.isEnforcingDefaults())
             prop.set(cfg.getDefaultString());
-        if (cfg instanceof SelectiveConfig) {
-            SelectiveConfig sfg = (SelectiveConfig)cfg;
+        if (cfg instanceof SelectiveConfig sfg) {
             if (!sfg.saveIfUnspecified() && prop.getString().equals(cfg.getDefaultString())) {
                 this.removeConfigEntry(cfg);
                 return cfg.getDefaultString();
@@ -691,8 +687,7 @@ public class ControlledConfig {
         Property prop = config.get(this.getCategory(cfg), this.getLabel(cfg), cfg.getDefaultIntArray());
         if (cfg.isEnforcingDefaults())
             prop.set(cfg.getDefaultIntArray());
-        if (cfg instanceof SelectiveConfig) {
-            SelectiveConfig sfg = (SelectiveConfig)cfg;
+        if (cfg instanceof SelectiveConfig sfg) {
             if (!sfg.saveIfUnspecified() && Arrays.equals(prop.getIntList(), cfg.getDefaultIntArray())) {
                 this.removeConfigEntry(cfg);
                 return cfg.getDefaultIntArray();
@@ -707,8 +702,7 @@ public class ControlledConfig {
         Property prop = config.get(this.getCategory(cfg), this.getLabel(cfg), cfg.getDefaultStringArray());
         if (cfg.isEnforcingDefaults())
             prop.set(cfg.getDefaultStringArray());
-        if (cfg instanceof SelectiveConfig) {
-            SelectiveConfig sfg = (SelectiveConfig)cfg;
+        if (cfg instanceof SelectiveConfig sfg) {
             if (!sfg.saveIfUnspecified() && Arrays.deepEquals(prop.getStringList(), cfg.getDefaultStringArray())) {
                 this.removeConfigEntry(cfg);
                 return cfg.getDefaultStringArray();

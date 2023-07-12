@@ -51,8 +51,7 @@ public final class RGB {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof RGB) {
-			RGB c = (RGB) o;
+		if (o instanceof RGB c) {
 			return c.red == red && c.green == green && c.blue == blue && c.alpha == alpha;
 		}
 		return false;

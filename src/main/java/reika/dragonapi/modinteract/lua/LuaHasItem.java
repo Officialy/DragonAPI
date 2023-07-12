@@ -25,8 +25,7 @@ public class LuaHasItem extends LuaMethod {
 	protected Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
 		Container ii = (Container) te;
 		boolean flag = false;
-		switch (args.length) {
-			/* todo case 1 -> {
+		/* todo case 1 -> {
 				Item itemID = Item.byId(((Double) args[0]).intValue());
 				flag = ReikaInventoryHelper.checkForItem(itemID, ii);
 			}
@@ -34,13 +33,13 @@ public class LuaHasItem extends LuaMethod {
 				Item itemID = Item.byId(((Double) args[0]).intValue());
 				flag = ReikaInventoryHelper.checkForItemStack(itemID, ii);
 			}*/
-			case 3 -> {
-				Item itemID = Item.byId(((Double) args[0]).intValue());
-				int size = ((Double) args[2]).intValue();
-				ItemStack is = new ItemStack(itemID, size);
-				flag = ReikaInventoryHelper.checkForItemStack(is, ii, true);
-			}
-			default -> throw new IllegalArgumentException("Invalid ItemStack!");
+		if (args.length == 3) {
+			Item itemID = Item.byId(((Double) args[0]).intValue());
+			int size = ((Double) args[2]).intValue();
+			ItemStack is = new ItemStack(itemID, size);
+			flag = ReikaInventoryHelper.checkForItemStack(is, ii, true);
+		} else {
+			throw new IllegalArgumentException("Invalid ItemStack!");
 		}
 		return new Object[]{flag};
 	}

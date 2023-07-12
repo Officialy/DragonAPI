@@ -94,7 +94,7 @@ public class MusicLoader {
             String[] parts = line.split("\\|");
             String path = parts[0];
             String name = path.substring(path.lastIndexOf('/')+1, path.length()-4);
-            return path.substring(path.length()-3, path.length());
+            return path.substring(path.length()-3);
         }
     }
 

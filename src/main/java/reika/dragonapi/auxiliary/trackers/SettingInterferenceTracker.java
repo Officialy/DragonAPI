@@ -193,27 +193,27 @@ public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatc
         }
     }
 
-    public static interface SettingInterference {
+    public interface SettingInterference {
 
         /**
          * Whether the influence of the setting is relevant <i>at this exact second</i>.
          */
-        public boolean isCurrentlyRelevant();
+        boolean isCurrentlyRelevant();
 
         /**
          * Whether the setting is configured such that it might interfere under some circumstances, not necessarily at this instant.
          */
-        public boolean isSetToInterfere();
+        boolean isSetToInterfere();
 
         /**
          * Draw the icon at the specified position and size. The tessellator is not running, in case you want to bind your own textures.
          */
 
-        public void drawIcon(PoseStack stack, int x, int y, int size);
+        void drawIcon(PoseStack stack, int x, int y, int size);
 
-        public String getDescription();
+        String getDescription();
 
-        public String getID();
+        String getID();
 
     }
 

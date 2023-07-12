@@ -139,7 +139,7 @@ public final class DonatorController {
 		StringBuilder sb = new StringBuilder();
 		for (DragonAPIMod mod : data.keySet()) {
 			DonationList li = data.get(mod);
-			sb.append(ChatFormatting.BLUE.toString());
+			sb.append(ChatFormatting.BLUE);
 			sb.append(mod.getDisplayName());
 			sb.append(":\n");
 			sb.append(li.toString());
@@ -173,8 +173,7 @@ public final class DonatorController {
 
 		@Override
 		public boolean equals(Object o) {
-			if (o instanceof Donation) {
-				Donation d = (Donation) o;
+			if (o instanceof Donation d) {
 				return d.donationAmount == donationAmount && d.donator.equals(donator);
 			}
 			return false;
@@ -216,8 +215,7 @@ public final class DonatorController {
 
 		@Override
 		public boolean equals(Object o) {
-			if (o instanceof Donator) {
-				Donator d = (Donator) o;
+			if (o instanceof Donator d) {
 				if (d.ingameName == null || ingameName == null)
 					return false;
 				return d.ingameName.equals(ingameName) && d.displayName.equals(displayName);

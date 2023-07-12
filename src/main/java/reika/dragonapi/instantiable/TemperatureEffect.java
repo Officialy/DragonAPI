@@ -94,7 +94,7 @@ public abstract class TemperatureEffect {
 
     protected abstract void doAction(Level world, BlockPos pos, int temperature);
 
-    public static interface TemperatureCallback {
+    public interface TemperatureCallback {
         void onApplyTemperature(Level world, BlockPos pos, int temperature);
 
     }

@@ -14,9 +14,9 @@ import java.util.*;
 
 public class ItemMatch {
 
-    private HashSet<KeyedItemStack> items = new HashSet();
+    private final HashSet<KeyedItemStack> items = new HashSet();
 
-    private ArrayList<ItemStack> displayList = new ArrayList<>();
+    private final ArrayList<ItemStack> displayList = new ArrayList<>();
 
     private ItemMatch() {
 
@@ -107,9 +107,8 @@ public class ItemMatch {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof ItemMatch) {
-            ItemMatch m = (ItemMatch) o;
-			/*
+        if (o instanceof ItemMatch m) {
+            /*
 			if (m.items.size() == items.size()) {
 				for (ItemStack is : items) {
 					if (ReikaItemHelper.listContainsItemStack(m.items, is, false)) {

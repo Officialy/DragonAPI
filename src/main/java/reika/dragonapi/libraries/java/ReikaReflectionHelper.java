@@ -339,12 +339,12 @@ public class ReikaReflectionHelper {
         return li;
     }
 
-    public static interface FieldSelector {
-        public boolean isValid(Field f);
+    public interface FieldSelector {
+        boolean isValid(Field f);
     }
 
-    public static interface MethodSelector {
-        public boolean isValid(Method m);
+    public interface MethodSelector {
+        boolean isValid(Method m);
     }
 
     public static final class TypeSelector implements FieldSelector {

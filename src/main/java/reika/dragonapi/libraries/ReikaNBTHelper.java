@@ -155,9 +155,8 @@ public final class ReikaNBTHelper extends DragonAPI {
             return StringTag.valueOf(s);
         } else if (o instanceof byte[]) {
             return new ByteArrayTag((byte[]) o);
-        } else if (o instanceof Map) {
+        } else if (o instanceof Map m) {
             CompoundTag tag = new CompoundTag();
-            Map m = (Map) o;
             for (Object k : m.keySet()) {
                 if (k instanceof String) {
                     tag.put((String) k, getTagForObject(m.get(k)));
@@ -265,7 +264,7 @@ public final class ReikaNBTHelper extends DragonAPI {
     }
 
     public static int compareNBTTags(CompoundTag o1, CompoundTag o2) {
-        if (o1 == o2 || (o1 != null && o1.equals(o2))) {
+        if (Objects.equals(o1, o2)) {
             return 0;
         } else if (o1 == null) {
             return -1;

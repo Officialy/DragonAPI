@@ -220,10 +220,10 @@ public class ReikaInventoryHelper {
         return canAcceptMoreOf(new ItemStack(item, amt), inv);
     }
 
-    public static boolean hasNEmptyStacks(Container ii, int n) {
+    public static boolean hasNEmptyStacks(ItemStackHandler ii, int n) {
         int e = 0;
-        for (int i = 0; i < ii.getContainerSize(); i++) {
-            if (ii.getItem(i) == null)
+        for (int i = 0; i < ii.getSlots(); i++) {
+            if (ii.getStackInSlot(i) == ItemStack.EMPTY)
                 e++;
         }
         return e == n;
@@ -231,8 +231,8 @@ public class ReikaInventoryHelper {
 
     public static boolean hasNEmptyStacks(ItemStack[] inv, int n) {
         int e = 0;
-        for (int i = 0; i < inv.length; i++) {
-            if (inv[i] == null)
+        for (ItemStack itemStack : inv) {
+            if (itemStack == null)
                 e++;
         }
         return e == n;
@@ -276,8 +276,7 @@ public class ReikaInventoryHelper {
      */
     public static int getTotalUniqueStacks(ItemStack[] inv) {
         ItemStack[] cp = new ItemStack[inv.length];
-        for (int i = 0; i < cp.length; i++)
-            cp[i] = inv[i];
+        System.arraycopy(inv, 0, cp, 0, cp.length);
         return 0;
     }
 
@@ -1165,10 +1164,10 @@ public class ReikaInventoryHelper {
         return li;
     }
 
-    public static HashSet<Integer> getSlotsBetweenWithItemStack(ItemStack is, Inventory ii, int min, int max, boolean matchSize) {
+    public static HashSet<Integer> getSlotsBetweenWithItemStack(ItemStack is, ItemStackHandler ii, int min, int max, boolean matchSize) {
         HashSet<Integer> li = new HashSet<>();
         for (int i = min; i <= max; i++) {
-            ItemStack in = ii.getItem(i);
+            ItemStack in = ii.getStackInSlot(i);
             if (ReikaItemHelper.matchStacks(is, in)) {
                 if (!matchSize || in.getCount() == is.getCount()) {
                     li.add(i);
@@ -1178,7 +1177,7 @@ public class ReikaInventoryHelper {
         return li;
     }
 
-    public static boolean inventoryContains(ItemHashMap<Integer> map, Inventory ii) {
+    public static boolean inventoryContains(ItemHashMap<Integer> map, ItemStackHandler ii) {
         ItemHashMap<Integer> inv = ItemHashMap.getFromInventory(ii);
         for (ItemStack is : map.keySet()) {
             int need = map.get(is);
@@ -1189,12 +1188,12 @@ public class ReikaInventoryHelper {
         return true;
     }
 
-    public static void removeFromInventory(ItemHashMap<Integer> map, Container ii) {
+    public static void removeFromInventory(ItemHashMap<Integer> map, ItemStackHandler ii) {
         for (ItemStack is : map.keySet()) {
             int need = map.get(is);
             int loc = locateInInventory(is, ii, false);
             while (loc >= 0 && need > 0) {
-                ItemStack in = ii.getItem(loc);
+                ItemStack in = ii.getStackInSlot(loc);
                 int max = Math.min(need, in.getCount());
                 decrStack(loc, ii, max);
                 need -= max;

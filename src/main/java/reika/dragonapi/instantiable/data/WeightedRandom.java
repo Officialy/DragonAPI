@@ -160,9 +160,9 @@ public class WeightedRandom<V> {
         }
     }
 
-    public static interface DynamicWeight {
+    public interface DynamicWeight {
 
-        public double getWeight();
+        double getWeight();
 
     }
 

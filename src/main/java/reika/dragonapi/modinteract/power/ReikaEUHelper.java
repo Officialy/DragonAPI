@@ -48,7 +48,7 @@ public class ReikaEUHelper {
 		return getIC2TierFromEUVoltage(power/getWattsPerEU());
 	}
 
-	public static enum Voltage {
+	public enum Voltage {
 		MICRO("mV", 0, 5),
 		LOW("LV", 6, 32),
 		MEDIUM("MV", 33, 511),
@@ -62,7 +62,7 @@ public class ReikaEUHelper {
 
 		public static final Voltage[] voltages = values();
 
-		private Voltage(String s, int min, int max) {
+		Voltage(String s, int min, int max) {
 			minVoltage = min;
 			maxVoltage = max;
 			abbrev = s;

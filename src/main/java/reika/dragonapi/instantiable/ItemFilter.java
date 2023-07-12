@@ -43,11 +43,11 @@ public abstract class ItemFilter {
             return categories.get(cat);
         }
 
-        public static enum BasicCategories implements ItemCategory {
+        public enum BasicCategories implements ItemCategory {
             ORE(),
             MOBDROP();
 
-            private BasicCategories() {
+            BasicCategories() {
                 addCategory(this);
             }
 
@@ -68,11 +68,11 @@ public abstract class ItemFilter {
             }
         }
 
-        public static interface ItemCategory {
+        public interface ItemCategory {
 
-            public boolean isItemInCategory(ItemStack is);
+            boolean isItemInCategory(ItemStack is);
 
-            public String getID();
+            String getID();
 
         }
 

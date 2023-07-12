@@ -51,7 +51,7 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
     private ArrayList<ParticleSpawnHandler> particleSpawnHandlers = null;
 
     private static final ResourceLocation particleTextures = new ResourceLocation("textures/particle/particles.png");
-    private static AABB particleBox = new AABB(0, 0, 0, 0, 0, 0);
+    private static final AABB particleBox = new AABB(0, 0, 0, 0, 0, 0);
 
     public ThrottleableEffectRenderer(ParticleEngine eff) {
         super(Minecraft.getInstance().level, Minecraft.getInstance().getTextureManager());
@@ -96,7 +96,6 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
         if (isRendering) {
             DragonAPI.LOGGER.error("Tried adding a particle mid-render!");
             Thread.dumpStack();
-            return;
         }
 		/*
 		if (isTicking) {

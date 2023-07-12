@@ -49,10 +49,6 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
         this(te.getBlockPos().getX() + 0.5, te.getBlockPos().getY() + 0.5, te.getBlockPos().getZ() + 0.5);
     }
 
-    public DecimalPosition(BlockPos c) {
-        this(c.getX() + 0.5, c.getY() + 0.5, c.getZ() + 0.5);
-    }
-
     public DecimalPosition(Entity e) {
         this(e.getX(), e.getY(), e.getZ());
     }
@@ -71,7 +67,6 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
     public DecimalPosition(WorldLocation src) {
     	this(src.pos.getX() + 0.5, src.pos.getY() + 0.5, src.pos.getZ() + 0.5);
     }
-
 
     public DecimalPosition(Vec3 vec) {
         this(vec.x, vec.y, vec.z);
@@ -183,7 +178,7 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
     }
 
     public DecimalPosition copy() {
-        return new DecimalPosition(new BlockPos(xCoord, yCoord, zCoord));
+        return new DecimalPosition(xCoord, yCoord, zCoord);
     }
 
     @Override
@@ -198,8 +193,7 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof DecimalPosition) {
-            DecimalPosition w = (DecimalPosition) o;
+        if (o instanceof DecimalPosition w) {
             return this.equals(w.xCoord, w.yCoord, w.zCoord);
         }
         return false;
@@ -264,7 +258,7 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
     }
 
     public DecimalPosition negate() {
-        return new DecimalPosition(new BlockPos(xCoord, yCoord, zCoord));
+        return new DecimalPosition(xCoord, yCoord, zCoord);
     }
 
     public DecimalPosition to2D() {
@@ -279,7 +273,7 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
 
     public String formattedString(int decimal) {
         String part = "%." + decimal + "f";
-        return String.format(part + ", " + part + ", " + part, new BlockPos(xCoord, yCoord, zCoord));
+        return String.format(part + ", " + part + ", " + part, xCoord, yCoord, zCoord);
     }
 
     public AABB getAABB(double radius) {

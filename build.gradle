@@ -1,7 +1,18 @@
-plugins {
-    id 'eclipse'
-    id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '5.1.+'
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://maven.parchmentmc.org' }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '[6.0,6.2)', changing: true
+        classpath 'org.parchmentmc:librarian:1.+'
+        classpath 'gradle.plugin.com.matthewprenger:CurseGradle:1.4.0'
+    }
 }
 
 version = '0.0.1a'
@@ -11,7 +22,7 @@ archivesBaseName = 'DragonAPI'
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 minecraft {
-    mappings channel: 'official', version: '1.19.3'
+    mappings channel: 'parchment', version: "2023.07.02-1.20.1"
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     runs {
@@ -44,7 +55,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.19.3-44.1.23'
+    minecraft 'net.minecraftforge:forge:1.20.1-47.0.45'
 
 //    implementation fg.deobf("curse.maven:spark-361579:4057111")
 }

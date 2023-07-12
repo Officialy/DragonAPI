@@ -37,7 +37,7 @@ public class BlockArrayComputer implements Runnable {
     public enum Operation {
         LOAD(),
         FILL(),
-        ITERATE();
+        ITERATE()
     }
 
 }

@@ -62,11 +62,11 @@ public class StringParticleFX extends Particle {
         pose.scale(0.2f, 0.2f, 0.2f); //todo used to be particleScale, changed to 1,1,1 for now?
         Font f = Minecraft.getInstance().font;
 //        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 0.003662109F);
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
         RenderSystem.depthMask(true);
         RenderSystem.setShaderColor(1, 1, 1, 1);
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
 //        GL11.glDisable(GL11.GL_LIGHTING);
         RenderSystem.defaultBlendFunc();
 

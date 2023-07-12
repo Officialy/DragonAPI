@@ -70,40 +70,40 @@ public enum DragonOptions implements IntegerConfig, BooleanConfig, StringArrayCo
     DEBUGLOG("Mod's Debug Log (false = None, true = All)", false),
     ;
 
-    private String label;
+    private final String label;
     private boolean defaultState;
     private int defaultValue;
     private String defaultString;
     private String[] defaultStringArray;
-    private Class type;
+    private final Class type;
     private boolean enforcing = false;
 
     public static final DragonOptions[] optionList = values();
 
-    private DragonOptions(String l, boolean d) {
+    DragonOptions(String l, boolean d) {
         label = l;
         defaultState = d;
         type = boolean.class;
     }
 
-    private DragonOptions(String l, boolean d, boolean tag) {
+    DragonOptions(String l, boolean d, boolean tag) {
         this(l, d);
         enforcing = true;
     }
 
-    private DragonOptions(String l, int d) {
+    DragonOptions(String l, int d) {
         label = l;
         defaultValue = d;
         type = int.class;
     }
 
-    private DragonOptions(String l, String s) {
+    DragonOptions(String l, String s) {
         label = l;
         defaultString = s;
         type = String.class;
     }
 
-    private DragonOptions(String l, String[] s) {
+    DragonOptions(String l, String[] s) {
         label = l;
         defaultStringArray = s;
         type = String[].class;

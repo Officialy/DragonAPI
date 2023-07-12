@@ -10,6 +10,7 @@
 package reika.dragonapi.instantiable.data.maps;
 
 
+import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.ImmutableItemStack;
@@ -40,12 +41,12 @@ public final class ItemHashMap<V> {
 
 	}
 
-	public static ItemHashMap<Integer> getFromInventory(Container ii) {
-		ItemHashMap<Integer> map = new ItemHashMap();
-		int s = ii.getContainerSize();
+	public static ItemHashMap<Integer> getFromInventory(ItemStackHandler ii) {
+		ItemHashMap<Integer> map = new ItemHashMap<>();
+		int s = ii.getSlots();
 		for (int i = 0; i < s; i++) {
-			ItemStack in = ii.getItem(i);
-			if (in != null) {
+			ItemStack in = ii.getStackInSlot(i);
+			if (in != ItemStack.EMPTY) {
 				Integer has = map.get(in);
 				int amt = has != null ? has.intValue() : 0;
 				map.put(in, amt + in.getCount());
@@ -55,11 +56,11 @@ public final class ItemHashMap<V> {
 	}
 
 	public static ItemHashMap<Integer> locateFromInventory(Container ii) {
-		ItemHashMap<Integer> map = new ItemHashMap();
+		ItemHashMap<Integer> map = new ItemHashMap<>();
 		int s = ii.getContainerSize();
 		for (int i = 0; i < s; i++) {
 			ItemStack in = ii.getItem(i);
-			if (in != null && !map.containsKey(in)) {
+			if (in != ItemStack.EMPTY && !map.containsKey(in)) {
 				map.put(in, i);
 			}
 		}
@@ -67,7 +68,7 @@ public final class ItemHashMap<V> {
 	}
 
 	public static ItemHashMap<Integer> subtract(ItemHashMap<Integer> map, ItemHashMap<Integer> subtr) {
-		ItemHashMap<Integer> ret = new ItemHashMap();
+		ItemHashMap<Integer> ret = new ItemHashMap<>();
 		for (ItemKey ik : map.data.keySet()) {
 			int get = map.get(ik);
 			Integer get2 = subtr.get(ik);
@@ -87,7 +88,7 @@ public final class ItemHashMap<V> {
 		return this;
 	}
 
-	public ItemHashMap<V> setOneWay(Matcher m) {
+	public ItemHashMap<V> setOneWay(Matcher<V> m) {
 		oneWay = true;
 		this.matcher = m;
 		return this;
@@ -96,7 +97,7 @@ public final class ItemHashMap<V> {
 	private void updateKeysets() {
 		this.modifiedKeys = false;
 		this.keyset = this.createKeySet();
-		sorted = new ArrayList(this.keySet());
+		sorted = new ArrayList<>(this.keySet());
 	}
 
 	private V put(ItemKey is, V value) {
@@ -241,7 +242,7 @@ public final class ItemHashMap<V> {
 
 	@Override
 	public ItemHashMap<V> clone() {
-		ItemHashMap map = new ItemHashMap();
+		ItemHashMap<V> map = new ItemHashMap<>();
 		for (ItemKey is : this.data.keySet()) {
 			map.data.put(is, data.get(is));
 		}
@@ -258,7 +259,7 @@ public final class ItemHashMap<V> {
 
 		private NBTItemKey(ItemStack is) {
 			super(is);
-			tag = is.getTag() != null ? (CompoundTag) is.getTag().copy() : null;
+			tag = is.getTag() != null ? is.getTag().copy() : null;
 		}
 
 		@Override
@@ -267,7 +268,7 @@ public final class ItemHashMap<V> {
 		}
 
 		@Override
-		public final ItemStack asItemStack() {
+		public ItemStack asItemStack() {
 			ItemStack is = super.asItemStack();
 			//is.stackTagCompound = tag != null ? tag.copy() : null;
 			return is;
@@ -285,10 +286,8 @@ public final class ItemHashMap<V> {
 		public final Item itemID;
 
 		protected ItemKey(ItemStack is) {
-			if (is == null)
+			if (is == ItemStack.EMPTY)
 				throw new MisuseException("You cannot add a null itemstack to the map!");
-			if (is.getItem() == null)
-				throw new MisuseException("You cannot add a null-item itemstack to the map!");
 			itemID = is.getItem();
 		}
 
@@ -300,8 +299,7 @@ public final class ItemHashMap<V> {
 		@Override
 		public boolean equals(Object o) {
 			//ReikaJavaLibrary.pConsole(this+" & "+o);
-			if (o instanceof ItemKey) {
-				ItemKey i = (ItemKey) o;
+			if (o instanceof ItemKey i) {
 				return i.itemID == itemID;
 			}
 			return false;

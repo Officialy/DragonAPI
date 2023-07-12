@@ -705,7 +705,7 @@ public class Property {
      */
     public boolean isBooleanValue()
     {
-        return ("true".equals(value.toLowerCase()) || "false".equals(value.toLowerCase()));
+        return ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value));
     }
 
     /**

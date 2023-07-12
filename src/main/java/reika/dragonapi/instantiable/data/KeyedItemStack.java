@@ -73,7 +73,7 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         if (simpleHash)
             return item.getItem().hashCode();
         int hash = 0;
@@ -86,9 +86,8 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     @Override
-    public final boolean equals(Object o) {
-        if (o instanceof KeyedItemStack) {
-            KeyedItemStack ks = (KeyedItemStack) o;
+    public boolean equals(Object o) {
+        if (o instanceof KeyedItemStack ks) {
             return this.match(ks, false);
         }
         return false;
@@ -110,9 +109,7 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     public boolean match(ItemStack is) {
         KeyedItemStack ks = new KeyedItemStack(is);
         ks.setSimpleHash(simpleHash);
-        for (int i = 0; i < Criteria.list.length; i++) {
-            ks.enabledCriteria[i] = enabledCriteria[i];
-        }
+        System.arraycopy(enabledCriteria, 0, ks.enabledCriteria, 0, Criteria.list.length);
         return this.equals(ks);
     }
 
@@ -136,9 +133,7 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     public KeyedItemStack copy() {
         KeyedItemStack ks = new KeyedItemStack(item.copy());
         ks.setSimpleHash(simpleHash);
-        for (int i = 0; i < Criteria.list.length; i++) {
-            ks.enabledCriteria[i] = enabledCriteria[i];
-        }
+        System.arraycopy(enabledCriteria, 0, ks.enabledCriteria, 0, Criteria.list.length);
         ks.lock = lock;
         return ks;
     }

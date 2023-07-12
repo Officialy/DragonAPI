@@ -336,7 +336,7 @@ public class ReikaEntityHelper {
             is = new ItemStack(Items.CREEPER_HEAD, 1);
         if (is == null)
             return;
-        ReikaItemHelper.dropItem(e.getLevel(), new BlockPos(e.getX(), e.getY() + 0.2, e.getZ()), is);
+        ReikaItemHelper.dropItem(e.getLevel(), e.getX(), e.getY() + 0.2, e.getZ(), is);
     }
 
     private static boolean canDamageArmorOf(LivingEntity target) {

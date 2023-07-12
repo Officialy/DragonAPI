@@ -34,8 +34,7 @@ public final class PointDirection {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof PointDirection) {
-			PointDirection pd = (PointDirection) o;
+		if (o instanceof PointDirection pd) {
 			return pd.point.equals(point) && pd.direction == direction;
 		}
 		return false;

@@ -25,8 +25,7 @@ public final class CommutativePair<V> {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof CommutativePair) {
-			CommutativePair b = (CommutativePair) o;
+		if (o instanceof CommutativePair b) {
 			if (b.o1.equals(o1) && b.o2.equals(o2))
 				return true;
 			//reverse

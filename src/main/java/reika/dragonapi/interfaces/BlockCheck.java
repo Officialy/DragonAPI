@@ -12,25 +12,25 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 public interface BlockCheck {
 
-    public boolean matchInWorld(Level world, BlockPos pos);
+    boolean matchInWorld(Level world, BlockPos pos);
 
-    public boolean match(BlockState b);
+    boolean match(BlockState b);
 
-    public boolean match(BlockCheck bc);
+    boolean match(BlockCheck bc);
 
-    public void place(Level world, BlockPos pos, int flags);
+    void place(Level world, BlockPos pos, int flags);
 
-    public ItemStack asItemStack();
-
-
-    public ItemStack getDisplay();
-
-    public BlockKey asBlockKey();
-
-    public static interface BlockEntityCheck extends BlockCheck {
+    ItemStack asItemStack();
 
 
-        public BlockEntity getBlockEntity();
+    ItemStack getDisplay();
+
+    BlockKey asBlockKey();
+
+    interface BlockEntityCheck extends BlockCheck {
+
+
+        BlockEntity getBlockEntity();
 
     }
 }

@@ -27,7 +27,7 @@ public class LuaGetTanks extends LuaMethod {
 	protected Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
 		IFluidHandler ifl = (IFluidHandler)te;
 		ArrayList<IFluidTank> li = new ArrayList<>();
-		for (int i = 0; i < 6*0+1; i++) {
+		for (int i = 0; i < 1; i++) {
 			Direction dir = Direction.values()[i];
 			IFluidTank[] info = null; //todo ifl.getTankInfo(dir);
 			for (int k = 0; k < info.length; k++) {

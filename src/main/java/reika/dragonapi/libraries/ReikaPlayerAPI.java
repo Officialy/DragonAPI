@@ -48,8 +48,8 @@ public class ReikaPlayerAPI {
      */
     public static void transferInventoryToChest(Player ep, ItemStack[] inv) {
         int num = ReikaInventoryHelper.getTotalUniqueStacks(ep.getInventory().items.toArray(new ItemStack[0]));
-        if (num >= inv.length)
-            return;
+        if (num >= inv.length) {
+        }
     }
 
     public static void kickPlayer(ServerPlayer ep, String reason) {
@@ -94,8 +94,7 @@ public class ReikaPlayerAPI {
     public static List<ServerPlayer> getPlayersWithin(Level world, AABB box) {
         ArrayList<ServerPlayer> li = new ArrayList<>();
         for (Object o : world.players()) {
-            if (o instanceof ServerPlayer && ((ServerPlayer)o).getBoundingBox().intersects(box)) {
-                ServerPlayer ep = (ServerPlayer)o;
+            if (o instanceof ServerPlayer ep && ((ServerPlayer)o).getBoundingBox().intersects(box)) {
                 if (ep.getBoundingBox().intersects(box)) {
                     li.add(ep);
                 }

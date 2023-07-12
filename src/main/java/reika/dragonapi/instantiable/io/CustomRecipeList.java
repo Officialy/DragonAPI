@@ -529,7 +529,7 @@ public class CustomRecipeList {
             for (int k = 0; k < array[i].length; k++) {
                 Object o = array[i][k];
                 char c = o == null ? ' ' : (char) ('a' + (i * 3 + k));
-                sb.append(String.valueOf(c));
+        sb.append(c);
                 if (o != null) {
                     entries.add(c);
                     entries.add(o);
@@ -537,8 +537,7 @@ public class CustomRecipeList {
             }
             input[i] = sb.toString();
         }
-        for (int i = 0; i < input.length; i++)
-            objects.add(input[i]);
+        Collections.addAll(objects, input);
         objects.addAll(entries);
         return objects.toArray(new Object[objects.size()]);
     }

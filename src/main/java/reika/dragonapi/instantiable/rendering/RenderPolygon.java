@@ -38,8 +38,7 @@ public class RenderPolygon {
 
 	@Override
 	public boolean equals(Object o) { //Sort here and not above, because that would wreck rendering
-		if (o instanceof RenderPolygon) {
-			RenderPolygon rp = (RenderPolygon) o;
+		if (o instanceof RenderPolygon rp) {
 			ArrayList<DecimalPosition> li = new ArrayList<>();
 			li.add(pos1);
 			li.add(pos2);

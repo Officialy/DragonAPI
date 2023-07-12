@@ -43,7 +43,7 @@ public class Tests {
             if (!player.isShiftKeyDown()) {
                 PopupWriter.instance.addMessage("Popup test with a super duper extra fancy long message, to test spacing!");
             } else if (player.isShiftKeyDown()) {
-                PopupWriter.instance.list.remove(0);
+                PopupWriter.list.remove(0);
             }
 
             return InteractionResultHolder.pass(this.getDefaultInstance());

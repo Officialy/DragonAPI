@@ -42,7 +42,7 @@ public class ColumnMap {
 
         //private final ArrayList<Column> columns = new ArrayList<>();
 
-        private boolean[] data = new boolean[256];
+        private final boolean[] data = new boolean[256];
 
         private int minY = Integer.MAX_VALUE;
         private int maxY = Integer.MIN_VALUE;

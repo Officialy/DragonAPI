@@ -60,8 +60,7 @@ public abstract class BlockTieredResource extends Block {
 
 
 	public final void onBlockPlacedBy(Level world, BlockPos pos, LivingEntity elb, ItemStack is) {
-		if (elb instanceof Player) {
-			Player ep = (Player) elb;
+		if (elb instanceof Player ep) {
 			if (!this.isPlayerSufficientTier(world, pos, ep)) {
 				//if (world.isClientSide()) //isClientSide()
 					//ReikaRenderHelper.spawnDropParticles(world, pos, this);

@@ -17,32 +17,32 @@ public class OneWayCollections {
 	public static final class OneWayList<E> extends ArrayList<E> {
 
 		@Override
-		public final E remove(int o) {
+		public E remove(int o) {
 			throw new UnsupportedOperationException("You cannot remove entries from this list!");
 		}
 
 		@Override
-		public final boolean remove(Object o) {
+		public boolean remove(Object o) {
 			throw new UnsupportedOperationException("You cannot remove entries from this list!");
 		}
 
 		@Override
-		public final boolean removeAll(Collection c) {
+		public boolean removeAll(Collection c) {
 			throw new UnsupportedOperationException("You cannot remove entries from this list!");
 		}
 
 		@Override
-		public final E set(int index, E element) {
+		public E set(int index, E element) {
 			throw new UnsupportedOperationException("You cannot overwrite entries in this list!");
 		}
 
 		@Override
-		public final void clear() {
+		public void clear() {
 			throw new UnsupportedOperationException("You cannot clear this list!");
 		}
 
 		@Override
-		public final Iterator<E> iterator() {
+		public Iterator<E> iterator() {
 			return new WrapperIterator(super.iterator());
 		}
 	}
@@ -50,22 +50,22 @@ public class OneWayCollections {
 	public static final class OneWaySet<E> extends HashSet<E> {
 
 		@Override
-		public final boolean remove(Object o) {
+		public boolean remove(Object o) {
 			throw new UnsupportedOperationException("You cannot remove entries from this set!");
 		}
 
 		@Override
-		public final boolean removeAll(Collection c) {
+		public boolean removeAll(Collection c) {
 			throw new UnsupportedOperationException("You cannot remove entries from this set!");
 		}
 
 		@Override
-		public final void clear() {
+		public void clear() {
 			throw new UnsupportedOperationException("You cannot clear this set!");
 		}
 
 		@Override
-		public final Iterator<E> iterator() {
+		public Iterator<E> iterator() {
 			return new WrapperIterator(super.iterator());
 		}
 	}
@@ -73,17 +73,17 @@ public class OneWayCollections {
 	public static final class OneWayMap<K, V> extends HashMap<K, V> {
 
 		@Override
-		public final V remove(Object obj) {
+		public V remove(Object obj) {
 			throw new UnsupportedOperationException("You cannot remove entries from this map!");
 		}
 
 		@Override
-		public final void clear() {
+		public void clear() {
 			throw new UnsupportedOperationException("You cannot clear this map!");
 		}
 
 		@Override
-		public final V put(K key, V value) {
+		public V put(K key, V value) {
 			if (this.containsKey(key)) {
 				throw new UnsupportedOperationException("You cannot overwrite entries in this map!");
 			} else {
@@ -92,17 +92,17 @@ public class OneWayCollections {
 		}
 
 		@Override
-		public final Set<K> keySet() {
+		public Set<K> keySet() {
 			return Collections.unmodifiableSet(super.keySet());
 		}
 
 		@Override
-		public final Collection<V> values() {
+		public Collection<V> values() {
 			return Collections.unmodifiableCollection(super.values());
 		}
 
 		@Override
-		public final Set<Map.Entry<K, V>> entrySet() {
+		public Set<Map.Entry<K, V>> entrySet() {
 			return new WrapperEntrySet(super.entrySet());
 		}
 
@@ -151,7 +151,7 @@ public class OneWayCollections {
 			wrapped = wrap;
 		}
 
-		public final void remove() {
+		public void remove() {
 			throw new UnsupportedOperationException("You cannot remove entries from this collection with an iterator!");
 		}
 

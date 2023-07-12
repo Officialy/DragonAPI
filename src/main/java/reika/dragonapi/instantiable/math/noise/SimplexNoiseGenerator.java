@@ -40,11 +40,11 @@ public class SimplexNoiseGenerator extends NoiseGeneratorBase {
 		int[] source = new int[256];
 		for (int i = 0; i < 256; i++)
 			source[i] = i;
-		seed = seed * 6364136223846793005l + 1442695040888963407l;
-		seed = seed * 6364136223846793005l + 1442695040888963407l;
-		seed = seed * 6364136223846793005l + 1442695040888963407l;
+		seed = seed * 6364136223846793005L + 1442695040888963407L;
+		seed = seed * 6364136223846793005L + 1442695040888963407L;
+		seed = seed * 6364136223846793005L + 1442695040888963407L;
 		for (int i = 255; i >= 0; i--) {
-			seed = seed * 6364136223846793005l + 1442695040888963407l;
+      seed = seed * 6364136223846793005L + 1442695040888963407L;
 			int r = (int) ((seed + 31) % (i + 1));
 			if (r < 0)
 				r += (i + 1);
@@ -100,7 +100,7 @@ public class SimplexNoiseGenerator extends NoiseGeneratorBase {
 		double attn1 = 2 - dx1 * dx1 - dz1 * dz1;
 		if (attn1 > 0) {
 			attn1 *= attn1;
-			value += attn1 * attn1 * this.extrapolate(xsb + 1, zsb + 0, dx1, dz1);
+			value += attn1 * attn1 * this.extrapolate(xsb + 1, zsb, dx1, dz1);
 		}
 
 		//Contribution (0,1)
@@ -109,7 +109,7 @@ public class SimplexNoiseGenerator extends NoiseGeneratorBase {
 		double attn2 = 2 - dx2 * dx2 - dz2 * dz2;
 		if (attn2 > 0) {
 			attn2 *= attn2;
-			value += attn2 * attn2 * this.extrapolate(xsb + 0, zsb + 1, dx2, dz2);
+			value += attn2 * attn2 * this.extrapolate(xsb, zsb + 1, dx2, dz2);
 		}
 
 		if (inSum <= 1) { //We're inside the triangle (2-Simplex) at (0,0)
@@ -137,11 +137,11 @@ public class SimplexNoiseGenerator extends NoiseGeneratorBase {
 			if (dins < xins || dins < zins) { //(0,0) is one of the closest two triangular vertices
 				if (xins > zins) {
 					xsv_ext = xsb + 2;
-					zsv_ext = zsb + 0;
+					zsv_ext = zsb;
 					dx_ext = dx0 - 2 - 2 * SQUISH_CONSTANT;
 					dz_ext = dz0 + 0 - 2 * SQUISH_CONSTANT;
 				} else {
-					xsv_ext = xsb + 0;
+					xsv_ext = xsb;
 					zsv_ext = zsb + 2;
 					dx_ext = dx0 + 0 - 2 * SQUISH_CONSTANT;
 					dz_ext = dz0 - 2 - 2 * SQUISH_CONSTANT;

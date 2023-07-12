@@ -24,7 +24,7 @@ public class EventProfiler {
 
     //public static final EventProfiler instance = new EventProfiler();
 
-    private static HashMap<String, Class<? extends Event>> fullNameShortcuts = new HashMap<>();
+    private static final HashMap<String, Class<? extends Event>> fullNameShortcuts = new HashMap<>();
 
     static {
 //   todo     addShortcut(ReplaceBiomeBlocks.class);
@@ -52,7 +52,7 @@ public class EventProfiler {
     }
 
     private static Class currentProfile;
-    private static HashMap<IEventListener, EventProfile> profileData = new HashMap<>(); //not class as keys, since all are basically ASMEventHandler
+    private static final HashMap<IEventListener, EventProfile> profileData = new HashMap<>(); //not class as keys, since all are basically ASMEventHandler
     private static int totalCount;
 
     //private EventProfiler() {
@@ -154,7 +154,7 @@ public class EventProfiler {
         SUCCESS(),
         ALREADYRUNNING(),
         NOSUCHCLASS(),
-        NOTANEVENT();
+        NOTANEVENT()
     }
 
     public static class EventProfile implements Comparable<EventProfile> {

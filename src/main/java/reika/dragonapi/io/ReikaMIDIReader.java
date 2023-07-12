@@ -195,8 +195,7 @@ public final class ReikaMIDIReader {
 				MidiEvent event = track.get(i);
 				System.out.print("@" + event.getTick() + " ");
 				MidiMessage message = event.getMessage();
-				if (message instanceof ShortMessage) {
-					ShortMessage sm = (ShortMessage) message;
+				if (message instanceof ShortMessage sm) {
 					System.out.print("Channel: " + sm.getChannel() + " ");
 					if (sm.getCommand() == NOTE_ON) {
 						int key = sm.getData1();
@@ -290,8 +289,7 @@ public final class ReikaMIDIReader {
 				time = MIDITickToMCTick(seq, event.getTick(), tempo);
 				//DragonAPI.LOGGER.info(event.getTick()+" midi to "+time+" MC, out of length "+getSequenceLength(seq)+" ("+getSequenceLength(seq)/20F+") s");
 				MidiMessage message = event.getMessage();
-				if (message instanceof ShortMessage) {
-					ShortMessage sm = (ShortMessage) message;
+				if (message instanceof ShortMessage sm) {
 					channel = i - 1;
 					if (channel == -1) {
 						throw new RuntimeException("Invalid MIDI has notes in the tempo track (track 0)!");
@@ -322,19 +320,14 @@ public final class ReikaMIDIReader {
 					if (dataline[channel][0] != 0 && sm.getCommand() == NOTE_ON) {
 						//DragonAPI.LOGGER.info("Event "+sm.getCommand()+" at time: "+time+"; Channel "+channel+": "+dataline[channel][0]+"  "+dataline[channel][1]+"  "+dataline[channel][2]);
 						for (int k = 0; k < 16; k++) {
-							for (int l = 0; l < 3; l++) {
-								data[time][k][l] = dataline[k][l];
-							}
+							System.arraycopy(dataline[k], 0, data[time][k], 0, 3);
 						}
 					}
-				} else if (message instanceof MetaMessage) {
-					MetaMessage mm = (MetaMessage) message;
+				} else if (message instanceof MetaMessage mm) {
 					byte[] bytes = mm.getData();
 					int val = (bytes[0] & 0xff) << 16 | (bytes[1] & 0xff) << 8 | (bytes[2] & 0xff);
-					switch (mm.getType()) {
-						case TEMPO:
-							tempo = 60000000 / val;
-							break;
+					if (mm.getType() == TEMPO) {
+						tempo = 60000000 / val;
 					}
 				}
 			}
@@ -368,8 +361,7 @@ public final class ReikaMIDIReader {
 				long tick = event.getTick();
 				//DragonAPI.LOGGER.info(tick+" midi to "+time+" MC, out of length "+getSequenceLength(seq)+" ("+getSequenceLength(seq)/20F+") s");
 				MidiMessage message = event.getMessage();
-				if (message instanceof ShortMessage) {
-					ShortMessage sm = (ShortMessage) message;
+				if (message instanceof ShortMessage sm) {
 					channel = sm.getChannel();//i-1;
 					//if (channel == 0) {
 					//	throw new RuntimeException("Invalid MIDI has notes in the tempo track (track 0)!");
@@ -412,17 +404,14 @@ public final class ReikaMIDIReader {
 						//ReikaJavaLibrary.pConsole("Note "+note+" on channel "+channel+" ("+m+"), tick off="+time+"/tick_"+event.getTick()+", length = "+len);
 						lastOn[channel][key] = null;
 					}
-				} else if (message instanceof MetaMessage) {
-					MetaMessage mm = (MetaMessage) message;
+				} else if (message instanceof MetaMessage mm) {
 					byte[] bytes = mm.getData();
 					if (bytes.length == 3) {
 						int val = (bytes[0] & 0xff) << 16 | (bytes[1] & 0xff) << 8 | (bytes[2] & 0xff);
-						switch (mm.getType()) {
-							case TEMPO:
-								tempo = 60000000 / val;
-								//ReikaJavaLibrary.pConsole("changing tempo @ tick "+tick+" to "+tempo);
-								tempoCurve.put(tick, tempo);
-								break;
+						if (mm.getType() == TEMPO) {
+							tempo = 60000000 / val;
+							//ReikaJavaLibrary.pConsole("changing tempo @ tick "+tick+" to "+tempo);
+							tempoCurve.put(tick, tempo);
 						}
 					}
 				}

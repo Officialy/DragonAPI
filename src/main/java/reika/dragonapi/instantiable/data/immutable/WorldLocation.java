@@ -74,11 +74,15 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public WorldLocation(Level world, double x, double y, double z) {
         this(world, new BlockPos(Mth.floor(x), Mth.floor(y), Mth.floor(z)));
     }
+
     public WorldLocation(ResourceKey<Level> world, double x, double y, double z) {
-        this(ServerLifecycleHooks.getCurrentServer().getLevel(world), new BlockPos(Mth.floor(x), Mth.floor(y), Mth.floor(z)));
+        this(
+                ServerLifecycleHooks.getCurrentServer().getLevel(world),
+                new BlockPos(Mth.floor(x), Mth.floor(y), Mth.floor(z)));
     }
+
     public static int coordHash(BlockPos pos) {
-        //return pos.getX() + (pos.getZ() << 8) + (pos.getY() << 16);
+        // return pos.getX() + (pos.getZ() << 8) + (pos.getY() << 16);
         final int prime = 31;
         int result = 1;
         result = prime * result + pos.getX();
@@ -97,7 +101,9 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
 
     public Block getBlock() {
         Level world = this.getWorld();
-        return world != null ? world.getBlockState(new BlockPos(pos.getX(), pos.getY(), pos.getZ())).getBlock() : null;
+        return world != null
+                ? world.getBlockState(new BlockPos(pos.getX(), pos.getY(), pos.getZ())).getBlock()
+                : null;
     }
 
     public void setBlock(Block b) {
@@ -112,7 +118,11 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public Block getBlock(BlockGetter world) {
-        return world != null ? world.getBlockState(new BlockPos(new BlockPos(pos.getX(), pos.getY(), pos.getZ()))).getBlock() : null;
+        return world != null
+                ? world.getBlockState(
+                                new BlockPos(new BlockPos(pos.getX(), pos.getY(), pos.getZ())))
+                        .getBlock()
+                : null;
     }
 
     public boolean isEmpty() {
@@ -125,32 +135,46 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
 
     public BlockEntity getBlockEntity(BlockGetter call) {
         BlockGetter world = call != null ? call : this.getWorld();
-        return world != null ? world.getBlockEntity(new BlockPos(pos.getX(), pos.getY(), pos.getZ())) : null;
+        return world != null
+                ? world.getBlockEntity(new BlockPos(pos.getX(), pos.getY(), pos.getZ()))
+                : null;
     }
-
 
     public int getRedstone() {
         Level world = this.getWorld();
-        return world != null ? world.getBestNeighborSignal(new BlockPos(pos.getX(), pos.getY(), pos.getZ())) : 0;
+        return world != null
+                ? world.getBestNeighborSignal(new BlockPos(pos.getX(), pos.getY(), pos.getZ()))
+                : 0;
     }
 
     public int getRedstoneOnSide(Direction dir) {
         Direction opp = dir.getOpposite();
         Level world = this.getWorld();
-        return world != null ? world.getDirectSignal(new BlockPos(pos.getX() + opp.getStepX(), pos.getY() + opp.getStepY(), pos.getZ() + opp.getStepZ()), dir) : 0;
+        return world != null
+                ? world.getDirectSignal(
+                        new BlockPos(
+                                pos.getX() + opp.getStepX(),
+                                pos.getY() + opp.getStepY(),
+                                pos.getZ() + opp.getStepZ()),
+                        dir)
+                : 0;
     }
 
     public boolean isRedstonePowered() {
         Level world = this.getWorld();
-        return world != null ? world.hasNeighborSignal(new BlockPos(pos.getX(), pos.getY(), pos.getZ())) : false;
+        return world != null
+                && world.hasNeighborSignal(new BlockPos(pos.getX(), pos.getY(), pos.getZ()));
     }
 
     public void triggerBlockUpdate(boolean adjacent) {
         Level world = this.getWorld();
         if (world != null) {
-            world.blockUpdated(new BlockPos(pos.getX(), pos.getY(), pos.getZ()), world.getBlockState(pos).getBlock());
+            world.blockUpdated(
+                    new BlockPos(pos.getX(), pos.getY(), pos.getZ()),
+                    world.getBlockState(pos).getBlock());
             if (adjacent) {
-                ReikaWorldHelper.causeAdjacentUpdates(world, new BlockPos(pos.getX(), pos.getY(), pos.getZ()));
+                ReikaWorldHelper.causeAdjacentUpdates(
+                        world, new BlockPos(pos.getX(), pos.getY(), pos.getZ()));
             }
         }
     }
@@ -162,7 +186,13 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public void dropItem(ItemStack is, double vscale) {
         Level world = this.getWorld();
         if (world != null && !world.isClientSide()) {
-            world.addFreshEntity(is.getEntityRepresentation()); //.dropItem(this.getWorld(), pos.getX()+rand.nextDouble(), pos.getY()+rand.nextDouble(), pos.getZ()+rand.nextDouble(), is, vscale); todo fix item dropping
+            world.addFreshEntity(
+                    is
+                            .getEntityRepresentation()); // .dropItem(this.getWorld(),
+                                                         // pos.getX()+rand.nextDouble(),
+                                                         // pos.getY()+rand.nextDouble(),
+                                                         // pos.getZ()+rand.nextDouble(), is,
+                                                         // vscale); todo fix item dropping
         }
     }
 
@@ -188,8 +218,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     private void initClientWorld() {
-        if (clientWorld == null)
-            clientWorld = Minecraft.getInstance().level;
+        if (clientWorld == null) clientWorld = Minecraft.getInstance().level;
     }
 
     public void saveAdditional(String tag, CompoundTag NBT) {
@@ -199,24 +228,28 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public void writeToTag(CompoundTag data) {
-        data.putString("dim", getWorld().dimension().location().toString());//.getRegistryName().toString());
+        data.putString(
+                "dim",
+                getWorld().dimension().location().toString()); // .getRegistryName().toString());
         data.putInt("x", pos.getX());
         data.putInt("y", pos.getY());
         data.putInt("z", pos.getZ());
     }
-
 
     public static WorldLocation readTag(CompoundTag data) {
         int x = data.getInt("x");
         int y = data.getInt("y");
         int z = data.getInt("z");
         String dim = data.getString("dim");
-        return new WorldLocation(ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(dim)), x, y, z); //todo fix null dimension / level
+        return new WorldLocation(
+                ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(dim)),
+                x,
+                y,
+                z); // todo fix null dimension / level
     }
 
     public static WorldLocation load(String tag, CompoundTag NBT) {
-        if (!NBT.contains(tag))
-            return null;
+        if (!NBT.contains(tag)) return null;
         CompoundTag data = NBT.getCompound(tag);
         if (data != null) {
             return readTag(data);
@@ -239,23 +272,34 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
 
     @Override
     public String toString() {
-        return pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + " in DIM" + getChunk().dimensionID;
+        return pos.getX()
+                + ", "
+                + pos.getY()
+                + ", "
+                + pos.getZ()
+                + " in DIM"
+                + getChunk().dimensionID;
     }
 
     @Override
     public int hashCode() {
-        return coordHash(new BlockPos(pos.getX(), pos.getY(), pos.getZ()));//pos.getX() + (pos.getZ() << 8) + (pos.getY() << 16) + (dimensionID << 24);
+        return coordHash(
+                new BlockPos(
+                        pos.getX(),
+                        pos.getY(),
+                        pos
+                                .getZ())); // pos.getX() + (pos.getZ() << 8) + (pos.getY() << 16) +
+                                           // (dimensionID << 24);
     }
-
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof WorldLocation) {
-            WorldLocation w = (WorldLocation)o;
+        if (o instanceof WorldLocation w) {
             return this.equals(w.dimension, w.pos);
         }
         return false;
     }
+
     private boolean equals(ResourceKey<Level> dim, BlockPos pos) {
         return dim == dimension && this.pos == pos;
     }
@@ -297,9 +341,10 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     private boolean isWithinSquare(Level dim, int x, int y, int z, int dx, int dy, int dz) {
-        return Math.abs(x - pos.getX()) <= dx && Math.abs(y - pos.getY()) <= dy && Math.abs(z - pos.getZ()) <= dz;
+        return Math.abs(x - pos.getX()) <= dx
+                && Math.abs(y - pos.getY()) <= dy
+                && Math.abs(z - pos.getZ()) <= dz;
     }
-
 
     public BlockKey getBlockKey() {
         return new BlockKey(this.getBlock().defaultBlockState());
@@ -310,7 +355,9 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public boolean isWithinDistOnAllCoords(WorldLocation loc, int radius) {
-        return Math.abs(loc.pos.getX() - pos.getX()) <= radius && Math.abs(loc.pos.getY() - pos.getY()) <= radius && Math.abs(loc.pos.getZ() - pos.getZ()) <= radius;
+        return Math.abs(loc.pos.getX() - pos.getX()) <= radius
+                && Math.abs(loc.pos.getY() - pos.getY()) <= radius
+                && Math.abs(loc.pos.getZ() - pos.getZ()) <= radius;
     }
 
     public double getSquaredDistance(double x, double y, double z) {
@@ -329,25 +376,22 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public AABB asAABB() {
-        return ReikaAABBHelper.getBlockAABB(new BlockPos(pos.getX(),pos.getY(),pos.getZ()));
+        return ReikaAABBHelper.getBlockAABB(new BlockPos(pos.getX(), pos.getY(), pos.getZ()));
     }
 
-//    public boolean isChunkLoaded() {
-//        return ReikaWorldHelper.isWorldLoaded(dimensionID) && this.getWorld().getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
-//    }
-
+    //    public boolean isChunkLoaded() {
+    //        return ReikaWorldHelper.isWorldLoaded(dimensionID) &&
+    // this.getWorld().getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+    //    }
 
     @Override
     public int compareTo(WorldLocation o) {
         int ret = Integer.compare(this.hashCode(), o.hashCode());
-        if (ret != 0)
-            return ret;
+        if (ret != 0) return ret;
         ret = Integer.compare(pos.getX(), o.pos.getX());
-        if (ret != 0)
-            return ret;
+        if (ret != 0) return ret;
         ret = Integer.compare(pos.getY(), o.pos.getY());
-        if (ret != 0)
-            return ret;
+        if (ret != 0) return ret;
         return Integer.compare(pos.getZ(), o.pos.getZ());
     }
 
@@ -355,19 +399,24 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         return new DoubleWorldLocation(this, dx, dy, dz);
     }
 
-
     public HitResult asMovingPosition(Direction s, Vec3 vec) {
-        //return new HitResult(new BlockPos(pos.getX(), pos.getY(), pos.getZ()), s, vec);
+        // return new HitResult(new BlockPos(pos.getX(), pos.getY(), pos.getZ()), s, vec);
         return new BlockHitResult(vec, s, pos, false);
     }
 
     public String toSerialString() {
-        return String.format("%d:" + dimension.location()) + String.format("%d:%d:%d", pos.getX(), pos.getY(), pos.getZ());
+        return String.format("%d:" + dimension.location())
+                + String.format("%d:%d:%d", pos.getX(), pos.getY(), pos.getZ());
     }
 
     public static WorldLocation fromSerialString(String s) {
         String[] parts = s.split(":");
-        return new WorldLocation(ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(String.valueOf(parts[0]))), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+        return new WorldLocation(
+                ResourceKey.create(
+                        Registries.DIMENSION, ResourceLocation.tryParse(String.valueOf(parts[0]))),
+                Integer.parseInt(parts[1]),
+                Integer.parseInt(parts[2]),
+                Integer.parseInt(parts[3]));
     }
 
     public static final class DoubleWorldLocation extends WorldLocation {

@@ -131,7 +131,7 @@ public class ReikaRenderHelper {
         int x2 = Mth.floor(ep.getX() + r);
         int z1 = Mth.floor(ep.getZ() - r);
         int z2 = Mth.floor(ep.getZ() + r);
-        world.blockUpdated(new BlockPos(x1, 0, z1), world.getBlockState(new BlockPos(x2, world.getHeight() - 1, z2)).getBlock());
+        world.sendBlockUpdated(new BlockPos(x1, 0, z1), world.getBlockState(new BlockPos(x2, world.getHeight() - 1, z2)), world.getBlockState(new BlockPos(x1, 0, z1)), 2);
     }
 
     /**
@@ -152,11 +152,10 @@ public class ReikaRenderHelper {
 
         //GL11.glDisable(GL12.GL_RESCALE_NORMAL);
         //GL11.glEnable(GL11.GL_CULL_FACE);
-        //GL11.glEnable(GL11.GL_DEPTH_TEST);
         RenderSystem.lineWidth(1f);
         RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
     }
 
     public static void renderTube(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int c1, int c2, double r1, double r2, int sides) {
@@ -186,7 +185,7 @@ public class ReikaRenderHelper {
             double f12a = r1 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
             double f11b = r2 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
             double f12b = r2 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
-            double f13 = i % sides * 1 / sides;
+            double f13 = i % sides / sides;
             renderer.vertex(f11a, f12a, 0).color(c1 & 0xffffff, c1 >> 24 & 255, c1, c1).endVertex();
             renderer.vertex(f11b, f12b, f8).color(c2 & 0xffffff, c2 >> 24 & 255, c2, c2).endVertex();
         }
@@ -224,13 +223,13 @@ public class ReikaRenderHelper {
 
     public static void disableEntityLighting() {
 //     todo   OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit); //block/sky light grid image
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
 //        todo OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
     }
 
     public static void enableEntityLighting() {
 //   todo     OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
 //    todo    OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
     }
 
@@ -239,14 +238,14 @@ public class ReikaRenderHelper {
      */
     public static void prepareGeoDraw(boolean alpha) {
         disableLighting();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         if (alpha)
             RenderSystem.enableBlend();
     }
 
     public static void exitGeoDraw() {
         enableLighting();
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 

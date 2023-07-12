@@ -153,10 +153,8 @@ public class RemoteSourcedAsset {
 
         private void download() throws IOException {
             if (!ReikaFileReader.isFileWithin(targetFile, DragonAPI.getMinecraftDirectory())) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Dynamic Remote Asset " + remotePath + " attempted to download to " + targetFile.getCanonicalPath() + "!");
-                sb.append(" This is not in the MC directory and very likely either malicious or poorly implemented, or the remote server has been compromised!");
-                String s = sb.toString();
+                String s = "Dynamic Remote Asset " + remotePath + " attempted to download to " + targetFile.getCanonicalPath() + "!" +
+                        " This is not in the MC directory and very likely either malicious or poorly implemented, or the remote server has been compromised!";
                 DragonAPI.LOGGER.error(s);
                 return;
                 //throw new RuntimeException(s);

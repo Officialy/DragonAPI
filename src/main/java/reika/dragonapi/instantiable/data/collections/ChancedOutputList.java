@@ -176,9 +176,9 @@ public final class ChancedOutputList {
         return data.size();
     }
 
-    public static interface ChanceManipulator {
+    public interface ChanceManipulator {
 
-        public float getChance(float original);
+        float getChance(float original);
 
     }
 

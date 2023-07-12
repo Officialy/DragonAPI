@@ -14,10 +14,7 @@ import org.apache.commons.lang3.text.WordUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 public class ReikaStringParser {
 
@@ -432,9 +429,7 @@ public class ReikaStringParser {
 	public static ArrayList<String> splitStringByNewlines(String s) {
 		ArrayList<String> li = new ArrayList<>();
 		String[] parts = s.split("\\n");
-		for (int i = 0; i < parts.length; i++) {
-			li.add(parts[i]);
-		}
+		Collections.addAll(li, parts);
 		return li;
 	}
 

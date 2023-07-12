@@ -43,8 +43,7 @@ public final class RAMPair {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof RAMPair) {
-			RAMPair r = (RAMPair) o;
+		if (o instanceof RAMPair r) {
 			if (objects.size() != r.objects.size())
 				return false;
 			for (Object obj : objects) {

@@ -104,7 +104,7 @@ public enum Isotopes {
 
     public String getDisplayName() {
         if (extraDanger) {
-            return ChatFormatting.RED.toString() + name;
+            return ChatFormatting.RED + name;
         } else
             return name;
     }

@@ -48,7 +48,6 @@ import java.util.UUID;
 
 import static net.minecraftforge.fml.loading.FMLLoader.isProduction;
 
-@Mod.EventBusSubscriber(modid = DragonAPI.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 @Mod(DragonAPI.MODID)
 public class DragonAPI extends DragonAPIMod {
     public static final String last_API_Version = "1" + "0";

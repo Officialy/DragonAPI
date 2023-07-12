@@ -48,8 +48,7 @@ public class LogicalCombination<E> implements Function<E, Boolean> {
 		if (indent == 1)
 			li.add("{");
 		for (Function<E, Boolean> c : params) {
-			if (c instanceof LogicalCombination) {
-				LogicalCombination lg = (LogicalCombination) c;
+			if (c instanceof LogicalCombination lg) {
 				//s = lg.rule+" = {";
 				li.add(pre + lg.rule.toString() + " = {");
 				li.addAll(lg.writeToStrings(indent + 1));

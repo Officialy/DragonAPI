@@ -33,8 +33,7 @@ public final class WorldChunk {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof WorldChunk) {
-            WorldChunk c = (WorldChunk)o;
+        if (o instanceof WorldChunk c) {
             return c.dimensionID == dimensionID && c.chunk.equals(chunk);
         }
         return false;

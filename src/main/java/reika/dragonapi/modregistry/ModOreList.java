@@ -117,7 +117,7 @@ public enum ModOreList implements OreType {
     private String[] oreLabel;
     public final int dropCount;
     public final int oreColor;
-    private String product;
+    private final String product;
     private boolean init;
     public final OreRarity rarity;
     private final MultiMap<String, ItemStack> perName = new MultiMap<>();
@@ -130,7 +130,7 @@ public enum ModOreList implements OreType {
     private static final HashMap<String, ModOreList> oreNames = new HashMap<>();
     private static final HashMap<String, ModOreList> enumNames = new HashMap<>();
 
-    private ModOreList(String n, int color, OreRarity r, String prod, int count, String... ore) {
+    ModOreList(String n, int color, OreRarity r, String prod, int count, String... ore) {
         //if (!DragonAPIInit.canLoadHandlers())
         //	throw new MisuseException("Accessed registry enum too early! Wait until postInit!");
         dropCount = count;
@@ -138,12 +138,10 @@ public enum ModOreList implements OreType {
         displayName = n;
         product = prod;
         oreLabel = new String[ore.length];
-        for (int i = 0; i < ore.length; i++) {
-            oreLabel[i] = ore[i];
-        }
+        System.arraycopy(ore, 0, oreLabel, 0, ore.length);
         rarity = r;
 
-        DragonAPI.LOGGER.info("Adding ore entries for "+this.toString()+" (Ore Names: "+ Arrays.toString(ore)+")");
+        DragonAPI.LOGGER.info("Adding ore entries for "+ this +" (Ore Names: "+ Arrays.toString(ore)+")");
     }
 
     private static String[] getCertusOreNames() {
@@ -188,7 +186,7 @@ public enum ModOreList implements OreType {
             ArrayList<ItemStack> toadd = null;//todo OreDictionary.getOres(label);
             if (!toadd.isEmpty()) {
                 toadd.removeIf(is -> is.getItem() == null);
-                DragonAPI.LOGGER.info("\tDetected the following blocks for " + this + " from OreDict \"" + label + "\": " + toadd.toString());
+                DragonAPI.LOGGER.info("\tDetected the following blocks for " + this + " from OreDict \"" + label + "\": " + toadd);
                 for (ItemStack is : toadd) {
                     if (ReikaItemHelper.isBlock(is)) {
                         if (!ReikaItemHelper.collectionContainsItemStack(ores, is))
@@ -229,8 +227,6 @@ public enum ModOreList implements OreType {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(displayName);
         //sb.append(" (Ore Names: ");
         //for (int i = 0; i < oreLabel.length; i++) {
         //	sb.append(oreLabel[i]);
@@ -239,7 +235,16 @@ public enum ModOreList implements OreType {
         //}
         //sb.append(")");
         //sb.append(" ("+this.getRarity().name().toLowerCase()+")");
-        return sb.toString();
+        return displayName
+                //sb.append(" (Ore Names: ");
+                //for (int i = 0; i < oreLabel.length; i++) {
+                //	sb.append(oreLabel[i]);
+                //	if (i < oreLabel.length-1)
+                //		sb.append(" ");
+                //}
+                //sb.append(")");
+                //sb.append(" ("+this.getRarity().name().toLowerCase()+")");
+                ;
     }
 
     public boolean isThaumcraft() {
@@ -370,15 +375,11 @@ public enum ModOreList implements OreType {
             return true;
         if (this == AMMONIUM)
             return true;
-        if (this == THORIUM)
-            return true;
-        return false;
+        return this == THORIUM;
     }
 
     public boolean isEnd() {
-        if (this == SODALITE)
-            return true;
-        return false;
+        return this == SODALITE;
     }
 
     public EnumSet<OreLocation> getOreLocations() {
@@ -398,10 +399,7 @@ public enum ModOreList implements OreType {
 
     //todo metallurgy? reika never did it clearly
     public boolean isMetallurgy() {
-        switch(this) {
-            default:
-                return false;
-        }
+        return false;
     }
 
     public boolean canGenerateIn(Block b) {

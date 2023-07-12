@@ -58,8 +58,7 @@ public final class BlockKey implements BlockCheck, Comparable<BlockKey> {
     @Override
     public boolean equals(Object o) {
 //        ReikaJavaLibrary.pConsole(this+" & "+o);
-        if (o instanceof BlockKey) {
-            BlockKey b = (BlockKey) o;
+        if (o instanceof BlockKey b) {
             return b.blockID == blockID;
         }
         return false;

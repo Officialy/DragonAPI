@@ -207,7 +207,6 @@ public class MusicScore {
         int ounder = ReikaMathLibrary.roundToNearestX(12, under);
         int oover = ReikaMathLibrary.roundToNearestX(12, over);
         if ((oover <= 0 && ounder <= 0) || (oover == ounder)) {
-            return;
         } else if (oover > ounder) {
             this.transpose(-12 * Math.round((oover - ounder) / 24F));
         } else {
@@ -532,8 +531,7 @@ public class MusicScore {
 
         @Override
         public boolean equals(Object o) {
-            if (o instanceof Note) {
-                Note n = (Note) o;
+            if (o instanceof Note n) {
                 return n.key == key && n.voice == voice && n.volume == volume;
             }
             return false;

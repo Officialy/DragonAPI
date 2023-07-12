@@ -154,7 +154,7 @@ public class StructuredBlockArray extends BlockArray {
 
     @Override
     public String toString() {
-        return data.size()+": "+data.toString();
+        return data.size()+": "+ data;
     }
 
     @Override

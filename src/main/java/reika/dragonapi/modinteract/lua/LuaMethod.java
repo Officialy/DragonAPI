@@ -120,11 +120,11 @@ public abstract class LuaMethod {
 	}
 
 	public final boolean isClassInstanceOf(Class<? extends BlockEntity> te) {
-		return requiredClass != null ? requiredClass.isAssignableFrom(te) : true;
+		return requiredClass == null || requiredClass.isAssignableFrom(te);
 	}
 
 	public final boolean isValidFor(BlockEntity te) {
-		return requiredClass != null ? requiredClass.isAssignableFrom(te.getClass()) : true;
+		return requiredClass == null || requiredClass.isAssignableFrom(te.getClass());
 	}
 
 	@Override
@@ -181,7 +181,7 @@ public abstract class LuaMethod {
 
 	public abstract ReturnType getReturnType();
 
-	public static enum ReturnType {
+	public enum ReturnType {
 		VOID("void"),
 		INTEGER("int"),
 		LONG("long"),
@@ -192,7 +192,7 @@ public abstract class LuaMethod {
 
 		public final String displayName;
 
-		private ReturnType(String name) {
+		ReturnType(String name) {
 			displayName = name;
 		}
 
@@ -216,13 +216,13 @@ public abstract class LuaMethod {
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ElementType.TYPE})
-	public static @interface ModTileDependent {
+	public @interface ModTileDependent {
 		String[] value();
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ElementType.TYPE})
-	public static @interface ModDependentMethod {
+	public @interface ModDependentMethod {
 		ModList value();
 	}
 

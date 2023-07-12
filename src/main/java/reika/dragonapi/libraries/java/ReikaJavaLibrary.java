@@ -52,12 +52,17 @@ public final class ReikaJavaLibrary {
         DragonAPI.LOGGER.log(Level.INFO, obj);
     }
 
-    public static void dumpStack() {
-        DragonAPI.LOGGER.log(Level.WARN, "Stack Trace:");
-        StackTraceElement[] s = new Exception("Stack Trace").getStackTrace();
-        for (int i = 1; i < s.length; i++)
-            DragonAPI.LOGGER.log(Level.WARN, "\t" + s[i].toString());
-    }
+   public static void dumpStack() {
+       var logger = DragonAPI.LOGGER;
+       if (logger.isDebugEnabled()) {
+           StringBuilder sb = new StringBuilder("Stack Trace:\n");
+           StackTraceElement[] s = new Exception("Stack Trace").getStackTrace();
+           for (int i = 1; i < s.length; i++) {
+               sb.append("\t").append(s[i].toString()).append("\n");
+           }
+           logger.debug(sb.toString());
+       }
+   }
 
     public static void spamConsole(Object obj) {
         String sg = String.valueOf(obj);
@@ -165,9 +170,7 @@ public final class ReikaJavaLibrary {
     }
 
     public static void printLine(int length) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("-".repeat(Math.max(0, length)));
-        pConsole(sb.toString());
+        pConsole("-".repeat(Math.max(0, length)));
     }
 
     public static <T, E> T getHashMapKeyByValue(HashMap<T, E> map, E value) {

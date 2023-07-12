@@ -51,7 +51,7 @@ public abstract class LuaBlock {
     private boolean isListEntry = false;
     private boolean isList = true;
 
-    private HashMap<String, String> comments = new HashMap();
+    private final HashMap<String, String> comments = new HashMap();
 
     protected LuaBlock(String n, LuaBlock parent, LuaBlockDatabase db) {
         isRoot = parent == null;
@@ -96,7 +96,7 @@ public abstract class LuaBlock {
     }
 
     public final boolean getBoolean(String key) {
-        return this.containsKeyInherit(key) ? Boolean.parseBoolean(this.getString(key)) : false;
+        return this.containsKeyInherit(key) && Boolean.parseBoolean(this.getString(key));
     }
 
     public final int getInt(String key) {
@@ -437,7 +437,7 @@ public abstract class LuaBlock {
                 while (!s.isEmpty() && s.charAt(s.length()-1) == ' ')
                     s = s.substring(0, s.length()-1);
                 while (!s.isEmpty() && s.charAt(0) == ' ')
-                    s = s.substring(1, s.length());
+                    s = s.substring(1);
             }
             return s;
         }
@@ -560,13 +560,13 @@ public abstract class LuaBlock {
             try {
                 switch(override) {
                     case BYTE:
-                        return (byte)Byte.parseByte(s);
+                        return Byte.parseByte(s);
                     case SHORT:
                         return (byte)Short.parseShort(s);
                     case LONG:
-                        return (long)Long.parseLong(s);
+                        return Long.parseLong(s);
                     case FLOAT:
-                        return (float)Float.parseFloat(s);
+                        return Float.parseFloat(s);
                     case DOUBLE:
                         return (float)Double.parseDouble(s);
                     default:
@@ -578,19 +578,19 @@ public abstract class LuaBlock {
             }
         }
         try {
-            return (int)Integer.parseInt(s);
+            return Integer.parseInt(s);
         }
         catch (Exception ignored) {
 
         }
         try {
-            return (long)Long.parseLong(s);
+            return Long.parseLong(s);
         }
         catch (Exception ignored) {
 
         }
         try {
-            return (double)Double.parseDouble(s);
+            return Double.parseDouble(s);
         }
         catch (Exception ignored) {
 

@@ -368,8 +368,7 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
 
     @Override
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-        if (packet instanceof DataSync) {
-            DataSync p = (DataSync) packet;
+        if (packet instanceof DataSync p) {
             if (!p.hasNoData()) {
                 CompoundTag NBT = new CompoundTag();
                 this.writeSyncTag(NBT); //so unsent fields do not zero out, we sync the current values in

@@ -22,8 +22,8 @@ public class InvisibleButton extends Button {
     }
 
     @Override
-    public void renderButton(PoseStack p_93746_, int p_93747_, int p_93748_, float p_93749_) {
-        //super.drawButton(par1Minecraft, par2, par3);
+    public void renderWidget(PoseStack p_93746_, int p_93747_, int p_93748_, float p_93749_) {
+        super.renderWidget(p_93746_, p_93747_, p_93748_, p_93749_);
     }
 
 }

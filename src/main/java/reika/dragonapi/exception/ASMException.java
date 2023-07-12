@@ -18,9 +18,7 @@ public abstract class ASMException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Error ASMing "+node.name+":\n");
-        return sb.toString();
+        return "Error ASMing " + node.name + ":\n";
     }
 
     private abstract static class NoSuchInstructionASMException extends ASMException {
@@ -38,9 +36,7 @@ public abstract class ASMException extends RuntimeException {
 
         @Override
         public String getMessage() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Error ASMing method "+method.name+" "+method.desc+" in "+owner.name+":\n");
-            return sb.toString();
+            return "Error ASMing method " + method.name + " " + method.desc + " in " + owner.name + ":\n";
         }
 
     }
@@ -68,8 +64,7 @@ public abstract class ASMException extends RuntimeException {
             sb.append("Found method calls:\n");
             for (int i = 0; i < method.instructions.size(); i++) {
                 AbstractInsnNode ain = method.instructions.get(i);
-                if (ain instanceof MethodInsnNode) {
-                    MethodInsnNode min = (MethodInsnNode)ain;
+                if (ain instanceof MethodInsnNode min) {
                     String s = ReikaASMHelper.clearString(min).replace("\n", "");
                     if (min.owner.equals(memberOwner)) {
                         s = s+" * Owner match";
@@ -111,8 +106,7 @@ public abstract class ASMException extends RuntimeException {
             sb.append("Found field calls:\n");
             for (int i = 0; i < method.instructions.size(); i++) {
                 AbstractInsnNode ain = method.instructions.get(i);
-                if (ain instanceof FieldInsnNode) {
-                    FieldInsnNode min = (FieldInsnNode)ain;
+                if (ain instanceof FieldInsnNode min) {
                     String s = ReikaASMHelper.clearString(min);
                     if (min.owner.equals(memberOwner)) {
                         s = s+" * Owner match";
@@ -258,18 +252,17 @@ public abstract class ASMException extends RuntimeException {
 
         @Override
         public final String getMessage() {
-            StringBuilder sb = new StringBuilder();
-            sb.append(super.getMessage());
-            sb.append(this.getTitle());
-            sb.append(" already found in class ");
-            sb.append(node.name);
-            sb.append(" when trying to add another member with the same erasure.\n");
-            sb.append("This is a critical ASM error and the class transformer operation cannot proceed.");
-            sb.append(" If you are the developer of this mod, check for copy-paste errors or broken overloading.");
-            sb.append(" If not, report it to the developer.");
-            sb.append("\n\nAdditional information:\n");
-            sb.append(this.getAdditionalInformation());
-            return sb.toString();
+            String sb = super.getMessage() +
+                    this.getTitle() +
+                    " already found in class " +
+                    node.name +
+                    " when trying to add another member with the same erasure.\n" +
+                    "This is a critical ASM error and the class transformer operation cannot proceed." +
+                    " If you are the developer of this mod, check for copy-paste errors or broken overloading." +
+                    " If not, report it to the developer." +
+                    "\n\nAdditional information:\n" +
+                    this.getAdditionalInformation();
+            return sb;
         }
 
         protected abstract String getAdditionalInformation();
@@ -400,12 +393,11 @@ public abstract class ASMException extends RuntimeException {
         }
 
         @Override
-        public final String getMessage() {
-            StringBuilder sb = new StringBuilder();
-            sb.append(super.getMessage());
-            sb.append("Invalid argument to function:\n");
-            sb.append(message);
-            return sb.toString();
+        public String getMessage() {
+            String sb = super.getMessage() +
+                    "Invalid argument to function:\n" +
+                    message;
+            return sb;
         }
 
     }

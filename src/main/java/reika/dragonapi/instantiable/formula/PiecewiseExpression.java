@@ -90,8 +90,7 @@ public abstract class PiecewiseExpression extends MathExpression {
 
 		@Override
 		public boolean equals(Object o) {
-			if (o instanceof Range) {
-				Range r = (Range) o;
+			if (o instanceof Range r) {
 				return r.lowerLimit == lowerLimit && r.upperLimit == upperLimit && r.inclLower == inclLower && r.inclUpper == inclUpper;
 			}
 			return false;

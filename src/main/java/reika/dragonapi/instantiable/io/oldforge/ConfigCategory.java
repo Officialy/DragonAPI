@@ -22,12 +22,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 public class ConfigCategory implements Map<String, Property> {
-    private String name;
+    private final String name;
     private String comment;
     private String languagekey;
-    private ArrayList<ConfigCategory> children = new ArrayList<>();
-    private Map<String, Property> properties = new TreeMap<>();
-    private int propNumber = 0;
+    private final ArrayList<ConfigCategory> children = new ArrayList<>();
+    private final Map<String, Property> properties = new TreeMap<>();
+    private final int propNumber = 0;
     public final ConfigCategory parent;
     private boolean changed = false;
     private boolean requiresWorldRestart = false;
@@ -49,8 +49,7 @@ public class ConfigCategory implements Map<String, Property> {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof ConfigCategory) {
-            ConfigCategory cat = (ConfigCategory) obj;
+        if (obj instanceof ConfigCategory cat) {
             return name.equals(cat.name) && children.equals(cat.children);
         }
 
@@ -278,7 +277,7 @@ public class ConfigCategory implements Map<String, Property> {
     }
 
     private String getIndent(int indent) {
-        StringBuilder buf = new StringBuilder("");
+        StringBuilder buf = new StringBuilder();
         for (int x = 0; x < indent; x++) {
             buf.append("    ");
         }

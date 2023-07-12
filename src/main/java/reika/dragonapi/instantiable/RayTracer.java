@@ -119,8 +119,8 @@ public class RayTracer {
             vec.add(vec1);
 
             if (cacheBlockRay) {
-                blockRay.add(new BlockPos(vec));
-                blockRay.add(new BlockPos(vec0));
+                blockRay.add(BlockPos.containing(vec));
+                blockRay.add(BlockPos.containing(vec0)); //todo test
             }
 
             HitResult mov = world.clip(new ClipContext(vec, vec0, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, null));
@@ -150,9 +150,7 @@ public class RayTracer {
     private boolean isNonTerminal(int x, int y, int z) {
         if (x == Mth.floor(originX) && y == Mth.floor(originY) && z == Mth.floor(originZ))
             return false;
-        if (x == Mth.floor(targetX) && y == Mth.floor(targetY) && z == Mth.floor(targetZ))
-            return false;
-        return true;
+        return x != Mth.floor(targetX) || y != Mth.floor(targetY) || z != Mth.floor(targetZ);
     }
 
     private boolean isDisallowedBlock(Level world, int x, int y, int z) {
@@ -254,9 +252,9 @@ public class RayTracer {
 
     }
 
-    public static interface MultipointChecker<V> {
+    public interface MultipointChecker<V> {
 
-        public boolean isClearLineOfSight(V focus, RayTracer trace, Level world);
+        boolean isClearLineOfSight(V focus, RayTracer trace, Level world);
 
     }
 

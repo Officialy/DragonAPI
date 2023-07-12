@@ -144,7 +144,7 @@ public class PopupWriter extends Screen {
             ReikaGuiAPI.instance.drawRectFrame(matrixStack, x + 2, y + 2, w - 4, h - 4, 0xcfcfcf);
 
             //Draw the text
-            fr.drawWordWrap(FormattedText.of(s.text), x + 4, y + 4, sw, 0xffffff);
+            fr.drawWordWrap(matrixStack, FormattedText.of(s.text), x + 4, y + 4, sw, 0xffffff);
 
             RenderSystem.depthMask(true);
             RenderSystem.enableDepthTest();

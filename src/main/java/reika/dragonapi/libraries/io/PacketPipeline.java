@@ -29,8 +29,8 @@ import java.util.function.Supplier;
 
 public class PacketPipeline {
 
-    private ArrayList<Class<? extends PacketObj>> packets = new ArrayList<>();
-    private boolean isPostInitialized = false;
+    private final ArrayList<Class<? extends PacketObj>> packets = new ArrayList<>();
+    private final boolean isPostInitialized = false;
     private final DragonAPIMod mod;
     public final String packetChannel;
     private final PacketHandler handler;

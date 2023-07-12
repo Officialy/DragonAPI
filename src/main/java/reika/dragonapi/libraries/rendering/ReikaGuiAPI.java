@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -14,6 +15,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenEvent;
@@ -120,10 +122,10 @@ public final class ReikaGuiAPI extends Screen {
 
         buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
 
-        buffer.vertex(x + 0, y + h, zLevel).uv((u + 0) * var7, (v + h) * var8);
+        buffer.vertex(x, y + h, zLevel).uv((u) * var7, (v + h) * var8);
         buffer.vertex(x + w, y + h, zLevel).uv((u + w) * var7, (v + h) * var8);
-        buffer.vertex(x + w, y + 0, zLevel).uv((u + w) * var7, (v + 0) * var8);
-        buffer.vertex(x + 0, y + 0, zLevel).uv((u + 0) * var7, (v + 0) * var8);
+        buffer.vertex(x + w, y, zLevel).uv((u + w) * var7, (v) * var8);
+        buffer.vertex(x, y, zLevel).uv((u) * var7, (v) * var8);
         tesselator.end();
     }
 
@@ -157,7 +159,7 @@ public final class ReikaGuiAPI extends Screen {
         Matrix4f matrix = matrixStack.last().pose();
 
         RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         RenderSystem.enableBlend();
 
         buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
@@ -169,11 +171,11 @@ public final class ReikaGuiAPI extends Screen {
         tesselator.end();
 
         RenderSystem.disableBlend();
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
     }
 
     public void drawTexturedRect(PoseStack matrixStack, int x, int y, int w, int h, int color, float u0, float v0, float u1, float v1) {
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
         RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
         Tesselator tesselator = Tesselator.getInstance();
@@ -242,7 +244,7 @@ public final class ReikaGuiAPI extends Screen {
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
 
         if (type != LineType.SOLID) {
             type.setMode(2);
@@ -258,7 +260,7 @@ public final class ReikaGuiAPI extends Screen {
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
     }
 
     public void drawCircle(double x, double y, double radius, int color) {
@@ -272,7 +274,7 @@ public final class ReikaGuiAPI extends Screen {
         GL11.glDisable(GL11.GL_LIGHTING);
         //GL11.glDisable(GL11.GL_DEPTH_TEST);
         RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         GL11.glBegin(GL11.GL_LINE_LOOP);
         RenderSystem.setShaderColor(red / 255F, green / 255F, blue / 255F, alpha / 255F);
         for (int i = 0; i < 360; i++) {
@@ -320,9 +322,8 @@ public final class ReikaGuiAPI extends Screen {
 
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
 //        RenderSystem.glDisable(GL11.GL_LIGHTING);
-
 
         buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
         buffer.vertex(matrix, x, bottom, 0).color(var6, var7, var8, var10).endVertex();
@@ -361,7 +362,7 @@ public final class ReikaGuiAPI extends Screen {
         RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
 
         setup();
-        matrixStack.translate(8, 8, itemRenderer.blitOffset);
+        matrixStack.translate(8, 8, itemRenderer.ITEM_COUNT_BLIT_OFFSET); //todo check if this is blitOffset
         matrixStack.scale(1, -1, 1);
         matrixStack.scale(16, 16, 16);
         MultiBufferSource.BufferSource renderTypeBufferImpl = minecraft.renderBuffers().bufferSource();
@@ -375,7 +376,7 @@ public final class ReikaGuiAPI extends Screen {
         boolean flatItems = !bakedModel.usesBlockLight();
 
 
-        itemRenderer.render(is, ItemTransforms.TransformType.GUI, false, matrixStack, renderTypeBufferImpl, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
+        itemRenderer.render(is, ItemDisplayContext.GUI, false, matrixStack, renderTypeBufferImpl, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
         renderTypeBufferImpl.endBatch();
         RenderSystem.enableDepthTest();
 
@@ -451,7 +452,7 @@ public final class ReikaGuiAPI extends Screen {
 
         RenderSystem.disableDepthTest();
         RenderSystem.disableBlend();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         RenderSystem.disableBlend();
         int k = f.width(s); //had DelegateFontRenderer.stripFlags
         int j2 = mx + 12;
@@ -468,20 +469,20 @@ public final class ReikaGuiAPI extends Screen {
         //todo itemRenderer.zLevel = 300.0F;
 
         int j1 = -267386864;
-        this.fillGradient(matrixStack, j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
-        this.fillGradient(matrixStack, j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
-        this.fillGradient(matrixStack, j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
-        this.fillGradient(matrixStack, j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
-        this.fillGradient(matrixStack, j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
+        fillGradient(matrixStack, j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
+        fillGradient(matrixStack, j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
+        fillGradient(matrixStack, j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
+        fillGradient(matrixStack, j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
+        fillGradient(matrixStack, j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
         int k1 = 1347420415;
         int l1 = (k1 & 16711422) >> 1 | k1 & -16777216;
-        this.fillGradient(matrixStack, j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
-        this.fillGradient(matrixStack, j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
-        this.fillGradient(matrixStack, j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
-        this.fillGradient(matrixStack, j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
+        fillGradient(matrixStack, j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
+        fillGradient(matrixStack, j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
+        fillGradient(matrixStack, j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
+        fillGradient(matrixStack, j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
 
 
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
         f.drawShadow(matrixStack, s, j2, k2, 0xffffffff);
 
         if (cacheRenders)
@@ -491,7 +492,7 @@ public final class ReikaGuiAPI extends Screen {
     public void drawSplitTooltipAt(PoseStack pose, Font f, List<String> li, int mx, int my) {
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         RenderSystem.disableDepthTest();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         RenderSystem.disableBlend();
 //        RenderSystem.glDisable(GL11.GL_LIGHTING);
         int k = -1;
@@ -511,19 +512,19 @@ public final class ReikaGuiAPI extends Screen {
         zLevel = 300.0F;
         //itemRender.zLevel = 300.0F;
         int j1 = -267386864;
-        this.fillGradient(pose, j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
-        this.fillGradient(pose, j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
-        this.fillGradient(pose, j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
-        this.fillGradient(pose, j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
-        this.fillGradient(pose, j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
+        fillGradient(pose, j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
+        fillGradient(pose, j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
+        fillGradient(pose, j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
+        fillGradient(pose, j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
+        fillGradient(pose, j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
         int k1 = 1347420415;
         int l1 = (k1 & 16711422) >> 1 | k1 & -16777216;
-        this.fillGradient(pose, j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
-        this.fillGradient(pose, j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
-        this.fillGradient(pose, j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
-        this.fillGradient(pose, j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
+        fillGradient(pose, j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
+        fillGradient(pose, j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
+        fillGradient(pose, j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
+        fillGradient(pose, j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
 
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
 
         for (int i = 0; i < li.size(); i++) {
             String s = li.get(i);

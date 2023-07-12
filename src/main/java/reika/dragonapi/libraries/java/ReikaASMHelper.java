@@ -56,7 +56,7 @@ import reika.dragonapi.io.ReikaFileReader;
 
 public class ReikaASMHelper {
 
-    private static Field opcodeField;
+    private static final Field opcodeField;
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -91,8 +91,7 @@ public class ReikaASMHelper {
         for (MethodNode m : c.methods) {
             for (int i = 0; i < m.instructions.size(); i++) {
                 AbstractInsnNode ain = m.instructions.get(i);
-                if (ain instanceof FieldInsnNode) {
-                    FieldInsnNode fin = (FieldInsnNode)ain;
+                if (ain instanceof FieldInsnNode fin) {
                     if (fin.name.equals(f.name)) {
                         fin.desc = f.desc;
                     }
@@ -224,8 +223,7 @@ public class ReikaASMHelper {
     }
 
     public static boolean isMethodCall(AbstractInsnNode ain, String obf, String deobf) {
-        if (ain instanceof MethodInsnNode) {
-            MethodInsnNode min = (MethodInsnNode)ain;
+        if (ain instanceof MethodInsnNode min) {
             String s = FMLLoader.isProduction() ? obf : deobf;
             return min.name.equals(s);
         }
@@ -404,7 +402,6 @@ public class ReikaASMHelper {
             sb.append(i);
             sb.append(": ");
             sb.append(clearString(ain));
-            sb.append("");
             i++;
         }
         sb.append("\n}");
@@ -583,21 +580,18 @@ public class ReikaASMHelper {
         else if (ain instanceof TypeInsnNode) {
             return ((TypeInsnNode)ain).desc.equals(((TypeInsnNode)ain2).desc);
         }
-        else if (ain instanceof FieldInsnNode) {
-            FieldInsnNode fin = (FieldInsnNode)ain;
+        else if (ain instanceof FieldInsnNode fin) {
             FieldInsnNode fin2 = (FieldInsnNode)ain2;
             return fin.owner.equals(fin2.owner) && fin.name.equals(fin2.name) && fin.desc.equals(fin2.desc);
         }
-        else if (ain instanceof MethodInsnNode) {
-            MethodInsnNode min = (MethodInsnNode)ain;
+        else if (ain instanceof MethodInsnNode min) {
             MethodInsnNode min2 = (MethodInsnNode)ain2;
             return min.owner.equals(min2.owner) && min.name.equals(min2.name) && min.desc.equals(min2.desc) && min.itf == min2.itf;
         }
         else if (ain instanceof JumpInsnNode) {
             return ((JumpInsnNode)ain).label == ((JumpInsnNode)ain2).label;
         }
-        else if (ain instanceof IincInsnNode) {
-            IincInsnNode iin = (IincInsnNode)ain;
+        else if (ain instanceof IincInsnNode iin) {
             IincInsnNode iin2 = (IincInsnNode)ain2;
             return iin.var == iin2.var && iin.incr == iin2.incr;
         }
@@ -625,25 +619,22 @@ public class ReikaASMHelper {
         else if (ain instanceof TypeInsnNode) {
             return args[0] instanceof String && ((TypeInsnNode)ain).desc.equals(args[0]);
         }
-        else if (ain instanceof FieldInsnNode) {
+        else if (ain instanceof FieldInsnNode fin) {
             if (args.length != 3 || !(args[0] instanceof String) || !(args[1] instanceof String) || !(args[2] instanceof String))
                 return false;
-            FieldInsnNode fin = (FieldInsnNode)ain;
             return fin.owner.equals(args[0]) && fin.name.equals(args[1]) && fin.desc.equals(args[2]);
         }
-        else if (ain instanceof MethodInsnNode) {
+        else if (ain instanceof MethodInsnNode min) {
             if (args.length != 4 || !(args[0] instanceof String) || !(args[1] instanceof String) || !(args[2] instanceof String) || !(args[3] instanceof Boolean))
                 return false;
-            MethodInsnNode min = (MethodInsnNode)ain;
             return min.owner.equals(args[0]) && min.name.equals(args[1]) && min.desc.equals(args[2]) && min.itf == (Boolean)args[3];
         }
         else if (ain instanceof JumpInsnNode) {
             return args[0] instanceof LabelNode && ((JumpInsnNode)ain).label == args[0];
         }
-        else if (ain instanceof IincInsnNode) {
+        else if (ain instanceof IincInsnNode iin) {
             if (args.length != 2 || !(args[0] instanceof Integer) || !(args[1] instanceof Integer))
                 return false;
-            IincInsnNode iin = (IincInsnNode)ain;
             return iin.var == (Integer)args[0] && iin.incr == (Integer)args[1];
         }
         return false;
@@ -657,8 +648,7 @@ public class ReikaASMHelper {
         int counter = 0;
         for (int i = 0; i < m.instructions.size(); i++) {
             AbstractInsnNode ain = m.instructions.get(i);
-            if (ain instanceof MethodInsnNode) {
-                MethodInsnNode min = (MethodInsnNode)ain;
+            if (ain instanceof MethodInsnNode min) {
                 if (min.owner.equals(owner) && min.name.equals(name) && min.desc.equals(sig)) {
                     counter++;
                     if (counter >= n)
@@ -681,8 +671,7 @@ public class ReikaASMHelper {
         int counter = 0;
         for (int i = index; i < m.instructions.size(); i++) {
             AbstractInsnNode ain = m.instructions.get(i);
-            if (ain instanceof MethodInsnNode) {
-                MethodInsnNode min = (MethodInsnNode)ain;
+            if (ain instanceof MethodInsnNode min) {
                 if (min.name.equals(name)) {
                     counter++;
                     if (counter >= n)
@@ -701,8 +690,7 @@ public class ReikaASMHelper {
         int counter = 0;
         for (int i = 0; i < m.instructions.size(); i++) {
             AbstractInsnNode ain = m.instructions.get(i);
-            if (ain instanceof FieldInsnNode) {
-                FieldInsnNode min = (FieldInsnNode)ain;
+            if (ain instanceof FieldInsnNode min) {
                 if (min.name.equals(name)) {
                     counter++;
                     if (counter >= n)
@@ -721,8 +709,7 @@ public class ReikaASMHelper {
         int counter = 0;
         for (int i = 0; i < m.instructions.size(); i++) {
             AbstractInsnNode ain = m.instructions.get(i);
-            if (ain instanceof FieldInsnNode) {
-                FieldInsnNode min = (FieldInsnNode)ain;
+            if (ain instanceof FieldInsnNode min) {
                 if (min.owner.equals(owner) && min.name.equals(name)) {
                     counter++;
                     if (counter >= n)
@@ -956,7 +943,7 @@ public class ReikaASMHelper {
         }
     }
 
-    public static enum PrimitiveType {
+    public enum PrimitiveType {
 
         VOID("V",			void.class, 		Opcodes.RETURN,		Opcodes.ACONST_NULL, 	Opcodes.ASTORE),
         INT("I",			int.class, 			Opcodes.IRETURN, 	Opcodes.ILOAD, 			Opcodes.ISTORE),
@@ -982,7 +969,7 @@ public class ReikaASMHelper {
 
         private static final HashMap<String, PrimitiveType> map = new HashMap();
 
-        private PrimitiveType(String s, Class c, int retcode, int loadcode, int storecode) {
+        PrimitiveType(String s, Class c, int retcode, int loadcode, int storecode) {
             id = s;
             classType = c;
             returnCode = retcode;
@@ -1279,14 +1266,12 @@ public class ReikaASMHelper {
             m.name = repl;
         for (int i = 0; i < m.instructions.size(); i++) {
             AbstractInsnNode ain = m.instructions.get(i);
-            if (ain instanceof FieldInsnNode) {
-                FieldInsnNode fin = (FieldInsnNode)ain;
+            if (ain instanceof FieldInsnNode fin) {
                 repl = srgMap.get(fin.name);
                 if (repl != null)
                     fin.name = repl;
             }
-            else if (ain instanceof MethodInsnNode) {
-                MethodInsnNode min = (MethodInsnNode)ain;
+            else if (ain instanceof MethodInsnNode min) {
                 repl = srgMap.get(min.name);
                 if (repl != null)
                     min.name = repl;
@@ -1305,7 +1290,7 @@ public class ReikaASMHelper {
             if (!s.startsWith("CL")) {
                 String[] parts = s.split(" ");
 
-                int deobfidx = s.startsWith("MD") ? 1 : 1;
+                int deobfidx = 1;
                 int obfidx = s.startsWith("MD") ? 3 : 2;
 
                 String deobf = parts[deobfidx];

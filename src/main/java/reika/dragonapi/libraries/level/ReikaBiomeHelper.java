@@ -301,15 +301,13 @@ public class ReikaBiomeHelper {
      * Returns true if the passed biome is a cool but not cold biome.  Args: Biome
      */
     public static boolean isCoolBiome(ResourceKey<Biome> biome) {
-        if (biome == Biomes.TAIGA)
-            return true;
+        return biome == Biomes.TAIGA;
 //        todo if (level.registryAccess().registryOrThrow(Registries.BIOME).getKey(biome).getNamespace().toString().toLowerCase(Locale.ENGLISH).contains("maple woods"))
 //            return true;
         /*BiomeDictionary.Type[] types = BiomeDictionary.getTypes(biome).toArray(new BiomeDictionary.Type[0]);
         for (int i = 0; i < types.length; i++) {
 
         }*/
-        return false;
     }
 
     /**
@@ -328,8 +326,7 @@ public class ReikaBiomeHelper {
             return true;
         if (biome == Biomes.SNOWY_TAIGA)
             return true;
-        if (biome == Biomes.ICE_SPIKES)
-            return true;
+        return biome == Biomes.ICE_SPIKES;
   /*todo       if (level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(biome).getNamespace().toString().toLowerCase(Locale.ENGLISH).contains("maple woods")) //I do NOT live in the Arctic
             return false;
 //        if (biome.getEnableSnow())
@@ -351,7 +348,6 @@ public class ReikaBiomeHelper {
 //            if (types[i] == BiomeDictionary.Type.SNOWY)
 //                return true;
         }*/
-        return false;
     }
 
     /**
@@ -364,8 +360,7 @@ public class ReikaBiomeHelper {
             return true;
         if (biome == Biomes.JUNGLE)
             return true;
-        if (biome == Biomes.BADLANDS)
-            return true;
+        return biome == Biomes.BADLANDS;
         /* todo TagKey<Biome>[] types = (TagKey<Biome>[]) level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(biome).get().getTagKeys().toArray();//todo might be casting wrong idk
         for (TagKey<Biome>[] type : types) {
             if (type == BiomeTags.DESERT_LEGACY)
@@ -375,7 +370,6 @@ public class ReikaBiomeHelper {
             if (type == BiomeTags.WARM)
                 return true;
         }*/
-        return false;
     }
 
     /**

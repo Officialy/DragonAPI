@@ -29,7 +29,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
     private final PluralMap<RenderKey> keyMap = new PluralMap<>(2);
     private final Collection<Particle> queuedParticles = new ArrayList<>();
 
-    private Random rand = new Random();
+    private final Random rand = new Random();
 
     public static final int MAX_PARTICLES = ThrottleableEffectRenderer.getRegisteredInstance().limit;
 
@@ -259,7 +259,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
     private static class ParticleEntry {
 
         private final Particle effect;
-        private boolean countsToLimit;
+        private final boolean countsToLimit;
 
         private ParticleEntry(Particle fx) {
             effect = fx;
@@ -294,8 +294,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
         @Override
         public boolean equals(Object o) {
-            if (o instanceof RenderKey) {
-                RenderKey r = (RenderKey)o;
+            if (o instanceof RenderKey r) {
                 return texture.equals(r.texture) && mode.equals(r.mode);
             }
             return false;
@@ -395,8 +394,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
         @Override
         public boolean equals(Object o) {
-            if (o instanceof RenderMode) {
-                RenderMode r = (RenderMode)o;
+            if (o instanceof RenderMode r) {
                 return Arrays.equals(flags, r.flags);
             }
             return false;

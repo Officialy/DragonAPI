@@ -126,7 +126,7 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
 //    @SideOnly(Dist.CLIENT)
     public void render(Map<F, Integer> colorMap) {
 //        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
 //        GL11.glDisable(GL11.GL_LIGHTING);
         RenderSystem.disableCull();
         double ang = renderOrigin;
@@ -213,7 +213,7 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
         for (F f : this.data.keySet()) {
             sb.append(f.toString());
             sb.append(": ");
-            sb.append(String.valueOf(this.getFraction(f)*100));
+            sb.append(this.getFraction(f) * 100);
             sb.append("%; ");
         }
         return sb.toString();

@@ -203,10 +203,10 @@ public class ReikaObfuscationHelper {
         return FMLLoader.getDist() == Dist.CLIENT;
     }
 
-    public static interface ReflectiveAccessExceptionHandler {
+    public interface ReflectiveAccessExceptionHandler {
 
         /** Return false to silence the stacktrace at the end. */
-        public boolean handleException(Exception e);
+        boolean handleException(Exception e);
 
     }
 }

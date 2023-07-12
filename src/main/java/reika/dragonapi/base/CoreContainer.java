@@ -144,8 +144,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
             return ItemStack.EMPTY;
         int invsize = ((Container) tile).getContainerSize();
         int base = 0;
-        if (tile instanceof MultiPageInventory) {
-            MultiPageInventory mp = (MultiPageInventory) tile;
+        if (tile instanceof MultiPageInventory mp) {
             invsize = mp.getSlotsOnPage(mp.getCurrentPage());
             int cur = mp.getCurrentPage();
             for (int i = 0; i < cur; i++) {

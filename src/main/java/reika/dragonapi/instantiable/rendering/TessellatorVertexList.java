@@ -55,10 +55,10 @@ public class TessellatorVertexList {
         private double posY;
         private double posZ;
 
-        private float posU;
-        private float posV;
+        private final float posU;
+        private final float posV;
 
-        private int colorData;
+        private final int colorData;
 
         private boolean hasUV;
         private boolean hasColor;
@@ -96,8 +96,7 @@ public class TessellatorVertexList {
 
         @Override
         public final boolean equals(Object o) {
-            if (o instanceof TessellatorVertex) {
-                TessellatorVertex v = (TessellatorVertex)o;
+            if (o instanceof TessellatorVertex v) {
                 if (v.posX == posX && v.posY == posY && v.posZ == posZ) {
                     return hasUV ? (v.hasUV && v.posU == posU && v.posV == posV) : !v.hasUV;
                 }

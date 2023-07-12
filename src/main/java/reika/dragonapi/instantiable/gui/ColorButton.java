@@ -47,7 +47,8 @@ public class ColorButton extends Button {
     }
 
     @Override
-    public void renderButton(PoseStack stack, int p_93677_, int p_93678_, float p_93679_) {
+    public void renderWidget(PoseStack stack, int p_275505_, int p_275674_, float p_275696_) {
+        super.renderWidget(stack, p_275505_, p_275674_, p_275696_);
         if (isSelected) {
             ReikaGuiAPI.instance.drawRect(stack, getX(), getY(), getX()+width, getY()+height, 0xff777777, false);
             ReikaGuiAPI.instance.drawRect(stack, getX(), getY(), getX()+width-1, getY()+height-1, 0xff333333, false);

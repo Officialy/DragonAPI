@@ -177,7 +177,7 @@ public class ReikaWorldHelper {
     private static Simplex3DGenerator getOrCreateTemperatureNoise(Level world) {
         ImmutablePair<ResourceKey<Level>, Long> pair = new ImmutablePair<>(world.dimension(), ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
         Simplex3DGenerator gen = tempNoise.get(pair);
-        if (gen == null | true) {
+        if (true) {
             gen = new Simplex3DGenerator(ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
             gen.setFrequency(1/20D);
 //            gen.addOctave(3.7, 0.17, 117.6);
@@ -292,7 +292,7 @@ public class ReikaWorldHelper {
      * Returns true if the chunk is loaded by the ChunkProviderServer, which is true if the noiseGen phase has been completed.
      */
     public static boolean isChunkPastNoiseGen(Level world, int x, int z) {
-        return world instanceof ServerLevel ? world.getChunkSource().hasChunk(x, z) : true;//todo  .containsItem(ChunkPos.asLong(x, z)) : true;
+        return !(world instanceof ServerLevel) || world.getChunkSource().hasChunk(x, z);//todo  .containsItem(ChunkPos.asLong(x, z)) : true;
     }
 
 /*    public static boolean isChunkPastCompletelyFinishedGenerating(Level world, int x, int z) {
@@ -402,8 +402,7 @@ public class ReikaWorldHelper {
         LootContext.Builder lootcontext$builder = (new LootContext.Builder(world.getServer().getLevel(world.dimension()))).withRandom(world.getServer().getLevel(world.dimension()).random).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos)).withParameter(LootContextParams.TOOL, ItemStack.EMPTY);
         List<ItemStack> li = b.getDrops(lootcontext$builder);//new LootContext.Builder(world.getServer().getLevel(world.dimension())));
         if (ep != null) {
-            if (b.getBlock() instanceof BlockTieredResource) {
-                BlockTieredResource bt = (BlockTieredResource) b.getBlock();
+            if (b.getBlock() instanceof BlockTieredResource bt) {
                 li = new ArrayList<>(bt.isPlayerSufficientTier(world, pos, ep) ? bt.getHarvestResources(world, pos, fortune, ep) : bt.getNoHarvestResources(world, pos, fortune, ep));
             }
 //            BlockEvent.HarvestDropsEvent evt = new BlockEvent.HarvestDropsEvent(world, pos, b, ep); // fortune, 1F, li, ep, false);
@@ -422,7 +421,7 @@ public class ReikaWorldHelper {
      */
     public static List<ItemStack> dropBlockAt(Level world, BlockPos pos, int fortune, Player ep) {
         List<ItemStack> li = getDropsAt(world, pos, fortune, ep);
-        ReikaItemHelper.dropItems(world, new BlockPos(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5), li);
+        ReikaItemHelper.dropItems(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, li);
         return li;
     }
 

@@ -108,7 +108,7 @@ public enum ModWoodList implements TreeType {
     SAP(ModList.EREBUS,				0x000000, 0x000000, 12, 14, "Sap_Log",			"Sap_Leaves",			"Sap_Sapling", VarType.INSTANCE),
     MARSHWOOD(ModList.EREBUS,		0x000000, 0x000000, 12, 14, "Marshwood_Log",	"Marshwood_Leaves",		"Marshwood_Sapling", VarType.INSTANCE);
 
-    private ModList mod;
+    private final ModList mod;
     private Block blockID = null;
     private Block leafID = null;
     private Block saplingID;
@@ -279,11 +279,10 @@ public enum ModWoodList implements TreeType {
     }
 
     public String getBasicInfo() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(this.getName());
-        sb.append(" from ");
-        sb.append(mod);
-        return sb.toString();
+        String sb = this.getName() +
+                " from " +
+                mod;
+        return sb;
     }
 
     public String getLabel() {
@@ -394,7 +393,7 @@ public enum ModWoodList implements TreeType {
 
 
     public FallingBlockEntity getFallingBlock(Level world, int x, int y, int z) {
-        FallingBlockEntity e = FallingBlockEntity.fall(world, new BlockPos(x+0.5, y+0.5, z+0.5), blockID.defaultBlockState());
+        FallingBlockEntity e = FallingBlockEntity.fall(world, new BlockPos(x, y, z), blockID.defaultBlockState());
         return e;
     }
 
@@ -429,9 +428,7 @@ public enum ModWoodList implements TreeType {
     public boolean isRareTree() {
         if (this.isMagicTFTree())
             return true;
-        if (this == SILVERWOOD)
-            return true;
-        return false;
+        return this == SILVERWOOD;
     }
 
     public boolean isMagicTFTree() {
@@ -468,7 +465,7 @@ public enum ModWoodList implements TreeType {
         return modMappings.get(mod);
     }
 
-    public static enum VarType {
+    public enum VarType {
         ITEMSTACK(),
         INSTANCE(),
         REGISTRY();

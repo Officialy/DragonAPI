@@ -261,7 +261,7 @@ public class CommandableUpdateChecker {
     private boolean isPackMaker(DragonAPIMod mod, ServerPlayer ep) {
         UpdateHash test = this.genHash(mod, ep);
         UpdateHash get = this.getOrCreateHash(mod, ep);
-        return !!get.equals(test);
+        return get.equals(test);
     }
 
     private UpdateHash getOrCreateHash(DragonAPIMod mod, Player ep) {
@@ -357,22 +357,20 @@ public class CommandableUpdateChecker {
         if (evt.newLogin) {
             ArrayList<String> li = new ArrayList<>();
             for (DragonAPIMod mod : dispatchedOldMods) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(mod.getDisplayName());
-                sb.append(" ");
-                sb.append(mod.getModVersion());
-                sb.append(" is out of date. Update to ");
-                sb.append(latestVersions.get(mod).toString());
-                sb.append(" as soon as possible.");
-                li.add(sb.toString());
+                String sb = mod.getDisplayName() +
+                        " " +
+                        mod.getModVersion() +
+                        " is out of date. Update to " +
+                        latestVersions.get(mod).toString() +
+                        " as soon as possible.";
+                li.add(sb);
             }
             for (DragonAPIMod mod : dispatchedURLMods) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(mod.getDisplayName());
-                sb.append(" could not verify its version; the version server may be inaccessible. Check your internet settings, and please notify ");
-                sb.append(mod.getModAuthorName());
-                sb.append(" if the server is not accessible.");
-                li.add(sb.toString());
+                String sb = mod.getDisplayName() +
+                        " could not verify its version; the version server may be inaccessible. Check your internet settings, and please notify " +
+                        mod.getModAuthorName() +
+                        " if the server is not accessible.";
+                li.add(sb);
             }
             for (String s : li) {
                 PopupWriter.instance.addMessage(s);
@@ -412,22 +410,22 @@ public class CommandableUpdateChecker {
                     if (mod != null) {
                         if (action.equals("disable")) {
                             instance.setChecker(mod, false);
-                            String sg = ChatFormatting.BLUE.toString() + "Update checker for " + mod.getDisplayName() + " disabled.";
+                            String sg = ChatFormatting.BLUE + "Update checker for " + mod.getDisplayName() + " disabled.";
                             ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
                         } else if (action.equals("enable")) {
                             instance.setChecker(mod, true);
-                            String sg = ChatFormatting.BLUE.toString() + "Update checker for " + mod.getDisplayName() + " enabled.";
+                            String sg = ChatFormatting.BLUE + "Update checker for " + mod.getDisplayName() + " enabled.";
                             ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
                         } else {
-                            String sg = ChatFormatting.RED.toString() + "Invalid argument '" + action + "'.";
+                            String sg = ChatFormatting.RED + "Invalid argument '" + action + "'.";
                             ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
                         }
                     } else {
-                        String sg = ChatFormatting.RED.toString() + "Mod '" + name + "' not found.";
+                        String sg = ChatFormatting.RED + "Mod '" + name + "' not found.";
                         ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
                     }
                 } else {
-                    String sg = ChatFormatting.RED.toString() + "Invalid arguments.";
+                    String sg = ChatFormatting.RED + "Invalid arguments.";
                     ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
                 }
                 return 1;
@@ -520,8 +518,7 @@ public class CommandableUpdateChecker {
 
             @Override
             public boolean equals(Object o) {
-                if (o instanceof UpdateHash) {
-                    UpdateHash uh = (UpdateHash) o;
+                if (o instanceof UpdateHash uh) {
                     return uh.player == player && uh.filepath.equals(player);
                 }
                 return false;
@@ -540,7 +537,7 @@ public class CommandableUpdateChecker {
                     long sum = c1 | (c2 << 16) | (c3 << 32);
                     idx++;
                     //ReikaJavaLibrary.pConsole(c1+" & "+c2+" & "+c3+" > "+sum+" $ "+this.getStringForInt(sum));
-                    sb.append(this.getStringForInt(sum) + ":");
+                    sb.append(getStringForInt(sum) + ":");
                 }
                 //ReikaJavaLibrary.pConsole("Final: "+time+" & "+id+" & "+filepath+" > "+sb.toString());
                 return sb.toString();

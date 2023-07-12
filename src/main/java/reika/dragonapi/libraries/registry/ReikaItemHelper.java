@@ -53,8 +53,7 @@ public class ReikaItemHelper {
             return false;
         } else if (b instanceof ItemStack) {
             return matchStacks(a, (ItemStack) b);
-        } else if (b instanceof BlockKey) {
-            BlockKey bk = (BlockKey) b;
+        } else if (b instanceof BlockKey bk) {
             return matchStackWithBlock(a, bk.blockID);
         } else if (b instanceof Collection) {
             return ReikaItemHelper.listContainsItemStack((Collection<ItemStack>) b, a, false);
@@ -418,17 +417,17 @@ public class ReikaItemHelper {
     }
 
     public static ItemEntity dropItem(Entity e, ItemStack is) {
-        return dropItem(e.level, e.blockPosition(), is);
+        return dropItem(e.level, e.blockPosition().getX(), e.blockPosition().getY(), e.blockPosition().getZ(), is);
     }
 
-    public static ItemEntity dropItem(Level world, BlockPos pos, ItemStack is) {
-        return dropItem(world, pos, is, 1);
+    public static ItemEntity dropItem(Level world, double x, double y, double z, ItemStack is) {
+        return dropItem(world, x, y, z, is, 1);
     }
 
-    public static ItemEntity dropItem(Level world, BlockPos pos, ItemStack is, double vscale) {
+    public static ItemEntity dropItem(Level world, double x, double y, double z, ItemStack is, double vscale) {
         if (is == null)
             return null;
-        ItemEntity ei = new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), is.copy());
+        ItemEntity ei = new ItemEntity(world, x, y, z, is.copy());
         ei.setPickUpDelay(10);
         ei.setDeltaMovement((-0.1 + 0.2 * rand.nextDouble()) * vscale, (0.2 * rand.nextDouble()) * vscale, (-0.1 + 0.2 * rand.nextDouble()) * vscale);
         if (!world.isClientSide()) {
@@ -437,9 +436,9 @@ public class ReikaItemHelper {
         return ei;
     }
 
-    public static void dropItems(Level world, BlockPos pos, Collection<ItemStack> li) {
+    public static void dropItems(Level world, double x, double y, double z, Collection<ItemStack> li) {
         for (ItemStack is : li)
-            dropItem(world, pos, is);
+            dropItem(world, x, y, z, is);
     }
 
     public static boolean isBlock(ItemStack is) {

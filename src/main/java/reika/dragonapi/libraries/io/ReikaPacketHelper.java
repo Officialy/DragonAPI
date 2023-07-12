@@ -1233,7 +1233,7 @@ public class ReikaPacketHelper {
         }
     }
 
-    private static enum PacketableData {
+    private enum PacketableData {
         INT("I", Integer.class),
         BOOLEAN("B", Boolean.class),
         DOUBLE("D", Double.class),

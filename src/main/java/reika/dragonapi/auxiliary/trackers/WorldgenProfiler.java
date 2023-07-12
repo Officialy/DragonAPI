@@ -122,7 +122,7 @@ public class WorldgenProfiler {
         //	finishGenerator(SpillageProfile.instance, System.nanoTime(), cx, cz);
         ProfileTiming p = profiledChunks.get(ChunkPos.asLong(cx, cz));
         if (p == null) { //this is not actually wrong; since population is decoupled from generation, this can be called much later, even in a later load of the save
-            ;//throw new IllegalStateException("Chunk "+cx+", "+cz+" was finished generating before it started!?");
+            //throw new IllegalStateException("Chunk "+cx+", "+cz+" was finished generating before it started!?");
         }
         else {
             p.stop(now);
@@ -700,9 +700,9 @@ public class WorldgenProfiler {
 
     }
 
-    public static interface WorldProfilerParent {
+    public interface WorldProfilerParent {
 
-        public String getWorldgenProfilerID();
+        String getWorldgenProfilerID();
 
     }
 }

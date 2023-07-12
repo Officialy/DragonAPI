@@ -52,12 +52,12 @@ public class Configuration {
     private static final Pattern CONFIG_START = Pattern.compile("START: \"([^\\\"]+)\"");
     private static final Pattern CONFIG_END = Pattern.compile("END: \"([^\\\"]+)\"");
     public static final CharMatcher allowedProperties = CharMatcher.javaLetterOrDigit().or(CharMatcher.anyOf(ALLOWED_CHARS));
-    private static Configuration PARENT = null;
+    private static final Configuration PARENT = null;
 
     File file;
 
     private Map<String, ConfigCategory> categories = new TreeMap<>();
-    private Map<String, Configuration> children = new TreeMap<>();
+    private final Map<String, Configuration> children = new TreeMap<>();
 
     private boolean caseSensitiveCustomCategories;
     public String defaultEncoding = DEFAULT_ENCODING;
@@ -160,7 +160,7 @@ public class Configuration {
      */
     public Property get(String category, String key, boolean defaultValue)
     {
-        return get(category, key, defaultValue, (String) null);
+        return get(category, key, defaultValue, null);
     }
 
     /**
@@ -195,7 +195,7 @@ public class Configuration {
      */
     public Property get(String category, String key, boolean[] defaultValues)
     {
-        return get(category, key, defaultValues, (String) null);
+        return get(category, key, defaultValues, null);
     }
 
     /**
@@ -262,7 +262,7 @@ public class Configuration {
      */
     public Property get(String category, String key, int defaultValue)
     {
-        return get(category, key, defaultValue, (String) null, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        return get(category, key, defaultValue, null, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
     /**
@@ -315,7 +315,7 @@ public class Configuration {
      */
     public Property get(String category, String key, int[] defaultValues)
     {
-        return get(category, key, defaultValues, (String) null);
+        return get(category, key, defaultValues, null);
     }
 
     /**
@@ -404,7 +404,7 @@ public class Configuration {
      */
     public Property get(String category, String key, double defaultValue)
     {
-        return get(category, key, defaultValue, (String) null);
+        return get(category, key, defaultValue, null);
     }
 
     /**
@@ -547,7 +547,7 @@ public class Configuration {
      */
     public Property get(String category, String key, String defaultValue)
     {
-        return get(category, key, defaultValue, (String) null);
+        return get(category, key, defaultValue, null);
     }
 
     /**
@@ -609,7 +609,7 @@ public class Configuration {
      */
     public Property get(String category, String key, String[] defaultValues)
     {
-        return get(category, key, defaultValues, (String) null, false, -1, (Pattern) null);
+        return get(category, key, defaultValues, null, false, -1, null);
     }
 
     /**
@@ -623,7 +623,7 @@ public class Configuration {
      */
     public Property get(String category, String key, String[] defaultValues, String comment)
     {
-        return get(category, key, defaultValues, comment, false, -1, (Pattern) null);
+        return get(category, key, defaultValues, comment, false, -1, null);
     }
 
     /**
@@ -1539,7 +1539,7 @@ public class Configuration {
      */
     public String[] getStringList(String name, String category, String[] defaultValues, String comment)
     {
-        return getStringList(name, category, defaultValues, comment, (String[]) null, name);
+        return getStringList(name, category, defaultValues, comment, null, name);
     }
 
     /**

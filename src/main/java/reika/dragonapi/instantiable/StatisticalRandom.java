@@ -100,7 +100,7 @@ public class StatisticalRandom<K> {
 
     @Override
     public String toString() {
-        return data.toString() + " > " + this.genRandom(null).toString();
+        return data + " > " + this.genRandom(null);
     }
 
 }

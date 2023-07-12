@@ -50,8 +50,7 @@ public final class ProportionedMixMap<V, K> {
 
 		@Override
 		public boolean equals(Object o) {
-			if (o instanceof MixPut) {
-				MixPut m = (MixPut) o;
+			if (o instanceof MixPut m) {
 				return m.entry.equals(entry) && m.amount == amount;
 			}
 			return false;

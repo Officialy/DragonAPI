@@ -307,8 +307,7 @@ public final class BlockBox {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof BlockBox) {
-            BlockBox b = (BlockBox) o;
+        if (o instanceof BlockBox b) {
             return b.maxX == maxX && b.maxY == maxY && b.maxZ == maxZ && b.minX == minX && b.minY == minY && b.minZ == minZ;
         }
         return false;

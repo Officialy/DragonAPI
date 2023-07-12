@@ -967,8 +967,7 @@ public class BlockArray implements Iterable<BlockPos> {
 //            this.addBlockCoordinate(pos);
 //            return true;
 //        }
-        if (id instanceof SemiTransparent) {
-            SemiTransparent b = (SemiTransparent) id;
+        if (id instanceof SemiTransparent b) {
             if (b.isOpaque())
                 return false;
         }

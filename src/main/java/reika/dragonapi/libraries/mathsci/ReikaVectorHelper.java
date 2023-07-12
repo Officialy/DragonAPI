@@ -198,14 +198,14 @@ public class ReikaVectorHelper {
         return multiplyVectorByMatrix(vec, mat);
     }
 
-    public static HashSet<BlockPos> getCoordsAlongVector(double x1, double y1, double z1, double x2, double y2, double z2) {
+    public static HashSet<BlockPos> getCoordsAlongVector(int x1, int y1, int z1, int x2, int y2, int z2) {
         HashSet<BlockPos> set = new HashSet<>();
-        double dd = ReikaMathLibrary.py3d(x2 - x1, y2 - y1, z2 - z1);
-        for (double d = 0; d <= dd; d += 0.25) {
-            double f = d / dd;
-            double dx = x1 + f * (x2 - x1);
-            double dy = y1 + f * (y2 - y1);
-            double dz = z1 + f * (z2 - z1);
+        int dd = (int) ReikaMathLibrary.py3d(x2 - x1, y2 - y1, z2 - z1); //todo check if this works
+        for (int d = 0; d <= dd; d += 0.25) {
+            int f = d / dd;
+            int dx = x1 + f * (x2 - x1);
+            int dy = y1 + f * (y2 - y1);
+            int dz = z1 + f * (z2 - z1);
             BlockPos c = new BlockPos(dx, dy, dz);
             set.add(c);
         }

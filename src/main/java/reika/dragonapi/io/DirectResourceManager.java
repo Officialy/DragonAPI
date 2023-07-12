@@ -67,7 +67,6 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
         SoundManager sh = Minecraft.getInstance().getSoundManager();
         if (sh == null) {
             DragonAPI.LOGGER.error("Attempted to initialize sound entries before the sound handler was created!");
-            return;
         }
 //        SoundRegistry srg = sh.sndRegistry;
 //        if (srg == null) {

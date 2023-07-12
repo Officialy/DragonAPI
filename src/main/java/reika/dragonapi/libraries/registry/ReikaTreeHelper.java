@@ -41,10 +41,10 @@ public enum ReikaTreeHelper implements TreeType {
         }
     }
 
-    private Block leaf;
-    private Block log;
-    private Block sapling;
-    private Block plank;
+    private final Block leaf;
+    private final Block log;
+    private final Block sapling;
+    private final Block plank;
 
     ReikaTreeHelper(Block wood, Block plank, Block leaves, Block tree) {
         log = wood;
@@ -144,15 +144,14 @@ public enum ReikaTreeHelper implements TreeType {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(this.getName());
-        sb.append(" (LOG " + log + ";");
-        sb.append(" ");
-        sb.append("LEAF " + leaf + ";");
-        sb.append(" ");
-        sb.append("SAPLING " + sapling);
-        sb.append(")");
-        return sb.toString();
+        String sb = this.getName() +
+                " (LOG " + log + ";" +
+                " " +
+                "LEAF " + leaf + ";" +
+                " " +
+                "SAPLING " + sapling +
+                ")";
+        return sb;
     }
 
     @Override

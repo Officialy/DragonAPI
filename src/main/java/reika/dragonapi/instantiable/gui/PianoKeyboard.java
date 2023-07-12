@@ -113,7 +113,7 @@ public class PianoKeyboard extends Gui {
         Minecraft mc = Minecraft.getInstance();
         RenderSystem.enableBlend();
         for (PianoKey key : keyList) {
-            key.renderButton(stack, 0, 0, 0);
+            key.renderWidget(stack, 0, 0, 0);
         }
         RenderSystem.disableBlend();
 
@@ -134,7 +134,8 @@ public class PianoKeyboard extends Gui {
         }
 
         @Override
-        public void renderButton(PoseStack stack, int x, int y, float p_93679_) {
+        public void renderWidget(PoseStack stack, int x, int y, float p_93679_) {
+            super.renderWidget(stack, x, y, p_93679_);
             int c = guiInstance.getColorForChannel(guiInstance.getActiveChannel());
             int rgb = (c & 0xffffff) | (alpha << 24);
             if (alpha > 0) {

@@ -65,7 +65,7 @@ public class Spline {
         RenderSystem.enableBlend();
         blend.apply();
 //        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         float w = 0xB21;//GL11.glGetFloat(GL11.GL_LINE_WIDTH); //todo line width
         renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION); // GL11.GL_LINES
         int a = ReikaColorAPI.getAlpha(color);

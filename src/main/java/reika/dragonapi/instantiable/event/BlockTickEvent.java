@@ -90,7 +90,7 @@ public class BlockTickEvent extends WorldPositionEvent {
         return world.hasChunksAt(cx - 16, pos.getY(), cz - 16, cx + 16, pos.getY(), cz + 16);
     }
 
-    public static enum UpdateFlags {
+    public enum UpdateFlags {
         NATURAL(),
         SCHEDULED(),
         FORCED(),
@@ -98,7 +98,7 @@ public class BlockTickEvent extends WorldPositionEvent {
 
         public final int flag;
 
-        private UpdateFlags() {
+        UpdateFlags() {
             flag = 1 << this.ordinal();
         }
 

@@ -169,8 +169,7 @@ public class ModVersion implements Comparable<ModVersion> {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof ModVersion) {
-			ModVersion m = (ModVersion) o;
+		if (o instanceof ModVersion m) {
 			return m.majorVersion == majorVersion && m.subVersion.equals(subVersion);
 		}
 		return false;

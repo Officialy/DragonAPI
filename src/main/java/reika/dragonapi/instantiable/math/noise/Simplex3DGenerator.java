@@ -188,7 +188,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn0 = 2 - dx0 * dx0 - dy0 * dy0 - dz0 * dz0;
 			if (attn0 > 0) {
 				attn0 *= attn0;
-				value += attn0 * attn0 * this.extrapolate(xsb + 0, ysb + 0, zsb + 0, dx0, dy0, dz0);
+				value += attn0 * attn0 * this.extrapolate(xsb, ysb, zsb, dx0, dy0, dz0);
 			}
 
 			//Contribution (1,0,0)
@@ -198,7 +198,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn1 = 2 - dx1 * dx1 - dy1 * dy1 - dz1 * dz1;
 			if (attn1 > 0) {
 				attn1 *= attn1;
-				value += attn1 * attn1 * this.extrapolate(xsb + 1, ysb + 0, zsb + 0, dx1, dy1, dz1);
+				value += attn1 * attn1 * this.extrapolate(xsb + 1, ysb, zsb, dx1, dy1, dz1);
 			}
 
 			//Contribution (0,1,0)
@@ -208,7 +208,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn2 = 2 - dx2 * dx2 - dy2 * dy2 - dz2 * dz2;
 			if (attn2 > 0) {
 				attn2 *= attn2;
-				value += attn2 * attn2 * this.extrapolate(xsb + 0, ysb + 1, zsb + 0, dx2, dy2, dz2);
+				value += attn2 * attn2 * this.extrapolate(xsb, ysb + 1, zsb, dx2, dy2, dz2);
 			}
 
 			//Contribution (0,0,1)
@@ -218,7 +218,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn3 = 2 - dx3 * dx3 - dy3 * dy3 - dz3 * dz3;
 			if (attn3 > 0) {
 				attn3 *= attn3;
-				value += attn3 * attn3 * this.extrapolate(xsb + 0, ysb + 0, zsb + 1, dx3, dy3, dz3);
+				value += attn3 * attn3 * this.extrapolate(xsb, ysb, zsb + 1, dx3, dy3, dz3);
 			}
 		} else if (inSum >= 2) { //We're inside the tetrahedron (3-Simplex) at (1,1,1)
 
@@ -319,7 +319,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn3 = 2 - dx3 * dx3 - dy3 * dy3 - dz3 * dz3;
 			if (attn3 > 0) {
 				attn3 *= attn3;
-				value += attn3 * attn3 * this.extrapolate(xsb + 1, ysb + 1, zsb + 0, dx3, dy3, dz3);
+				value += attn3 * attn3 * this.extrapolate(xsb + 1, ysb + 1, zsb, dx3, dy3, dz3);
 			}
 
 			//Contribution (1,0,1)
@@ -329,7 +329,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn2 = 2 - dx2 * dx2 - dy2 * dy2 - dz2 * dz2;
 			if (attn2 > 0) {
 				attn2 *= attn2;
-				value += attn2 * attn2 * this.extrapolate(xsb + 1, ysb + 0, zsb + 1, dx2, dy2, dz2);
+				value += attn2 * attn2 * this.extrapolate(xsb + 1, ysb, zsb + 1, dx2, dy2, dz2);
 			}
 
 			//Contribution (0,1,1)
@@ -339,7 +339,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn1 = 2 - dx1 * dx1 - dy1 * dy1 - dz1 * dz1;
 			if (attn1 > 0) {
 				attn1 *= attn1;
-				value += attn1 * attn1 * this.extrapolate(xsb + 0, ysb + 1, zsb + 1, dx1, dy1, dz1);
+				value += attn1 * attn1 * this.extrapolate(xsb, ysb + 1, zsb + 1, dx1, dy1, dz1);
 			}
 
 			//Contribution (1,1,1)
@@ -540,7 +540,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn1 = 2 - dx1 * dx1 - dy1 * dy1 - dz1 * dz1;
 			if (attn1 > 0) {
 				attn1 *= attn1;
-				value += attn1 * attn1 * this.extrapolate(xsb + 1, ysb + 0, zsb + 0, dx1, dy1, dz1);
+				value += attn1 * attn1 * this.extrapolate(xsb + 1, ysb, zsb, dx1, dy1, dz1);
 			}
 
 			//Contribution (0,1,0)
@@ -550,7 +550,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn2 = 2 - dx2 * dx2 - dy2 * dy2 - dz2 * dz2;
 			if (attn2 > 0) {
 				attn2 *= attn2;
-				value += attn2 * attn2 * this.extrapolate(xsb + 0, ysb + 1, zsb + 0, dx2, dy2, dz2);
+				value += attn2 * attn2 * this.extrapolate(xsb, ysb + 1, zsb, dx2, dy2, dz2);
 			}
 
 			//Contribution (0,0,1)
@@ -560,7 +560,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn3 = 2 - dx3 * dx3 - dy3 * dy3 - dz3 * dz3;
 			if (attn3 > 0) {
 				attn3 *= attn3;
-				value += attn3 * attn3 * this.extrapolate(xsb + 0, ysb + 0, zsb + 1, dx3, dy3, dz3);
+				value += attn3 * attn3 * this.extrapolate(xsb, ysb, zsb + 1, dx3, dy3, dz3);
 			}
 
 			//Contribution (1,1,0)
@@ -570,7 +570,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn4 = 2 - dx4 * dx4 - dy4 * dy4 - dz4 * dz4;
 			if (attn4 > 0) {
 				attn4 *= attn4;
-				value += attn4 * attn4 * this.extrapolate(xsb + 1, ysb + 1, zsb + 0, dx4, dy4, dz4);
+				value += attn4 * attn4 * this.extrapolate(xsb + 1, ysb + 1, zsb, dx4, dy4, dz4);
 			}
 
 			//Contribution (1,0,1)
@@ -580,7 +580,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn5 = 2 - dx5 * dx5 - dy5 * dy5 - dz5 * dz5;
 			if (attn5 > 0) {
 				attn5 *= attn5;
-				value += attn5 * attn5 * this.extrapolate(xsb + 1, ysb + 0, zsb + 1, dx5, dy5, dz5);
+				value += attn5 * attn5 * this.extrapolate(xsb + 1, ysb, zsb + 1, dx5, dy5, dz5);
 			}
 
 			//Contribution (0,1,1)
@@ -590,7 +590,7 @@ public class Simplex3DGenerator extends SimplexNoiseGenerator {
 			double attn6 = 2 - dx6 * dx6 - dy6 * dy6 - dz6 * dz6;
 			if (attn6 > 0) {
 				attn6 *= attn6;
-				value += attn6 * attn6 * this.extrapolate(xsb + 0, ysb + 1, zsb + 1, dx6, dy6, dz6);
+				value += attn6 * attn6 * this.extrapolate(xsb, ysb + 1, zsb + 1, dx6, dy6, dz6);
 			}
 		}
 

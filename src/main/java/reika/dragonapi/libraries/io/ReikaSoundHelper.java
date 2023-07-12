@@ -205,7 +205,7 @@ public class ReikaSoundHelper {
         } else {
             SoundEnumSet set = soundSets.get(c);
             if (set != null) {
-                ;//throw new IllegalArgumentException("Sound set "+c+" already registered!");
+                //throw new IllegalArgumentException("Sound set "+c+" already registered!");
             }
             int idx = set != null ? set.index : soundSets.size();
             soundSetIDs.put(idx, c);

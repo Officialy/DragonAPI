@@ -390,7 +390,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                             flag = ReikaInventoryHelper.addToIInv(is, dropInventory);
                         }
                         if (!flag) {
-                            ReikaItemHelper.dropItem(world, new BlockPos(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5), is);
+                            ReikaItemHelper.dropItem(world, pos.getX(), pos.getY(), pos.getZ(), is);
                         }
                     }
                 }
@@ -409,8 +409,9 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
             if (!pass && id != Blocks.AIR) {
                 world.setBlock(pos, Blocks.AIR.defaultBlockState(), 0, causeUpdates ? 3 : 2);
             }
-            //if (!pass && causeUpdates)
-            //    world.markBlockForUpdate(pos);
+            if (!pass && causeUpdates)
+                world.sendBlockUpdated(pos, id.defaultBlockState(), id.defaultBlockState(), 3); //todo check
+//                world.markBlockForUpdate(pos);
             if (!pass && player != null) {
                 player.awardStat(Stats.BLOCK_MINED.get(id), 1);
                 player.causeFoodExhaustion(0.025F * hungerFactor);

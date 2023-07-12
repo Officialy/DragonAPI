@@ -29,11 +29,11 @@ public final class DecimalLineSegment {
 		this(c1.xCoord, c1.yCoord, c1.zCoord, c2.xCoord, c2.yCoord, c2.zCoord);
 	}
 
-	public static final DecimalLineSegment getFromXYZDir(double x1, double y1, double z1, Direction dir, double len) {
+	public static DecimalLineSegment getFromXYZDir(double x1, double y1, double z1, Direction dir, double len) {
 		return new DecimalLineSegment(x1, y1, z1, x1 + len * dir.getStepX(), y1 + len * dir.getStepY(), z1 + len * dir.getStepZ());
 	}
 
-	public static final DecimalLineSegment getFromXYZDir(double x1, double y1, double z1, ReikaDirectionHelper.CubeDirections dir, double len) {
+	public static DecimalLineSegment getFromXYZDir(double x1, double y1, double z1, ReikaDirectionHelper.CubeDirections dir, double len) {
 		return new DecimalLineSegment(x1, y1, z1, Mth.floor(x1 + len * dir.offsetX), y1, Mth.floor(z1 + len * dir.offsetZ));
 	}
 
@@ -48,8 +48,7 @@ public final class DecimalLineSegment {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof DecimalLineSegment) {
-			DecimalLineSegment ls = (DecimalLineSegment) o;
+		if (o instanceof DecimalLineSegment ls) {
 			return ls.origin.equals(origin) && ls.target.equals(target);
 		}
 		return false;

@@ -84,7 +84,7 @@ public class BiomeMapCommand {
         Collection<BiomeProvider> set = new ArrayList<>();
         DragonAPI.LOGGER.info("starting biomepng");
         if (args.length < 2) {
-            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED.toString() + "Illegal arguments. Use [seed=<seed>] [range] [resolution] <grid> <fullGrid>.");
+            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "Illegal arguments. Use [seed=<seed>] [range] [resolution] <grid> <fullGrid>.");
             return 0;
         }
         if (args[0].toLowerCase(Locale.ENGLISH).startsWith("seed=")) {
@@ -132,7 +132,7 @@ public class BiomeMapCommand {
     }
 
     public static void triggerBiomeMap(ServerPlayer ep, int x, int z, int range, int res, int grid, MapCompleteCallback call) {
-        instance.generateMap(new WorldBiomes(ep.level), ep, System.currentTimeMillis(), x, z, range, res, grid, false, call);
+        generateMap(new WorldBiomes(ep.level), ep, System.currentTimeMillis(), x, z, range, res, grid, false, call);
     }
 
   /*  public static void triggerBiomeMap(ServerPlayer ep, int range, int res, int grid) {
@@ -345,7 +345,7 @@ public class BiomeMapCommand {
 
             Graphics graphics = img.getGraphics();
             Font ft = graphics.getFont();
-            graphics.setFont(new Font(ft.getName(), ft.getStyle(), ft.getSize() * 1));
+            graphics.setFont(new Font(ft.getName(), ft.getStyle(), ft.getSize()));
             graphics.setColor(new Color(0xff000000));
             int y = 2;
             for (Integer b : li.keySet()) {

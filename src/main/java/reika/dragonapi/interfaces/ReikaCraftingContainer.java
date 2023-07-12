@@ -15,13 +15,13 @@ import reika.dragonapi.base.CoreContainer;
 import reika.dragonapi.interfaces.blockentity.CraftingTile;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
-public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends CoreContainer<V> implements Container{
+public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends CoreContainer<V> implements Container {
 
-    private Level world;
-    private CraftingContainer craftMatrix = new CraftingContainer(this, 3, 3);
-    private Container craftResult = new ResultContainer();
+    private final Level world;
+    private final CraftingContainer craftMatrix = new CraftingContainer(this, 3, 3);
+    private final Container craftResult = new ResultContainer();
     private boolean noUpdate;
-    private CraftingTile<V> crafter;
+    private final CraftingTile<V> crafter;
     public final boolean isGUI;
 
     public ReikaCraftingContainer(MenuType<?> type, int id, final Inventory playerInv, CraftingTile<V> te, Level worldObj, boolean gui) {

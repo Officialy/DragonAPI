@@ -7,13 +7,13 @@ import java.util.HashMap;
 
 public class BlockProperties {
     /** A catalogue of all flammable blocks by ID. */
-    private static HashMap<Block, Boolean> flammableArray = new HashMap();
+    private static final HashMap<Block, Boolean> flammableArray = new HashMap();
 
     /** A catalogue of all soft (replaceable, like water, tall grass, etc) blocks by ID. */
-    private static HashMap<Block, Boolean> softBlocksArray = new HashMap();
+    private static final HashMap<Block, Boolean> softBlocksArray = new HashMap();
 
     /** A catalogue of all nonsolid (no hitbox) blocks by ID. */
-    private static HashMap<Block, Boolean> nonSolidArray = new HashMap<>();
+    private static final HashMap<Block, Boolean> nonSolidArray = new HashMap<>();
 
     /** A catalogue of all block colors by ID. */
     public static int[] blockColorArray = new int[4096];

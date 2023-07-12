@@ -47,7 +47,7 @@ public class KeyWatcher {
         keyStates.get(key).updateKey(ep, press);
     }
 
-    public static enum Key {
+    public enum Key {
         JUMP(),
         SNEAK(),
         FORWARD(),
@@ -127,11 +127,11 @@ public class KeyWatcher {
 
         public static final Keys[] keyList = values();
 
-        private Keys(KeyMapping key) {
+        Keys(KeyMapping key) {
             this.key = key;
         }
 
-        private Keys(int key) {
+        Keys(int key) {
             keyInt = key;
         }
 

@@ -155,10 +155,8 @@ public class RemoteAssetLoader {
         private void download(AssetData dat) throws IOException {
             File f = dat.asset.getLocalPath();
             if (!ReikaFileReader.isFileWithin(f, DragonAPI.getMinecraftDirectory())) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Remote Asset " + dat.asset.getDisplayName() + " attempted to download to " + f.getCanonicalPath() + "!");
-                sb.append(" This is not in the MC directory and very likely either malicious or poorly implemented, or the remote server has been compromised!");
-                String s = sb.toString();
+                String s = "Remote Asset " + dat.asset.getDisplayName() + " attempted to download to " + f.getCanonicalPath() + "!" +
+                        " This is not in the MC directory and very likely either malicious or poorly implemented, or the remote server has been compromised!";
                 dat.asset.parent.error(s, true);
                 return;
                 //throw new RuntimeException(s);
