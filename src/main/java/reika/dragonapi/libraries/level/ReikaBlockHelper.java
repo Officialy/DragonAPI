@@ -10,8 +10,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.fluids.IFluidBlock;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -48,24 +48,6 @@ public class ReikaBlockHelper {
         addSilkTouchDrop(Blocks.FARMLAND, Blocks.DIRT);
     }
 
-    public static boolean matchMaterialsLoosely(Material m1, Material m2) {
-        if (m1 == m2)
-            return true;
-        if (m1 == Material.ICE && m2 == Material.ICE_SOLID)
-            return true;
-        if (m2 == Material.ICE && m1 == Material.ICE_SOLID)
-            return true;
-        if (m1 == Material.SNOW && m2 == Material.TOP_SNOW)
-            return true;
-        if (m2 == Material.SNOW && m1 == Material.TOP_SNOW)
-            return true;
-        if (m1 == Material.SNOW && m2 == Material.POWDER_SNOW)
-            return true;
-        if (m2 == Material.SNOW && m1 == Material.POWDER_SNOW)
-            return true;
-        return m1.getColor() == MaterialColor.PLANT && m2.getColor() == MaterialColor.PLANT;
-    }
-
     public static boolean isGroundType(Level world, BlockPos pos) {
         BlockState b = world.getBlockState(pos);
         if (b == Blocks.DIRT.defaultBlockState() || b == Blocks.GRASS.defaultBlockState() ||
@@ -73,8 +55,8 @@ public class ReikaBlockHelper {
                 b == Blocks.SANDSTONE.defaultBlockState() || b == Blocks.CLAY.defaultBlockState() ||
                 b == Blocks.GRAVEL.defaultBlockState() || b == Blocks.SNOW.defaultBlockState())
             return true;
-        Material mat = b.getMaterial();
-        return mat == Material.STONE || mat.isReplaceable();//todo? b.isReplaceableOreGen(world, pos, Blocks.stone);
+        MapColor mat = b.getMapColor(world, pos);
+        return mat == MapColor.STONE;// || mat.isReplaceable();//todo? b.isReplaceableOreGen(world, pos, Blocks.stone);
     }
 
     public static boolean isGroundType(WorldGenLevel world, BlockPos pos) {
@@ -84,13 +66,13 @@ public class ReikaBlockHelper {
                 b == Blocks.SANDSTONE.defaultBlockState() || b == Blocks.CLAY.defaultBlockState() ||
                 b == Blocks.GRAVEL.defaultBlockState() || b == Blocks.SNOW.defaultBlockState())
             return true;
-        Material mat = b.getMaterial();
-        return mat == Material.STONE || mat.isReplaceable();//todo? b.isReplaceableOreGen(world, pos, Blocks.stone);
+        MapColor mat = b.getMapColor(world, pos);
+        return mat == MapColor.STONE;// || mat.isReplaceable();//todo? b.isReplaceableOreGen(world, pos, Blocks.stone);
     }
 
     public static boolean isWood(BlockGetter world, BlockPos pos) {
         Block b = world.getBlockState(pos).getBlock();
-        return b.defaultMaterialColor() == MaterialColor.WOOD;
+        return b.defaultMapColor() == MapColor.WOOD;
     }
 
     public static boolean isLeaf(BlockGetter world, BlockPos pos) {
@@ -129,7 +111,7 @@ public class ReikaBlockHelper {
         BlockState b = world.getBlockState(pos);
         if (b.getBlock() == Blocks.AIR)
             return false;
-        return (b.getMaterial().blocksMotion() && !BlockProperties.isNonSolid(b.getBlock()) && b.getCollisionShape(world, pos) != null);
+        return (b.getPistonPushReaction() == PushReaction.BLOCK && !BlockProperties.isNonSolid(b.getBlock()) && b.getCollisionShape(world, pos) != null);
     }
 
     public static ItemStack getSilkTouch(Level world, BlockPos pos, Block id, Player ep, boolean dropFluids) {
@@ -142,7 +124,7 @@ public class ReikaBlockHelper {
         ItemStack get = silkTouchDrops.get(id);
         if (get != null)
             return get;
-        if (Item.byBlock(id) == null) {
+        if (Item.BY_BLOCK.get(id).getDefaultInstance() == ItemStack.EMPTY) {
             DragonAPI.LOGGER.error("Something tried to silktouch null-item block " + ForgeRegistries.BLOCKS.getKey(id).getNamespace());
             return null;
         }
@@ -188,9 +170,6 @@ public class ReikaBlockHelper {
     public static boolean isLiquid(BlockState b) {
         if (b.getBlock() == Blocks.AIR)
             return false;
-        Material mat = b.getMaterial();
-        if (mat == Material.LAVA || mat == Material.WATER)
-            return true;
         return b.getBlock() instanceof LiquidBlock || b instanceof IFluidBlock;
     }
 

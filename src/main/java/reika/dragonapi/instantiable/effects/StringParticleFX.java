@@ -6,6 +6,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleRenderType;
@@ -59,7 +61,7 @@ public class StringParticleFX extends Particle {
 //        pose.mulPose(Axis.XP.rotation(1)); //rotationPitch
 
 //        pose.scale(-1, -1, 1);
-        pose.scale(0.2f, 0.2f, 0.2f); //todo used to be particleScale, changed to 1,1,1 for now?
+        pose.scale(0.2f, 0.2f, 0.2f); //todo used to be particleScale, changed to 0.2, for now?
         Font f = Minecraft.getInstance().font;
 //        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 0.003662109F);
 //        RenderSystem.enableTexture();
@@ -77,10 +79,10 @@ public class StringParticleFX extends Particle {
         int color = 0xffffff;
         int w = -Mth.floor(f.width(string) / 2.0F);
         int h = -Mth.floor(f.lineHeight / 2F);
-        if (shadow)
+      /*todo  if (shadow)
             f.drawShadow(pose, string, 1 + w, 1 + h, color);
         else
-            f.draw(pose, string, w, h, color);
+            f.draw(pose, string, w, h, color);*/
 
         RenderSystem.setShaderColor(1, 1, 1, 1);
         RenderSystem.enableDepthTest();

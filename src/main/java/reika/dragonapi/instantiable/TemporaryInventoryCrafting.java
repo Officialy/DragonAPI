@@ -1,12 +1,13 @@
 package reika.dragonapi.instantiable;
 
+import net.minecraft.world.inventory.TransientCraftingContainer;
 import reika.dragonapi.instantiable.gui.DummyContainer;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 
 
-public class TemporaryInventoryCrafting extends CraftingContainer {
+public class TemporaryInventoryCrafting extends TransientCraftingContainer {
 
     public final int width;
     public final int height;
@@ -32,7 +33,7 @@ public class TemporaryInventoryCrafting extends CraftingContainer {
         return this;
     }
 /*
-	
+
 	public TemporaryInventoryCrafting setItems(IRecipeContainer ir) {
 		ItemStack[] disp = ReikaRecipeHelper.getPermutedRecipeArray(ir);
 		for (int i = 0; i < disp.length; i++) {

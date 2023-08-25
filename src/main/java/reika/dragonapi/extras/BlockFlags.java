@@ -8,6 +8,6 @@ public class BlockFlags {
     public static final int RERENDER_MAIN_THREAD = 8;
     public static final int UPDATE_NEIGHBORS = 16;
     public static final int NO_NEIGHBOR_DROPS = 32;
-    public static final int ALL = 3; //todo i think 3 means all, i forgor
+    public static final int ALL = 3;
 
 }

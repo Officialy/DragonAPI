@@ -10,8 +10,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.phys.Vec3;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.BlockArrayComputer;
 import reika.dragonapi.exception.MisuseException;
@@ -874,30 +872,6 @@ public class BlockArray implements Iterable<BlockPos> {
                 Block idy = world.getBlockState(c.below()).getBlock();
                 if (!ReikaWorldHelper.softBlocks(world, c.below()) && !ReikaArrayHelper.contains(overrides, idy)) {
                     canSink = false;
-                }
-            }
-            if (canSink) {
-                this.offset(0, -1, 0);
-                n++;
-            }
-        }
-        return n;
-    }
-
-    public final int sink(Level world, Material... overrides) {
-        boolean canSink = true;
-        int n = 0;
-        while (canSink) {
-            for (int i = 0; i < blocks.size(); i++) {
-                BlockPos c = this.getNthBlock(i);
-                if (minY <= 0 || c.getY() <= 0) {
-                    canSink = false;
-                    break;
-                }
-                Material idy = ReikaWorldHelper.getMaterial(world, c.below());
-                if (!ReikaWorldHelper.softBlocks(world, c.below()) && !ReikaArrayHelper.contains(overrides, idy) && idy.isSolid()) {
-                    canSink = false;
-                    break;
                 }
             }
             if (canSink) {

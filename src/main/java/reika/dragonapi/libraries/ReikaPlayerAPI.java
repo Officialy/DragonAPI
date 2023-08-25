@@ -132,7 +132,7 @@ public class ReikaPlayerAPI {
             double y = vec.y + d * vec2.y;
             double z = vec.z + d * vec2.z;
             AABB box = new AABB(x - s, y - s, z - s, x + s, y + s, z + s);
-            List<Entity> li = ep.level.getEntities(ep, box);
+            List<Entity> li = ep.level().getEntities(ep, box);
             if (!li.isEmpty())
                 return li.get(0);
         }
@@ -143,7 +143,7 @@ public class ReikaPlayerAPI {
         Vec3 vec = ep.getEyePosition();//new Vec3(ep.getX(), (ep.getY() + 1.62) - ep.yo, ep.getZ());
         Vec3 vec2 = ep.getViewVector(1F); //1F
         Vec3 vec3 = vec.add(vec2.x() * reach, vec2.y() * reach, vec2.z() * reach);
-        BlockHitResult hit = ep.level.clip(new ClipContext(vec, vec3, ClipContext.Block.COLLIDER, liq ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, ep));
+        BlockHitResult hit = ep.level().clip(new ClipContext(vec, vec3, ClipContext.Block.COLLIDER, liq ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, ep));
 
         GetPlayerLookEvent evt = new GetPlayerLookEvent(ep, hit, vec, vec3);
         MinecraftForge.EVENT_BUS.post(evt);

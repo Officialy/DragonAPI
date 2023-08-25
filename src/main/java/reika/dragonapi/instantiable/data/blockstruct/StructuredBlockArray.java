@@ -7,7 +7,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.AirBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.Material;
 import reika.dragonapi.instantiable.data.immutable.BlockKey;
 import reika.dragonapi.instantiable.data.maps.ItemHashMap;
 import reika.dragonapi.interfaces.BlockCheck;
@@ -103,7 +102,7 @@ public class StructuredBlockArray extends BlockArray {
 
     public final boolean hasNonAirBlock(int x, int y, int z) {
         Block b = this.getBlockAt(x, y, z);
-        return b != null && b != Blocks.AIR && b.defaultBlockState().getMaterial() != Material.AIR && !(b instanceof AirBlock);
+        return b != null && b != Blocks.AIR && b.defaultBlockState().getProperties() != Blocks.AIR.defaultBlockState().getProperties() && !(b instanceof AirBlock);
     }
 
     @Override

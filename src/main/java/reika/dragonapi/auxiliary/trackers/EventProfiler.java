@@ -43,7 +43,7 @@ public class EventProfiler {
         addShortcut(SetBlockEvent.class);
         addShortcut(BlockTickEvent.class);
         addShortcut(EntityAboutToRayTraceEvent.class);
-        //addShortcut(TileUpdateEvent.class);
+//        addShortcut(TileUpdateEvent.class);
         addShortcut(ItemUpdateEvent.class);
     }
 

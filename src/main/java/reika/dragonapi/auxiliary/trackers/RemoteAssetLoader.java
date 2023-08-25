@@ -271,9 +271,7 @@ public class RemoteAssetLoader {
                 li.add("Downloaded from " + this.getRepositoryURL() + " to " + this.getLocalStorageFolder());
                 int n = li.get(li.size() - 1).length();
                 StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < n; i++) {
-                    sb.append("=");
-                }
+                sb.append("=".repeat(n));
                 li.add(sb.toString());
                 for (RemoteAsset a : assets) {
                     li.add(a.getDisplayName() + " -> " + a.getLocalPath() + " {Size=" + a.data.size + " B,  Hash=" + a.data.hash + "}");

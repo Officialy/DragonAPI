@@ -9,23 +9,20 @@
  ******************************************************************************/
 package reika.dragonapi.modregistry;
 
-import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.tags.TagKey;
 import net.minecraft.tags.TagManager;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
 import reika.dragonapi.interfaces.registry.Dependency;
 
-
 public enum PowerTypes implements Dependency {
 
     RF(),
     FE(),
-    EU("ic2.api.energy.tile.IEnergyTile", "ic2.api.item.IElectricItem"),
-    ROTARYCRAFT("reika.rotarycraft.api.Power.ShaftMachine"),
-    PNEUMATIC("pneumaticCraft.api.BlockEntity.IPneumaticMachine"),
+//    EU("ic2.api.energy.tile.IEnergyTile", "ic2.api.item.IElectricItem"),
+    ROTARYCRAFT("reika.rotarycraft.api.power.ShaftMachine"),
+    PNEUMATIC("pneumaticCraft.api.blockentity.IPneumaticMachine"),
     HYDRAULIC(),
     STEAM(TagManager.getTagDir(FluidTags.create(new ResourceLocation("forge", "steam")).registry()).isEmpty()),
     ELECTRICRAFT(ModList.ELECTRICRAFT.isLoaded());

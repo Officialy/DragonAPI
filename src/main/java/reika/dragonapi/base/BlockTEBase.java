@@ -34,14 +34,6 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
         super(properties);
     }
 
-    @Nullable
-    @Override
-    public abstract <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType);
-
-    @Nullable
-    @Override
-    public abstract BlockEntity newBlockEntity(BlockPos pPos, BlockState pState);
-
 
     @Override
     public void setPlacedBy(Level world, BlockPos pos, BlockState pState, @Nullable LivingEntity e, ItemStack pStack) {

@@ -51,7 +51,7 @@ public class EntityListCommand {
                         sb.append(", ");
                 }
                 sb.append(".");
-                context.getSource().sendSuccess(Component.literal(sb.toString()), true);
+                context.getSource().sendSuccess(() -> Component.literal(sb.toString()), true);
                 return 1;
             }
 

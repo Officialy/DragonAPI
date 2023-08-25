@@ -24,7 +24,7 @@ public final class DonatorController {
 
 	public static final DonatorController instance = new DonatorController();
 
-	public static final String reikaURL = "http://server.techjargaming.com/Reika/Donator/donators_";
+	public static final String reikaURL = "https://reikasminecraft.overminddl1.com/Donator/donators_";
 
 	private final HashMap<DragonAPIMod, DonationList> data = new HashMap();
 	private final MultiMap<DragonAPIMod, Donator> byModDonators = new MultiMap();
@@ -237,7 +237,7 @@ public final class DonatorController {
 
 	private static class DonationList {
 
-		private final HashMap<String, Donation> data = new HashMap();
+		private final HashMap<String, Donation> data = new HashMap<>();
 
 		private Donator addDonation(String name, UUID ign, float amt) {
 			Donator d = new Donator(name, ign);

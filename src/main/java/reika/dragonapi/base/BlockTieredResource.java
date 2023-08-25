@@ -9,6 +9,7 @@
  ******************************************************************************/
 package reika.dragonapi.base;
 
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -19,8 +20,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootParams;
+import reika.dragonapi.libraries.io.ReikaSoundHelper;
+import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,17 +34,12 @@ public abstract class BlockTieredResource extends Block {
 
 	protected static final Random rand = new Random();
 
-	public BlockTieredResource(Material mat) {
-		super(Properties.of(mat));
-	}
-
-	//@Override
-	public final Item getItemDropped(Random r, int fortune) {
-		return null;
+	public BlockTieredResource() {
+		super(Properties.of());
 	}
 
 	@Override
-	public List<ItemStack> getDrops(BlockState p_220076_1_, LootContext.Builder p_220076_2_) {
+	public List<ItemStack> getDrops(BlockState pState, LootParams.Builder pParams) {
 		return new ArrayList<>();
 	}
 
@@ -62,9 +60,9 @@ public abstract class BlockTieredResource extends Block {
 	public final void onBlockPlacedBy(Level world, BlockPos pos, LivingEntity elb, ItemStack is) {
 		if (elb instanceof Player ep) {
 			if (!this.isPlayerSufficientTier(world, pos, ep)) {
-				//if (world.isClientSide()) //isClientSide()
-					//ReikaRenderHelper.spawnDropParticles(world, pos, this);
-				//ReikaSoundHelper.playBreakSound(world, pos, this);
+				if (world.isClientSide())
+					ReikaRenderHelper.spawnDropParticles((ClientLevel) world, pos, this);
+				ReikaSoundHelper.playBreakSound(world, pos, this);
 				world.setBlock(pos, Blocks.AIR.defaultBlockState(), 1);
 			}
 		}

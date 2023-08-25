@@ -11,6 +11,7 @@ package reika.dragonapi.instantiable.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -22,8 +23,7 @@ public class InvisibleButton extends Button {
     }
 
     @Override
-    public void renderWidget(PoseStack p_93746_, int p_93747_, int p_93748_, float p_93749_) {
-        super.renderWidget(p_93746_, p_93747_, p_93748_, p_93749_);
+    protected void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
+        super.renderWidget(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
     }
-
 }

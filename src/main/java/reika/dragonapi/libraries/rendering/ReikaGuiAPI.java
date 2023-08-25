@@ -5,11 +5,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
@@ -27,7 +26,6 @@ import org.lwjgl.opengl.GL11;
 import reika.dragonapi.ModList;
 import reika.dragonapi.instantiable.data.maps.RectangleMap;
 import reika.dragonapi.instantiable.data.maps.RegionMap;
-import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
 import reika.dragonapi.objects.LineType;
 
@@ -97,13 +95,15 @@ public final class ReikaGuiAPI extends Screen {
     /**
      * Renders the specified text to the screen, center-aligned.
      */
-    public void drawCenteredStringNoShadow(PoseStack poseStack, Font par1FontRenderer, String par2Str, int par3, int par4, int par5) {
-        par1FontRenderer.draw(poseStack, par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, par5);
+    public void drawCenteredStringNoShadow(GuiGraphics graphics, Font par1FontRenderer, String par2Str, int par3, int par4, int par5) {
+        graphics.drawString(par1FontRenderer, par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, par5);
     }
 
-    @Override
-    public void render(PoseStack p_96562_, int p_96563_, int p_96564_, float p_96565_) {
-        super.render(p_96562_, p_96563_, p_96564_, p_96565_);
+    /**
+     * Renders the specified text to the screen, center-aligned.
+     */
+    public void drawCenteredStringNoShadow(PoseStack stack, Font par1FontRenderer, String par2Str, int par3, int par4, int par5, MultiBufferSource bufferSource) {
+        par1FontRenderer.drawInBatch(par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, par5, false, stack.last().pose(), bufferSource, Font.DisplayMode.NORMAL, 0, 15728880);
     }
 
     /**
@@ -338,6 +338,10 @@ public final class ReikaGuiAPI extends Screen {
         this.drawItemStack(matrixStack, renderer, Minecraft.getInstance().font, is, x, y);
     }
 
+    public void drawItemStack(GuiGraphics matrixStack, ItemRenderer renderer, Font fr, ItemStack is, int x, int y) {
+        this.drawItemStack(matrixStack.pose(), renderer, fr, is, x, y);
+    }
+
     /**
      * Note that this must be called after any and all texture and text rendering, as the lighting conditions are left a bit off
      */
@@ -396,14 +400,15 @@ public final class ReikaGuiAPI extends Screen {
 	}
 	 */
 
-    public void drawItemStackWithTooltip(PoseStack pose, ItemRenderer renderer, Font fr, ItemStack is, int x, int y, double mouseX, double mouseY) {
-        pose.translate(0.0F, 0.0F, 32.0F);
+    public void drawItemStackWithTooltip(GuiGraphics guiGraphics, ItemRenderer renderer, Font fr, ItemStack is, int x, int y, double mouseX, double mouseY) {
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0.0F, 0.0F, 32.0F);
         Font f2 = Minecraft.getInstance().font;//is.getItem().getFontRenderer(is);
         if (f2 != null)
             fr = f2;
-        this.drawItemStack(pose, renderer, fr, is, x, y);
+        this.drawItemStack(guiGraphics.pose(), renderer, fr, is, x, y);
 
-        pose.translate(0.0F, 0.0F, 32.0F);
+        guiGraphics.pose().translate(0.0F, 0.0F, 32.0F);
         if (this.isMouseInBox(x, x + 16, y, y + 16, mouseX, mouseY)) {
             String sg = is.getDisplayName().getString();
             if (sg == null) {
@@ -411,42 +416,45 @@ public final class ReikaGuiAPI extends Screen {
             }
             boolean right = mouseX < minecraft.screen.width / 2.0;
             if (right)
-                this.drawTooltipAt(pose, fr, sg, (int) (mouseX + fr.width(sg) + 12), (int) mouseY);
+                this.drawTooltipAt(guiGraphics, fr, sg, (int) (mouseX + fr.width(sg) + 12), (int) mouseY);
             else
-                this.drawTooltip(pose, fr, sg, mouseX, mouseY);
+                this.drawTooltip(guiGraphics, fr, sg, mouseX, mouseY);
         }
-        pose.translate(0.0F, 0.0F, -64.0F);
+        guiGraphics.pose().translate(0.0F, 0.0F, -64.0F);
+        guiGraphics.pose().popPose();
     }
 
-    public void drawMultilineTooltip(PoseStack pose, List<String> li, int x, int y) {
-        pose.translate(0.0F, 0.0F, 64.0F);
+    public void drawMultilineTooltip(GuiGraphics guiGraphics, List<String> li, int x, int y) {
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0.0F, 0.0F, 64.0F);
         int dy = y;
         for (String s : li) {
-            this.drawTooltipAt(pose, minecraft.font, s, x, dy);
+            this.drawTooltipAt(guiGraphics, minecraft.font, s, x, dy);
             dy += 17;
         }
-        pose.translate(0.0F, 0.0F, -64.0F);
+        guiGraphics.pose().translate(0.0F, 0.0F, -64.0F);
+        guiGraphics.pose().popPose();
     }
 
-    public void drawMultilineTooltip(PoseStack pose, ItemStack is, int x, int y, double mouseX, double mouseY) {
+    public void drawMultilineTooltip(GuiGraphics graphics, ItemStack is, int x, int y, double mouseX, double mouseY) {
         if (this.isMouseInBox(x, x + 16, y, y + 16, mouseX, mouseY)) {
             List<String> li = new ArrayList<>();
             li.add(is.getDisplayName().getString());
             //todo is.getItem().addInformation(is, Minecraft.getInstance().player, li, true);
             is.getItem().getDescription();
-            this.drawMultilineTooltip(pose, li, x, y);
+            this.drawMultilineTooltip(graphics, li, x, y);
         }
     }
 
-    public void drawTooltip(PoseStack pose, Font f, String s, double mouseX, double mouseY) {
+    public void drawTooltip(GuiGraphics pose, Font f, String s, double mouseX, double mouseY) {
         this.drawTooltipAt(pose, f, s, (int) mouseX, (int) mouseY);
     }
 
-    public void drawTooltip(PoseStack pose, Font f, String s, int dx, int dy, double mouseX, double mouseY) {
+    public void drawTooltip(GuiGraphics pose, Font f, String s, int dx, int dy, double mouseX, double mouseY) {
         this.drawTooltipAt(pose, f, s, (int) (mouseX + dx), (int) (mouseY + dy));
     }
 
-    public void drawTooltipAt(PoseStack matrixStack, Font f, String s, int mx, int my) {
+    public void drawTooltipAt(GuiGraphics guiGraphics, Font f, String s, int mx, int my) {
         if (s == null)
             s = "[null]";
 
@@ -469,28 +477,28 @@ public final class ReikaGuiAPI extends Screen {
         //todo itemRenderer.zLevel = 300.0F;
 
         int j1 = -267386864;
-        fillGradient(matrixStack, j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
-        fillGradient(matrixStack, j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
-        fillGradient(matrixStack, j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
-        fillGradient(matrixStack, j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
-        fillGradient(matrixStack, j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
+        guiGraphics.fillGradient(j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
+        guiGraphics.fillGradient(j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
+        guiGraphics.fillGradient(j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
         int k1 = 1347420415;
         int l1 = (k1 & 16711422) >> 1 | k1 & -16777216;
-        fillGradient(matrixStack, j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
-        fillGradient(matrixStack, j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
-        fillGradient(matrixStack, j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
-        fillGradient(matrixStack, j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
+        guiGraphics.fillGradient(j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
+        guiGraphics.fillGradient(j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
 
 
 //        RenderSystem.enableTexture();
-        f.drawShadow(matrixStack, s, j2, k2, 0xffffffff);
+        drawStringShadow(guiGraphics, f, s, j2, k2, 0xffffffff);
 
         if (cacheRenders)
             tooltips.addItem(s, mx, my + 8, f.width(s) + 24, f.lineHeight + 8);
     }
 
-    public void drawSplitTooltipAt(PoseStack pose, Font f, List<String> li, int mx, int my) {
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+    public void drawSplitTooltipAt(GuiGraphics guiGraphics, Font f, List<String> li, int mx, int my) {
+//        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         RenderSystem.disableDepthTest();
 //        RenderSystem.disableTexture();
         RenderSystem.disableBlend();
@@ -512,28 +520,40 @@ public final class ReikaGuiAPI extends Screen {
         zLevel = 300.0F;
         //itemRender.zLevel = 300.0F;
         int j1 = -267386864;
-        fillGradient(pose, j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
-        fillGradient(pose, j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
-        fillGradient(pose, j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
-        fillGradient(pose, j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
-        fillGradient(pose, j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
+        guiGraphics.fillGradient(j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
+        guiGraphics.fillGradient(j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
+        guiGraphics.fillGradient(j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
         int k1 = 1347420415;
         int l1 = (k1 & 16711422) >> 1 | k1 & -16777216;
-        fillGradient(pose, j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
-        fillGradient(pose, j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
-        fillGradient(pose, j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
-        fillGradient(pose, j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
+        guiGraphics.fillGradient(j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
+        guiGraphics.fillGradient(j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
+        guiGraphics.fillGradient(j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
 
 //        RenderSystem.enableTexture();
 
         for (int i = 0; i < li.size(); i++) {
             String s = li.get(i);
-            f.drawShadow(pose, s, j2, k2 + i * 10, 0xffffffff);
+            drawStringShadow(guiGraphics, f, s, j2, k2 + i * 10, 0xffffffff);
             if (cacheRenders)
                 tooltips.addItem(s, mx, my + 8 + i * 10, f.width(s) + 24, f.lineHeight + 8);
         }
 
-        pose.popPose();
+        guiGraphics.pose().popPose();
+    }
+
+    public void drawStringShadow(GuiGraphics guiGraphics, Font f, String s, int x, int y, int colour) {
+        drawString(guiGraphics, f, s, x, y, colour, true);
+    }
+
+    public void drawString(GuiGraphics guiGraphics, Font f, String s, int x, int y, int colour) {
+        drawString(guiGraphics, f, s, x, y, colour, false);
+    }
+
+    public void drawString(GuiGraphics guiGraphics, Font f, String s, int x, int y, int colour, boolean shadow) {
+        guiGraphics.drawString(f, s, x, y, colour, shadow);
     }
 
     public Map<String, Rectangle> getTooltips() {

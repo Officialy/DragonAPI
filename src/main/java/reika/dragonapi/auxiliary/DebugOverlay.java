@@ -36,7 +36,7 @@ public class DebugOverlay {
                 float d = 3;
                 stack.scale(d, d, d);
                 var s = "Debug Mode Enabled!";
-                f.draw(stack, s, 1, 1, 0xffffff);
+                event.getGuiGraphics().drawString(f, s, 1, 1, 0xffffff);
                 stack.scale(1/d, 1/d, 1/d);
                 RenderSystem.setShaderTexture(0, new ResourceLocation("textures/gui/icons.png"));
             }
@@ -49,14 +49,14 @@ public class DebugOverlay {
                     float reach = 4;
                     var hit = ReikaPlayerAPI.getLookedAtBlockClient(4, false);
                     if (hit != null) {
-                        Block b = ep.level.getBlockState(hit.getBlockPos()).getBlock();
-//                        if (b.hasBlockEntity(ep.level.getBlockMetadata(hit.getBlockPos()))) {
-                            BlockEntity te = ep.level.getBlockEntity(hit.getBlockPos());
+                        Block b = ep.level().getBlockState(hit.getBlockPos()).getBlock();
+//                        if (b.hasBlockEntity(ep.level().getBlockMetadata(hit.getBlockPos()))) {
+                            BlockEntity te = ep.level().getBlockEntity(hit.getBlockPos());
                             if (te != null) {
                                 CompoundTag NBT = new CompoundTag();
                                 ArrayList<String> li = new ArrayList<>();
                                 try {
-                                    te.load(NBT); //todo could break things, why would blank NBT be added?
+                                    te.load(NBT);
                                     li.addAll(ReikaNBTHelper.parseNBTAsLines(NBT));
                                 }
                                 catch (Exception e) {
@@ -68,7 +68,7 @@ public class DebugOverlay {
                                 }
                                 for (int i = 0; i < li.size(); i++) {
                                     String s = li.get(i);
-                                    f.draw(stack, s, 1+event.getWindow().getGuiScaledWidth()/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
+                                    event.getGuiGraphics().drawString(f, s, 1+event.getWindow().getGuiScaledWidth()/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
                                     RenderSystem.setShaderTexture(0, new ResourceLocation("textures/gui/icons.png"));
                                 }
                             }

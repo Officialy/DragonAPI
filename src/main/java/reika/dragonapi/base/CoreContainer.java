@@ -246,7 +246,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     private boolean canAdd(ItemStack is, ItemStack inslot) {
         if (inslot.isEmpty())
             return true;
-        return ReikaItemHelper.matchStacks(is, inslot) && ItemStack.tagMatches(is, inslot);
+        return ReikaItemHelper.matchStacks(is, inslot) && ItemStack.isSameItemSameTags(is, inslot);
     }
 
     @Override //To avoid a couple crashes with some mods (or vanilla packet system) not checking array bounds

@@ -13,7 +13,7 @@ public class DonatorCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("dragondonators").executes((context) -> {
-            context.getSource().sendSuccess(
+            context.getSource().sendSuccess( () ->
                     Component.translatable("dragonapi.donatorcommand").withStyle(ChatFormatting.AQUA)
                             .append(DonatorController.instance.getDisplayList())
                             .append("\n--------------------------------------\n").withStyle(ChatFormatting.WHITE)

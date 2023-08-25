@@ -25,9 +25,9 @@ public final class PatreonController {
 
 	public static final PatreonController instance = new PatreonController();
 
-	public static final String reikaURL = "http://server.techjargaming.com/Reika/Donator/patreon_";
+	public static final String reikaURL = "https://reikasminecraft.overminddl1.com/Donator/patreon_";
 
-	private final HashMap<String, Patrons> data = new HashMap();
+	private final HashMap<String, Patrons> data = new HashMap<>();
 
 	private PatreonController() {
 
@@ -139,39 +139,33 @@ public final class PatreonController {
 		return sb.toString();
 	}
 
-	private static class DonatorFile implements ReikaFileReader.ConnectionErrorHandler {
-
-		private final String dev;
-
-		private DonatorFile(String dev) {
-			this.dev = dev;
-		}
+	private record DonatorFile(String dev) implements ReikaFileReader.ConnectionErrorHandler {
 
 		@Override
-		public void onServerRedirected() {
-			DragonAPI.LOGGER.debug("Donator server not found!");
-		}
+			public void onServerRedirected() {
+				DragonAPI.LOGGER.debug("Donator server not found!");
+			}
 
-		@Override
-		public void onNoInternet() {
-			DragonAPI.LOGGER.debug("Error accessing online file: Is your internet disconnected?");
-		}
+			@Override
+			public void onNoInternet() {
+				DragonAPI.LOGGER.debug("Error accessing online file: Is your internet disconnected?");
+			}
 
-		@Override
-		public void onServerNotFound() {
-			DragonAPI.LOGGER.debug("Donator server not found!");
-		}
+			@Override
+			public void onServerNotFound() {
+				DragonAPI.LOGGER.debug("Donator server not found!");
+			}
 
-		@Override
-		public void onTimedOut() {
-			DragonAPI.LOGGER.debug("Error accessing online file: Timed Out");
-		}
+			@Override
+			public void onTimedOut() {
+				DragonAPI.LOGGER.debug("Error accessing online file: Timed Out");
+			}
 
-	}
+		}
 
 	private static class Patrons {
 
-		private final CountMap<DonatorController.Donator> data = new CountMap();
+		private final CountMap<DonatorController.Donator> data = new CountMap<>();
 
 		private int total;
 

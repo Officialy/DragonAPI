@@ -9,7 +9,6 @@ public abstract class ASMException extends RuntimeException {
 
     public static final boolean DEV_ENV = true;//todo IMPORTANT ON RELEASE !FMLForgePlugin.RUNTIME_DEOBF;
 
-
     protected final ClassNode node;
 
     protected ASMException(ClassNode cn) {

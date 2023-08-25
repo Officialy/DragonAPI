@@ -3,10 +3,7 @@ package reika.dragonapi.interfaces;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.inventory.CraftingContainer;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.ResultContainer;
+import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import reika.dragonapi.auxiliary.trackers.KeyWatcher;
@@ -18,7 +15,7 @@ import reika.dragonapi.libraries.registry.ReikaItemHelper;
 public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends CoreContainer<V> implements Container {
 
     private final Level world;
-    private final CraftingContainer craftMatrix = new CraftingContainer(this, 3, 3);
+    private final CraftingContainer craftMatrix = new TransientCraftingContainer(this, 3, 3);
     private final Container craftResult = new ResultContainer();
     private boolean noUpdate;
     private final CraftingTile<V> crafter;

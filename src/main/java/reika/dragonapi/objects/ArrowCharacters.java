@@ -36,9 +36,9 @@ public enum ArrowCharacters {
 
     public static ArrowCharacters getFromAngle(double ang) {
         ang = ang % 360;
-        for (int i = 0; i < arrowList.length; i++) {
-            if (ReikaMathLibrary.isValueInsideBoundsIncl(arrowList[i].getMinAngle(), arrowList[i].getMaxAngle(), ang)) {
-                return arrowList[i];
+        for (ArrowCharacters arrowCharacters : arrowList) {
+            if (ReikaMathLibrary.isValueInsideBoundsIncl(arrowCharacters.getMinAngle(), arrowCharacters.getMaxAngle(), ang)) {
+                return arrowCharacters;
             }
         }
         return null;

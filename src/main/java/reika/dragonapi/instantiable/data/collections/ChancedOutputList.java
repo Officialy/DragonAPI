@@ -58,7 +58,7 @@ public final class ChancedOutputList {
     public void removeItem(ItemStack is) {
         if (!modifiable)
             throw new UnsupportedOperationException("This ChancedOutputList is locked!");
-        data.removeIf(ic -> ItemStack.isSame(is, ic.item));
+        data.removeIf(ic -> ItemStack.isSameItem(is, ic.item));
     }
 
     public ChancedOutputList addItems(ArrayList<ItemStack> li, float chance) {

@@ -9,14 +9,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.Material;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
@@ -395,7 +393,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                     }
                 }
                 if (ReikaBlockHelper.isLiquid(id.defaultBlockState())) {
-                    if (id.defaultBlockState().getMaterial() == Material.WATER) {
+                    if (id.defaultBlockState().getProperties() == Blocks.WATER.defaultBlockState().getProperties()) {
                         world.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), SoundEvents.GENERIC_SWIM, SoundSource.BLOCKS, 1, 1, false);
                     } else {
                         world.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), SoundEvents.GHAST_SHOOT, SoundSource.BLOCKS, 1, 1, false);
@@ -410,7 +408,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                 world.setBlock(pos, Blocks.AIR.defaultBlockState(), 0, causeUpdates ? 3 : 2);
             }
             if (!pass && causeUpdates)
-                world.sendBlockUpdated(pos, id.defaultBlockState(), id.defaultBlockState(), 3); //todo check
+                world.sendBlockUpdated(pos, id.defaultBlockState(), id.defaultBlockState(), 3);
 //                world.markBlockForUpdate(pos);
             if (!pass && player != null) {
                 player.awardStat(Stats.BLOCK_MINED.get(id), 1);

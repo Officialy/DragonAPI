@@ -123,7 +123,7 @@ public class BiomeMapCommand {
         long start = System.currentTimeMillis();
 
         if (set.isEmpty())
-            set.add(new WorldBiomes(ep.level));
+            set.add(new WorldBiomes(ep.level()));
 
         for (BiomeProvider bp : set)
             generateMap(bp, ep, start, x, z, range, res, grid, fullGrid, null);
@@ -132,7 +132,7 @@ public class BiomeMapCommand {
     }
 
     public static void triggerBiomeMap(ServerPlayer ep, int x, int z, int range, int res, int grid, MapCompleteCallback call) {
-        generateMap(new WorldBiomes(ep.level), ep, System.currentTimeMillis(), x, z, range, res, grid, false, call);
+        generateMap(new WorldBiomes(ep.level()), ep, System.currentTimeMillis(), x, z, range, res, grid, false, call);
     }
 
   /*  public static void triggerBiomeMap(ServerPlayer ep, int range, int res, int grid) {
@@ -142,7 +142,7 @@ public class BiomeMapCommand {
     private static void generateMap(BiomeProvider bp, ServerPlayer ep, long start, int x, int z, int range, int res, int grid, boolean fullGrid, MapCompleteCallback callback) {
         int hash = rand.nextInt();
 
-        ResourceKey<Level> dim = bp instanceof WorldBiomes ? Level.OVERWORLD : ep.level.dimension();
+        ResourceKey<Level> dim = bp instanceof WorldBiomes ? Level.OVERWORLD : ep.level().dimension();
         if (DragonAPI.isSinglePlayer()) {
             startCollecting(hash, bp.getName(), dim, x, z, range, res, grid, fullGrid);
         } else {

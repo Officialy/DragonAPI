@@ -78,12 +78,14 @@ public class ReikaRenderHelper {
         RenderSystem.enableDepthTest();
     }
 
+    public static void spawnDropParticles(ClientLevel world, BlockPos pos, Block b) {
+        spawnDropParticles(world, pos.getX(), pos.getY(), pos.getZ(), b);
+    }
 
     public static void spawnDropParticles(ClientLevel world, int x, int y, int z, Block b) {
         int n = 12 + DragonAPI.rand.nextInt(12);
         spawnDropParticles(world, x, y, z, b, n);
     }
-
 
     public static void spawnDropParticles(ClientLevel world, int x, int y, int z, Block b, int n) {
         for (int i = 0; i < n; i++) {

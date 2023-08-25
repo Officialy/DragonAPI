@@ -27,120 +27,6 @@ public class ReikaReflectionHelper {
 
     private static final PluralMap<Method> methodCache = new PluralMap<>(2);
 
-    public static Block createBlockInstance(DragonAPIMod mod, RegistrationList list) {
-        try {
-            Constructor<?> c = list.getObjectClass().getConstructor(list.getConstructorParamTypes());
-            Block instance = (Block) (c.newInstance(list.getConstructorParams()));
-            return (instance);//todo .setRegistryName(list.getUnlocalizedName()));
-        } catch (NoSuchMethodException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " does not have the specified constructor " + Arrays.toString(list.getConstructorParamTypes()) + "! Check visibility and material args!");
-        } catch (SecurityException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " threw security exception!");
-        } catch (InstantiationException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " did not allow instantiation!");
-        } catch (IllegalAccessException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " threw illegal access exception! (Nonpublic constructor)");
-        } catch (IllegalArgumentException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " was given invalid parameters!");
-        } catch (InvocationTargetException e) {
-            Throwable t = e.getCause();
-            if (t instanceof IllegalArgumentException)
-                throw new IDConflictException(mod, t.getMessage());
-            else {
-                mod.getModLogger().error("ITE on instantiating " + list);
-                e.getCause().printStackTrace();
-                throw new RegistrationException(mod, list + " (" + list.getObjectClass().getSimpleName() + ") threw invocation target exception: " + e + " with " + e.getCause() + " (" + e.getCause().getMessage() + ")");
-            }
-//            return null;
-        } catch (NoClassDefFoundError e) {
-            e.printStackTrace();
-            throw new RegistrationException(mod, "Failed to load " + list + " due to a missing class: ", e);
-        }
-    }
-
-    public static Item createItemInstance(DragonAPIMod mod, RegistrationList list) {
-        try {
-            Constructor<?> c = list.getObjectClass().getConstructor(list.getConstructorParamTypes());
-            Item instance = (Item) (c.newInstance(list.getConstructorParams()));
-            return (instance); //todo .setRegistryName(list.getUnlocalizedName()));
-        } catch (NoSuchMethodException e) {
-            throw new RegistrationException(mod, "Item Class " + list.getObjectClass().getSimpleName() + " does not have the specified constructor " + Arrays.toString(list.getConstructorParamTypes()) + "!");
-        } catch (SecurityException e) {
-            throw new RegistrationException(mod, "Item Class " + list.getObjectClass().getSimpleName() + " threw security exception!");
-        } catch (InstantiationException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " did not allow instantiation!");
-        } catch (IllegalAccessException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " threw illegal access exception! (Nonpublic constructor)");
-        } catch (IllegalArgumentException e) {
-            throw new RegistrationException(mod, list.getObjectClass().getSimpleName() + " was given invalid parameters!");
-        } catch (InvocationTargetException e) {
-            Throwable t = e.getCause();
-            if (t instanceof IllegalArgumentException)
-                throw new IDConflictException(mod, t.getMessage());
-            else
-                throw new RegistrationException(mod, list + " (" + list.getObjectClass().getSimpleName() + ") threw invocation target exception: " + e + " with " + e.getCause() + " (" + e.getCause().getMessage() + ")");
-        } catch (NoClassDefFoundError e) {
-            e.printStackTrace();
-            throw new RegistrationException(mod, "Failed to load " + list + " due to a missing class: " + e);
-        }
-    }
-
-    public static Item createBasicItemInstance(DragonAPIMod mod, Class<? extends Item> cl, int id, String unloc, boolean overwrite) {
-        Item instance;
-        try {
-            Constructor<? extends Item> c = cl.getConstructor(int.class);
-            instance = c.newInstance(id);
-            return (instance);//todo .setRegistryName(unloc));
-        } catch (NoSuchMethodException e) {
-            throw new MisuseException("Item Class " + cl.getSimpleName() + " does not have the specified constructor!");
-        } catch (SecurityException e) {
-            throw new MisuseException("Item Class " + cl.getSimpleName() + " threw security exception!");
-        } catch (InstantiationException e) {
-            throw new MisuseException(cl.getSimpleName() + " did not allow instantiation!");
-        } catch (IllegalAccessException e) {
-            throw new MisuseException(cl.getSimpleName() + " threw illegal access exception! (Nonpublic constructor)");
-        } catch (IllegalArgumentException e) {
-            throw new MisuseException(cl.getSimpleName() + " was given invalid parameters!");
-        } catch (InvocationTargetException e) {
-            Throwable t = e.getCause();
-            if (t instanceof IllegalArgumentException)
-                throw new IllegalArgumentException(t.getMessage());
-            else
-                throw new MisuseException(cl.getSimpleName() + " threw invocation target exception: " + e + " with " + e.getCause() + " (" + e.getCause().getMessage() + ")");
-        } catch (NoClassDefFoundError e) {
-            e.printStackTrace();
-            throw new RegistrationException(mod, "Failed to load " + cl + " due to a missing class: " + e);
-        }
-    }
-
-    public static Enchantment createEnchantmentInstance(DragonAPIMod mod, Class<? extends Enchantment> cl, int id, String unloc, boolean overwrite) {
-        Enchantment instance;
-        try {
-            Constructor<? extends Enchantment> c = cl.getConstructor(int.class);
-            instance = c.newInstance(id);
-            return (instance);//todo .setRegistryName(unloc));
-        } catch (NoSuchMethodException e) {
-            throw new MisuseException("Enchantment Class " + cl.getSimpleName() + " does not have the specified constructor!");
-        } catch (SecurityException e) {
-            throw new MisuseException("Enchantment Class " + cl.getSimpleName() + " threw security exception!");
-        } catch (InstantiationException e) {
-            throw new MisuseException(cl.getSimpleName() + " did not allow instantiation!");
-        } catch (IllegalAccessException e) {
-            throw new MisuseException(cl.getSimpleName() + " threw illegal access exception! (Nonpublic constructor)");
-        } catch (IllegalArgumentException e) {
-            throw new MisuseException(cl.getSimpleName() + " was given invalid parameters!");
-        } catch (InvocationTargetException e) {
-            Throwable t = e.getCause();
-            if (t instanceof IllegalArgumentException)
-                throw new IllegalArgumentException(t.getMessage());
-            else
-                throw new MisuseException(cl.getSimpleName() + " threw invocation target exception: " + e + " with " + e.getCause() + " (" + e.getCause().getMessage() + ")");
-        } catch (NoClassDefFoundError e) {
-            e.printStackTrace();
-            throw new RegistrationException(mod, "Failed to load " + cl + " due to a missing class: " + e);
-        }
-    }
-
     /**
      * Gets the value of a private int in an instance of obj.
      */
@@ -163,7 +49,7 @@ public class ReikaReflectionHelper {
                 throw new NoSuchFieldException();
             }
             int val = Integer.MIN_VALUE;
-            if (!f.isAccessible()) {
+            if (!f.canAccess(f)) {
                 f.setAccessible(true);
                 val = f.getInt(obj);
                 f.setAccessible(false);
@@ -197,7 +83,7 @@ public class ReikaReflectionHelper {
      */
     public static boolean getPrivateBoolean(Object obj, String field) {
         try {
-            Class c = obj.getClass();
+            Class<?> c = obj.getClass();
             Field f = null;
             while (f == null && c != null) {
                 try {
@@ -214,7 +100,7 @@ public class ReikaReflectionHelper {
                 throw new NoSuchFieldException();
             }
             boolean val = false;
-            if (!f.isAccessible()) {
+            if (!f.canAccess(f)) { //todo test this, was f.isAccessible() before
                 f.setAccessible(true);
                 val = f.getBoolean(obj);
                 f.setAccessible(false);
@@ -262,14 +148,14 @@ public class ReikaReflectionHelper {
         return f;
     }
 
-    public static Executable getProtectedInheritedMethod(Object o, String method, Class... types) {
+    public static Executable getProtectedInheritedMethod(Object o, String method, Class<?>... types) {
         return getProtectedInheritedMethod(o.getClass(), method, types);
     }
 
     /**
      * Gets a nonvisible Method that may be inherited by any of the superclasses. Returns null if none exists.
      */
-    public static Executable getProtectedInheritedMethod(Class c, String method, Class... types) {
+    public static Executable getProtectedInheritedMethod(Class<?> c, String method, Class<?>... types) {
         Executable f = null;
         if (method.equals("<init>")) {
             while (f == null && c != null) {
@@ -291,7 +177,7 @@ public class ReikaReflectionHelper {
         return f;
     }
 
-    public static void setFinalField(Class c, String s, Object instance, Object o) throws Exception {
+    public static void setFinalField(Class<?> c, String s, Object instance, Object o) throws Exception {
         setFinalField(getProtectedInheritedField(c, s), instance, o);
     }
 
@@ -311,12 +197,11 @@ public class ReikaReflectionHelper {
         }
     }
 
-    public static Collection<Field> getFields(Class c, FieldSelector sel) {
+    public static Collection<Field> getFields(Class<?> c, FieldSelector sel) {
         Collection<Field> li = new ArrayList<>();
         while (c != null) {
             Field[] fd = c.getDeclaredFields();
-            for (int i = 0; i < fd.length; i++) {
-                Field f = fd[i];
+            for (Field f : fd) {
                 if (sel == null || sel.isValid(f))
                     li.add(f);
             }
@@ -325,12 +210,11 @@ public class ReikaReflectionHelper {
         return li;
     }
 
-    public static Collection<Method> getMethods(Class c, MethodSelector sel) {
+    public static Collection<Method> getMethods(Class<?> c, MethodSelector sel) {
         Collection<Method> li = new ArrayList<>();
         while (c != null) {
             Method[] fd = c.getDeclaredMethods();
-            for (int i = 0; i < fd.length; i++) {
-                Method f = fd[i];
+            for (Method f : fd) {
                 if (sel == null || sel.isValid(f))
                     li.add(f);
             }
@@ -349,9 +233,9 @@ public class ReikaReflectionHelper {
 
     public static final class TypeSelector implements FieldSelector {
 
-        public final Class type;
+        public final Class<?> type;
 
-        public TypeSelector(Class c) {
+        public TypeSelector(Class<?> c) {
             type = c;
         }
 
@@ -361,11 +245,10 @@ public class ReikaReflectionHelper {
         }
     }
 
-    public static boolean checkForField(Class c, String name, int... modifiers) {
+    public static boolean checkForField(Class<?> c, String name, int... modifiers) {
         try {
             Field f = c.getDeclaredField(name);
-            for (int i = 0; i < modifiers.length; i++) {
-                int mod = modifiers[i];
+            for (int mod : modifiers) {
                 if ((f.getModifiers() & mod) == 0) {
                     return false;
                 }
@@ -376,11 +259,10 @@ public class ReikaReflectionHelper {
         }
     }
 
-    public static boolean checkForMethod(Class c, String name, Class[] args, int... modifiers) {
+    public static boolean checkForMethod(Class<?> c, String name, Class<?>[] args, int... modifiers) {
         try {
             Method f = c.getDeclaredMethod(name, args);
-            for (int i = 0; i < modifiers.length; i++) {
-                int mod = modifiers[i];
+            for (int mod : modifiers) {
                 if ((f.getModifiers() & mod) == 0) {
                     return false;
                 }
@@ -399,7 +281,7 @@ public class ReikaReflectionHelper {
             Method m = methodCache.get(cl, name);
             if (m == null) {
                 try {
-                    Class c = Class.forName(cl);
+                    Class<?> c = Class.forName(cl);
                     m = c.getDeclaredMethod(cl, getArgTypesFromArgs(args));
                     m.setAccessible(true);
                     methodCache.put(m, cl, name);
@@ -415,8 +297,8 @@ public class ReikaReflectionHelper {
         }
     }
 
-    private static Class[] getArgTypesFromArgs(Object[] args) {
-        Class[] arr = new Class[args.length];
+    private static Class<?>[] getArgTypesFromArgs(Object[] args) {
+        Class<?>[] arr = new Class[args.length];
         for (int i = 0; i < arr.length; i++) {
             arr[i] = args[i].getClass();
         }

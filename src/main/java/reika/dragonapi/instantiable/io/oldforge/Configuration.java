@@ -28,13 +28,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableSet;
 import net.minecraftforge.fml.loading.FMLLoader;
 import reika.dragonapi.DragonAPI;
@@ -53,9 +51,7 @@ public class Configuration {
     private static final Pattern CONFIG_END = Pattern.compile("END: \"([^\\\"]+)\"");
     public static final CharMatcher allowedProperties = CharMatcher.javaLetterOrDigit().or(CharMatcher.anyOf(ALLOWED_CHARS));
     private static final Configuration PARENT = null;
-
     File file;
-
     private Map<String, ConfigCategory> categories = new TreeMap<>();
     private final Map<String, Configuration> children = new TreeMap<>();
 
@@ -105,10 +101,9 @@ public class Configuration {
             }
             catch (Throwable e)
             {
-                File fileBak = new File(file.getAbsolutePath() + "_" +
-                        new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".errored");
-                DragonAPI.LOGGER.error("An exception occurred while loading config file %s. This file will be renamed to %s " +
-                        "and a new config file will be generated.", file.getName(), fileBak.getName());
+                File fileBak = new File(file.getAbsolutePath() + "_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".errored");
+                DragonAPI.LOGGER.error("An exception occurred while loading config file %s." +
+                        " This file will be renamed to %s " + "and a new config file will be generated.", file.getName(), fileBak.getName());
                 e.printStackTrace();
 
                 file.renameTo(fileBak);
@@ -123,25 +118,10 @@ public class Configuration {
         this.caseSensitiveCustomCategories = caseSensitiveCustomCategories;
     }
 
-    public Configuration(File file, boolean caseSensitiveCustomCategories)
-    {
-        this(file, null, caseSensitiveCustomCategories);
-    }
-
     @Override
     public String toString()
     {
         return file.getAbsolutePath();
-    }
-
-    public String getDefinedConfigVersion()
-    {
-        return this.definedConfigVersion;
-    }
-
-    public String getLoadedConfigVersion()
-    {
-        return this.loadedConfigVersion;
     }
 
     /******************************************************************************************************************
@@ -224,9 +204,7 @@ public class Configuration {
      * @param maxListLength the maximum length of this array, use -1 for no max length
      * @return a boolean array Property with all settings defined
      */
-    public Property get(String category, String key, boolean[] defaultValues, String comment,
-                        boolean isListLengthFixed, int maxListLength)
-    {
+    public Property get(String category, String key, boolean[] defaultValues, String comment, boolean isListLengthFixed, int maxListLength) {
         String[] values = new String[defaultValues.length];
         for (int i = 0; i < defaultValues.length; i++)
         {
@@ -445,21 +423,6 @@ public class Configuration {
         }
         return prop;
     }
-
-    /**
-     * Gets a double array Property object without a comment using default settings.
-     *
-     * @param category the config category
-     * @param key the Property key value
-     * @param defaultValues an array containing the default values
-     * @return a double array Property object with default bounds of Double.MIN_VALUE and Double.MAX_VALUE, isListLengthFixed = false,
-     *         maxListLength = -1
-     */
-    public Property get(String category, String key, double[] defaultValues)
-    {
-        return get(category, key, defaultValues, null);
-    }
-
     /**
      * Gets a double array Property object without a comment using default settings.
      *
@@ -840,7 +803,7 @@ public class Configuration {
                     if (start.matches())
                     {
                         fileName = start.group(1);
-                        categories = new TreeMap<String, ConfigCategory>();
+                        categories = new TreeMap<>();
                         continue;
                     }
                     else if (end.matches())
@@ -964,7 +927,7 @@ public class Configuration {
                                             throw new RuntimeException(String.format("'%s' has no scope in '%s:%d'", name, fileName, lineNum));
                                         }
 
-                                        tmpList = new ArrayList<String>();
+                                        tmpList = new ArrayList<>();
 
                                         skip = true;
                                     }
@@ -1188,50 +1151,18 @@ public class Configuration {
         return this;
     }
 
-    public void addCustomCategoryComment(String category, String comment)
+    private void resetChangedState()
     {
-        this.setCategoryComment(category, comment);
-    }
+        changed = false;
+        for (ConfigCategory cat : categories.values())
+        {
+            cat.resetChangedState();
+        }
 
-    /**
-     * Adds a language key to the specified ConfigCategory object
-     *
-     * @param category the config category
-     * @param langKey a language key string such as configcategory.general
-     */
-    public Configuration setCategoryLanguageKey(String category, String langKey)
-    {
-        if (!caseSensitiveCustomCategories)
-            category = category.toLowerCase(Locale.ENGLISH);
-        getCategory(category).setLanguageKey(langKey);
-        return this;
-    }
-
-    /**
-     * Sets the flag for whether or not this category can be edited while a world is running. Care should be taken to ensure
-     * that only properties that are truly dynamic can be changed from the in-game options menu. Only set this flag to
-     * true if all child properties/categories are unable to be modified while a world is running.
-     */
-    public Configuration setCategoryRequiresWorldRestart(String category, boolean requiresWorldRestart)
-    {
-        if (!caseSensitiveCustomCategories)
-            category = category.toLowerCase(Locale.ENGLISH);
-        getCategory(category).setRequiresWorldRestart(requiresWorldRestart);
-        return this;
-    }
-
-    /**
-     * Sets whether or not this ConfigCategory requires Minecraft to be restarted when changed.
-     * Defaults to false. Only set this flag to true if ALL child properties/categories require
-     * Minecraft to be restarted when changed. Setting this flag will also prevent modification
-     * of the child properties/categories while a world is running.
-     */
-    public Configuration setCategoryRequiresMcRestart(String category, boolean requiresMcRestart)
-    {
-        if (!caseSensitiveCustomCategories)
-            category = category.toLowerCase(Locale.ENGLISH);
-        getCategory(category).setRequiresMcRestart(requiresMcRestart);
-        return this;
+        for (Configuration child : children.values())
+        {
+            child.resetChangedState();
+        }
     }
 
     /**
@@ -1333,102 +1264,9 @@ public class Configuration {
         }
     }
 
-    public boolean hasChanged()
-    {
-        if (changed) return true;
-
-        for (ConfigCategory cat : categories.values())
-        {
-            if (cat.hasChanged()) return true;
-        }
-
-        for (Configuration child : children.values())
-        {
-            if (child.hasChanged()) return true;
-        }
-
-        return false;
-    }
-
-    private void resetChangedState()
-    {
-        changed = false;
-        for (ConfigCategory cat : categories.values())
-        {
-            cat.resetChangedState();
-        }
-
-        for (Configuration child : children.values())
-        {
-            child.resetChangedState();
-        }
-    }
-
     public Set<String> getCategoryNames()
     {
         return ImmutableSet.copyOf(categories.keySet());
-    }
-
-    /**
-     * Renames a property in a given category.
-     *
-     * @param category the category in which the property resides
-     * @param oldPropName the existing property name
-     * @param newPropName the new property name
-     * @return true if the category and property exist, false otherwise
-     */
-    public boolean renameProperty(String category, String oldPropName, String newPropName)
-    {
-        if (hasCategory(category))
-        {
-            if (getCategory(category).containsKey(oldPropName) && !oldPropName.equalsIgnoreCase(newPropName))
-            {
-                get(category, newPropName, getCategory(category).get(oldPropName).getString(), "");
-                getCategory(category).remove(oldPropName);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Moves a property from one category to another.
-     *
-     * @param oldCategory the category the property currently resides in
-     * @param propName the name of the property to move
-     * @param newCategory the category the property should be moved to
-     * @return true if the old category and property exist, false otherwise
-     */
-    public boolean moveProperty(String oldCategory, String propName, String newCategory)
-    {
-        if (!oldCategory.equals(newCategory))
-            if (hasCategory(oldCategory))
-                if (getCategory(oldCategory).containsKey(propName))
-                {
-                    getCategory(newCategory).put(propName, getCategory(oldCategory).remove(propName));
-                    return true;
-                }
-        return false;
-    }
-
-    /**
-     * Copies property objects from another Configuration object to this one using the list of category names. Properties that only exist in the
-     * "from" object are ignored. Pass null for the ctgys array to include all categories.
-     */
-    public void copyCategoryProps(Configuration fromConfig, String[] ctgys)
-    {
-        if (ctgys == null)
-            ctgys = this.getCategoryNames().toArray(new String[this.getCategoryNames().size()]);
-
-        for (String ctgy : ctgys)
-            if (fromConfig.hasCategory(ctgy) && this.hasCategory(ctgy))
-            {
-                ConfigCategory thiscc = this.getCategory(ctgy);
-                ConfigCategory fromcc = fromConfig.getCategory(ctgy);
-                for (Entry<String, Property> entry : thiscc.getValues().entrySet())
-                    if (fromcc.containsKey(entry.getKey()))
-                        thiscc.put(entry.getKey(), fromcc.get(entry.getKey()));
-            }
     }
 
     /**

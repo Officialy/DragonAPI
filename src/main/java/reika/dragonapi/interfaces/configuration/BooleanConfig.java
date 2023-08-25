@@ -9,11 +9,13 @@
  ******************************************************************************/
 package reika.dragonapi.interfaces.configuration;
 
+import reika.dragonapi.instantiable.io.oldforge.Configuration;
+
 public interface BooleanConfig extends ConfigList {
 
 	boolean isBoolean();
 
-	//public boolean setState(Configuration config);
+//	boolean setState(Configuration config);
 
 	boolean getState();
 

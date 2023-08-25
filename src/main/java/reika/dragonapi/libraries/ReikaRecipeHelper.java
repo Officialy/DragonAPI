@@ -1537,7 +1537,7 @@
 //            return false;
 ////        r1 = getTEWrappedRecipe(r1);
 ////        r2 = getTEWrappedRecipe(r2);
-//        if (!ItemStack.isSame(r1.getResultItem(), r2.getResultItem()))
+//        if (!ItemStack.isSameItem(r1.getResultItem(), r2.getResultItem()))
 //            return false;
 //        if (r1 instanceof ShapedRecipe) {
 //            ShapedRecipe sr1 = (ShapedRecipe) r1;

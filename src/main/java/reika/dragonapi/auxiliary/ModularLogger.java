@@ -85,7 +85,7 @@ public class ModularLogger {
                 }
                 e.enabled = args[1].equalsIgnoreCase("yes") || args[1].equalsIgnoreCase("enable") || args[1].equalsIgnoreCase("1") || Boolean.parseBoolean(args[1]);
                 String status = e.enabled ? "enabled" : "disabled";
-                context.getSource().sendSuccess(Component.literal(ChatFormatting.GREEN + "Logger '" + args[0] + "' " + status + "."), false);
+                context.getSource().sendSuccess(() -> Component.literal(ChatFormatting.GREEN + "Logger '" + args[0] + "' " + status + "."), false);
                 ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.MODULARLOGGER.ordinal(), PacketTarget.allPlayers, id, e.enabled ? 1 : 0);
 
                 return 1;

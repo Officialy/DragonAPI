@@ -28,9 +28,9 @@ public class ReikaPneumaticHelper {
 	static {
 		if (ModList.PNEUMATICRAFT.isLoaded()) {
 			try {
-				Class c = Class.forName("pneumaticCraft.common.Config");
+				Class<?> c = Class.forName("pneumaticCraft.common.Config");
 				Field f = c.getField("fluxCompressorEfficiency");
-				//airPerRF = 20*f.getInt(null)/100;
+//				airPerRF = 20*f.getInt(null)/100;
 			}
 			catch (Exception e) {
 				e.printStackTrace();

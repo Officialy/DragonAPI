@@ -47,14 +47,14 @@ public class ReikaXPFluidHelper {
         if (loaded != null)
             return;
         try {
-            Class cl = Class.forName(c);
+            Class<?> cl = Class.forName(c);
             Field fd = cl.getDeclaredField(f);
             fd.setAccessible(true);
             addFluid(s, fd.getInt(null));
         }
         catch (Exception e) {
             DragonAPI.LOGGER.error("Error loading xp fluid type "+s+": "+e);
-            //e.printStackTrace();
+            e.printStackTrace();
         }
     }
 
@@ -96,8 +96,7 @@ public class ReikaXPFluidHelper {
     public static FluidStack getFluid(int xp) {
         FluidStack fs = getFluid();
         if (fs != null) {
-            var amount = fs.getAmount();
-            fs.setAmount(amount *= xp); //todo figure out basic java lol, see how to do this without the above var
+            fs.setAmount(fs.getAmount() * xp);
         }
         return fs;
     }

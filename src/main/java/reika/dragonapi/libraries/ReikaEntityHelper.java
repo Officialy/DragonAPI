@@ -1,6 +1,10 @@
 package reika.dragonapi.libraries;
 
-import net.minecraft.core.BlockPos;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.advancements.critereon.EntityPredicate;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.selector.EntitySelector;
+import net.minecraft.commands.arguments.selector.EntitySelectorParser;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -24,6 +28,7 @@ import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.loading.FMLLoader;
+import org.jetbrains.annotations.Nullable;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.interfaces.item.UnbreakableArmor;
@@ -132,8 +137,10 @@ public class ReikaEntityHelper {
             return ReikaPhysicsHelper.getBlockDensity(((FallingBlockEntity) ent).getBlockState().getBlock());//.func_145805_f()); //2 g/cc
         return 100;
     }
-    
-    /** Gets a direction from an entity's look direction. Args: Entity, allow vertical yes/no */
+
+    /**
+     * Gets a direction from an entity's look direction. Args: Entity, allow vertical yes/no
+     */
     public static Direction getDirectionFromEntityLook(LivingEntity e, boolean vertical) {
         if (Mth.abs(e.getXRot()) < 60 || !vertical) {
             int i = Mth.floor((e.getYRot() * 4F) / 360F + 0.5D);
@@ -155,8 +162,7 @@ public class ReikaEntityHelper {
                     return Direction.EAST;
                 }
             }
-        }
-        else { //Looking up/down
+        } else { //Looking up/down
             if (e.getXRot() > 0)
                 return Direction.DOWN; //set to up
             else
@@ -164,7 +170,7 @@ public class ReikaEntityHelper {
         }
         return Direction.NORTH; //todo default to north?
     }
-    
+
     public static boolean isSolidEntity(Entity e) {
 //        if (e instanceof EtherealEntity)
 //            return false;
@@ -202,7 +208,7 @@ public class ReikaEntityHelper {
     }
 
     public static boolean isEntityWearingFullSuitOf(LivingEntity e, ArmorMaterial type) {
-        return isEntityWearingFullSuitOf(e, (ItemStack is) -> is.getItem() instanceof ArmorItem && ((ArmorItem)is.getItem()).getMaterial() == type);
+        return isEntityWearingFullSuitOf(e, (ItemStack is) -> is.getItem() instanceof ArmorItem && ((ArmorItem) is.getItem()).getMaterial() == type);
     }
 
     public static boolean isEntityWearingFullSuitOf(LivingEntity e, Function<ItemStack, Boolean> func) {
@@ -213,6 +219,7 @@ public class ReikaEntityHelper {
         }
         return true;
     }
+
     public static boolean burnsInSun(LivingEntity e) {
         return e.getMobType() == MobType.UNDEAD;
     }
@@ -239,12 +246,12 @@ public class ReikaEntityHelper {
 
     public static void performEntityVerification(ServerPlayer ep, int entityID, ResourceKey<Level> dim, int classHash) {
 //        ReikaJavaLibrary.pConsole("Verifying existence of "+entityID+" on side "+ FMLLoader.getDist());
-        Level world = ep.getLevel();//todo DimensionManager.getWorld(dim);
+        Level world = ep.level();//todo DimensionManager.getWorld(dim);
         if (world != null) {
             Entity e = world.getEntity(entityID);
             if (e != null) {
                 if (e.getClass().getName().hashCode() == classHash) {
-                    ReikaJavaLibrary.pConsole("Verified existence of "+e+" on side "+FMLLoader.getDist());
+                    ReikaJavaLibrary.pConsole("Verified existence of " + e + " on side " + FMLLoader.getDist());
                     return;
                 }
             }
@@ -336,7 +343,7 @@ public class ReikaEntityHelper {
             is = new ItemStack(Items.CREEPER_HEAD, 1);
         if (is == null)
             return;
-        ReikaItemHelper.dropItem(e.getLevel(), e.getX(), e.getY() + 0.2, e.getZ(), is);
+        ReikaItemHelper.dropItem(e.level(), e.getX(), e.getY() + 0.2, e.getZ(), is);
     }
 
     private static boolean canDamageArmorOf(LivingEntity target) {

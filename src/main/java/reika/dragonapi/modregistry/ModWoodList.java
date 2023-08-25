@@ -1,14 +1,12 @@
 package reika.dragonapi.modregistry;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.registries.ForgeRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
@@ -452,8 +450,8 @@ public enum ModWoodList implements TreeType {
 
     public boolean isNaturalLeaf(Level world, BlockPos pos) {
         if (this.getParentMod() == ModList.BOP || this.getParentMod() == ModList.THAUMCRAFT || this.getParentMod() == ModList.NATURA || this.getParentMod() == ModList.TWILIGHT)
-        return true;
-            return world.getBlockState(pos).getMaterial() == Material.LEAVES; //todo fix this leaf check
+            return true;
+        return world.getBlockState(pos).getMapColor(world, pos).equals(MapColor.PLANT);// == Material.LEAVES; //todo fix this leaf check
     }
 
     @Override

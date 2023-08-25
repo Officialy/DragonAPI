@@ -14,8 +14,11 @@ import java.util.ArrayList;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.client.extensions.IForgeGuiGraphics;
 import net.minecraftforge.client.gui.ScreenUtils;
 
 import net.minecraft.client.Minecraft;
@@ -106,9 +109,8 @@ public class PianoKeyboard extends Gui {
         }
     }
 
-    public void drawKeys(PoseStack stack) {
-        guiInstance.bindKeyboardTexture();
-        ScreenUtils.drawTexturedModalRect(stack, guiX, guiY, 0, 64, 232, 37, 0);
+    public void drawKeys(GuiGraphics stack) {
+        stack.blit(guiInstance.bindKeyboardTexture(), guiX, guiY, 0, 64, 232, 37);
 
         Minecraft mc = Minecraft.getInstance();
         RenderSystem.enableBlend();
@@ -117,8 +119,8 @@ public class PianoKeyboard extends Gui {
         }
         RenderSystem.disableBlend();
 
-        mc.font.draw(stack, "F", guiX - 6, guiY + 28, 0);
-        mc.font.draw(stack, "F", guiX + 233, guiY + 28, 0);
+        stack.drawString(mc.font, "F", guiX - 6, guiY + 28, 0);
+        stack.drawString(mc.font, "F", guiX + 233, guiY + 28, 0);
     }
 
     public static class PianoKey extends Button {
@@ -134,8 +136,9 @@ public class PianoKeyboard extends Gui {
         }
 
         @Override
-        public void renderWidget(PoseStack stack, int x, int y, float p_93679_) {
-            super.renderWidget(stack, x, y, p_93679_);
+        public void renderWidget(GuiGraphics guiGraphics, int x, int y, float p_93679_) {
+            super.renderWidget(guiGraphics, x, y, p_93679_);
+            var stack = guiGraphics.pose();
             int c = guiInstance.getColorForChannel(guiInstance.getActiveChannel());
             int rgb = (c & 0xffffff) | (alpha << 24);
             if (alpha > 0) {
@@ -222,7 +225,7 @@ public class PianoKeyboard extends Gui {
 
         int getActiveChannel();
 
-        void bindKeyboardTexture();
+        ResourceLocation bindKeyboardTexture();
 
         void onKeyPressed(PianoKey key);
 

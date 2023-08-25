@@ -146,15 +146,13 @@ public class ControlledConfig {
             IDList = new IDRegistry[0];
         }
 
-        for (int i = 0; i < optionList.length; i++) {
-            ConfigList cfg = optionList[i];
+        for (ConfigList cfg : optionList) {
             String s1 = this.getCategory(cfg);
             String s2 = this.getLabel(cfg);
             this.registerOption(s1, s2, cfg);
         }
 
-        for (int i = 0; i < IDList.length; i++) {
-            IDRegistry cfg = IDList[i];
+        for (IDRegistry cfg : IDList) {
             String s1 = this.getCategory(cfg);
             String s2 = this.getLabel(cfg);
             this.registerOption(s1, s2, cfg);
@@ -782,7 +780,7 @@ public class ControlledConfig {
 		this.loadConfig();
 	}*/
 
-    protected static final class DataElement<C> implements Comparable<DataElement> {
+    protected static final class DataElement<C> implements Comparable<DataElement<C>> {
 
         private C data;
         public final String category;

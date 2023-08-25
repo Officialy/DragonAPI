@@ -43,7 +43,7 @@ public abstract class PacketTarget {
     public static final class OtherPlayersTarget extends CompoundPlayerTarget {
 
         public OtherPlayersTarget(Player ep, double r) {
-            super(ep.level.getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getEntityCenteredAABB(ep, r))); //todo check if this works
+            super(ep.level().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getEntityCenteredAABB(ep, r))); //todo check if this works
         }
 
     }
@@ -81,7 +81,7 @@ public abstract class PacketTarget {
         }
 
         public RadiusTarget(Entity e, double r) {
-            this(e.level, e.getX(), e.getY(), e.getZ(), r);
+            this(e.level(), e.getX(), e.getY(), e.getZ(), r);
         }
 
         public RadiusTarget(BlockEntity te, double r) {

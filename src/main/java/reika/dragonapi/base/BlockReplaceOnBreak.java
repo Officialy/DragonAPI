@@ -6,13 +6,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Material;
 
 
 public abstract class BlockReplaceOnBreak extends Block {
 
-    protected BlockReplaceOnBreak(Material mat) {
-        super(Properties.of(mat));
+    protected BlockReplaceOnBreak() {
+        super(Properties.of());
     }
 
 	/*

@@ -30,8 +30,7 @@ public class ReikaInventoryHelper {
      * Returns true if found. Args: Item ID, Inventory
      */
     public static boolean checkForItem(Item id, ItemStack[] inv) {
-        for (int i = 0; i < inv.length; i++) {
-            ItemStack in = inv[i];
+        for (ItemStack in : inv) {
             if (in != null) {
                 if (in.getItem() == id) {
                     return true;
@@ -72,8 +71,7 @@ public class ReikaInventoryHelper {
      * Args: Check-for itemstack, Inventory, Match size T/F
      */
     public static boolean checkForItemStack(ItemStack is, ItemStack[] inv, boolean matchsize) {
-        for (int i = 0; i < inv.length; i++) {
-            ItemStack in = inv[i];
+        for (ItemStack in : inv) {
             if (in != null) {
                 if (in.getItem() instanceof ActivatedInventoryItem) {
                     if (checkForItemStack(is, ((ActivatedInventoryItem) in.getItem()).getInventory(in), matchsize))
@@ -83,7 +81,7 @@ public class ReikaInventoryHelper {
                     if (ItemStack.matches(is, in))
                         return true;
                 } else {
-                    if (ItemStack.tagMatches(is, in) && ReikaItemHelper.matchStacks(is, in))
+                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in))
                         return true;
                 }
             }
@@ -92,8 +90,7 @@ public class ReikaInventoryHelper {
     }
 
     public static boolean checkForItemStack(KeyedItemStack is, ItemStack[] inv) {
-        for (int i = 0; i < inv.length; i++) {
-            ItemStack in = inv[i];
+        for (ItemStack in : inv) {
             if (in != null) {
                 if (in.getItem() instanceof ActivatedInventoryItem) {
                     if (checkForItemStack(is, ((ActivatedInventoryItem) in.getItem()).getInventory(in)))
@@ -107,8 +104,7 @@ public class ReikaInventoryHelper {
     }
 
     public static boolean checkForItemStack(ItemMatch is, ItemStack[] inv) {
-        for (int i = 0; i < inv.length; i++) {
-            ItemStack in = inv[i];
+        for (ItemStack in : inv) {
             if (in != null) {
                 if (in.getItem() instanceof ActivatedInventoryItem) {
                     if (checkForItemStack(is, ((ActivatedInventoryItem) in.getItem()).getInventory(in)))
@@ -137,7 +133,7 @@ public class ReikaInventoryHelper {
                     if (ItemStack.matches(is, in))
                         return true;
                 } else {
-                    if (ItemStack.tagMatches(is, in) && ReikaItemHelper.matchStacks(is, in))
+                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in))
                         return true;
                 }
             }
@@ -161,7 +157,7 @@ public class ReikaInventoryHelper {
                     if (ItemStack.matches(is, in))
                         return true;
                 } else {
-                    if (ItemStack.tagMatches(is, in) && ReikaItemHelper.matchStacks(is, in))
+                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in))
                         return true;
                 }
             }
@@ -261,7 +257,7 @@ public class ReikaInventoryHelper {
                 if (in == null)
                     return true;
                 else {
-                    if (ReikaItemHelper.matchStacks(in, is) && ItemStack.tagMatches(is, in)) {
+                    if (ReikaItemHelper.matchStacks(in, is) && ItemStack.isSameItemSameTags(is, in)) {
                         int max = Math.min(in.getMaxStackSize(), inv.getMaxStackSize());
                         space += max - in.getCount();
                     }
@@ -475,7 +471,7 @@ public class ReikaInventoryHelper {
                 if (left <= 0)
                     return 0;
             } else {
-                if (ReikaItemHelper.matchStacks(stack, in) && ItemStack.tagMatches(stack, in)) {
+                if (ReikaItemHelper.matchStacks(stack, in) && ItemStack.isSameItemSameTags(stack, in)) {
                     int space = max - in.getCount();
                     int add = Math.min(space, stack.getCount());
                     if (add > 0) {
@@ -509,7 +505,7 @@ public class ReikaInventoryHelper {
                         return i;
                     }
                 } else {
-                    if (ItemStack.tagMatches(is, in) && ReikaItemHelper.matchStacks(is, in)) {
+                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in)) {
                         return i;
                     }
                 }
@@ -567,7 +563,7 @@ public class ReikaInventoryHelper {
                         return i;
                     }
                 } else {
-                    if (ItemStack.tagMatches(is, in) && ReikaItemHelper.matchStacks(is, in)) {
+                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in)) {
                         return i;
                     }
                 }
@@ -854,7 +850,7 @@ public class ReikaInventoryHelper {
                 if (in.isEmpty()) {
                     size -= max;
                 } else {
-                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.tagMatches(is, in)) {
+                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.isSameItemSameTags(is, in)) {
                         int space = max - in.getCount();
                         size -= space;
                     }
@@ -872,7 +868,7 @@ public class ReikaInventoryHelper {
                 if (in.isEmpty()) {
                     size -= max;
                 } else {
-                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.tagMatches(is, in)) {
+                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.isSameItemSameTags(is, in)) {
                         int space = max - in.getCount();
                         size -= space;
                     }
@@ -891,7 +887,7 @@ public class ReikaInventoryHelper {
             return true;
         }
         int max = at.getMaxStackSize();
-        if (!(ReikaItemHelper.matchStacks(is, at) && ItemStack.tagMatches(is, at)) || at.getCount() + is.getCount() > max)
+        if (!(ReikaItemHelper.matchStacks(is, at) && ItemStack.isSameItemSameTags(is, at)) || at.getCount() + is.getCount() > max)
             return false;
         int count = at.getCount();
         at.setCount(count += is.getCount());
@@ -906,7 +902,7 @@ public class ReikaInventoryHelper {
             return true;
         }
         int max = inv.getStackInSlot(slot).getMaxStackSize();
-        if (!(ReikaItemHelper.matchStacks(is, inv.getStackInSlot(slot)) && ItemStack.tagMatches(is, inv.getStackInSlot(slot))) || inv.getStackInSlot(slot).getCount() + is.getCount() > max)
+        if (!(ReikaItemHelper.matchStacks(is, inv.getStackInSlot(slot)) && ItemStack.isSameItemSameTags(is, inv.getStackInSlot(slot))) || inv.getStackInSlot(slot).getCount() + is.getCount() > max)
             return false;
 
         int count = inv.getStackInSlot(slot).getCount();

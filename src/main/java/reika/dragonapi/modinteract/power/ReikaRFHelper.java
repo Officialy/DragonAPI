@@ -42,7 +42,7 @@ public class ReikaRFHelper {
 
     static {
         try {
-            Class c = Class.forName("thermalexpansion.core.TEProps");
+            Class<?> c = Class.forName("thermalexpansion.core.TEProps");
             Field f = c.getDeclaredField("lavaRF");
             crucibleStoneMelt = f.getInt(null);
             crucibleStoneMelt = Mth.clamp(crucibleStoneMelt, 100000, 400000); //clamp read int to 1/2 and 2x normal

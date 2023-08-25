@@ -120,7 +120,7 @@ public class PopupWriter extends Screen {
         if (!list.isEmpty() && event.getOverlay() == VanillaGuiOverlay.TITLE_TEXT.type()) {
             Tesselator tesselator = Tesselator.getInstance();
             BufferBuilder buffer = tesselator.getBuilder();
-            PoseStack matrixStack = event.getPoseStack();
+            PoseStack matrixStack = event.getGuiGraphics().pose();
             Matrix4f matrix = matrixStack.last().pose();
 
             Warning s = list.get(0);
@@ -144,7 +144,7 @@ public class PopupWriter extends Screen {
             ReikaGuiAPI.instance.drawRectFrame(matrixStack, x + 2, y + 2, w - 4, h - 4, 0xcfcfcf);
 
             //Draw the text
-            fr.drawWordWrap(matrixStack, FormattedText.of(s.text), x + 4, y + 4, sw, 0xffffff);
+//todo            fr.drawWordWrap(matrixStack, FormattedText.of(s.text), x + 4, y + 4, sw, 0xffffff);
 
             RenderSystem.depthMask(true);
             RenderSystem.enableDepthTest();

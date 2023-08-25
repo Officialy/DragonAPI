@@ -31,7 +31,7 @@ public abstract class InertEntity extends Entity {
      */
     @Override
     public void tick() {
-        level.getProfiler().push("entityBaseTick");
+        level().getProfiler().push("entityBaseTick");
 
         //prevDistanceWalkedModified = distanceWalkedModified;
         xOld = position().x;
@@ -45,7 +45,7 @@ public abstract class InertEntity extends Entity {
         if (getY() < -64.0D)
             this.kill();
 
-        level.getProfiler().pop(); //endSection();
+        level().getProfiler().pop(); //endSection();
 
         //this.move(motionX, motionY, motionZ);
 

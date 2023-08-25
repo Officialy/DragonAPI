@@ -94,7 +94,7 @@ public enum ReikaParticleHelper {
     }
 
     public void spawnAt(Entity e) {
-        this.spawnAt(e.level, e.getX(), e.getY(), e.getZ());
+        this.spawnAt(e.level(), e.getX(), e.getY(), e.getZ());
     }
 
     public void spawnAround(Entity e, int n, double r) {
@@ -102,7 +102,7 @@ public enum ReikaParticleHelper {
             double dx = ReikaRandomHelper.getRandomPlusMinus(e.position().x, r);
             double dy = ReikaRandomHelper.getRandomPlusMinus(e.position().y, r);
             double dz = ReikaRandomHelper.getRandomPlusMinus(e.position().z, r);
-            this.spawnAt(e.level, dx, dy, dz);
+            this.spawnAt(e.level(), dx, dy, dz);
         }
     }
 

@@ -13,7 +13,7 @@ public class FileInputThread implements Runnable {
 
     private Object returnObj;
     private String filepath;
-    private Class referenceClass;
+    private Class<?> referenceClass;
     private FileType type;
 
     @Override

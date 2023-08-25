@@ -580,7 +580,7 @@ public class ReikaPacketHelper {
     }
 
     public static void sendDataPacketWithRadius(String ch, int id, Entity e, int radius, int... data) {
-        sendDataPacketWithRadius(ch, id, e.getLevel(), Mth.floor(e.getX()), Mth.floor(e.getY()), Mth.floor(e.getZ()), radius, data);
+        sendDataPacketWithRadius(ch, id, e.level(), Mth.floor(e.getX()), Mth.floor(e.getY()), Mth.floor(e.getZ()), radius, data);
     }
 
     public static void sendDataPacket(String ch, int id, PacketTarget pt, int... data) {
@@ -865,7 +865,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRINGINT, pipe);
         pack.setData(dat);
 
-        Dist side = ep.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+        Dist side = ep.level().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -1128,7 +1128,7 @@ public class ReikaPacketHelper {
     }
 
     public static void sendPositionPacket(String ch, int id, Entity e, PacketTarget pt, int... data) {
-        sendPositionPacket(ch, id, e.getLevel(), e.getX(), e.getY(), e.getZ(), pt, data);
+        sendPositionPacket(ch, id, e.level(), e.getX(), e.getY(), e.getZ(), pt, data);
     }
 
     public static void sendPositionPacket(String ch, int id, Level world, double x, double y, double z, double r, int... data) {
@@ -1362,7 +1362,7 @@ public class ReikaPacketHelper {
             return;
         }
         pack.init(PacketTypes.NBT, pipe);
-        Dist side = e.level.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+        Dist side = e.level().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             pipe.sendToAllAround(pack, e, range);
         } else if (side == Dist.CLIENT) {
@@ -1611,8 +1611,12 @@ public class ReikaPacketHelper {
         }
 
         public void handleServer(Supplier<NetworkEvent.Context> ctx) {
+            if (handler == null) {
+                DragonAPI.LOGGER.error("Packet handler is null! This is a bug!");
+                return;
+            }
             try {
-                handler.handleData(this, ctx.get().getSender().getLevel(), ctx.get().getSender());
+                handler.handleData(this, ctx.get().getSender().level(), ctx.get().getSender());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1620,7 +1624,7 @@ public class ReikaPacketHelper {
             ctx.get().setPacketHandled(true);
         }
 
-     /*   @Override
+       /* @Override
         public String toString() {
             String hd = handler.getClass().getCanonicalName() + " (ID " + this.handlerID() + ")";
             return "type " + this.getType() + "; Data: " + this.getDataAsString() + " from " + hd;

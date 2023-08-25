@@ -105,7 +105,7 @@ public class PacketPipeline {
     }
 
     public void sendToAllAround(PacketObj p, Entity e, double range) {
-        PacketDistributor.TargetPoint pt = new PacketDistributor.TargetPoint(e.getX(), e.getY(), e.getZ(), range, e.getLevel().dimension());
+        PacketDistributor.TargetPoint pt = new PacketDistributor.TargetPoint(e.getX(), e.getY(), e.getZ(), range, e.level().dimension());
         //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.ALLAROUNDPOINT);
         //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(pt);
         //channels.get(Dist.DEDICATED_SERVER).writeAndFlush(p);

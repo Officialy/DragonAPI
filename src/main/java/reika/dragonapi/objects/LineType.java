@@ -1,5 +1,6 @@
 package reika.dragonapi.objects;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import org.lwjgl.opengl.GL11;
 
 public enum LineType {
@@ -15,9 +16,9 @@ public enum LineType {
     }
 
     public void setMode(int factor) {
-        GL11.glEnable(GL11.GL_LINE_STIPPLE);
-        GL11.glLineStipple(factor, value);
-        //RenderSystem.lineWidth(value);
+//        GL11.glEnable(GL11.GL_LINE_STIPPLE);
+//        GL11.glLineStipple(factor, value);
+//        RenderSystem.lineWidth(value);
     }
 
 }

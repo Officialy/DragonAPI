@@ -83,7 +83,7 @@ public class ReikaRailCraftHelper extends DragonAPI {
 				solidClass = Class.forName("mods.railcraft.common.blocks.machine.beta.TileBoilerFireboxSolid");
 				fluidClass = Class.forName("mods.railcraft.common.blocks.machine.beta.TileBoilerFireboxFluid");
 
-				Class c2 = Class.forName("mods.railcraft.common.util.steam.SteamBoiler");
+				Class<?> c2 = Class.forName("mods.railcraft.common.util.steam.SteamBoiler");
 				boilerBurnTime = c2.getDeclaredField("burnTime");
 				boilerBurnTime.setAccessible(true);
 

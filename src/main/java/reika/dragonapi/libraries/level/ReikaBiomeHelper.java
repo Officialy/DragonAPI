@@ -2,7 +2,6 @@ package reika.dragonapi.libraries.level;
 
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BiomeTags;
@@ -11,8 +10,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.material.Material;
-import net.minecraftforge.common.BiomeManager;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.common.Tags;
 import net.minecraftforge.registries.ForgeRegistries;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
@@ -269,8 +267,8 @@ public class ReikaBiomeHelper {
      * Converts the given coordinates to an RGB representation of those coordinates' biome's color, for the given material type.
      * Args: World, x, z, material (String)
      */
-    public static int[] biomeToRGB(Level world, BlockPos pos, Material material) {
-        int color = biomeToHex(world, pos, material);
+    public static int[] biomeToRGB(Level world, BlockPos pos, BlockBehaviour.Properties properties) {
+        int color = biomeToHex(world, pos, properties);
         return ReikaColorAPI.HexToRGB(color);
     }
 
@@ -278,22 +276,22 @@ public class ReikaBiomeHelper {
      * Converts the given coordinates to a hex representation of those coordinates' biome's color, for the given material type.
      * Args: World, x, z, material (String)
      */
-    public static int biomeToHexColor(Level world, BlockPos pos, Material material) {
-        int color = biomeToHex(world, pos, material);
+    public static int biomeToHexColor(Level world, BlockPos pos, BlockBehaviour.Properties properties) {
+        int color = biomeToHex(world, pos, properties);
         return color;
     }
 
-    private static int biomeToHex(Level world, BlockPos pos, Material mat) {
+    private static int biomeToHex(Level world, BlockPos pos, BlockBehaviour.Properties properties) {
         Biome biome = world.getBiomeManager().getBiome(pos).value();
         int color = 0;
-        if (mat == Material.WATER)
+      /*  if (mat == Material.WATER)
             color = biome.getFoliageColor();
         if (mat == Material.GRASS)
             color = biome.getGrassColor(pos.getX(), pos.getZ());
         if (mat == Material.WATER)
             color = biome.getWaterColor();
         if (mat == Material.AIR)
-            color = biome.getSkyColor();//(biome.getFloatTemperature(pos));
+            color = biome.getSkyColor();//(biome.getFloatTemperature(pos));*/
         return color;
     }
 
@@ -302,7 +300,7 @@ public class ReikaBiomeHelper {
      */
     public static boolean isCoolBiome(ResourceKey<Biome> biome) {
         return biome == Biomes.TAIGA;
-//        todo if (level.registryAccess().registryOrThrow(Registries.BIOME).getKey(biome).getNamespace().toString().toLowerCase(Locale.ENGLISH).contains("maple woods"))
+//        if (level.registryAccess().registryOrThrow(Registries.BIOME).getKey(biome).getNamespace().toString().toLowerCase(Locale.ENGLISH).contains("maple woods"))
 //            return true;
         /*BiomeDictionary.Type[] types = BiomeDictionary.getTypes(biome).toArray(new BiomeDictionary.Type[0]);
         for (int i = 0; i < types.length; i++) {

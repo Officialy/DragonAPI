@@ -28,8 +28,9 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -64,6 +65,7 @@ import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.io.ReikaSoundHelper;
 import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
+import reika.dragonapi.libraries.mathsci.ReikaVectorHelper;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
 import java.io.File;
@@ -81,7 +83,7 @@ public class ReikaWorldHelper {
     private static final Random moddedGenRand_Calcer = new Random();
     private static final ResettableRandom moddedGenRand = new ResettableRandom();
 
-    private static final HashMap<Material, TemperatureEffect> temperatureBlockEffects = new HashMap<>();
+    //    private static final HashMap<Material, TemperatureEffect> temperatureBlockEffects = new HashMap<>();
     private static final HashMap<String, WorldID> worldIDMap = new HashMap<>();
     private static final HashMap<ImmutablePair<ResourceKey<Level>, Long>, Simplex3DGenerator> tempNoise = new HashMap<>();
     private static final double TEMP_NOISE_BASE = 10;
@@ -94,27 +96,26 @@ public class ReikaWorldHelper {
 //            computeModdedGeneratorList = GameRegistry.class.getDeclaredMethod("computeSortedGeneratorList");
 //            computeModdedGeneratorList.setAccessible(true);
 
-            temperatureBlockEffects.put(Material.STONE, TemperatureEffect.rockMelting);
-            temperatureBlockEffects.put(Material.METAL, TemperatureEffect.rockMelting);
-            temperatureBlockEffects.put(Material.ICE, TemperatureEffect.iceMelting);
-            temperatureBlockEffects.put(Material.SNOW, TemperatureEffect.snowVaporization);
-            temperatureBlockEffects.put(Material.TOP_SNOW, TemperatureEffect.snowVaporization);
-            temperatureBlockEffects.put(Material.POWDER_SNOW, TemperatureEffect.snowVaporization);
-            temperatureBlockEffects.put(Material.CLOTH_DECORATION, TemperatureEffect.woolIgnition);
-            temperatureBlockEffects.put(Material.WOOL, TemperatureEffect.woolIgnition);
-            temperatureBlockEffects.put(Material.WOOD, TemperatureEffect.woodIgnition);
-            temperatureBlockEffects.put(Material.GRASS, TemperatureEffect.groundGlassing);
-            temperatureBlockEffects.put(Material.SAND, TemperatureEffect.groundGlassing);
-            temperatureBlockEffects.put(Material.DIRT, TemperatureEffect.groundGlassing);
-            temperatureBlockEffects.put(Material.LEAVES, TemperatureEffect.plantIgnition);
-            temperatureBlockEffects.put(Material.PLANT, TemperatureEffect.plantIgnition);
-            temperatureBlockEffects.put(Material.WATER_PLANT, TemperatureEffect.plantIgnition);
-            temperatureBlockEffects.put(Material.REPLACEABLE_PLANT, TemperatureEffect.plantIgnition);
-            temperatureBlockEffects.put(Material.REPLACEABLE_WATER_PLANT, TemperatureEffect.plantIgnition);
-            temperatureBlockEffects.put(Material.WEB, TemperatureEffect.plantIgnition);
-            temperatureBlockEffects.put(Material.EXPLOSIVE, TemperatureEffect.tntIgnition);
-        }
-        catch (Exception e) {
+//    todo        temperatureBlockEffects.put(MapColor.STONE, TemperatureEffect.rockMelting);
+//            temperatureBlockEffects.put(Material.METAL, TemperatureEffect.rockMelting);
+//            temperatureBlockEffects.put(Material.ICE, TemperatureEffect.iceMelting);
+//            temperatureBlockEffects.put(Material.SNOW, TemperatureEffect.snowVaporization);
+//            temperatureBlockEffects.put(Material.TOP_SNOW, TemperatureEffect.snowVaporization);
+//            temperatureBlockEffects.put(Material.POWDER_SNOW, TemperatureEffect.snowVaporization);
+//            temperatureBlockEffects.put(Material.CLOTH_DECORATION, TemperatureEffect.woolIgnition);
+//            temperatureBlockEffects.put(Material.WOOL, TemperatureEffect.woolIgnition);
+//            temperatureBlockEffects.put(Material.WOOD, TemperatureEffect.woodIgnition);
+//            temperatureBlockEffects.put(Material.GRASS, TemperatureEffect.groundGlassing);
+//            temperatureBlockEffects.put(Material.SAND, TemperatureEffect.groundGlassing);
+//            temperatureBlockEffects.put(Material.DIRT, TemperatureEffect.groundGlassing);
+//            temperatureBlockEffects.put(Material.LEAVES, TemperatureEffect.plantIgnition);
+//            temperatureBlockEffects.put(Material.PLANT, TemperatureEffect.plantIgnition);
+//            temperatureBlockEffects.put(Material.WATER_PLANT, TemperatureEffect.plantIgnition);
+//            temperatureBlockEffects.put(Material.REPLACEABLE_PLANT, TemperatureEffect.plantIgnition);
+//            temperatureBlockEffects.put(Material.REPLACEABLE_WATER_PLANT, TemperatureEffect.plantIgnition);
+//            temperatureBlockEffects.put(Material.WEB, TemperatureEffect.plantIgnition);
+//            temperatureBlockEffects.put(Material.EXPLOSIVE, TemperatureEffect.tntIgnition);
+        } catch (Exception e) {
             throw new RuntimeException("Could not find GameRegistry IWorldGenerator data!", e);
         }
     }
@@ -134,7 +135,7 @@ public class ReikaWorldHelper {
         if (varFactor > 0) {
             Simplex3DGenerator gen = getOrCreateTemperatureNoise(world);
             //ReikaJavaLibrary.pConsole(new Coordinate(x, y, z)+" > "+gen.getValue(x, y, z));
-            temp += gen.getValue(pos.getX(), pos.getY(), pos.getZ())*varFactor*TEMP_NOISE_BASE;
+            temp += gen.getValue(pos.getX(), pos.getY(), pos.getZ()) * varFactor * TEMP_NOISE_BASE;
         }
 
         if (world.dimension() == Level.NETHER) {
@@ -142,11 +143,10 @@ public class ReikaWorldHelper {
                 temp -= 50;
             }
             if (pos.getY() < 45) {
-                int d = pos.getY() <= 30 ? 15 : 45-pos.getY();
-                temp += 20*d;
+                int d = pos.getY() <= 30 ? 15 : 45 - pos.getY();
+                temp += 20 * d;
             }
-        }
-        else {
+        } else {
             if (world.canSeeSky(pos.above())) {
                 float sun = getSunIntensity(world, true, 0);
                 int mult = world.isRaining() ? 10 : 20;
@@ -174,17 +174,19 @@ public class ReikaWorldHelper {
         }
         return (int) temp;
     }
+
     private static Simplex3DGenerator getOrCreateTemperatureNoise(Level world) {
         ImmutablePair<ResourceKey<Level>, Long> pair = new ImmutablePair<>(world.dimension(), ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
         Simplex3DGenerator gen = tempNoise.get(pair);
         if (true) {
             gen = new Simplex3DGenerator(ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
-            gen.setFrequency(1/20D);
+            gen.setFrequency(1 / 20D);
 //            gen.addOctave(3.7, 0.17, 117.6);
             tempNoise.put(pair, gen);
         }
         return gen;
     }
+
     public static void dropAndDestroyBlockAt(Level world, BlockPos pos, @Nullable Player ep, boolean breakAll, boolean FX) {
         BlockState b = world.getBlockState(pos);
         if (b.getDestroySpeed(world, pos) < 0 && !breakAll)
@@ -256,7 +258,7 @@ public class ReikaWorldHelper {
     }
 
     public static boolean softBlocks(Block id) {
-        if (id == Blocks.AIR || id.defaultBlockState().getMaterial() == Material.AIR)
+        if (id == Blocks.AIR)//todo || id.defaultBlockState().getMaterial() == Material.AIR)
             return true;
         return BlockProperties.isSoft(id);
     }
@@ -361,7 +363,7 @@ public class ReikaWorldHelper {
 //                }
             }
         }
-        if (corners) {
+        /*if (corners) {
             for (int i = -4; i < 4; i++) {
                 for (int k = -4; k < 4; k++) {
                     if (Math.abs(i) + Math.abs(k) <= 4) {
@@ -389,7 +391,7 @@ public class ReikaWorldHelper {
                     }
                 }
             }
-        }
+        }*/
     }
 
     public static List<ItemStack> getDropsAt(Level world, BlockPos pos, int fortune, Player ep) {
@@ -399,7 +401,8 @@ public class ReikaWorldHelper {
 
 //        ThreadLocal<Player> harvesters = (ThreadLocal) ReikaObfuscationHelper.get("harvesters", b);
 //        harvesters.set(ep);
-        LootContext.Builder lootcontext$builder = (new LootContext.Builder(world.getServer().getLevel(world.dimension()))).withRandom(world.getServer().getLevel(world.dimension()).random).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos)).withParameter(LootContextParams.TOOL, ItemStack.EMPTY);
+        //todo this below had random in it
+        LootParams.Builder lootcontext$builder = (new LootParams.Builder(world.getServer().getLevel(world.dimension()))).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos)).withParameter(LootContextParams.TOOL, ItemStack.EMPTY);
         List<ItemStack> li = b.getDrops(lootcontext$builder);//new LootContext.Builder(world.getServer().getLevel(world.dimension())));
         if (ep != null) {
             if (b.getBlock() instanceof BlockTieredResource bt) {
@@ -439,11 +442,11 @@ public class ReikaWorldHelper {
         if (b == Blocks.OBSIDIAN) {
             return temperature >= 1800;
         }
-        Material m = b.defaultBlockState().getMaterial();
-        if (m == Material.STONE) {
+        MapColor m = b.defaultBlockState().getMapColor(world, pos);
+        if (m == MapColor.STONE) {
             return temperature >= 1500;
         }
-        if (m == Material.METAL) {
+        if (m == MapColor.METAL) {
             return temperature >= 2000;
         }
         return false;
@@ -503,23 +506,23 @@ public class ReikaWorldHelper {
     }
 
     public static boolean countsAsAirExposure(Level world, BlockPos pos) {
-        Block b = world.getBlockState(pos).getBlock();
-        if (b == null || b == Blocks.AIR) //|| b.isAir(world, pos))
+        BlockState b = world.getBlockState(pos);
+        if (b == null || b == Blocks.AIR.defaultBlockState()) //|| b.isAir(world, pos))
             return true;
 //        if (b.getCollisionBoundingBoxFromPool(world, pos) == null)
 //            return true;
 //        if (InterfaceCache.EIOCONDUITBLOCK.instanceOf(b) || InterfaceCache.BCPIPEBLOCK.instanceOf(b) || InterfaceCache.TDDUCTBLOCK.instanceOf(b) || InterfaceCache.AECABLEBLOCK.instanceOf(b)) {
 //            return true;
 //        }
-        Material mat = b.defaultBlockState().getMaterial();
+       /* Material mat = b.defaultBlockState().getMaterial();
         if (mat != null) {
             if (mat == Material.LEAVES || mat == Material.AIR || mat == Material.CACTUS || mat == Material.FIRE)
                 return true;
             if (mat == Material.WATER_PLANT || mat == Material.PORTAL || mat == Material.PLANT || mat == Material.WEB)
                 return true;
             return !mat.isSolid();
-        }
-        return false;
+        }*/
+        return !b.isSolid();
     }
 
     public static boolean isExposedToAirWithException(Level world, int x, int y, int z, Block ex) {
@@ -569,29 +572,6 @@ public class ReikaWorldHelper {
     }
 
     /**
-     * Returns the direction in which a block of the specified material was found.
-     * Returns -1 if not found. Args: Level, x,y,z, material to search.
-     */
-    public static Direction checkForAdjMaterial(LevelAccessor world, BlockPos pos, Material mat) {
-        for (int i = 0; i < 6; i++) {
-            Direction dir = Direction.values()[i];
-            int dx = pos.getX() + dir.getStepX();
-            int dy = pos.getY() + dir.getStepY();
-            int dz = pos.getZ() + dir.getStepZ();
-            if (world.hasChunksAt(dx, dy, dz, dx, dy, dz)) {
-                Material mat2 = getMaterial(world, new BlockPos(dx, dy, dz));
-                if (ReikaBlockHelper.matchMaterialsLoosely(mat, mat2))
-                    return dir;
-            }
-        }
-        return null;
-    }
-
-    public static Material getMaterial(BlockGetter world, BlockPos pos) {
-        return (!(world instanceof Level) || ((Level) world).hasChunkAt(pos)) ? world.getBlockState(pos).getMaterial() : Material.AIR;
-    }
-
-    /**
      * Returns the direction in which a block of the specified ID was found.
      * Returns null if not found. Args: World, x,y,z, id to search.
      */
@@ -604,6 +584,34 @@ public class ReikaWorldHelper {
             if (world.hasChunksAt(dx, dy, dz, dx, dy, dz)) {
                 Block id2 = world.getBlockState(new BlockPos(dx, dy, dz)).getBlock();
                 if (id == id2)
+                    return dir;
+            }
+        }
+        return null;
+    }
+
+    public static MapColor getMapColor(BlockGetter world, BlockPos pos) {
+        return (!(world instanceof Level) || ((Level) world).hasChunksAt(pos, pos)) ? world.getBlockState(pos).getMapColor(world, pos) : MapColor.NONE;
+    }
+
+    public static Direction checkForAdjMaterial(LevelAccessor world, BlockPos pos, MapColor mat) {
+        return checkForAdjMaterial(world, pos.getX(), pos.getY(), pos.getZ(), mat);
+    }
+
+    /**
+     * Returns the direction in which a block of the specified material was found.
+     * Returns -1 if not found. Args: World, x,y,z, mapColor to search.
+     */
+    public static Direction checkForAdjMaterial(LevelAccessor world, int x, int y, int z, MapColor mat) {
+        for (int i = 0; i < 6; i++) {
+            Direction dir = Direction.values()[i];
+            int dx = x + dir.getStepX();
+            int dy = y + dir.getStepY();
+            int dz = z + dir.getStepZ();
+            if (world.hasChunksAt(dx, dy, dz, dx, dy, dz)) {
+                MapColor mat2 = getMapColor(world, new BlockPos(dx, dy, dz));
+//                if (ReikaBlockHelper.matchMaterialsLoosely(mat, mat2))
+                if (mat == mat2)
                     return dir;
             }
         }
@@ -703,8 +711,8 @@ public class ReikaWorldHelper {
             double f = (pos.getY() - 128) / (256D - 192D);
             Pamb *= 1 - 0.4 * f;
         }
-       //todo new world height is 319
-       if (pos.getY() > 319) {
+        //todo new world height is 319
+        if (pos.getY() > 319) {
             double f = (pos.getY() - 128) / (256D - 319D);
             Pamb *= 1 - 0.4 * f;
         }
@@ -761,7 +769,7 @@ public class ReikaWorldHelper {
             orb.setDeltaMovement(-0.2 + 0.4 * rand.nextFloat(), 0.3 * rand.nextFloat(), -0.2 + 0.4 * rand.nextFloat());
             CompoundTag nbt = new CompoundTag();
             orb.addAdditionalSaveData(nbt);
-            nbt.putInt("Age", 6000-life);
+            nbt.putInt("Age", 6000 - life);
             orb.readAdditionalSaveData(nbt);
             if (!world.isClientSide) {
 //                orb.velocityChanged = true; no longer a thing
@@ -824,7 +832,8 @@ public class ReikaWorldHelper {
      * spark particles yes/no, number-of-sparks multiplier (default 20-40),
      * flaming explosion yes/no, smoking explosion yes/no, explosion force (0 for none)
      */
-    public static void overheat(Level world, int x, int y, int z, ItemStack drop, int mindrops, int maxdrops, boolean sparks, float sparkmultiplier, boolean flaming, boolean smoke, float force) {
+    public static void overheat(Level world, int x, int y, int z, ItemStack drop, int mindrops, int maxdrops,
+                                boolean sparks, float sparkmultiplier, boolean flaming, boolean smoke, float force) {
         world.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 1);
         if (force > 0 && !world.isClientSide()) {
             if (flaming)
@@ -875,7 +884,8 @@ public class ReikaWorldHelper {
         return index;
     }
 
-    public static LivingEntity getClosestLivingEntityNoPlayers(Level world, BlockPos pos, AABB box, boolean excludeCreativeOnly) {
+    public static LivingEntity getClosestLivingEntityNoPlayers(Level world, BlockPos pos, AABB box,
+                                                               boolean excludeCreativeOnly) {
         List<LivingEntity> li = world.getEntitiesOfClass(LivingEntity.class, box);
         double d = Double.MAX_VALUE;
         LivingEntity index = null;
@@ -927,7 +937,7 @@ public class ReikaWorldHelper {
             int dy = pos.getY() + dir.getStepY();
             int dz = pos.getZ() + dir.getStepZ();
             BlockState id = world.getBlockState(new BlockPos(dx, dy, dz));
-            if (!id.getMaterial().isSolid())
+            if (!id.isSolid())
                 return false;
         }
         return true;
@@ -958,6 +968,65 @@ public class ReikaWorldHelper {
         if (b == Blocks.AIR)
             return false;
         return b != null;
+    }
+
+    /**
+     * Returns true if a block can see an point. Args: World, block x,y,z, Point x,y,z, Max Range
+     */
+    public static boolean canBlockSee(Level world, int x, int y, int z, double x0, double y0, double z0, double range) {
+        Block locid = world.getBlockState(new BlockPos(x, y, z)).getBlock();
+        range += 2;
+        for (int k = 0; k < 10; k++) {
+            float a = 0;
+            float b = 0;
+            float c = 0;
+            switch (k) {
+                case 1 -> a = 1;
+                case 2 -> b = 1;
+                case 3 -> {
+                    a = 1;
+                    b = 1;
+                }
+                case 4 -> c = 1;
+                case 5 -> {
+                    a = 1;
+                    c = 1;
+                }
+                case 6 -> {
+                    b = 1;
+                    c = 1;
+                }
+                case 7 -> {
+                    a = 1;
+                    b = 1;
+                    c = 1;
+                }
+                case 8 -> {
+                    a = 0.5F;
+                    b = 0.5F;
+                    c = 0.5F;
+                }
+                case 9 -> b = 0.5F;
+            }
+            for (float i = 0; i <= range; i += 0.25) {
+                Vec3 vec2 = ReikaVectorHelper.getVec2Pt(x0, y0, z0, x + a, y + b, z + c).normalize();
+                vec2 = ReikaVectorHelper.scaleVector(vec2, i);
+                vec2 = vec2.add(x0, y0, z0);
+
+                //ReikaColorAPI.write(String.format("%f -->  %.3f,  %.3f, %.3f", i, vec2.xCoord, vec2.yCoord, vec2.zCoord));
+                int dx = Mth.floor(vec2.x);
+                int dy = Mth.floor(vec2.y);
+                int dz = Mth.floor(vec2.z);
+                Block id = world.getBlockState(new BlockPos(dx, dy, dz)).getBlock();
+                if (dx == x && dy == y && dz == z) {
+                    //ReikaColorAPI.writeCoords(world, (int)vec2.xCoord, (int)vec2.yCoord, (int)vec2.zCoord);
+                    return true;
+                } else if (id != locid && ReikaBlockHelper.isCollideable(world, new BlockPos(dx, dy, dz)) && !softBlocks(world, new BlockPos(dx, dy, dz))) {
+                    i = (float) (range + 1); //Hard loop break
+                }
+            }
+        }
+        return false;
     }
 
     public static final class WorldID {

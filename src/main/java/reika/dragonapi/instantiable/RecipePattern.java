@@ -3,13 +3,12 @@ package reika.dragonapi.instantiable;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
-
-public final class RecipePattern extends CraftingContainer {
+public final class RecipePattern extends TransientCraftingContainer {
     private static final BlankContainer craft = new BlankContainer(null, -1);
 
     private static final class BlankContainer extends AbstractContainerMenu {

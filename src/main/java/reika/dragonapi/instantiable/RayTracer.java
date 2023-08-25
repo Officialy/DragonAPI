@@ -275,7 +275,7 @@ public class RayTracer {
         }
 
         public final boolean isClearLineOfSight(Entity e) {
-            return this.isClearLineOfSight((V)e, e.getLevel());
+            return this.isClearLineOfSight((V)e, e.level());
         }
 
         public final boolean isClearLineOfSight(BlockEntity e) {

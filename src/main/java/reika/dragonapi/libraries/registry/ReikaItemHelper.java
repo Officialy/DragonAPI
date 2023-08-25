@@ -175,7 +175,7 @@ public class ReikaItemHelper {
     public static boolean areStacksCombinable(ItemStack is1, ItemStack is2, int limit) {
         if (is1 != null && limit != Integer.MAX_VALUE)
             limit = Math.min(limit, is1.getMaxStackSize());
-        return is1 != null && is2 != null && matchStacks(is1, is2) && ItemStack.tagMatches(is1, is2) && is1.getCount() + is2.getCount() <= limit;
+        return is1 != null && is2 != null && matchStacks(is1, is2) && ItemStack.isSameItemSameTags(is1, is2) && is1.getCount() + is2.getCount() <= limit;
     }
 
     public static boolean verifyItemStack(ItemStack is, boolean fullCheck) {
@@ -370,13 +370,13 @@ public class ReikaItemHelper {
                     //itemstack.getCount() -= j;
                     int count = itemstack.getCount() - 1;
                     itemstack.setCount(count);
-                    ItemEntity ei = new ItemEntity(ep.level, ep.getX() + f, ep.getY() + 0.25 + f1, ep.getZ() + f2, new ItemStack(itemstack.getItem(), j));
+                    ItemEntity ei = new ItemEntity(ep.level(), ep.getX() + f, ep.getY() + 0.25 + f1, ep.getZ() + f2, new ItemStack(itemstack.getItem(), j));
                     if (itemstack.hasTag())
                         ei.getItem().save(itemstack.getTag().copy());
                     float f3 = 0.05F;
                     ei.setDeltaMovement((float) par5Random.nextGaussian() * f3, (float) par5Random.nextGaussian() * f3 + 0.2F, (float) par5Random.nextGaussian() * f3);
                     ei.setPickUpDelay(10);
-                    ep.level.addFreshEntity(ei);
+                    ep.level().addFreshEntity(ei);
                 }
                 while (true);
             }
@@ -417,7 +417,7 @@ public class ReikaItemHelper {
     }
 
     public static ItemEntity dropItem(Entity e, ItemStack is) {
-        return dropItem(e.level, e.blockPosition().getX(), e.blockPosition().getY(), e.blockPosition().getZ(), is);
+        return dropItem(e.level(), e.blockPosition().getX(), e.blockPosition().getY(), e.blockPosition().getZ(), is);
     }
 
     public static ItemEntity dropItem(Level world, double x, double y, double z, ItemStack is) {
@@ -452,7 +452,7 @@ public class ReikaItemHelper {
 
     public static boolean listContainsItemStack(Collection<ItemStack> li, ItemStack is, boolean NBT) {
         for (ItemStack is2 : li) {
-            if (matchStacks(is, is2) && (!NBT || ItemStack.isSame(is, is2)))
+            if (matchStacks(is, is2) && (!NBT || ItemStack.isSameItem(is, is2)))
                 return true;
         }
         return false;

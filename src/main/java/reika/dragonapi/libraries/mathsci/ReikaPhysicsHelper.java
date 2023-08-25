@@ -14,7 +14,6 @@ import reika.dragonapi.instantiable.Interpolation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.Material;
 import net.minecraftforge.fluids.IFluidBlock;
 
 public final class ReikaPhysicsHelper extends DragonAPI {
@@ -175,7 +174,7 @@ public final class ReikaPhysicsHelper extends DragonAPI {
 			return 1680;
 		if (b instanceof IFluidBlock)
 			return ((IFluidBlock) b).getFluid().getFluidType().getDensity();
-		if (b.defaultBlockState().getMaterial() == Material.STONE)
+		/*todo if (b.defaultBlockState().getMaterial() == Material.STONE)
 			return ReikaEngLibrary.rhorock;
 		if (b.defaultBlockState().getMaterial() == Material.GLASS)
 			return ReikaEngLibrary.rhorock;
@@ -206,7 +205,7 @@ public final class ReikaPhysicsHelper extends DragonAPI {
 		if (b.defaultBlockState().getMaterial() == Material.LAVA)
 			return ReikaEngLibrary.rholava;
 		if (b.defaultBlockState().getMaterial() == Material.ICE)
-			return 917;
+			return 917;*/
 		return 2200;
 	}
 

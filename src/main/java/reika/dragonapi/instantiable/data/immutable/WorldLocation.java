@@ -56,7 +56,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public WorldLocation(Entity e) {
-        this(e.level, e.blockPosition());
+        this(e.level(), e.blockPosition());
     }
 
     public WorldLocation(Level world, HitResult hit) {
