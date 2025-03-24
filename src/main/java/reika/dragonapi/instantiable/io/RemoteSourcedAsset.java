@@ -3,7 +3,6 @@ package reika.dragonapi.instantiable.io;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import reika.dragonapi.DragonAPI;
-import reika.dragonapi.auxiliary.trackers.RemoteAssetLoader;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.mathsci.ReikaDateHelper;
@@ -45,7 +44,7 @@ public class RemoteSourcedAsset {
             return new FileInputStream(f);
         } else {
             DragonAPI.LOGGER.error("Could not find main resource for asset " + reference + "/" + path + "!");
-            InputStream in = Minecraft.getInstance().getResourceManager().getResource(new ResourceLocation(reference, fall)).get().open(); //todo attempt for getting resource inputstream from pack
+            InputStream in = Minecraft.getInstance().getResourceManager().getResource(ResourceLocation.fromNamespaceAndPath(reference, fall)).get().open(); //todo attempt for getting resource inputstream from pack
             if (in != null)
                 return in;
             DragonAPI.LOGGER.error("Could not find ANY resource for asset " + reference + "/" + path + "!");
@@ -54,7 +53,7 @@ public class RemoteSourcedAsset {
     }
 
     private InputStream getPrimary() throws IOException {
-        return Minecraft.getInstance().getResourceManager().getResource(new ResourceLocation(reference, path)).get().open(); //todo attempt for getting resource inputstream from pack
+        return Minecraft.getInstance().getResourceManager().getResource(ResourceLocation.fromNamespaceAndPath(reference, path)).get().open(); //todo attempt for getting resource inputstream from pack
     }
 
     public void load() {

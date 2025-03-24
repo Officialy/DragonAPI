@@ -50,7 +50,7 @@ public final class ReikaGuiAPI extends Screen {
     private float zLevel = 0; //todo temporary, check if it works first
 
     private ReikaGuiAPI() {
-        super(Component.nullToEmpty(null));
+        super(Component.empty());
         minecraft = Minecraft.getInstance();
         MinecraftForge.EVENT_BUS.register(this);
     }

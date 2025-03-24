@@ -12,10 +12,7 @@ package reika.dragonapi.libraries.io;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -26,12 +23,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.registries.ForgeRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
-import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
 public final class ReikaChatHelper {
 
@@ -212,8 +207,8 @@ public final class ReikaChatHelper {
             return;
         }
         String[] parts = sg.split("\\n");
-        for (int i = 0; i < parts.length; i++) {
-            Component chat = Component.literal(parts[i]);
+        for (String part : parts) {
+            Component chat = Component.literal(part);
             ep.displayClientMessage(chat, true);
         }
     }

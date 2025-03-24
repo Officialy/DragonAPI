@@ -30,6 +30,7 @@ import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.instantiable.HybridTank;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.instantiable.io.PacketTarget;
+import reika.dragonapi.instantiable.io.SyncPacket;
 import reika.dragonapi.interfaces.PacketHandler;
 import reika.dragonapi.interfaces.registry.CustomDistanceSound;
 import reika.dragonapi.interfaces.registry.SoundEnum;
@@ -48,12 +49,15 @@ public class ReikaPacketHelper {
 
     private static final HashMap<String, PacketPipeline> pipelines = new HashMap<>();
     private static final HashBiMap<Short, PacketHandler> handlers = HashBiMap.create();
+    public static SimpleChannel INSTANCE;
+
     private static short handlerID = 0;
 
     public static void registerPacketHandler(DragonAPIMod mod, String channel, PacketHandler handler) {
-        SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation(mod.getModId(), channel.toLowerCase()), () -> DragonAPI.last_API_Version, DragonAPI.last_API_Version::equals, DragonAPI.last_API_Version::equals);
+        INSTANCE = NetworkRegistry.newSimpleChannel(ResourceLocation.fromNamespaceAndPath(mod.getModId(), channel.toLowerCase()), () -> DragonAPI.last_API_Version, DragonAPI.last_API_Version::equals, DragonAPI.last_API_Version::equals);
         PacketPipeline p = new PacketPipeline(mod, channel, handler, INSTANCE);
         p.registerPacket(DataPacket.class, DataPacket::encode, DataPacket::decode);
+        p.registerPacket(SyncPacket.class, SyncPacket::encode, SyncPacket::decode);
 //        p.registerPacket(NBTPacket.class);
         handlers.put(handlerID, handler);
         pipelines.put(channel, p);
@@ -61,11 +65,11 @@ public class ReikaPacketHelper {
         DragonAPI.LOGGER.info("Registered packet handler " + handler + " for channel " + channel + " with ID " + (handlerID - 1));
     }
 
-/*todo    public static void registerPacketClass(String channel, Class<? extends PacketObj> c, Function<FriendlyByteBuf, ? extends PacketObj> decoder) {
+/*    public static void registerPacketClass(String channel, Class<? extends PacketObj> c, Function<FriendlyByteBuf, ? extends PacketObj> decoder) {
         PacketPipeline pipe = pipelines.get(channel);
         if (pipe == null)
             throw new MisuseException("Cannot register a packet class to a null pipeline!");
-        pipe.registerPacket(c, decoder);
+        pipe.registerPacket(c, encoder, decoder);
     }*/
 
     private static short getHandlerID(PacketHandler handler) {
@@ -367,7 +371,6 @@ public class ReikaPacketHelper {
     }
 
     public static void sendDataPacketToEntireServer(String ch, int id, List<Integer> data) {
-
         int npars;
         if (data == null)
             npars = 4;
@@ -408,8 +411,8 @@ public class ReikaPacketHelper {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
             pipe.sendToAllOnServer(pack);
         } else if (side == Dist.CLIENT) {
-            //PacketDispatcher.sendPacketToServer(packet);
-            //pipe.sendToServer(pack);
+//            PacketDispatcher.sendPacketToServer(packet);
+//            pipe.sendToServer(pack);
         } else {
             // We are on the Bukkit server.
         }
@@ -1624,11 +1627,11 @@ public class ReikaPacketHelper {
             ctx.get().setPacketHandled(true);
         }
 
-       /* @Override
+        @Override
         public String toString() {
             String hd = handler.getClass().getCanonicalName() + " (ID " + this.handlerID() + ")";
             return "type " + this.getType() + "; Data: " + this.getDataAsString() + " from " + hd;
-        }*/
+        }
 
         public final PacketTypes getType() {
             return type;
@@ -1640,7 +1643,10 @@ public class ReikaPacketHelper {
 
         private void close() {
             try {
-                this.getDataIn().close();
+                DataInputStream stream = this.getDataIn();
+                if (stream != null) {
+                    stream.close();
+                }
             } catch (IOException e) {
                 DragonAPI.LOGGER.error("Error closing packet " + this + ". Memory may leak.");
                 e.printStackTrace();
@@ -1704,23 +1710,6 @@ public class ReikaPacketHelper {
         }
 
     }
-
-//    public static void registerVanillaPacketType(DragonAPIMod mod, int id, Class<? extends Packet> c, Dist s, EnumConnectionState state) {
-//        switch(s) {
-//            case CLIENT:
-//                if (state.func_150753_a().containsKey(id))
-//                    throw new IDConflictException(mod, "Packet "+c+" ID "+id+" is already occupied by "+state.func_150753_a().get(id)+"!");
-//                state.func_150753_a().put(Integer.valueOf(id), c);
-//                break;
-//            case DEDICATED_SERVER:
-//                if (state.func_150755_b().containsKey(id))
-//                    throw new IDConflictException(mod, "Packet "+c+" ID "+id+" is already occupied by "+state.func_150755_b().get(id)+"!");
-//                state.func_150755_b().put(Integer.valueOf(id), c);
-//                break;
-//        }
-//        EnumConnectionState.field_150761_f.put(c, state);
-//        mod.getModLogger().log("Registering vanilla-type packet "+c+" with ID "+id+" on side "+s);
-//    }
 
     public static void syncBlockEntity(BlockEntity tile) {
         if (tile != null && tile.getLevel() != null) {

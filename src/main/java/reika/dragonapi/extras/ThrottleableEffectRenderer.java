@@ -1,37 +1,22 @@
 package reika.dragonapi.extras;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.CrashReport;
-import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.AABB;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
-import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
-import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.Callable;
 
 public class ThrottleableEffectRenderer extends ParticleEngine {
 
@@ -50,7 +35,7 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
 
     private ArrayList<ParticleSpawnHandler> particleSpawnHandlers = null;
 
-    private static final ResourceLocation particleTextures = new ResourceLocation("textures/particle/particles.png");
+    private static final ResourceLocation particleTextures = ResourceLocation.parse("textures/particle/particles.png");
     private static final AABB particleBox = new AABB(0, 0, 0, 0, 0, 0);
 
     public ThrottleableEffectRenderer(ParticleEngine eff) {

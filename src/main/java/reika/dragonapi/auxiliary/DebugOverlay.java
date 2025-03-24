@@ -38,7 +38,7 @@ public class DebugOverlay {
                 var s = "Debug Mode Enabled!";
                 event.getGuiGraphics().drawString(f, s, 1, 1, 0xffffff);
                 stack.scale(1/d, 1/d, 1/d);
-                RenderSystem.setShaderTexture(0, new ResourceLocation("textures/gui/icons.png"));
+                RenderSystem.setShaderTexture(0, ResourceLocation.parse("textures/gui/icons.png"));
             }
 
             if (DragonOptions.TABNBT.getState() && InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), DragonOptions.DEBUGKEY.getValue())) {
@@ -69,7 +69,7 @@ public class DebugOverlay {
                                 for (int i = 0; i < li.size(); i++) {
                                     String s = li.get(i);
                                     event.getGuiGraphics().drawString(f, s, 1+event.getWindow().getGuiScaledWidth()/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
-                                    RenderSystem.setShaderTexture(0, new ResourceLocation("textures/gui/icons.png"));
+                                    RenderSystem.setShaderTexture(0, ResourceLocation.parse("textures/gui/icons.png"));
                                 }
                             }
                         }

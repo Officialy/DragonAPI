@@ -7,7 +7,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
@@ -152,7 +151,7 @@ public class PopupWriter extends Screen {
 
             //Apply the texture to the warning icon
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, (new ResourceLocation(MODID, "textures/gui/warning.png")));
+            RenderSystem.setShaderTexture(0, (ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/warning.png")));
             //Draw the warning icon
             buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
             buffer.vertex(matrix, dx, dy + sz, 0).uv(0, 1).endVertex();
@@ -174,7 +173,7 @@ public class PopupWriter extends Screen {
 
             //Apply the texture to the button
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, new ResourceLocation(MODID, "textures/gui/buttons.png"));
+            RenderSystem.setShaderTexture(0, ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/buttons.png"));
             //Draw the close button
             buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
             buffer.vertex(dx, dy + sz, 0).uv(0.5f, 0.25f).endVertex();

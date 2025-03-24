@@ -35,7 +35,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
     public static final TextureMode blockTex = new VanillaTextureMode(InventoryMenu.BLOCK_ATLAS);
 //    public static final TextureMode itemTex = new VanillaTextureMode(TextureMap.locationItemsTexture);
-    public static final TextureMode particleTex = new VanillaTextureMode(new ResourceLocation("textures/particle/particles.png"));
+    public static final TextureMode particleTex = new VanillaTextureMode(ResourceLocation.parse("textures/particle/particles.png"));
 
     private final RenderKey DEFAULT_RENDER = new RenderKey(particleTex, new RenderMode());
 

@@ -7,8 +7,6 @@ import net.minecraft.client.Options;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.auxiliary.PopupWriter;
@@ -59,7 +57,7 @@ public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatc
         public void drawIcon(PoseStack stack, int x, int y, int size) {
             Tesselator t = Tesselator.getInstance();
             BufferBuilder v5 = t.getBuilder();
-            Minecraft.getInstance().textureManager.bindForSetup(new ResourceLocation(MODID, "textures/mutewarn.png"));
+            Minecraft.getInstance().textureManager.bindForSetup(ResourceLocation.fromNamespaceAndPath(MODID, "textures/mutewarn.png"));
             v5.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
             v5.color(0xffffff);
             v5.vertex(x, y + size, 0).uv(0, 1).endVertex();

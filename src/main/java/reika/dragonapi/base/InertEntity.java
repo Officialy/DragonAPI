@@ -94,7 +94,7 @@ public abstract class InertEntity extends Entity {
 
     @Override
     protected SoundEvent getSwimSplashSound() {
-        return SoundEvent.createVariableRangeEvent(new ResourceLocation(""));
+        return SoundEvent.createVariableRangeEvent(ResourceLocation.parse(""));
     }
 
     @Override

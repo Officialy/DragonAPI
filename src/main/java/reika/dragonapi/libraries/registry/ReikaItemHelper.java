@@ -3,7 +3,6 @@ package reika.dragonapi.libraries.registry;
 import com.google.common.base.Strings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
@@ -165,7 +164,7 @@ public class ReikaItemHelper {
     }
 
     public static ItemStack lookupItem(String mod, String item) {
-        Item i = ForgeRegistries.ITEMS.getValue(new ResourceLocation(mod, item));
+        Item i = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath(mod, item));
         return i != null ? new ItemStack(i, 1) : null;
     }
 

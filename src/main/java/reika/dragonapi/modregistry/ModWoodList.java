@@ -186,9 +186,9 @@ public enum ModWoodList implements TreeType {
                     idsapling = sapling_b;
                 }
                 case REGISTRY -> {
-                    Block wood_b = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(mod.modid, blockVar));
-                    Block leaf_b = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(mod.modid, leafVar)); //todo check if this this is correct
-                    Block sapling_b = saplingVar == null ? null : ForgeRegistries.BLOCKS.getValue(new ResourceLocation(mod.modid, saplingVar));
+                    Block wood_b = ForgeRegistries.BLOCKS.getValue(ResourceLocation.fromNamespaceAndPath(mod.modid, blockVar));
+                    Block leaf_b = ForgeRegistries.BLOCKS.getValue(ResourceLocation.fromNamespaceAndPath(mod.modid, leafVar)); //todo check if this this is correct
+                    Block sapling_b = saplingVar == null ? null : ForgeRegistries.BLOCKS.getValue(ResourceLocation.fromNamespaceAndPath(mod.modid, saplingVar));
                     if (wood_b == null || leaf_b == null || (saplingVar != null && sapling_b == null)) {
                         DragonAPI.LOGGER.error("Error loading " + this.getLabel() + ": Block not instantiated!");
                         return;

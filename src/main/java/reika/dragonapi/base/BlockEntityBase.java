@@ -13,18 +13,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -32,12 +27,10 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.extensions.IForgeBlockEntity;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.network.NetworkHooks;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -53,7 +46,6 @@ import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.instantiable.data.maps.TimerMap;
 import reika.dragonapi.instantiable.io.SyncPacket;
 import reika.dragonapi.interfaces.DataSync;
-import reika.dragonapi.interfaces.registry.MenuFactory;
 import reika.dragonapi.io.CompoundSyncPacket;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
@@ -473,6 +465,21 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
         level.setBlocksDirty(worldPosition, this.getBlockState(), this.getBlockState());
         this.onSync();
         forceSync = false;
+    }
+
+    private void sendPacketToAllAround(SyncPacket p, int radius) {
+        if (!level.isClientSide()) {
+            ReikaPacketHelper.INSTANCE.send(
+                    PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(
+                            worldPosition.getX(),
+                            worldPosition.getY(),
+                            worldPosition.getZ(),
+                            radius,
+                            level.dimension()
+                    )),
+                    p
+            );
+        }
     }
 
     protected void onSync() {

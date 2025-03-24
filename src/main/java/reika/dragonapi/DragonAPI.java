@@ -34,7 +34,6 @@ import reika.dragonapi.instantiable.rendering.ReikaRenderDispatcher;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.registry.ReikaDyeHelper;
-import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 import reika.dragonapi.modregistry.ModOreList;
 import reika.dragonapi.modregistry.PowerTypes;
 import reika.dragonapi.trackers.PatreonController;

@@ -29,7 +29,7 @@
 //    protected int u;
 //    protected int v;
 //    protected int hoverTicks;
-//    SoundEvent sound = new SoundEvent(new ResourceLocation("gui.button.press"));
+//    SoundEvent sound = new SoundEvent(ResourceLocation.parse("gui.button.press"));
 //    private int color;
 //    private boolean shadow = true;
 //    private String filepath;

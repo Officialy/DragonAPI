@@ -46,7 +46,7 @@ public class HybridTank extends FluidTank {
                 CompoundTag tankData = NBT.getCompound(name);
                 String fluidName = tankData.getString("FluidName");
                 String repl = getFluidNameSwap(fluidName);
-                if (repl != null && ForgeRegistries.FLUIDS.getValue(new ResourceLocation(repl)) != null && !fluidName.equals(repl)) {
+                if (repl != null && ForgeRegistries.FLUIDS.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
                     tankData.putString("FluidName", repl);
                     DragonAPI.LOGGER.info("Tank " + this + " has replaced its FluidName of '" + fluidName + "' with '" + repl + "', as the fluid has changed names.");
                 }
@@ -66,7 +66,7 @@ public class HybridTank extends FluidTank {
 
         String fluidName = tankData.getString("FluidName");
         String repl = getFluidNameSwap(fluidName);
-        if (repl != null && ForgeRegistries.FLUIDS.getValue(new ResourceLocation(repl)) != null && !fluidName.equals(repl)) {
+        if (repl != null && ForgeRegistries.FLUIDS.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
             tankData.putString("FluidName", repl);
             DragonAPI.LOGGER.info("Tank " + this + " has replaced its FluidName of '" + fluidName + "' with '" + repl + "', as the fluid has changed names.");
         }

@@ -24,7 +24,7 @@ public enum PowerTypes implements Dependency {
     ROTARYCRAFT("reika.rotarycraft.api.power.ShaftMachine"),
     PNEUMATIC("pneumaticCraft.api.blockentity.IPneumaticMachine"),
     HYDRAULIC(),
-    STEAM(TagManager.getTagDir(FluidTags.create(new ResourceLocation("forge", "steam")).registry()).isEmpty()),
+    STEAM(TagManager.getTagDir(FluidTags.create(ResourceLocation.fromNamespaceAndPath("forge", "steam")).registry()).isEmpty()),
     ELECTRICRAFT(ModList.ELECTRICRAFT.isLoaded());
 
     private final boolean exists;

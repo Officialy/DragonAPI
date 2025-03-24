@@ -458,7 +458,7 @@ public final class ReikaNBTHelper extends DragonAPI {
 
         @Override
         public Block createFromNBT(Tag nbt) {
-            return ForgeRegistries.BLOCKS.getValue(new ResourceLocation((nbt.getAsString())));
+            return ForgeRegistries.BLOCKS.getValue(ResourceLocation.parse((nbt.getAsString())));
         }
 
         @Override
@@ -478,7 +478,7 @@ public final class ReikaNBTHelper extends DragonAPI {
 
         @Override
         public Item createFromNBT(Tag nbt) {
-            return ForgeRegistries.ITEMS.getValue(((new ResourceLocation(nbt.getAsString()))));
+            return ForgeRegistries.ITEMS.getValue(((ResourceLocation.parse(nbt.getAsString()))));
         }
 
         @Override
