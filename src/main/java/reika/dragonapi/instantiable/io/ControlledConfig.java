@@ -1,26 +1,8 @@
 package reika.dragonapi.instantiable.io;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-
 import com.google.common.base.Strings;
 import com.mojang.authlib.GameProfile;
-
 import net.minecraft.client.Minecraft;
-
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.loading.FMLLoader;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
@@ -28,27 +10,22 @@ import reika.dragonapi.exception.InvalidConfigException;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.exception.RegistrationException;
 import reika.dragonapi.exception.StupidIDException;
+import reika.dragonapi.instantiable.data.maps.MultiMap;
+import reika.dragonapi.instantiable.data.maps.ValueSortedMap;
 import reika.dragonapi.instantiable.io.oldforge.ConfigCategory;
 import reika.dragonapi.instantiable.io.oldforge.Configuration;
 import reika.dragonapi.instantiable.io.oldforge.Property;
 import reika.dragonapi.instantiable.io.oldforge.Property.Type;
+import reika.dragonapi.interfaces.configuration.*;
 import reika.dragonapi.interfaces.registry.IDRegistry;
 import reika.dragonapi.io.ReikaFileReader;
-import reika.dragonapi.instantiable.data.maps.MultiMap;
-import reika.dragonapi.instantiable.data.maps.ValueSortedMap;
-import reika.dragonapi.interfaces.configuration.BooleanConfig;
-import reika.dragonapi.interfaces.configuration.BoundedConfig;
-import reika.dragonapi.interfaces.configuration.ConfigList;
-import reika.dragonapi.interfaces.configuration.CustomCategoryConfig;
-import reika.dragonapi.interfaces.configuration.DecimalConfig;
-import reika.dragonapi.interfaces.configuration.IntArrayConfig;
-import reika.dragonapi.interfaces.configuration.IntegerConfig;
-import reika.dragonapi.interfaces.configuration.SegmentedConfigList;
-import reika.dragonapi.interfaces.configuration.SelectiveConfig;
-import reika.dragonapi.interfaces.configuration.StringArrayConfig;
-import reika.dragonapi.interfaces.configuration.StringConfig;
-import reika.dragonapi.interfaces.configuration.UserSpecificConfig;
 import reika.dragonapi.libraries.java.ReikaStringParser;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.util.*;
 public class ControlledConfig {
 
     private static final HashMap<String, ControlledConfig> configs = new HashMap();
@@ -171,8 +148,12 @@ public class ControlledConfig {
     }
 
     private static int getClientUserHash() {
+        try {
         if(Minecraft.getInstance() == null) //Likely doing datagen
             return 0;
+        } catch (NoSuchMethodError ignored) {
+
+        }
         GameProfile p = Minecraft.getInstance().getUser().getGameProfile();
         String id = p != null ? p.getId().toString() : p.getName();
         return id.hashCode();

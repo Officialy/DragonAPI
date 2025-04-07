@@ -22,7 +22,7 @@ import java.util.Iterator;
 
 public class EventProfiler {
 
-    //public static final EventProfiler instance = new EventProfiler();
+//    public static final EventProfiler instance = new EventProfiler();
 
     private static final HashMap<String, Class<? extends Event>> fullNameShortcuts = new HashMap<>();
 

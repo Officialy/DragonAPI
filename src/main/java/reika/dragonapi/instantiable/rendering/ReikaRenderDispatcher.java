@@ -54,15 +54,15 @@ public class ReikaRenderDispatcher extends BlockRenderDispatcher {
         renderers.add(renderer);
     }
 
-//    todo @Override
-    public void renderBatched(BlockState state, BlockPos pos, BlockAndTintGetter level, PoseStack stack, VertexConsumer builder, boolean checkSides, RandomSource rand, ModelData modelData, RenderType renderType, boolean queryModelSpecificData) {
+    @Override
+    public void renderBatched(BlockState state, BlockPos pos, BlockAndTintGetter level, PoseStack stack, VertexConsumer builder, boolean checkSides, RandomSource rand, ModelData modelData, RenderType renderType) {
         try {
             IBlockRenderer renderer = findFor(state.getBlock(), iBlockRenderer -> iBlockRenderer.shouldRender(state, level, pos, renderType));
             if (renderer != null) {
                 renderer.renderBlock(state, pos, level, stack, builder);
             }
         } catch (Throwable t) {
-            CrashReport crashreport = CrashReport.forThrowable(t, "Tessellating DragonAPI block in world");
+            CrashReport crashreport = CrashReport.forThrowable(t, "Tessellating DragonAPI block in world" + "block is:" + state);
             CrashReportCategory crashreportcategory = crashreport.addCategory("Block being tessellated");
             CrashReportCategory.populateBlockDetails(crashreportcategory, level, pos, state);
             throw new ReportedException(crashreport);

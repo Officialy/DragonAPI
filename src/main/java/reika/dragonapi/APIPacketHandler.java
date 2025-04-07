@@ -2,13 +2,11 @@ package reika.dragonapi;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -18,19 +16,18 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.registries.ForgeRegistries;
-import org.apache.logging.log4j.core.jmx.Server;
-import org.lwjgl.glfw.GLFW;
 import reika.dragonapi.auxiliary.ModularLogger;
 import reika.dragonapi.auxiliary.PacketTypes;
 import reika.dragonapi.auxiliary.PopupWriter;
-import reika.dragonapi.auxiliary.trackers.*;
+import reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker;
+import reika.dragonapi.auxiliary.trackers.KeyWatcher;
+import reika.dragonapi.auxiliary.trackers.ModFileVersionChecker;
+import reika.dragonapi.auxiliary.trackers.SettingInterferenceTracker;
 import reika.dragonapi.base.BlockEntityBase;
 import reika.dragonapi.command.BiomeMapCommand;
 import reika.dragonapi.command.EntityListCommand;
@@ -53,7 +50,6 @@ import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 
 public class APIPacketHandler implements PacketHandler {
@@ -77,9 +73,8 @@ public class APIPacketHandler implements PacketHandler {
         CompoundTag NBT = null;
         String stringdata = null;
         PacketTypes packetType = packet.getType();
-        DragonAPI.LOGGER.info("Packet: " + packet + inputStream.toString());
+        DragonAPI.LOGGER.info("Packet: {}{}", packet, inputStream.toString());
         try {
-            DragonAPI.LOGGER.info("Recieved packet type: " + packet.getType() + " Containing data: " + Arrays.toString(inputStream.readAllBytes()));
             switch (packetType) {
                 case SOUND -> {
                     int lib = inputStream.readInt();
@@ -110,8 +105,9 @@ public class APIPacketHandler implements PacketHandler {
                     data = new int[len];
                     readinglong = pack.isLongPacket();
                     if (!readinglong) {
-                        for (int i = 0; i < len; i++)
+                        for (int i = 0; i < len; i++) {
                             data[i] = inputStream.readInt();
+                        }
                     } else
                         longdata = inputStream.readLong();
                 }
@@ -351,7 +347,7 @@ public class APIPacketHandler implements PacketHandler {
                     }
                     break;
             }
-            if (world.isClientSide()) //todo check if this makes sure we're on the client
+            if (world.isClientSide())
                 this.clientHandle(Minecraft.getInstance().level, x, y, z, pack, data, stringdata, ep);
         } catch (Exception e) {
             DragonAPI.LOGGER.error("Error when handling " + pack + " packet [" + packet + "]: " + e);
@@ -484,8 +480,8 @@ public class APIPacketHandler implements PacketHandler {
                 case PARTICLE, ENTITYVERIFYFAIL, REDSTONECHANGE, GETLATENCY, BREAKPARTICLES, KEYUPDATE -> 2;
                 case PARTICLEWITHPOS -> 2 + 2 * 3;
                 case PARTICLEWITHPOSVEL -> 2 + 2 * 6;
-                case NUMBERPARTICLE, POPUP, MODULARLOGGER, LOGIN, BIOMEPNGEND, IDDUMP, CONFIGSYNC, ITEMDROPPER, ITEMDROPPERREQUEST, TILESYNC, BIOMECHANGE ->
-                        1;
+                case NUMBERPARTICLE, POPUP, MODULARLOGGER, LOGIN, BIOMEPNGEND, IDDUMP, CONFIGSYNC, ITEMDROPPER,
+                     ITEMDROPPERREQUEST, TILESYNC, BIOMECHANGE -> 1;
                 case COLOREDPARTICLE, PLAYERINTERACT -> 5;
                 case BIOMEPNGSTART -> 8;
                 case BIOMEPNGDAT -> 1 + 3 * BiomeMapCommand.PACKET_COMPILE;

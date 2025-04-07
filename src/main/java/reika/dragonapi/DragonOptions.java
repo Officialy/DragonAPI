@@ -13,6 +13,8 @@ import net.minecraft.world.level.ChunkPos;
 import reika.dragonapi.auxiliary.trackers.KeyWatcher;
 import reika.dragonapi.interfaces.configuration.*;
 
+import static com.mojang.blaze3d.platform.InputConstants.KEY_TAB;
+
 public enum DragonOptions implements IntegerConfig, BooleanConfig, StringArrayConfig, StringConfig, UserSpecificConfig {
 
     LOGLOADING("Console Loading Info", true),
@@ -41,7 +43,7 @@ public enum DragonOptions implements IntegerConfig, BooleanConfig, StringArrayCo
     APRIL("Enable Temporally Dependent Amusement Behavior", true),
     //NOALPHATEST("Disable Alpha Clipping in WorldRenderer", true),
     PARTICLELIMIT("Particle Limit (Vanilla = 4000)", 4000),
-    DEBUGKEY("Debug Overlay Key (LWJGL ID)", 0x0F), //Keyboard.KEY_TAB
+    DEBUGKEY("Debug Overlay Key (LWJGL ID)", KEY_TAB), //Keyboard.KEY_TAB
     //RECURSE("Recursion Limit Override", -1),
     //COMPOUNDSYNC("Compound Sync Packet System - Use at own risk", false);
     DIRECTOC("Direct OpenComputers Support", false),
@@ -63,9 +65,7 @@ public enum DragonOptions implements IntegerConfig, BooleanConfig, StringArrayCo
     NOTIFYBYTEEXEC("Bytecodeexec command notifies other admins", false),
     PLAYERMOBCAP("Player-Specific Mob Caps", false),
     SETTINGWARN("Setting Warning Persistence (EVERYLOAD/SETTINGCHANGE/VERSION/ONCE)", "SETTINGCHANGE"),
-    CHARGEDCERTUS("Allow charged certus to be recognized as normal certus ore", false),
     STOPUNLOADSPREAD("Prevent block spreading near unloaded chunks", true),
-    GRASSMEAL("Make bonemeal generate biome-correct foliage instead of tall grass", true),
     VERSIONCHANGEWARN("Version Change Warning Level (0 = None, 1 = ReikaMods only, 2 = All)", 2),
     DEBUGLOG("Mod's Debug Log (false = None, true = All)", false),
     ;

@@ -127,6 +127,7 @@ public class ReikaSoundHelper {
             return null;
         EnumSound es = new EnumSound(s, x, y, z, v, pitch, att);
         try {
+            DragonAPI.LOGGER.info("soundmanager is about to play "+ es + " now");
             Minecraft.getInstance().getSoundManager().play(es);
         } catch (ConcurrentModificationException e) {
             e.printStackTrace();

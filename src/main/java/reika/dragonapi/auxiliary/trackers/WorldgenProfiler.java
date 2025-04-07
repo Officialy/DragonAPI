@@ -1,11 +1,5 @@
 package reika.dragonapi.auxiliary.trackers;
 
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
@@ -16,6 +10,11 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 public class WorldgenProfiler {
 
@@ -37,8 +36,7 @@ public class WorldgenProfiler {
 //            return false;
         if (enableProfiling) {
             return false;
-        }
-        else {
+        } else {
             enableProfiling = true;
             profileData.clear();
             profiledChunks.clear();
@@ -67,7 +65,7 @@ public class WorldgenProfiler {
         for (EventProfiler.EventProfile e : EventProfiler.getProfilingData()) {
             profileDataDisplay.add(new BiomeBlocksProfile(e));
         }
-        //profileDataDisplay.add(SpillageProfile.instance);
+//        profileDataDisplay.add(SpillageProfile.instance);
         profileDataDisplay.add(InitProfile.instance);
         Collections.sort(profileDataDisplay);
     }
@@ -95,7 +93,7 @@ public class WorldgenProfiler {
     }
 
     public static long getTotalProfilingTime() {
-        //return totalProfiledTime;
+//        return totalProfiledTime;
         long total = 0;
         for (GeneratorProfile g : profileData.values()) {
             //ReikaJavaLibrary.pConsole(total+" + "+g.getTotalTime()+" = "+(total+g.getTotalTime()));
@@ -107,6 +105,7 @@ public class WorldgenProfiler {
     public static ResourceKey<Level> getDimension() {
         return currentProfilingDimension;
     }
+
     public static Level getLevel() {
         return currentProfilingLevel;
     }
@@ -123,8 +122,7 @@ public class WorldgenProfiler {
         ProfileTiming p = profiledChunks.get(ChunkPos.asLong(cx, cz));
         if (p == null) { //this is not actually wrong; since population is decoupled from generation, this can be called much later, even in a later load of the save
             //throw new IllegalStateException("Chunk "+cx+", "+cz+" was finished generating before it started!?");
-        }
-        else {
+        } else {
             p.stop(now);
         }
     }
@@ -163,7 +161,7 @@ public class WorldgenProfiler {
 
         finishGenerator(getOrCreateGenerator(b), now, x >> 4, z >> 4);
 
-        //totalProfiledTime += dur;
+//        totalProfiledTime += dur;
     }
 
     public static void startGenerator(ResourceKey<Level> world, PlacedFeature gen, int cx, int cz) {
@@ -348,7 +346,7 @@ public class WorldgenProfiler {
     public static void onChunkSpills(PlacedFeature spiller, int cx, int cz, int cx2, int cz2, long now, boolean gen) {
         GeneratorProfile a = getOrCreateGenerator(spiller);
         if (a.isRunning(cx, cz))
-            if (a.addSpilledChunk(cx, cz, cx2, cz2, gen));
+            if (a.addSpilledChunk(cx, cz, cx2, cz2, gen)) ;
         //initGenerator(SpillageProfile.instance, cx, cz);
     }
 
@@ -358,18 +356,22 @@ public class WorldgenProfiler {
         a.blockChanges += number;
     }
 
-    /** Used for cases where in the middle of profiling another function is run that does not 'count'. */
+    /**
+     * Used for cases where in the middle of profiling another function is run that does not 'count'.
+     */
     public static void subtractTime(PlacedFeature gen, long time) {
         GeneratorProfile a = getOrCreateGenerator(gen);
         if (time > a.totalTime) {
-            DragonAPI.LOGGER.error("Subtracted "+time+" from only "+a.totalTime+" for "+a);
+            DragonAPI.LOGGER.error("Subtracted " + time + " from only " + a.totalTime + " for " + a);
         }
         a.totalTime -= time;
         //totalProfiledTime -= time;
     }
 
-    /** Use this to prevent a subgenerator from showing as its own entry (eg a Feature<?> object used inside an PlacedFeature)
-     * so that it is instead merged into its parent. */
+    /**
+     * Use this to prevent a subgenerator from showing as its own entry (eg a Feature<?> object used inside an PlacedFeature)
+     * so that it is instead merged into its parent.
+     */
     public static void registerGeneratorAsSubGenerator(WorldProfilerParent parent, Object sub) {
         subGenerators.put(sub, parent);
     }
@@ -387,10 +389,10 @@ public class WorldgenProfiler {
             if (subGenerators.containsKey(o))
                 o = subGenerators.get(o);
 
-            /*if (o instanceof PlacedFeature) {
+            if (o instanceof PlacedFeature) {
                 value = o;
                 type = PlacedFeature.class;
-            }
+            }/*
             else if (o instanceof MapGenBase) {
                 value = o;
                 type = MapGenBase.class;
@@ -402,13 +404,11 @@ public class WorldgenProfiler {
             else if (o instanceof Biome) {
                 value = getLevel().registryAccess().registryOrThrow(Registries.BIOME).getKey((Biome) o).toString();
                 type = Biome.class;
-            }
-            else if (o instanceof String) {
+            } else if (o instanceof String) {
                 value = o;
                 type = String.class;
-            }
-            else if (o instanceof WorldProfilerParent) {
-                value = ((WorldProfilerParent)o).getWorldgenProfilerID();
+            } else if (o instanceof WorldProfilerParent) {
+                value = ((WorldProfilerParent) o).getWorldgenProfilerID();
                 type = WorldProfilerParent.class;
             }
         }
@@ -420,7 +420,7 @@ public class WorldgenProfiler {
 
         @Override
         public boolean equals(Object o) {
-            return o instanceof ProfileKey && ((ProfileKey)o).type == type && value.equals(((ProfileKey)o).value);
+            return o instanceof ProfileKey && ((ProfileKey) o).type == type && value.equals(((ProfileKey) o).value);
         }
 
     }
@@ -430,7 +430,7 @@ public class WorldgenProfiler {
         private final EventProfiler.EventProfile reference;
 
         private BiomeBlocksProfile(EventProfiler.EventProfile e) {
-            super("BiomeBlockEvent: "+e.identifier);
+            super("BiomeBlockEvent: " + e.identifier);
             reference = e;
 
             totalTime = e.getTotalTime();
@@ -477,35 +477,35 @@ public class WorldgenProfiler {
                 }
                 pre = "Liquid Generator: "+type+" ";
             }*/
-            return pre+s;
+            return pre + s;
         }
     }
 
     private static final class BiomeTerrainProfile extends GeneratorProfile implements Comparable<GeneratorProfile> {
 
         private BiomeTerrainProfile(Biome gen) {
-            super("Biome Terrain "+ getLevel().registryAccess().registryOrThrow(Registries.BIOME).getKey(gen).getPath());
+            super("Biome Terrain " + getLevel().registryAccess().registryOrThrow(Registries.BIOME).getKey(gen).getPath());
         }
     }
 
     private static final class MapGenProfile extends GeneratorProfile implements Comparable<GeneratorProfile> {
 
         private MapGenProfile(Biome gen) {
-            super("MapGen Object: "+gen.getClass().getName());
+            super("MapGen Object: " + gen.getClass().getName());
         }
     }
 
     private static final class StringIDProfile extends GeneratorProfile implements Comparable<GeneratorProfile> {
 
         private StringIDProfile(String s) {
-            super("Defined Hook: "+s);
+            super("Defined Hook: " + s);
         }
     }
 
     private static final class IWGProfile extends GeneratorProfile implements Comparable<GeneratorProfile> {
 
         private IWGProfile(PlacedFeature gen) {
-            super("IWG Forge Hook: "+gen.getClass().getName());
+            super("IWG Forge Hook: " + gen.getClass().getName());
         }
     }
 
@@ -553,7 +553,7 @@ public class WorldgenProfiler {
         protected void start(int cx, int cz) {
             long key = ChunkPos.asLong(cx, cz);
             if (timing.containsKey(key))
-                DragonAPI.LOGGER.error("GeneratorProfile '"+identifier+"' is already running on chunk "+cx+", "+cz+"!");
+                DragonAPI.LOGGER.error("GeneratorProfile '" + identifier + "' is already running on chunk " + cx + ", " + cz + "!");
             ProfileTiming p = new ProfileTiming(identifier, cx, cz);
             timing.put(key, p);
             //DragonAPI.LOGGER.info("Starting "+identifier+" on "+cx+", "+cz);
@@ -565,9 +565,8 @@ public class WorldgenProfiler {
             //DragonAPI.LOGGER.info("Finishing "+identifier+" on "+cx+", "+cz);
             ProfileTiming p = timing.remove(key);
             if (p == null) {
-                DragonAPI.LOGGER.error("GeneratorProfile '"+identifier+"' is not running on chunk "+cx+", "+cz+"!");
-            }
-            else {
+                DragonAPI.LOGGER.error("GeneratorProfile '" + identifier + "' is not running on chunk " + cx + ", " + cz + "!");
+            } else {
                 p.stop(time);
                 this.addValue(p.total());
             }
@@ -578,7 +577,7 @@ public class WorldgenProfiler {
             long key = ChunkPos.asLong(cx, cz);
             ProfileTiming p = timing.get(key);
             if (p == null)
-                DragonAPI.LOGGER.error("GeneratorProfile '"+identifier+"' is not running on chunk "+cx+", "+cz+"!");
+                DragonAPI.LOGGER.error("GeneratorProfile '" + identifier + "' is not running on chunk " + cx + ", " + cz + "!");
             else
                 p.stop(time);
         }
@@ -588,7 +587,7 @@ public class WorldgenProfiler {
             long key = ChunkPos.asLong(cx, cz);
             ProfileTiming p = timing.get(key);
             if (p == null)
-                DragonAPI.LOGGER.error("GeneratorProfile '"+identifier+"' is not running on chunk "+cx+", "+cz+"!");
+                DragonAPI.LOGGER.error("GeneratorProfile '" + identifier + "' is not running on chunk " + cx + ", " + cz + "!");
             else
                 p.start(time);
         }
@@ -601,9 +600,8 @@ public class WorldgenProfiler {
                 if (gen) {
                     //gennedChunks.add(to);
                     if (whoGennedWhat.containsKey(to)) {
-                        DragonAPI.LOGGER.error("Generator "+identifier+" was marked as having forced a gen of "+cx2+", "+cz2+", but that chunk was already credited to "+whoGennedWhat.get(to).identifier+"!");
-                    }
-                    else { //only add to map if is first, since that one obviously si the actual gen-forcer
+                        DragonAPI.LOGGER.error("Generator " + identifier + " was marked as having forced a gen of " + cx2 + ", " + cz2 + ", but that chunk was already credited to " + whoGennedWhat.get(to).identifier + "!");
+                    } else { //only add to map if is first, since that one obviously si the actual gen-forcer
                         whoGennedWhat.put(to, this);
                     }
                 }
@@ -628,7 +626,7 @@ public class WorldgenProfiler {
         }
 
         public long getAverageTime() {
-            return profiledChunks.size() == 0 ? 0 : this.getTotalTime()/profiledChunks.size();
+            return profiledChunks.size() == 0 ? 0 : this.getTotalTime() / profiledChunks.size();
         }
 
         public final int getSpilledChunks() {
@@ -642,7 +640,7 @@ public class WorldgenProfiler {
 
         @Override
         public final String toString() {
-            return identifier+" ("+this.getAverageTime()+" ns / "+this.getTotalTime()+" ns)";
+            return identifier + " (" + this.getAverageTime() + " ns / " + this.getTotalTime() + " ns)";
         }
 
         @Override
@@ -682,15 +680,15 @@ public class WorldgenProfiler {
 
         private void start(long time) {
             if (isRunning)
-                DragonAPI.LOGGER.error("GeneratorProfile '"+id+"' is already running on chunk "+chunkX+", "+chunkZ+"!");
+                DragonAPI.LOGGER.error("GeneratorProfile '" + id + "' is already running on chunk " + chunkX + ", " + chunkZ + "!");
             isRunning = true;
             lastStart = time;
         }
 
         private void stop(long time) {
             if (!isRunning)
-                DragonAPI.LOGGER.error("GeneratorProfile '"+id+"' is not running on chunk "+chunkX+", "+chunkZ+"!");
-            totalTime += time-lastStart;
+                DragonAPI.LOGGER.error("GeneratorProfile '" + id + "' is not running on chunk " + chunkX + ", " + chunkZ + "!");
+            totalTime += time - lastStart;
             isRunning = false;
         }
 

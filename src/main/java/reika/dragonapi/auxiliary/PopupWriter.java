@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -13,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
@@ -31,6 +33,7 @@ import reika.dragonapi.libraries.rendering.ReikaGuiAPI;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import static reika.dragonapi.DragonAPI.MODID;
 
@@ -117,42 +120,47 @@ public class PopupWriter extends Screen {
     @SubscribeEvent
     public static void drawOverlay(RenderGuiOverlayEvent event) {
         if (!list.isEmpty() && event.getOverlay() == VanillaGuiOverlay.TITLE_TEXT.type()) {
-            Tesselator tesselator = Tesselator.getInstance();
-            BufferBuilder buffer = tesselator.getBuilder();
-            PoseStack matrixStack = event.getGuiGraphics().pose();
-            Matrix4f matrix = matrixStack.last().pose();
-
+            GuiGraphics gui = event.getGuiGraphics();
+            PoseStack matrixStack = gui.pose();
             Warning s = list.get(0);
-            //Font renderer
             Font fr = Minecraft.getInstance().font;
+
             int x = 2;
             int y = 2;
             int w = s.width;
             int sw = w - 25;
-            //How many lines of text can fit in the box
-            int lines = fr.split(FormattedText.of(s.text), sw).size();
-            int h = 7 + (lines) * (fr.lineHeight); //FONT_HEIGHT
+
+            List<FormattedCharSequence> linesList = fr.split(FormattedText.of(s.text), sw);
+            int h = 7 + linesList.size() * fr.lineHeight;
 
             int sz = 24;
             int dx = x + w - sz;
             int dy = y;
 
-            //Draw the main rectangle and the border
+            // Draw rectangles
             ReikaGuiAPI.instance.drawRect(matrixStack, x, y, x + w, y + h, 0xff4a4a4a, false);
             ReikaGuiAPI.instance.drawRectFrame(matrixStack, x, y, w, h, 0xb0b0b0);
             ReikaGuiAPI.instance.drawRectFrame(matrixStack, x + 2, y + 2, w - 4, h - 4, 0xcfcfcf);
 
-            //Draw the text
-//todo            fr.drawWordWrap(matrixStack, FormattedText.of(s.text), x + 4, y + 4, sw, 0xffffff);
+            // Draw wrapped text
+            int textY = y + 4;
+            for (FormattedCharSequence line : linesList) {
+                gui.drawString(fr, line, x + 4, textY, 0xFFFFFF, false);
+                textY += fr.lineHeight;
+            }
 
-            RenderSystem.depthMask(true);
-            RenderSystem.enableDepthTest();
             RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.enableDepthTest();
 
-            //Apply the texture to the warning icon
+            // Draw warning icon
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, (ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/warning.png")));
-            //Draw the warning icon
+            RenderSystem.setShaderTexture(0, ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/warning.png"));
+
+            Tesselator tesselator = Tesselator.getInstance();
+            BufferBuilder buffer = tesselator.getBuilder();
+            Matrix4f matrix = matrixStack.last().pose();
+
             buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
             buffer.vertex(matrix, dx, dy + sz, 0).uv(0, 1).endVertex();
             buffer.vertex(matrix, dx + sz, dy + sz, 0).uv(1, 1).endVertex();
@@ -160,6 +168,7 @@ public class PopupWriter extends Screen {
             buffer.vertex(matrix, dx, dy, 0).uv(0, 0).endVertex();
             tesselator.end();
 
+            // Draw close button
             sz = 16;
             dx = x + w - sz - 4;
             dy = y + h - sz - 4;
@@ -168,24 +177,16 @@ public class PopupWriter extends Screen {
             buttonY = dy;
             buttonSize = sz;
 
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
-
-            //Apply the texture to the button
-            RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/buttons.png"));
-            //Draw the close button
             buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-            buffer.vertex(dx, dy + sz, 0).uv(0.5f, 0.25f).endVertex();
-            buffer.vertex(dx + sz, dy + sz, 0).uv(0.75f, 0.25f).endVertex();
-            buffer.vertex(dx + sz, dy, 0).uv(0.75f, 0).endVertex();
-            buffer.vertex(dx, dy, 0).uv(0.5f, 0).endVertex();
+            buffer.vertex(matrix, dx, dy + sz, 0).uv(0.5f, 0.25f).endVertex();
+            buffer.vertex(matrix, dx + sz, dy + sz, 0).uv(0.75f, 0.25f).endVertex();
+            buffer.vertex(matrix, dx + sz, dy, 0).uv(0.75f, 0).endVertex();
+            buffer.vertex(matrix, dx, dy, 0).uv(0.5f, 0).endVertex();
             tesselator.end();
 
-            RenderSystem.depthMask(true);
-            RenderSystem.enableDepthTest();
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             RenderSystem.disableBlend();
+            RenderSystem.disableDepthTest();
         }
     }
 
