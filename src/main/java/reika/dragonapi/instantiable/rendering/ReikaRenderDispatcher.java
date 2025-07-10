@@ -74,7 +74,7 @@ public class ReikaRenderDispatcher extends BlockRenderDispatcher {
         }
     }
 
-    @Nullable
+    
     static IBlockRenderer findFor(Block block, Predicate<IBlockRenderer> predicate) {
         IBlockRenderer found = blockRenderers.get(block);
 //        DragonAPI.LOGGER.info(found);

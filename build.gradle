@@ -1,7 +1,8 @@
 plugins {
     id 'eclipse'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    // Apply the ModDevGradle Legacy Forge plugin
+    id 'net.neoforged.moddev.legacyforge' version '2.0.99'
 }
 
 version = '0.0.1a'
@@ -10,15 +11,23 @@ archivesBaseName = 'DragonAPI'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-minecraft {
-    mappings channel: 'official', version: "1.20.1"
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+legacyForge {
+    // Develop against MinecraftForge version 47.4.0 for 1.20.1
+    version = "1.20.1-47.4.3"
+
+    // Validate AT files and raise errors when they have invalid targets
+    validateAccessTransformers = true
+
+    mods {
+        rotarycraft {
+            sourceSet sourceSets.main
+        }
+    }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.20.1-47.4.0'
 }
 
 jar {
@@ -35,8 +44,22 @@ jar {
     }
 }
 
-//jar.finalizedBy('reobfJar')
+// Note: reobfuscation is automatically configured by ModDevGradle Legacy
+// The reobfuscated jar will be in build/libs, non-obfuscated in build/devlibs
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
 }

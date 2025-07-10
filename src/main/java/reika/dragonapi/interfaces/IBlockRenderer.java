@@ -21,6 +21,6 @@ public interface IBlockRenderer {
      */
     void renderBlock(BlockState state, BlockPos pos, BlockAndTintGetter level, PoseStack stack, VertexConsumer buffer);
 
-    boolean shouldRender(BlockState blockState, BlockAndTintGetter world, BlockPos pos, @Nullable RenderType renderType);
+    boolean shouldRender(BlockState blockState, BlockAndTintGetter world, BlockPos pos,  RenderType renderType);
 
 }

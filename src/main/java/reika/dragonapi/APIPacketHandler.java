@@ -49,6 +49,7 @@ import reika.dragonapi.libraries.registry.ReikaParticleHelper;
 import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Random;
 
@@ -73,20 +74,43 @@ public class APIPacketHandler implements PacketHandler {
         CompoundTag NBT = null;
         String stringdata = null;
         PacketTypes packetType = packet.getType();
-        DragonAPI.LOGGER.info("Packet: {}{}", packet, inputStream.toString());
+        // DragonAPI.LOGGER.info("Packet: {}{}", packet, inputStream.toString());
         try {
             switch (packetType) {
                 case SOUND -> {
-                    int lib = inputStream.readInt();
-                    control = inputStream.readInt();
-                    SoundEnum s = ReikaSoundHelper.lookupSound(lib, control);
-                    double sx = inputStream.readDouble();
-                    double sy = inputStream.readDouble();
-                    double sz = inputStream.readDouble();
-                    float v = inputStream.readFloat();
-                    float p = inputStream.readFloat();
-                    boolean att = inputStream.readBoolean();
-                    ReikaSoundHelper.playClientSound(s, sx, sy, sz, v, p, att);
+                    // Check if there's enough data for a complete sound packet
+                    // A complete sound packet needs: 2 ints + 3 doubles + 2 floats + 1 boolean
+                    // = 8 + 24 + 8 + 1 = 41 bytes minimum
+                    int availableBytes = inputStream.available();
+                    DragonAPI.LOGGER.debug("SOUND packet received with " + availableBytes + " bytes available");
+                    
+                    if (availableBytes < 41) {
+                        DragonAPI.LOGGER.warn("Received an incomplete SOUND packet (only " + availableBytes + " bytes available, need 41). Packet details: " + packet.toString());
+                        return;
+                    }
+                    try {
+                        int lib = inputStream.readInt();
+                        control = inputStream.readInt();
+                        DragonAPI.LOGGER.debug("SOUND packet: lib=" + lib + ", control=" + control);
+                        
+                        SoundEnum s = ReikaSoundHelper.lookupSound(lib, control);
+                        if (s == null) {
+                            DragonAPI.LOGGER.warn("Received SOUND packet with invalid sound enum (lib=" + lib + ", control=" + control + "). Skipping.");
+                            return;
+                        }
+                        double sx = inputStream.readDouble();
+                        double sy = inputStream.readDouble();
+                        double sz = inputStream.readDouble();
+                        float v = inputStream.readFloat();
+                        float p = inputStream.readFloat();
+                        boolean att = inputStream.readBoolean();
+                        
+                        DragonAPI.LOGGER.debug("SOUND packet data: pos=(" + sx + "," + sy + "," + sz + "), vol=" + v + ", pitch=" + p + ", atten=" + att);
+                        
+                        ReikaSoundHelper.playClientSound(s, sx, sy, sz, v, p, att);
+                    } catch (EOFException e) {
+                        DragonAPI.LOGGER.warn("Received truncated SOUND packet. Available bytes: " + inputStream.available() + ". Error: " + e.getMessage());
+                    }
                     return;
                 }
                 case FULLSOUND, UPDATE -> {
@@ -99,17 +123,31 @@ public class APIPacketHandler implements PacketHandler {
                     pack = PacketIDs.getEnum(control);
                 }
                 case DATA, RAW -> {
-                    control = inputStream.readInt();
-                    pack = PacketIDs.getEnum(control);
-                    len = pack.getNumberDataInts();
-                    data = new int[len];
-                    readinglong = pack.isLongPacket();
-                    if (!readinglong) {
-                        for (int i = 0; i < len; i++) {
-                            data[i] = inputStream.readInt();
+                    try {
+                        control = inputStream.readInt();
+                        pack = PacketIDs.getEnum(control);
+                        len = pack.getNumberDataInts();
+                        data = new int[len];
+                        readinglong = pack.isLongPacket();
+                        
+                        // Check if we have enough data available
+                        int bytesNeeded = readinglong ? 8 : (len * 4);
+                        if (inputStream.available() < bytesNeeded) {
+                            DragonAPI.LOGGER.warn("Received incomplete DATA packet for " + pack + " (needed " + bytesNeeded + " bytes, only " + inputStream.available() + " available). Skipping.");
+                            return;
                         }
-                    } else
-                        longdata = inputStream.readLong();
+                        
+                        if (!readinglong) {
+                            for (int i = 0; i < len; i++) {
+                                data[i] = inputStream.readInt();
+                            }
+                        } else {
+                            longdata = inputStream.readLong();
+                        }
+                    } catch (EOFException e) {
+                        DragonAPI.LOGGER.warn("Received truncated DATA packet for " + (pack != null ? pack : "unknown") + ". Skipping.");
+                        return;
+                    }
                 }
                 case FLOAT -> {
                     control = inputStream.readInt();

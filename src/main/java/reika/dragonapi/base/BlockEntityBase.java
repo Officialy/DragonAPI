@@ -31,7 +31,6 @@ import net.minecraftforge.common.extensions.IForgeBlockEntity;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.network.PacketDistributor;
-import org.jetbrains.annotations.Nullable;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -255,7 +254,6 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
 
     }
 
-    @Nullable
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
         CompoundTag nbt = new CompoundTag();

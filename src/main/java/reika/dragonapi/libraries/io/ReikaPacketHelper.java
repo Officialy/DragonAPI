@@ -54,6 +54,9 @@ public class ReikaPacketHelper {
     private static short handlerID = 0;
 
     public static void registerPacketHandler(DragonAPIMod mod, String channel, PacketHandler handler) {
+        DragonAPI.LOGGER.info("Registering packet handler for mod " + mod.getModId() + ", channel " + channel + ", handler " + handler.getClass().getName());
+        DragonAPI.LOGGER.info("Current handler ID count: " + handlerID + ", existing handlers: " + handlers.size());
+        
         INSTANCE = NetworkRegistry.newSimpleChannel(ResourceLocation.fromNamespaceAndPath(mod.getModId(), channel.toLowerCase()), () -> DragonAPI.last_API_Version, DragonAPI.last_API_Version::equals, DragonAPI.last_API_Version::equals);
         PacketPipeline p = new PacketPipeline(mod, channel, handler, INSTANCE);
         p.registerPacket(DataPacket.class, DataPacket::encode, DataPacket::decode);
@@ -63,6 +66,7 @@ public class ReikaPacketHelper {
         pipelines.put(channel, p);
         handlerID++;
         DragonAPI.LOGGER.info("Registered packet handler " + handler + " for channel " + channel + " with ID " + (handlerID - 1));
+        DragonAPI.LOGGER.info("Updated handler maps - handlers: " + handlers.size() + ", pipelines: " + pipelines.size());
     }
 
 /*    public static void registerPacketClass(String channel, Class<? extends PacketObj> c, Function<FriendlyByteBuf, ? extends PacketObj> decoder) {
@@ -77,6 +81,13 @@ public class ReikaPacketHelper {
     }
 
     private static PacketHandler getHandlerFromID(short id) {
+        // If the ID is out of bounds or not registered, log the error but return null
+        if (id < 0 || id >= handlerID || !handlers.containsKey(id)) {
+            DragonAPI.LOGGER.error("Attempted to get a handler with invalid ID: " + id + ". Valid range is 0-" + (handlerID-1));
+            DragonAPI.LOGGER.error("This is likely due to a version mismatch between client and server.");
+            // Return null and let the calling code handle it gracefully
+            return null;
+        }
         return handlers.get(id);
     }
 
@@ -272,7 +283,7 @@ public class ReikaPacketHelper {
         }
     }
 
-    public static void sendDataPacket(String ch, int id, Level world, int x, int y, int z, int radius, List<Integer> data) {
+    public static void sendDataPacket(String ch, int id, Level world, int x, int y, int z, List<Integer> data) {
         int npars;
         if (data == null)
             npars = 4;
@@ -312,7 +323,7 @@ public class ReikaPacketHelper {
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
 
-            PacketTarget pt = new PacketTarget.RadiusTarget(world, x + 0.5, y + 0.5, z + 0.5, radius);
+            PacketTarget pt = new PacketTarget.RadiusTarget(world, x + 0.5, y + 0.5, z + 0.5, 16);
             pt.dispatch(pipe, pack);
         } else if (side == Dist.CLIENT) {
             //PacketDispatcher.sendPacketToServer(packet);
@@ -571,19 +582,26 @@ public class ReikaPacketHelper {
     }
 
     public static void sendDataPacketWithRadius(String ch, int id, Level world, BlockPos c, int radius, int... data) {
-        sendDataPacket(ch, id, world, c.getX(), c.getY(), c.getZ(), radius, ReikaJavaLibrary.makeIntListFromArray(data));
+        PacketTarget target = new PacketTarget.RadiusTarget(world, c.getX() + 0.5, c.getY() + 0.5, c.getZ() + 0.5, radius);
+        sendDataPacket(ch, id, world, c.getX(), c.getY(), c.getZ(), target, ReikaJavaLibrary.makeIntListFromArray(data));
     }
 
     public static void sendDataPacketWithRadius(String ch, int id, WorldLocation c, int radius, int... data) {
-        sendDataPacket(ch, id, c.getWorld(), c.pos.getX(), c.pos.getY(), c.pos.getZ(), radius, ReikaJavaLibrary.makeIntListFromArray(data));
+        PacketTarget target = new PacketTarget.RadiusTarget(c.getWorld(), c.pos.getX() + 0.5, c.pos.getY() + 0.5, c.pos.getZ() + 0.5, radius);
+        sendDataPacket(ch, id, c.getWorld(), c.pos.getX(), c.pos.getY(), c.pos.getZ(), target, ReikaJavaLibrary.makeIntListFromArray(data));
     }
 
     public static void sendDataPacketWithRadius(String ch, int id, BlockEntity te, int radius, int... data) {
-        sendDataPacket(ch, id, te.getLevel(), te.getBlockPos().getX(), te.getBlockPos().getY(), te.getBlockPos().getZ(), radius, ReikaJavaLibrary.makeIntListFromArray(data));
+        PacketTarget target = new PacketTarget.RadiusTarget(te.getLevel(), te.getBlockPos().getX() + 0.5, te.getBlockPos().getY() + 0.5, te.getBlockPos().getZ() + 0.5, radius);
+        sendDataPacket(ch, id, te.getLevel(), te.getBlockPos().getX(), te.getBlockPos().getY(), te.getBlockPos().getZ(), target, ReikaJavaLibrary.makeIntListFromArray(data));
     }
 
     public static void sendDataPacketWithRadius(String ch, int id, Entity e, int radius, int... data) {
-        sendDataPacketWithRadius(ch, id, e.level(), Mth.floor(e.getX()), Mth.floor(e.getY()), Mth.floor(e.getZ()), radius, data);
+        int x = Mth.floor(e.getX());
+        int y = Mth.floor(e.getY());
+        int z = Mth.floor(e.getZ());
+        PacketTarget target = new PacketTarget.RadiusTarget(e.level(), e.getX(), e.getY(), e.getZ(), radius);
+        sendDataPacket(ch, id, e.level(), x, y, z, target, ReikaJavaLibrary.makeIntListFromArray(data));
     }
 
     public static void sendDataPacket(String ch, int id, PacketTarget pt, int... data) {
@@ -666,7 +684,14 @@ public class ReikaPacketHelper {
     }
 
     public static void sendSoundPacket(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten, int range) {
-        DragonAPI.LOGGER.info("Sending sound packet for "+s+" @ "+x+", "+y+", "+z);
+        //DragonAPI.LOGGER.info("Sending sound packet for "+s+" @ "+x+", "+y+", "+z);
+        
+        // Check if sound is null
+        if (s == null) {
+            DragonAPI.LOGGER.error("Attempted to send sound packet with null sound!");
+            return;
+        }
+        
         int length = 0;
         ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         DataOutputStream outputStream = new DataOutputStream(bos);
@@ -676,9 +701,13 @@ public class ReikaPacketHelper {
             ReikaJavaLibrary.dumpStack();
             return;
         }
+        
+        int soundIndex = lib.getSoundIndex(s);
+        DragonAPI.LOGGER.debug("Sound library index: " + lib.index + ", sound index: " + soundIndex);
+        
         try {
             outputStream.writeInt(lib.index);
-            outputStream.writeInt(lib.getSoundIndex(s));
+            outputStream.writeInt(soundIndex);
             outputStream.writeDouble(x);
             outputStream.writeDouble(y);
             outputStream.writeDouble(z);
@@ -689,7 +718,9 @@ public class ReikaPacketHelper {
             outputStream.writeBoolean(atten);
 
         } catch (Exception ex) {
+            DragonAPI.LOGGER.error("Error writing sound packet data: " + ex.getMessage());
             ex.printStackTrace();
+            return;
         }
 
         PacketPipeline pipe = pipelines.get(DragonAPI.packetChannel);
@@ -700,9 +731,23 @@ public class ReikaPacketHelper {
         }
 
         byte[] dat = bos.toByteArray();
+        DragonAPI.LOGGER.debug("Sound packet data size: " + dat.length + " bytes");
+        
+        if (dat.length == 0) {
+            DragonAPI.LOGGER.error("Created empty sound packet data! This is a bug!");
+            ReikaJavaLibrary.dumpStack();
+            return;
+        }
+        
         DataPacket pack = new DataPacket();
         pack.init(PacketTypes.SOUND, pipe);
         pack.setData(dat);
+        
+        // Double-check the packet isn't empty
+        if (pack.isEmpty()) {
+            DragonAPI.LOGGER.error("DataPacket is empty after setting data! This is a bug!");
+            return;
+        }
 
         Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
@@ -1493,41 +1538,83 @@ public class ReikaPacketHelper {
     }
 
     public static class DataPacket extends PacketObj {
-        protected static byte[] bytes;
+        protected byte[] bytes;
         private DataInputStream in;
 
         public DataPacket() {
             super();
+            this.bytes = new byte[0];
         }
 
         public DataPacket(byte[] data) {
             super();
-            setData(data);
+            this.setData(data);
         }
 
         @Override
         public void encode(FriendlyByteBuf data) {
             super.encode(data);
-            data.writeBytes(bytes);
+            data.writeVarInt(this.bytes.length);
+            data.writeBytes(this.bytes);
         }
 
         public static DataPacket decode(FriendlyByteBuf data) {
-            int byteIndex = data.readVarInt();
+            try {
+                // Store the current position to read the packet info
+                int readerIndex = data.readerIndex();
+                
+                // Read the packet header info
+                short id = data.readShort();
+                byte typeByte = data.readByte();
+                int byteIndex = data.readVarInt();
+                
+                // Get the handler and type from the header
+                PacketHandler packetHandler = getHandlerFromID(id);
+                PacketTypes packetType = PacketTypes.getPacketType(typeByte);
+                
+                if (packetHandler == null) {
+                    DragonAPI.LOGGER.error("Failed to get handler from ID: " + id);
+                    DragonAPI.LOGGER.error("Available handlers: " + handlers.toString());
+                    Thread.dumpStack();
+                    return null;
+                } else {
+                    DragonAPI.LOGGER.debug("Successfully retrieved handler from ID: " + id + " = " + packetHandler.getClass().getName());
+                }
 
-            byte[] dat = data.array();
-            bytes = new byte[dat.length - byteIndex - 1];
-            System.arraycopy(dat, byteIndex + 1, bytes, 0, bytes.length);
-            readData(data);
-            return new DataPacket(bytes);
+                int length = data.readVarInt();
+                if (length < 0) {
+                    DragonAPI.LOGGER.error("Invalid packet payload length: " + length);
+                    throw new IOException("Invalid packet payload length: " + length);
+                }
+                
+                if (length == 0) {
+                    DragonAPI.LOGGER.warn("Received packet with 0 length payload. This might indicate a network issue.");
+                    DataPacket packet = new DataPacket(new byte[0]);
+                    // Set the instance variables properly
+                    packet.handler = packetHandler;
+                    packet.type = packetType;
+                    return packet;
+                }
+                
+                byte[] payload = new byte[length];
+                data.readBytes(payload);
+
+                DataPacket packet = new DataPacket(payload);
+                // Set the instance variables properly
+                packet.handler = packetHandler;
+                packet.type = packetType;
+                return packet;
+            } catch (Exception e) {
+                DragonAPI.LOGGER.error("Error decoding packet: " + e.getMessage(), e);
+                DragonAPI.LOGGER.error("Packet data available: " + data.readableBytes() + " bytes");
+                // Return null to indicate a failed decode
+                return null;
+            }
         }
 
         private void setData(byte[] data) {
-            if (data == bytes) {
-//                DragonAPI.LOGGER.info("DataPacket.setData() called with same data! This is a bug!");
-                return;
-            }
-            bytes = new byte[data.length];
-            System.arraycopy(data, 0, bytes, 0, bytes.length);
+            this.bytes = new byte[data.length];
+            System.arraycopy(data, 0, this.bytes, 0, data.length);
         }
 
         private void setData(int id, CompoundTag tag) {
@@ -1536,7 +1623,7 @@ public class ReikaPacketHelper {
                 ByteArrayDataOutput out = ByteStreams.newDataOutput();
                 out.writeInt(id);
                 out.write(most);
-                bytes = out.toByteArray();
+                this.bytes = out.toByteArray();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -1544,8 +1631,8 @@ public class ReikaPacketHelper {
 
         public CompoundTag asNBT() {
             try {
-                byte[] abyte = new byte[bytes.length - 4]; //remove control int
-                System.arraycopy(bytes, 4, abyte, 0, abyte.length);
+                byte[] abyte = new byte[this.bytes.length - 4]; //remove control int
+                System.arraycopy(this.bytes, 4, abyte, 0, abyte.length);
                 return this.readCompoundTagFromBuffer(abyte);
             } catch (IOException e) {
                 return null;
@@ -1553,7 +1640,7 @@ public class ReikaPacketHelper {
         }
 
         public int getSize() {
-            return bytes.length;
+            return this.bytes.length;
         }
 
         public boolean isEmpty() {
@@ -1563,21 +1650,21 @@ public class ReikaPacketHelper {
         @Override
         public DataInputStream getDataIn() {
             if (in == null) {
-                in = new DataInputStream(new ByteArrayInputStream(bytes));
+                in = new DataInputStream(new ByteArrayInputStream(this.bytes));
             }
             return in;
         }
 
         @Override
         protected String getDataAsString() {
-            return Arrays.toString(bytes);
+            return Arrays.toString(this.bytes);
         }
     }
 
     public static abstract class PacketObj {
 
-        protected static PacketHandler handler;
-        protected static PacketTypes type;
+        protected PacketHandler handler;  // Changed from static to instance variable
+        protected PacketTypes type;       // Changed from static to instance variable
         private static int byteIndex = 0;
 
         protected PacketObj() {
@@ -1585,27 +1672,27 @@ public class ReikaPacketHelper {
         }
 
         public void init(PacketTypes p, PacketPipeline l) {
-            type = p;
-            handler = l.getHandler();
+            this.type = p;  // Use instance variable
+            this.handler = l.getHandler();  // Use instance variable
+            if (this.handler == null) {
+                DragonAPI.LOGGER.error("Initializing packet with null handler! PacketType: " + p);
+                DragonAPI.LOGGER.error("Pipeline channel: " + (l != null ? l.packetChannel : "null"));
+                DragonAPI.LOGGER.error("Packet class: " + this.getClass().getName());
+                Thread.dumpStack();
+            } else {
+                DragonAPI.LOGGER.debug("Packet initialized successfully - Type: " + p + ", Handler: " + this.handler.getClass().getName());
+            }
         }
 
         public void encode(FriendlyByteBuf data) {
-            data.writeShort(getHandlerID(handler));
-            data.writeByte(type.ordinal());
+            data.writeShort(getHandlerID(this.handler));  // Use instance variable
+            data.writeByte(this.type.ordinal());          // Use instance variable
             data.writeVarInt(byteIndex);
-        }
-
-        public static void readData(FriendlyByteBuf data) {
-            short id = data.readShort();
-            byte typeByte = data.readByte();
-            handler = getHandlerFromID(id);
-            type = PacketTypes.getPacketType(typeByte);
-            byteIndex = data.readVarInt();
         }
 
         public void handleClient(Supplier<NetworkEvent.Context> ctx) {
             try {
-                ctx.get().enqueueWork(() -> handler.handleData(this, Minecraft.getInstance().level, Minecraft.getInstance().player));
+                ctx.get().enqueueWork(() -> this.handler.handleData(this, Minecraft.getInstance().level, Minecraft.getInstance().player));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1614,12 +1701,19 @@ public class ReikaPacketHelper {
         }
 
         public void handleServer(Supplier<NetworkEvent.Context> ctx) {
-            if (handler == null) {
+            if (this.handler == null) {
                 DragonAPI.LOGGER.error("Packet handler is null! This is a bug!");
+                DragonAPI.LOGGER.error("Packet type: " + this.getType());
+                DragonAPI.LOGGER.error("Packet class: " + this.getClass().getName());
+                
+                // Simply mark as handled and return - no fallback handling
+                DragonAPI.LOGGER.error("Discarding packet to prevent further errors");
+                ctx.get().setPacketHandled(true);
                 return;
             }
+            
             try {
-                handler.handleData(this, ctx.get().getSender().level(), ctx.get().getSender());
+                ctx.get().enqueueWork(() -> this.handler.handleData(this, ctx.get().getSender().level(), ctx.get().getSender()));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1634,11 +1728,11 @@ public class ReikaPacketHelper {
         }
 
         public final PacketTypes getType() {
-            return type;
+            return this.type;  // Use instance variable
         }
 
         protected final int handlerID() {
-            return handlers.inverse().get(handler);
+            return getHandlerID(this.handler);  // Use instance variable
         }
 
         private void close() {
@@ -1715,7 +1809,7 @@ public class ReikaPacketHelper {
         if (tile != null && tile.getLevel() != null) {
             CompoundTag NBT = new CompoundTag();
             tile.load(NBT);
-            List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).expandTowards(4, 4, 4)); //todo inflate or expandtowards
+            List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).inflate(4, 4, 4)); //todo inflate or expandtowards
             for (ServerPlayer ep : li)
                 sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.VTILESYNC.ordinal(), NBT, new PacketTarget.PlayerTarget(ep));
         }

@@ -2,11 +2,10 @@ package reika.dragonapi.libraries.io;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 
 public class SingleSound implements SoundEnum {
@@ -87,5 +86,11 @@ public class SingleSound implements SoundEnum {
     @Override
     public boolean preload() {
         return false;
+    }
+
+    @Override
+    public SoundEvent getSoundEvent() {
+        // SingleSound doesn't have registered sound events, so create a temporary one
+        return SoundEvent.createVariableRangeEvent(path);
     }
 }

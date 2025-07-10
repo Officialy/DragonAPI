@@ -11,11 +11,10 @@ package reika.dragonapi.interfaces.registry;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * This is an interface for ENUMS!
@@ -52,5 +51,10 @@ public interface SoundEnum {
      * Should this audio file be preloaded for real-time playback?
      */
     boolean preload();
+
+    /**
+     * Get the registered SoundEvent for this sound.
+     */
+    SoundEvent getSoundEvent();
 
 }

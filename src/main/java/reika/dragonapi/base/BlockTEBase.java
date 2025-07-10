@@ -15,14 +15,9 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
-import org.jetbrains.annotations.Nullable;
-import reika.dragonapi.instantiable.event.BlockEntityMoveEvent;
 import reika.dragonapi.interfaces.blockentity.BreakAction;
 import reika.dragonapi.interfaces.blockentity.ConditionBreakDropsInventory;
 import reika.dragonapi.libraries.ReikaDirectionHelper;
@@ -36,7 +31,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
 
 
     @Override
-    public void setPlacedBy(Level world, BlockPos pos, BlockState pState, @Nullable LivingEntity e, ItemStack pStack) {
+    public void setPlacedBy(Level world, BlockPos pos, BlockState pState, LivingEntity e, ItemStack pStack) {
         if (e instanceof Player) {
             BlockEntityBase te = (BlockEntityBase) world.getBlockEntity(pos);
             if (te != null)

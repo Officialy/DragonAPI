@@ -4,9 +4,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -107,7 +109,12 @@ public class ReikaSoundHelper {
             }
             plays.addValue(s, new SoundPlay(time, x, y, z));
         }
-        sendSound(s, world, x, y, z, vol, pitch, atten);
+//        sendSound(s, world, x, y, z, vol, pitch, atten);
+//        if (FMLLoader.getDist().isClient()) {
+            playClientSound(s, x, y, z, vol, pitch, atten);
+//        } else {
+//            sendSound(s, world, x, y, z, vol, pitch, atten);
+//        }
     }
 
     private static void sendSound(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten) {
@@ -121,18 +128,19 @@ public class ReikaSoundHelper {
 
 
     public static SoundInstance playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch, boolean att) {
-        DragonAPI.LOGGER.info("Playing sound "+s+" at "+x+", "+y+", "+z);
+//        DragonAPI.LOGGER.info("Playing sound "+s+" at "+x+", "+y+", "+z);
         float v = vol * s.getModulatedVolume();
         if (v <= 0)
             return null;
         EnumSound es = new EnumSound(s, x, y, z, v, pitch, att);
         try {
-            DragonAPI.LOGGER.info("soundmanager is about to play "+ es + " now");
+//            DragonAPI.LOGGER.info("soundmanager is about to play "+ es + " now");
             Minecraft.getInstance().getSoundManager().play(es);
-        } catch (ConcurrentModificationException e) {
-            e.printStackTrace();
+        } catch (ConcurrentModificationException e2) {
+            e2.printStackTrace();
         }
         return es;
+        
     }
 
     public static SoundInstance playClientSound(SoundEnum s, Entity e, float vol, float pitch, boolean att) {
@@ -151,13 +159,15 @@ public class ReikaSoundHelper {
     public static void broadcastSound(SoundEnum s, float vol, float pitch) {
         if (FMLLoader.getDist() == Dist.CLIENT) //todo getdist wont work in this context
             throw new MisuseException("You cannot call this from the client!");
-//   todo Level[] worlds = DimensionManager.getLevels();
-//        for (Level world : worlds) {
-//            for (Player ep : world.players()) {
-//                playSound(s, world, ep, vol, pitch);
-//            }
-//        }
-
+            Iterable<ServerLevel> worlds = Minecraft.getInstance().level.getServer().getAllLevels();
+            for (ServerLevel world : worlds) {
+                if (!world.isClientSide()) { 
+                    for (Player ep : world.players()) {
+                        // Send packet to client to play sound
+                        ReikaPacketHelper.sendSoundPacket(s, world, ep.getX(), ep.getY(), ep.getZ(), vol, pitch, true);
+                    }
+                }
+            }
     }
 
     public static void playSoundAtEntity(Level world, Entity e, SoundEvent snd) {
@@ -349,5 +359,19 @@ public class ReikaSoundHelper {
             return s.ordinal();
         }
 
+    }
+
+    public static void playSoundClientSide(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten) {
+        // Only play on client side
+        if (!world.isClientSide()) {
+            return;
+        }
+        
+        // Use the existing client-side sound playing logic
+        playClientSound(s, x, y, z, vol, pitch, atten);
+    }
+
+    public static void playSoundClientSide(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch) {
+        playSoundClientSide(s, world, x, y, z, vol, pitch, s.attenuate());
     }
 }

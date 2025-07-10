@@ -423,6 +423,10 @@ public class ReikaItemHelper {
         return dropItem(world, x, y, z, is, 1);
     }
 
+    public static ItemEntity dropItem(Level world, BlockPos pos, ItemStack is) {
+        return dropItem(world, pos.getX(), pos.getY(), pos.getZ(), is);
+    }
+    
     public static ItemEntity dropItem(Level world, double x, double y, double z, ItemStack is, double vscale) {
         if (is == null)
             return null;

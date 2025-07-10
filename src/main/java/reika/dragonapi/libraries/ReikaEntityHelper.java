@@ -1,10 +1,5 @@
 package reika.dragonapi.libraries;
 
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.advancements.critereon.EntityPredicate;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.arguments.selector.EntitySelector;
-import net.minecraft.commands.arguments.selector.EntitySelectorParser;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -28,7 +23,6 @@ import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.loading.FMLLoader;
-import org.jetbrains.annotations.Nullable;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.interfaces.item.UnbreakableArmor;

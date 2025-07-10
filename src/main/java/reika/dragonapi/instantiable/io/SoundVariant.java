@@ -5,6 +5,7 @@ import reika.dragonapi.interfaces.registry.SoundEnum;
 import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraft.sounds.SoundEvent;
 
 public abstract class SoundVariant<S extends SoundEnum> implements SoundEnum {
 
@@ -66,6 +67,12 @@ public abstract class SoundVariant<S extends SoundEnum> implements SoundEnum {
     @Override
     public final String toString() {
         return root.toString() + "_" + this.key;
+    }
+
+    @Override
+    public final SoundEvent getSoundEvent() {
+        // SoundVariant creates a temporary sound event based on its path
+        return SoundEvent.createVariableRangeEvent(path);
     }
 
 }

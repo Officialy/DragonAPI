@@ -15,7 +15,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.*;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -23,13 +25,10 @@ import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.EmptyLevelChunk;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
@@ -40,12 +39,10 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.IFluidBlock;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.jetbrains.annotations.Nullable;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.SpecialDayTracker;
@@ -57,13 +54,13 @@ import reika.dragonapi.instantiable.TemperatureEffect;
 import reika.dragonapi.instantiable.data.collections.RelativePositionList;
 import reika.dragonapi.instantiable.data.collections.TimedSet;
 import reika.dragonapi.instantiable.data.immutable.WorldChunk;
+import reika.dragonapi.instantiable.event.IceFreezeEvent;
 import reika.dragonapi.instantiable.math.noise.Simplex3DGenerator;
 import reika.dragonapi.interfaces.callbacks.PositionCallable;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.ReikaFluidHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.io.ReikaSoundHelper;
-import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 import reika.dragonapi.libraries.mathsci.ReikaVectorHelper;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
@@ -83,7 +80,7 @@ public class ReikaWorldHelper {
     private static final Random moddedGenRand_Calcer = new Random();
     private static final ResettableRandom moddedGenRand = new ResettableRandom();
 
-    //    private static final HashMap<Material, TemperatureEffect> temperatureBlockEffects = new HashMap<>();
+    private static final HashMap<MapColor, TemperatureEffect> temperatureBlockEffects = new HashMap<>();
     private static final HashMap<String, WorldID> worldIDMap = new HashMap<>();
     private static final HashMap<ImmutablePair<ResourceKey<Level>, Long>, Simplex3DGenerator> tempNoise = new HashMap<>();
     private static final double TEMP_NOISE_BASE = 10;
@@ -96,25 +93,17 @@ public class ReikaWorldHelper {
 //            computeModdedGeneratorList = GameRegistry.class.getDeclaredMethod("computeSortedGeneratorList");
 //            computeModdedGeneratorList.setAccessible(true);
 
-//    todo        temperatureBlockEffects.put(MapColor.STONE, TemperatureEffect.rockMelting);
-//            temperatureBlockEffects.put(Material.METAL, TemperatureEffect.rockMelting);
-//            temperatureBlockEffects.put(Material.ICE, TemperatureEffect.iceMelting);
-//            temperatureBlockEffects.put(Material.SNOW, TemperatureEffect.snowVaporization);
-//            temperatureBlockEffects.put(Material.TOP_SNOW, TemperatureEffect.snowVaporization);
-//            temperatureBlockEffects.put(Material.POWDER_SNOW, TemperatureEffect.snowVaporization);
-//            temperatureBlockEffects.put(Material.CLOTH_DECORATION, TemperatureEffect.woolIgnition);
-//            temperatureBlockEffects.put(Material.WOOL, TemperatureEffect.woolIgnition);
-//            temperatureBlockEffects.put(Material.WOOD, TemperatureEffect.woodIgnition);
-//            temperatureBlockEffects.put(Material.GRASS, TemperatureEffect.groundGlassing);
-//            temperatureBlockEffects.put(Material.SAND, TemperatureEffect.groundGlassing);
-//            temperatureBlockEffects.put(Material.DIRT, TemperatureEffect.groundGlassing);
-//            temperatureBlockEffects.put(Material.LEAVES, TemperatureEffect.plantIgnition);
-//            temperatureBlockEffects.put(Material.PLANT, TemperatureEffect.plantIgnition);
-//            temperatureBlockEffects.put(Material.WATER_PLANT, TemperatureEffect.plantIgnition);
-//            temperatureBlockEffects.put(Material.REPLACEABLE_PLANT, TemperatureEffect.plantIgnition);
-//            temperatureBlockEffects.put(Material.REPLACEABLE_WATER_PLANT, TemperatureEffect.plantIgnition);
-//            temperatureBlockEffects.put(Material.WEB, TemperatureEffect.plantIgnition);
-//            temperatureBlockEffects.put(Material.EXPLOSIVE, TemperatureEffect.tntIgnition);
+           temperatureBlockEffects.put(MapColor.STONE, TemperatureEffect.rockMelting);
+           temperatureBlockEffects.put(MapColor.METAL, TemperatureEffect.rockMelting);
+           temperatureBlockEffects.put(MapColor.ICE, TemperatureEffect.iceMelting);
+           temperatureBlockEffects.put(MapColor.SNOW, TemperatureEffect.snowVaporization);
+           temperatureBlockEffects.put(MapColor.WOOL, TemperatureEffect.woolIgnition);
+           temperatureBlockEffects.put(MapColor.WOOD, TemperatureEffect.woodIgnition);
+           temperatureBlockEffects.put(MapColor.GRASS, TemperatureEffect.groundGlassing);
+           temperatureBlockEffects.put(MapColor.SAND, TemperatureEffect.groundGlassing);
+           temperatureBlockEffects.put(MapColor.DIRT, TemperatureEffect.groundGlassing);
+           temperatureBlockEffects.put(MapColor.PLANT, TemperatureEffect.plantIgnition);
+        //    temperatureBlockEffects.put(MapColor.EXPLOSIVE, TemperatureEffect.tntIgnition);
         } catch (Exception e) {
             throw new RuntimeException("Could not find GameRegistry IWorldGenerator data!", e);
         }
@@ -187,7 +176,7 @@ public class ReikaWorldHelper {
         return gen;
     }
 
-    public static void dropAndDestroyBlockAt(Level world, BlockPos pos, @Nullable Player ep, boolean breakAll, boolean FX) {
+    public static void dropAndDestroyBlockAt(Level world, BlockPos pos, Player ep, boolean breakAll, boolean FX) {
         BlockState b = world.getBlockState(pos);
         if (b.getDestroySpeed(world, pos) < 0 && !breakAll)
             return;
@@ -250,8 +239,8 @@ public class ReikaWorldHelper {
             return false;
         if (ReikaBlockHelper.isLiquid(b))
             return true;
-//        if (b.canBeReplaced(world, pos))
-//            return true;
+       if (b.canBeReplaced())
+           return true;
         if (b.getBlock() == Blocks.VINE)
             return true;
         return (BlockProperties.isSoft(b.getBlock()));
@@ -357,19 +346,19 @@ public class ReikaWorldHelper {
                 int dx = pos.getX() + side.getStepX();
                 int dy = pos.getY() + side.getStepY();
                 int dz = pos.getZ() + side.getStepZ();
-//                if (world.getFluidState(new BlockPos(dx, dy, dz)) == Fluids.WATER.defaultFluidState() && !InterfaceCache.STREAM.instanceOf(world.getBlockState(dx, dy, dz))) {
-//                    if (IceFreezeEvent.fire_IgnoreVanilla(world, dx, dy, dz))
-//                        changeAdjBlock(world, pos, side, Blocks.ICE, 0);
-//                }
+                if (world.getFluidState(new BlockPos(dx, dy, dz)) == Fluids.WATER.defaultFluidState()) {
+                   if (IceFreezeEvent.fire_IgnoreVanilla(world, new BlockPos(dx, dy, dz)))
+                       changeAdjBlock(world, pos, side, Blocks.ICE.defaultBlockState());
+                }
             }
         }
-        /*if (corners) {
+        if (corners) {
             for (int i = -4; i < 4; i++) {
                 for (int k = -4; k < 4; k++) {
                     if (Math.abs(i) + Math.abs(k) <= 4) {
                         int dx = pos.getX() + i;
                         int dz = pos.getZ() + k;
-                        Material mat = getMaterial(world, new BlockPos(dx, pos.getY(), dz));
+                        MapColor mat = getMapColor(world, new BlockPos(dx, pos.getY(), dz));
                         TemperatureEffect eff = temperatureBlockEffects.get(mat);
                         if (eff != null && temperature >= eff.minimumTemperature) {
                             eff.apply(world, new BlockPos(dx, pos.getY(), dz), temperature, callback);
@@ -384,14 +373,14 @@ public class ReikaWorldHelper {
                     int dx = pos.getX() + dir.getStepX() * d;
                     int dy = pos.getY() + dir.getStepY() * d;
                     int dz = pos.getZ() + dir.getStepZ() * d;
-                    Material mat = getMaterial(world, new BlockPos(dx, dy, dz));
+                    MapColor mat = getMapColor(world, new BlockPos(dx, dy, dz));
                     TemperatureEffect eff = temperatureBlockEffects.get(mat);
                     if (eff != null && temperature >= eff.minimumTemperature) {
                         eff.apply(world, new BlockPos(dx, dy, dz), temperature, callback);
                     }
                 }
             }
-        }*/
+        }
     }
 
     public static List<ItemStack> getDropsAt(Level world, BlockPos pos, int fortune, Player ep) {
