@@ -1,6 +1,5 @@
 package reika.dragonapi.libraries.rendering;
 
-import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -10,12 +9,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -24,13 +22,16 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import reika.dragonapi.ModList;
+import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.maps.RectangleMap;
 import reika.dragonapi.instantiable.data.maps.RegionMap;
+import reika.dragonapi.libraries.ReikaRecipeHelper;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
 import reika.dragonapi.objects.LineType;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -334,97 +335,121 @@ public final class ReikaGuiAPI extends Screen {
         matrixStack.popPose();
     }
 
-    public void drawItemStack(PoseStack matrixStack, ItemRenderer renderer, ItemStack is, int x, int y) {
-        this.drawItemStack(matrixStack, renderer, Minecraft.getInstance().font, is, x, y);
-    }
-
-    public void drawItemStack(GuiGraphics matrixStack, ItemRenderer renderer, Font fr, ItemStack is, int x, int y) {
-        this.drawItemStack(matrixStack.pose(), renderer, fr, is, x, y);
-    }
-
-    /**
-     * Note that this must be called after any and all texture and text rendering, as the lighting conditions are left a bit off
-     */
-    public void drawItemStack(PoseStack matrixStack, ItemRenderer renderer, Font fr, ItemStack is, int x, int y) {
-        Font font = null;
-        if (is == null)
+    public void drawItemStack(GuiGraphics guiGraphics, Font fr, ItemStack is, int x, int y) { // Removed ItemRenderer renderer
+        if (is == null || is.isEmpty())
             return;
-        if (is.getItem() == null)
-            return;
-        if (is != null && is.getItem() != null)
-            font = Minecraft.getInstance().font; // todo is.getItem().getFontRenderer(is);
-        if (font == null)
-            font = fr;
 
-        Tesselator tesselator = Tesselator.getInstance();
-        ItemRenderer itemRenderer = minecraft.getItemRenderer();
-
-        matrixStack.pushPose();
-        matrixStack.translate(x, y, 0);
-
-        minecraft.getTextureManager().getTexture(InventoryMenu.BLOCK_ATLAS).setFilter(false, false);
-        RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
-
-        setup();
-        matrixStack.translate(8, 8, itemRenderer.ITEM_COUNT_BLIT_OFFSET); //todo check if this is blitOffset
-        matrixStack.scale(1, -1, 1);
-        matrixStack.scale(16, 16, 16);
-        MultiBufferSource.BufferSource renderTypeBufferImpl = minecraft.renderBuffers().bufferSource();
-
-        short short1 = 240;
-        short short2 = 240;
-
-
-        BakedModel bakedModel = itemRenderer.getModel(is, minecraft.level, minecraft.player, 0);
-
-        boolean flatItems = !bakedModel.usesBlockLight();
-
-
-        itemRenderer.render(is, ItemDisplayContext.GUI, false, matrixStack, renderTypeBufferImpl, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
-        renderTypeBufferImpl.endBatch();
-        RenderSystem.enableDepthTest();
-
-        if (flatItems) {
-            Lighting.setupForFlatItems();
-        }
+        guiGraphics.renderItem(is, x, y);
+        guiGraphics.renderItemDecorations(fr, is, x, y);
 
         if (cacheRenders)
             items.addRegionByWH(x, y, 16, 16, is.copy());
-
-        matrixStack.popPose();
     }
 
-	/*
-	public void drawItemStackWithTooltip(ItemRenderer renderer, ItemStack is, int x, int y) {
-		this.drawItemStackWithTooltip(renderer, Minecraft.getMinecraft().fontRenderer, is, x, y);
+    public void drawCustomRecipeList(GuiGraphics render, Font f, List<Recipe<?>> lr, int x, int y, int x2, int y2) {
+	    if (lr == null || lr.size() <= 0) {
+	    	//ReikaJavaLibrary.pConsole("No recipes found for "+out);
+	    	return;
+	    }
+	    //ReikaJavaLibrary.pConsole(lr.get(0).getRecipeOutput().toString());
+	    int k = ((int)(System.nanoTime()/2000000000))%lr.size();
+	    //ReikaJavaLibrary.pConsole(k);
+	    Object ir = lr.get(k);
+	    Recipe<?> ire = /*ir instanceof WrappedRecipe ? ((WrappedRecipe)ir).getRecipe() :*/ (Recipe<?>)ir;
+	    ItemStack isout = ire.getResultItem(RegistryAccess.EMPTY);
+	    ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
+	    if (in == null)
+	    	return;
+	    //ReikaJavaLibrary.pConsole(Arrays.toString(in)+" to "+isout);
+	    boolean noshape = false;
+	    if (ire instanceof ShapelessRecipe)
+	    	noshape = true;
+	    this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
 	}
-	 */
 
-    public void drawItemStackWithTooltip(GuiGraphics guiGraphics, ItemRenderer renderer, Font fr, ItemStack is, int x, int y, double mouseX, double mouseY) {
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0.0F, 0.0F, 32.0F);
-        Font f2 = Minecraft.getInstance().font;//is.getItem().getFontRenderer(is);
-        if (f2 != null)
-            fr = f2;
-        this.drawItemStack(guiGraphics.pose(), renderer, fr, is, x, y);
-
-        guiGraphics.pose().translate(0.0F, 0.0F, 32.0F);
-        if (this.isMouseInBox(x, x + 16, y, y + 16, mouseX, mouseY)) {
-            String sg = is.getDisplayName().getString();
-            if (sg == null) {
-                sg = is + "{" + is.getTag() + "}";
-            }
-            boolean right = mouseX < minecraft.screen.width / 2.0;
-            if (right)
-                this.drawTooltipAt(guiGraphics, fr, sg, (int) (mouseX + fr.width(sg) + 12), (int) mouseY);
-            else
-                this.drawTooltip(guiGraphics, fr, sg, mouseX, mouseY);
-        }
-        guiGraphics.pose().translate(0.0F, 0.0F, -64.0F);
-        guiGraphics.pose().popPose();
+    /**
+     * Draws a random recipe from the given list of recipes, using the given output items.
+     * Args: render, font renderer, output items, recipe list, x in, y in, x out, y out
+     */
+    public void drawCustomRecipes(GuiGraphics render, Font f, List<ItemStack> out, Collection<Recipe<?>> ir, int x, int y, int x2, int y2) { // Changed List to Collection, removed mouseX, mouseY
+         ArrayList<Recipe<?>> lr = new ArrayList<Recipe<?>>();
+		 for (ItemStack is : out) {
+		 	lr.addAll(ReikaRecipeHelper.getAllRecipesByOutput(ir, is));
+		 }
+		 if (lr.size() <= 0) {
+		 	//ReikaJavaLibrary.pConsole("No recipes found for "+out);
+		 	return;
+		 }
+		 //ReikaJavaLibrary.pConsole(lr.get(13).getRecipeOutput());
+		 Recipe ire = lr.get(((int)(System.nanoTime()/2000000000))%lr.size());
+		 ItemStack isout = ire.getResultItem(RegistryAccess.EMPTY);
+		 ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
+		 if (in == null)
+		 	return;
+		 boolean noshape = false;
+		 if (ire instanceof ShapelessRecipe)
+		 	noshape = true;
+		 this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
     }
 
-    public void drawMultilineTooltip(GuiGraphics guiGraphics, List<String> li, int x, int y) {
+    /** Draw a crafting recipe in the GUI. Args: x in, y in; items of: top-left, top, top-right, left,
+     * center, right, bottom-left, bottom, bottom right; x out, y out; output item, shapeless t/f.
+     * Input items MUST be a size-9 array! */
+    private void drawRecipe(GuiGraphics render, Font f, int x, int y, ItemStack[] in, int x2, int y2, ItemStack out, boolean shapeless) { // Removed mouseX, mouseY
+        if (in.length != 9)
+            throw new MisuseException("DrawRecipe() requires 9 input items!");
+        int j = this.getScreenXInset();
+        int k = this.getScreenYInset();
+        for (int ii = 0; ii < 3; ii++) {
+            for (int jj = 0; jj < 3; jj++) {
+                if (in[ii*3+jj] != null) {
+                    in[ii*3+jj].setCount(1);
+                    this.drawItemStackWithTooltip(render, f, in[ii*3+jj], x+j+18*jj, y+k+18*ii); // Removed mouseX, mouseY
+                }
+            }
+        }
+        if (out != null)
+            this.drawItemStackWithTooltip(render, f, out, x2+4+j, y2+4+k); // Removed mouseX, mouseY
+        if (shapeless)
+            render.drawString(f, "Shapeless", x2+j-35, y2+k+27, 0x000000);
+    }
+
+    /** Draw a smelting recipe in the GUI. Args: output item, x in, y in, x out, y out */
+    public void drawSmelting(GuiGraphics render, Font f, ItemStack out, int x, int y, int x2, int y2) {
+        int j = this.getScreenXInset();
+        int k = this.getScreenYInset();
+
+        ItemStack in = ReikaRecipeHelper.getFurnaceInput(out);
+
+        if (in != null)
+            this.drawItemStackWithTooltip(render, f, in, x+j, y+k);
+        if (out != null)
+            this.drawItemStackWithTooltip(render, f, out, x2+4+j, y2+4+k);
+    }
+ /*
+ public void drawItemStackWithTooltip(ItemRenderer renderer, ItemStack is, int x, int y) {
+  this.drawItemStackWithTooltip(renderer, Minecraft.getMinecraft().fontRenderer, is, x, y);
+ }
+  */
+    public void drawItemStackWithTooltip(GuiGraphics guiGraphics, Font fr, ItemStack is, int x, int y) {
+        this.drawItemStack(guiGraphics, fr, is, x, y);
+        if (cacheRenders) {
+            items.addRegionByWH(x, y, 16, 16, is.copy());
+        }
+    }
+
+    public void drawItemStackWithTooltip(GuiGraphics guiGraphics, Font fr, ItemStack is, int x, int y, double mouseX, double mouseY) {
+        if (is == null || is.isEmpty())
+            return;
+
+        this.drawItemStack(guiGraphics, fr, is, x, y);
+
+        if (this.isMouseInBox(x, x + 16, y, y + 16, mouseX, mouseY)) {
+            guiGraphics.renderTooltip(fr, is, (int)mouseX, (int)mouseY);
+        }
+    }
+
+    public void drawMultilineTooltip(PoseStack stack, GuiGraphics guiGraphics, List<String> li, int x, int y) {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0.0F, 0.0F, 64.0F);
         int dy = y;
@@ -436,13 +461,13 @@ public final class ReikaGuiAPI extends Screen {
         guiGraphics.pose().popPose();
     }
 
-    public void drawMultilineTooltip(GuiGraphics graphics, ItemStack is, int x, int y, double mouseX, double mouseY) {
+    public void drawMultilineTooltip(PoseStack stack, GuiGraphics graphics, ItemStack is, int x, int y, double mouseX, double mouseY) {
         if (this.isMouseInBox(x, x + 16, y, y + 16, mouseX, mouseY)) {
             List<String> li = new ArrayList<>();
             li.add(is.getDisplayName().getString());
             //todo is.getItem().addInformation(is, Minecraft.getInstance().player, li, true);
             is.getItem().getDescription();
-            this.drawMultilineTooltip(graphics, li, x, y);
+            this.drawMultilineTooltip(stack, graphics, li, x, y);
         }
     }
 

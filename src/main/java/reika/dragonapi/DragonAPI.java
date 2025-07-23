@@ -60,6 +60,9 @@ public class DragonAPI extends DragonAPIMod {
     public static final String FORUM_PAGE = "http://www.minecraftforum.net/topic/1969694-";
     public static final String GITHUB_PAGE = "https://github.com/ReikaKalseki/Reika_Mods_Issues/issues?q=";
     public static final UUID Reika_UUID = UUID.fromString("e5248026-6874-4954-9a02-aa8910d08f31");
+    public static final UUID Officialy_UUID = UUID.fromString("bb5029b7-9381-4d99-aaa9-106da41aa659");
+    public static final UUID Dev_UUID = UUID.fromString("380df991-f603-344c-a090-369bad2a924a");
+
     //public static final ControlledConfig config = new ControlledConfig(instance, DragonOptions.optionList, null);
     private static final long launchTime = ManagementFactory.getRuntimeMXBean().getStartTime();
     private static final GameProfile sessionUser = serverProfile;
