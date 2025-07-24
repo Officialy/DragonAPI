@@ -1,8 +1,8 @@
 package reika.dragonapi.libraries.java;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLLoader;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLLoader;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;

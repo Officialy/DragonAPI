@@ -2,7 +2,7 @@ package reika.dragonapi.asm.patchers;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.api.distmarker.Dist;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;

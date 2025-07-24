@@ -14,8 +14,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.fluids.FluidStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.KeyedItemStack;
@@ -458,12 +458,12 @@ public final class ReikaNBTHelper extends DragonAPI {
 
         @Override
         public Block createFromNBT(Tag nbt) {
-            return ForgeRegistries.BLOCKS.getValue(ResourceLocation.parse((nbt.getAsString())));
+            return BuiltInRegistries.BLOCK.getValue(ResourceLocation.parse((nbt.getAsString())));
         }
 
         @Override
         public Tag convertToNBT(Block obj) {
-            return StringTag.valueOf(ForgeRegistries.BLOCKS.getKey(obj).getNamespace());
+            return StringTag.valueOf(BuiltInRegistries.BLOCK.getKey(obj).getNamespace());
         }
 
     }
@@ -478,12 +478,12 @@ public final class ReikaNBTHelper extends DragonAPI {
 
         @Override
         public Item createFromNBT(Tag nbt) {
-            return ForgeRegistries.ITEMS.getValue(((ResourceLocation.parse(nbt.getAsString()))));
+            return BuiltInRegistries.ITEM.getValue(((ResourceLocation.parse(nbt.getAsString()))));
         }
 
         @Override
         public Tag convertToNBT(Item obj) {
-            return StringTag.valueOf(ForgeRegistries.ITEMS.getKey(obj).getNamespace());
+            return StringTag.valueOf(BuiltInRegistries.ITEM.getKey(obj).getNamespace());
         }
 
     }

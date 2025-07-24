@@ -9,10 +9,17 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable.event.client;
 
+<<<<<<< Updated upstream:Instantiable/Event/Client/WeatherSkyStrengthEvent.java
+import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
+
+import cpw.mods.fml.common.eventhandler.Event;
+=======
 
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.common.NeoForge;
+import net.neoforged.eventbus.api.Event;
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/WeatherSkyStrengthEvent.java
 
 
 public class WeatherSkyStrengthEvent extends Event {
@@ -29,8 +36,9 @@ public class WeatherSkyStrengthEvent extends Event {
 		partialTickTime = ptick;
 	}
 
-	public static float fire_Rain(Level world, float ptick) {
-		WeatherSkyStrengthEvent evt = new WeatherSkyStrengthEvent(world, world.getRainLevel(ptick), ptick);
+<<<<<<< Updated upstream:Instantiable/Event/Client/WeatherSkyStrengthEvent.java
+	public static float fire_Rain(World world, float ptick) {
+		WeatherSkyStrengthEvent evt = new WeatherSkyStrengthEvent(world, world.getRainStrength(ptick), ptick);
 		MinecraftForge.EVENT_BUS.post(evt);
 		return evt.returnValue;
 	}
@@ -38,6 +46,17 @@ public class WeatherSkyStrengthEvent extends Event {
 	public static float fire_Thunder(Level world, float ptick) {
 		WeatherSkyStrengthEvent evt = new WeatherSkyStrengthEvent(world, world.getThunderLevel(ptick), ptick);
 		MinecraftForge.EVENT_BUS.post(evt);
+=======
+	public static float fire_Rain(Level world, float ptick) {
+		WeatherSkyStrengthEvent evt = new WeatherSkyStrengthEvent(world, world.getRainLevel(ptick), ptick);
+		NeoForge.EVENT_BUS.post(evt);
+		return evt.returnValue;
+	}
+
+	public static float fire_Thunder(Level world, float ptick) {
+		WeatherSkyStrengthEvent evt = new WeatherSkyStrengthEvent(world, world.getThunderLevel(ptick), ptick);
+		NeoForge.EVENT_BUS.post(evt);
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/WeatherSkyStrengthEvent.java
 		return evt.returnValue;
 	}
 

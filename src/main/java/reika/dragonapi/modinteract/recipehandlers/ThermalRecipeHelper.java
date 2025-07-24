@@ -12,9 +12,9 @@
 //import net.minecraft.nbt.CompoundTag;
 //import net.minecraft.world.item.ItemStack;
 //import net.minecraft.world.level.material.Fluid;
-//import net.minecraftforge.common.MinecraftForge;
-//import net.minecraftforge.fluids.FluidStack;
-//import net.minecraftforge.fml.InterModComms;
+//import net.neoforged.common.NeoForge;
+//import net.neoforged.fluids.FluidStack;
+//import net.neoforged.fml.InterModComms;
 //
 //public class ThermalRecipeHelper {
 //
@@ -59,11 +59,11 @@
 //	}
 //
 //	private static void fireEvent(ThermalMachine type, ItemStack in, FluidStack out, int rf) {
-//		MinecraftForge.EVENT_BUS.post(new ThermalRecipeEvent(type, in, out, rf));
+//		NeoForge.EVENT_BUS.post(new ThermalRecipeEvent(type, in, out, rf));
 //	}
 //
 //	private static void fireEvent(ThermalMachine type, ItemStack in1, ItemStack in2, ItemStack out1, ItemStack out2, int out2chance, int rf) {
-//		MinecraftForge.EVENT_BUS.post(new ThermalRecipeEvent(type, in1, in2, out1, out2, out2chance, rf));
+//		NeoForge.EVENT_BUS.post(new ThermalRecipeEvent(type, in1, in2, out1, out2, out2chance, rf));
 //	}
 //
 //	public static void addFluidTransposerDrain(ItemStack in, ItemStack out, int energy, FluidStack f) {

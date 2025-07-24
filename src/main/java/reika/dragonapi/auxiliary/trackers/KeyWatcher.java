@@ -4,11 +4,11 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.common.ForgeConfigSpec;
+import net.neoforged.common.NeoForge;
+import net.neoforged.event.TickEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
@@ -212,7 +212,7 @@ public class KeyWatcher {
                         keyStates.put(key, isPressed);
                         key.sendPacket();
                         KeyWatcher.instance.setKey(ep, key.getServerKey(), isPressed);
-                        MinecraftForge.EVENT_BUS.post(new RawKeyPressEvent(key.getServerKey(), ep));
+                        NeoForge.EVENT_BUS.post(new RawKeyPressEvent(key.getServerKey(), ep));
                     }
                 }
             }

@@ -10,14 +10,20 @@
 package reika.dragonapi.instantiable.event.client;
 
 
+<<<<<<< Updated upstream:Instantiable/Event/Client/LightmapEvent.java
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event;
+
+import cpw.mods.fml.common.eventhandler.Event;
+=======
+import net.neoforged.common.NeoForge;
+import net.neoforged.eventbus.api.Event;
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/LightmapEvent.java
 
 
 public class LightmapEvent extends Event {
 
 	public static void fire() {
-		MinecraftForge.EVENT_BUS.post(new LightmapEvent());
+		NeoForge.EVENT_BUS.post(new LightmapEvent());
 	}
 
 }

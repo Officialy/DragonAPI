@@ -12,10 +12,10 @@ package reika.dragonapi.auxiliary.trackers;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.common.NeoForge;
+import net.neoforged.event.entity.player.PlayerEvent;
+import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class PlayerHandler {
     private final ArrayList<PlayerTracker> trackers = new ArrayList<>();
 
     private PlayerHandler() {
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
     }
 
     public void registerTracker(PlayerTracker p) {

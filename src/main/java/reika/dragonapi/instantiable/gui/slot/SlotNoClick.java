@@ -13,8 +13,8 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.SlotItemHandler;
+import net.neoforged.items.IItemHandler;
+import net.neoforged.items.SlotItemHandler;
 
 /**
  * Identical to Slot but disallows item insertion.

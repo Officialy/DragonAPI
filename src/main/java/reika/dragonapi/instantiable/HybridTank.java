@@ -3,9 +3,9 @@ package reika.dragonapi.instantiable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.templates.FluidTank;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.fluids.FluidStack;
+import net.neoforged.fluids.capability.templates.FluidTank;
+import net.neoforged.registries.ForgeRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 

@@ -14,7 +14,7 @@ import reika.dragonapi.instantiable.Interpolation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.fluids.IFluidBlock;
+import net.neoforged.fluids.IFluidBlock;
 
 public final class ReikaPhysicsHelper extends DragonAPI {
 

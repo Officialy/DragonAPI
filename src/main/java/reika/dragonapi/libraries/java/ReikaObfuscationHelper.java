@@ -11,9 +11,9 @@ import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.fml.loading.FMLLoader;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.common.ForgeHooks;
+import net.neoforged.fml.loading.FMLLoader;
 import reika.dragonapi.exception.VanillaIntegrityException;
 
 public class ReikaObfuscationHelper {

@@ -37,7 +37,7 @@ public class GlowLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<Abs
 
     private static RenderType getRenderType(String texture) {
         return RENDER_TYPES.computeIfAbsent(texture, t -> {
-            ResourceLocation loc = new ResourceLocation(DragonAPI.MODID, "textures/entity/glow/" + t + ".png");
+            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(DragonAPI.MODID, "textures/entity/glow/" + t + ".png");
             return RenderType.entityTranslucentEmissive(loc);
         });
     }

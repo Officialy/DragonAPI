@@ -1,7 +1,7 @@
 package reika.dragonapi.instantiable.io;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLLoader;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 import reika.dragonapi.interfaces.registry.StreamableSound;

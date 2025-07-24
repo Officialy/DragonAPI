@@ -9,7 +9,11 @@
  ******************************************************************************/
 package reika.dragonapi.exception;
 
-import net.minecraftforge.fml.ModList;
+<<<<<<< Updated upstream:Exception/ModHandlerException.java
+import Reika.DragonAPI.ModList;
+=======
+import net.neoforged.fml.ModList;
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/exception/ModHandlerException.java
 
 public class ModHandlerException extends DragonAPIException {
 

@@ -5,7 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.common.NeoForge;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 
@@ -58,7 +58,7 @@ public abstract class SetBlockEvent extends WorldPositionEvent {
 
         public static void fire(LevelChunk ch, int x, int y, int z, Block b) {
             if (eventEnabledPre)
-                MinecraftForge.EVENT_BUS.post(new Pre(ch, x, y, z, b));
+                NeoForge.EVENT_BUS.post(new Pre(ch, x, y, z, b));
         }
 
     }
@@ -71,7 +71,7 @@ public abstract class SetBlockEvent extends WorldPositionEvent {
 
         public static void fire(LevelChunk ch, int x, int y, int z) {
             if (eventEnabledPost)
-                MinecraftForge.EVENT_BUS.post(new Post(ch, x, y, z));
+                NeoForge.EVENT_BUS.post(new Post(ch, x, y, z));
         }
 
     }

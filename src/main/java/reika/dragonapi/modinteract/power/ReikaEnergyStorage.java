@@ -1,7 +1,7 @@
 package reika.dragonapi.modinteract.power;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.energy.EnergyStorage;
+import net.neoforged.energy.EnergyStorage;
 
 public class ReikaEnergyStorage extends EnergyStorage {
 

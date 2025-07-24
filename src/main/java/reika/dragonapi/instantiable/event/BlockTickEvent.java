@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FireBlock;
 import net.minecraft.world.level.block.GrassBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.common.NeoForge;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 import reika.dragonapi.libraries.level.ReikaBlockHelper;
@@ -69,7 +69,7 @@ public class BlockTickEvent extends WorldPositionEvent {
     }
 
     public static void fire(BlockState b, ServerLevel world, BlockPos pos, RandomSource rand, int flags) {
-        if (!disallowAllUpdates && canTickAt(b, world, pos, flags) && !MinecraftForge.EVENT_BUS.post(new BlockTickEvent(world, pos, b, flags))) {
+        if (!disallowAllUpdates && canTickAt(b, world, pos, flags) && !NeoForge.EVENT_BUS.post(new BlockTickEvent(world, pos, b, flags))) {
             b.tick(world, pos, rand);
         }
     }

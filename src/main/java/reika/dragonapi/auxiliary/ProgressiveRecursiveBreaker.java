@@ -15,13 +15,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.items.ItemStackHandler;
+import net.neoforged.common.NeoForge;
+import net.neoforged.event.TickEvent;
+import net.neoforged.event.entity.player.EntityItemPickupEvent;
+import net.neoforged.event.level.LevelEvent;
+import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.items.ItemStackHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.base.BlockTieredResource;
@@ -53,7 +53,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
     private final MultiMap<ResourceKey<Level>, ProgressiveBreaker> breakers = new MultiMap<net.minecraft.resources.ResourceKey<Level>, ProgressiveBreaker>();
 
     private ProgressiveRecursiveBreaker() {
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
     }
 
     @SubscribeEvent
@@ -382,7 +382,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                     for (ItemStack is : drops) {
                         boolean flag = false;
                         if (dropInventory != null) {
-                            if (MinecraftForge.EVENT_BUS.post(new EntityItemPickupEvent(Minecraft.getInstance().player, new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, is)))) {
+                            if (NeoForge.EVENT_BUS.post(new EntityItemPickupEvent(Minecraft.getInstance().player, new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, is)))) {
                                 continue;
                             }
                             flag = ReikaInventoryHelper.addToIInv(is, dropInventory);

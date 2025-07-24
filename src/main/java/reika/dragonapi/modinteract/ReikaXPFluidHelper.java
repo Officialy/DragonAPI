@@ -2,8 +2,8 @@ package reika.dragonapi.modinteract;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.fluids.FluidStack;
+import net.neoforged.registries.ForgeRegistries;
 import reika.dragonapi.DragonAPI;
 
 import java.lang.reflect.Field;

@@ -19,8 +19,8 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.common.NeoForge;
+import net.neoforged.event.entity.player.PlayerInteractEvent;
 import reika.dragonapi.auxiliary.ModularLogger;
 import reika.dragonapi.auxiliary.PacketTypes;
 import reika.dragonapi.auxiliary.PopupWriter;
@@ -252,7 +252,7 @@ public class APIPacketHandler implements PacketHandler {
                     }
                     KeyWatcher.Key key = KeyWatcher.Key.keyList[ordinal];
                     KeyWatcher.instance.setKey(ep, key, used);
-                    MinecraftForge.EVENT_BUS.post(new RawKeyPressEvent(key, ep));
+                    NeoForge.EVENT_BUS.post(new RawKeyPressEvent(key, ep));
                     break;
                 case TILESYNC:
                     BlockEntity te = world.getBlockEntity(new BlockPos(x, y, z));
@@ -339,7 +339,7 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 }
                 case PLAYERINTERACT:
-                    MinecraftForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEvent.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
+                    NeoForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEvent.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
                     break;
                 case BIOMEPNGSTART:
                     BiomeMapCommand.startCollecting(data[0], stringdata, world.dimension()/*todo old dimension id's data[1]*/, data[2], data[3], data[4], data[5], data[6], data[7] > 0);
@@ -410,10 +410,10 @@ public class APIPacketHandler implements PacketHandler {
             }
             case OLDMODS -> CommandableUpdateChecker.instance.onClientReceiveOldModID(sg);
             case LOGIN -> {
-                MinecraftForge.EVENT_BUS.post(new ClientLoginEvent(player, data[0] > 0));
+                NeoForge.EVENT_BUS.post(new ClientLoginEvent(player, data[0] > 0));
                 SettingInterferenceTracker.instance.onLogin(player);
             }
-            case LOGOUT -> MinecraftForge.EVENT_BUS.post(new ClientLogoutEvent(player));
+            case LOGOUT -> NeoForge.EVENT_BUS.post(new ClientLogoutEvent(player));
             case BREAKPARTICLES -> {
                 Block b = Block.stateById(data[0]).getBlock();
                 ReikaRenderHelper.spawnDropParticles(world, x, y, z, b, data[1]);

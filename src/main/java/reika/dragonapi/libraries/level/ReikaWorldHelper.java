@@ -33,15 +33,15 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.item.ItemTossEvent;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.fluids.IFluidBlock;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.common.NeoForge;
+import net.neoforged.event.entity.item.ItemTossEvent;
+import net.neoforged.fluids.FluidStack;
+import net.neoforged.fluids.FluidType;
+import net.neoforged.fluids.IFluidBlock;
+import net.neoforged.fluids.capability.IFluidHandler;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -398,10 +398,10 @@ public class ReikaWorldHelper {
                 li = new ArrayList<>(bt.isPlayerSufficientTier(world, pos, ep) ? bt.getHarvestResources(world, pos, fortune, ep) : bt.getNoHarvestResources(world, pos, fortune, ep));
             }
 //            BlockEvent.HarvestDropsEvent evt = new BlockEvent.HarvestDropsEvent(world, pos, b, ep); // fortune, 1F, li, ep, false);
-//            MinecraftForge.EVENT_BUS.post(evt);
+//            NeoForge.EVENT_BUS.post(evt);
 //            li = evt.drops;
             ItemTossEvent evt = new ItemTossEvent(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), li.stream().iterator().next()), ep);
-            MinecraftForge.EVENT_BUS.post(evt);
+            NeoForge.EVENT_BUS.post(evt);
 //            li = evt.getDrops();
         }
 //        harvesters.set(null);

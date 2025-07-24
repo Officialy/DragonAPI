@@ -2,13 +2,13 @@ package reika.dragonapi.auxiliary.trackers;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.Cancelable;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.common.NeoForge;
+import net.neoforged.event.entity.player.PlayerEvent;
+import net.neoforged.eventbus.api.Cancelable;
+import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
@@ -26,7 +26,7 @@ public class ModFileVersionChecker {
     private final HashMap<String, String> data = new HashMap<>();
 
     private ModFileVersionChecker() {
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
     }
 
     public void addMod(DragonAPIMod mod) {
@@ -64,7 +64,7 @@ public class ModFileVersionChecker {
 
     private void kick(ServerPlayer ep, String mod, String client, String server) {
         HashKickEvent evt = new HashKickEvent(ep, mod, client, server);
-        if (!MinecraftForge.EVENT_BUS.post(evt)) {
+        if (!NeoForge.EVENT_BUS.post(evt)) {
             String msg = mod+" jarfile mismatch. Client Hash: "+client+"; Expected (Server) Hash: "+server;
             ReikaPlayerAPI.kickPlayer(ep, msg);
             DragonAPI.LOGGER.info("Player "+ep.getName()+" kicked due to "+msg);

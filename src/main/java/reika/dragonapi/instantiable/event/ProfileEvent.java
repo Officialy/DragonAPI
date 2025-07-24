@@ -1,8 +1,8 @@
 package reika.dragonapi.instantiable.event;
 
 
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.common.NeoForge;
+import net.neoforged.eventbus.api.Event;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
 
 import java.util.Collection;
@@ -22,7 +22,7 @@ public class ProfileEvent {
                 p.onCall(tag);
             }
         }
-        MinecraftForge.EVENT_BUS.post(new ProfileEventObject(tag));
+        NeoForge.EVENT_BUS.post(new ProfileEventObject(tag));
     }
 
     public static void registerHandler(String tag, ProfileEventWatcher w) {

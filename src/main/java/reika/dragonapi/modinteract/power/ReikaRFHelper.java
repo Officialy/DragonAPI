@@ -10,8 +10,8 @@
 package reika.dragonapi.modinteract.power;
 
 import net.minecraft.util.Mth;
-import net.minecraftforge.energy.EnergyStorage;
-import net.minecraftforge.energy.IEnergyStorage;
+import net.neoforged.energy.EnergyStorage;
+import net.neoforged.energy.IEnergyStorage;
 import reika.dragonapi.libraries.java.ReikaReflectionHelper;
 import reika.dragonapi.libraries.mathsci.ReikaThermoHelper;
 

@@ -1,6 +1,6 @@
 package reika.dragonapi.exception;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.common.ForgeConfigSpec;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.instantiable.io.oldforge.Property;
 import reika.dragonapi.interfaces.configuration.BoundedConfig;

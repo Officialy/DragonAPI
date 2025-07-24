@@ -9,9 +9,9 @@
  ******************************************************************************/
 package reika.dragonapi.base;
 
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLLoader;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLLoader;
 import org.apache.logging.log4j.Logger;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -22,7 +22,7 @@ import reika.dragonapi.extras.ModVersion;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.mathsci.ReikaDateHelper;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.common.NeoForge;
 
 import java.io.File;
 import java.net.URL;
@@ -110,7 +110,7 @@ public abstract class DragonAPIMod {
 	}
 
 	protected final void basicSetup() {
-		MinecraftForge.EVENT_BUS.register(this);
+		NeoForge.EVENT_BUS.register(this);
 		checkFinalPreload(this);
 //todo		CommandableUpdateChecker.instance.registerMod(this);
 

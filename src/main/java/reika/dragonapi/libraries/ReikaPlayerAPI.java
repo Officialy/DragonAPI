@@ -16,10 +16,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.event.level.BlockEvent;
+import net.neoforged.common.NeoForge;
+import net.neoforged.common.util.FakePlayer;
+import net.neoforged.common.util.FakePlayerFactory;
+import net.neoforged.event.level.BlockEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -111,7 +111,7 @@ public class ReikaPlayerAPI {
 //        if (MinecraftServer.getServer().isBlockProtected(world, x, y, z, fp))
 //            return false;
         BlockEvent.BreakEvent evt = new BlockEvent.BreakEvent(world, new BlockPos(x, y, z), id, fp);
-        MinecraftForge.EVENT_BUS.post(evt);
+        NeoForge.EVENT_BUS.post(evt);
         return !evt.isCanceled();
     }
 
@@ -141,7 +141,7 @@ public class ReikaPlayerAPI {
         BlockHitResult hit = ep.level().clip(new ClipContext(vec, vec3, ClipContext.Block.COLLIDER, liq ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, ep));
 
         GetPlayerLookEvent evt = new GetPlayerLookEvent(ep, hit, vec, vec3);
-        MinecraftForge.EVENT_BUS.post(evt);
+        NeoForge.EVENT_BUS.post(evt);
         hit = (BlockHitResult) evt.newLook;
 
         if (hit != null && hit.getType() == BlockHitResult.Type.BLOCK)

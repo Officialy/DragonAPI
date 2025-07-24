@@ -5,8 +5,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.IFluidBlock;
+import net.neoforged.fluids.FluidStack;
+import net.neoforged.fluids.IFluidBlock;
 import reika.dragonapi.instantiable.HybridTank;
 
 import java.util.HashMap;

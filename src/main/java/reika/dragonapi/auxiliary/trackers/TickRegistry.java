@@ -9,11 +9,11 @@
  ******************************************************************************/
 package reika.dragonapi.auxiliary.trackers;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.common.NeoForge;
+import net.neoforged.event.TickEvent;
+import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -32,7 +32,7 @@ public class TickRegistry {
 
     private TickRegistry() {
 //        FMLCommonHandler.instance.bus().register(this);
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
     }
 
     @SubscribeEvent

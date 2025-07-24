@@ -2,7 +2,7 @@ package reika.dragonapi.instantiable.event;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.common.NeoForge;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 
 public class IceFreezeEvent extends WorldPositionEvent {
@@ -20,7 +20,7 @@ public class IceFreezeEvent extends WorldPositionEvent {
 
 	public static boolean fire(Level world, int x, BlockPos pos, boolean edge) {
 		IceFreezeEvent evt = new IceFreezeEvent(world, pos, edge);
-		MinecraftForge.EVENT_BUS.post(evt);
+		NeoForge.EVENT_BUS.post(evt);
 		switch(evt.getResult()) {
 			case ALLOW:
 				return true;
@@ -34,7 +34,7 @@ public class IceFreezeEvent extends WorldPositionEvent {
 
 	public static boolean fire_IgnoreVanilla(Level world, BlockPos pos) {
 		IceFreezeEvent evt = new IceFreezeEvent(world, pos, false);
-		MinecraftForge.EVENT_BUS.post(evt);
+		NeoForge.EVENT_BUS.post(evt);
 		return evt.getResult() != Result.DENY;
 	}
 

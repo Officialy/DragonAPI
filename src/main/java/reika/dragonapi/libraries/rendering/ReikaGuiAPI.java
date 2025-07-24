@@ -14,11 +14,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.client.event.ScreenEvent;
+import net.neoforged.common.NeoForge;
+import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import reika.dragonapi.ModList;
@@ -53,7 +53,7 @@ public final class ReikaGuiAPI extends Screen {
     private ReikaGuiAPI() {
         super(Component.empty());
         minecraft = Minecraft.getInstance();
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
     }
 
     public static void setup() {

@@ -11,11 +11,18 @@ package reika.dragonapi.modinteract.lua;
 
 import java.util.ArrayList;
 
+<<<<<<< Updated upstream:ModInteract/Lua/LuaGetTanks.java
+import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fluids.FluidTankInfo;
+import net.minecraftforge.fluids.IFluidHandler;
+=======
 
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.fluids.IFluidTank;
-import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.neoforged.fluids.IFluidTank;
+import net.neoforged.fluids.capability.IFluidHandler;
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/modinteract/lua/LuaGetTanks.java
 
 public class LuaGetTanks extends LuaMethod {
 

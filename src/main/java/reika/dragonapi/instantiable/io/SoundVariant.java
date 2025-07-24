@@ -3,8 +3,8 @@ package reika.dragonapi.instantiable.io;
 import net.minecraft.resources.ResourceLocation;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 import net.minecraft.sounds.SoundSource;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.minecraft.sounds.SoundEvent;
 
 public abstract class SoundVariant<S extends SoundEnum> implements SoundEnum {

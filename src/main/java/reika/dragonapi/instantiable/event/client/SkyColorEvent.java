@@ -10,8 +10,14 @@
 package reika.dragonapi.instantiable.event.client;
 
 
+<<<<<<< Updated upstream:Instantiable/Event/Client/SkyColorEvent.java
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event;
+
+import cpw.mods.fml.common.eventhandler.Event;
+=======
+import net.neoforged.common.NeoForge;
+import net.neoforged.eventbus.api.Event;
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/SkyColorEvent.java
 
 
 public class SkyColorEvent extends Event {
@@ -26,7 +32,7 @@ public class SkyColorEvent extends Event {
 
 	public static int fire(int c) {
 		SkyColorEvent evt = new SkyColorEvent(c);
-		MinecraftForge.EVENT_BUS.post(evt);
+		NeoForge.EVENT_BUS.post(evt);
 		return evt.color;
 	}
 

@@ -12,9 +12,13 @@ package reika.dragonapi.modinteract.lua;
 
 
 
+<<<<<<< Updated upstream:ModInteract/Lua/LuaGetStoredRF.java
+@ModTileDependent(value = {"cofh.api.energy.IEnergyProvider", "cofh.api.energy.IEnergyReceiver"})
+=======
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.energy.IEnergyStorage;
+import net.neoforged.energy.IEnergyStorage;
 
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/modinteract/lua/LuaGetStoredRF.java
 public class LuaGetStoredRF extends LuaMethod {
 
 	public LuaGetStoredRF() {

@@ -9,10 +9,10 @@
  ******************************************************************************/
 package reika.dragonapi.auxiliary.trackers;
 
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.common.NeoForge;
+import net.neoforged.eventbus.api.Event;
+import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.PopupWriter;
 import reika.dragonapi.base.DragonAPIMod;
@@ -43,7 +43,7 @@ public class RemoteAssetLoader {
     private Thread downloadThread;
 
     private RemoteAssetLoader() {
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
     }
 
     public void registerAssets(RemoteAssetRepository rar) {
@@ -66,7 +66,7 @@ public class RemoteAssetLoader {
             downloadThread = new Thread(downloader, "Remote Asset Download");
             downloadThread.start();
         } else {
-            MinecraftForge.EVENT_BUS.post(new RemoteAssetsDownloadCompleteEvent(downloadingAssets, 0));
+            NeoForge.EVENT_BUS.post(new RemoteAssetsDownloadCompleteEvent(downloadingAssets, 0));
         }
     }
 
@@ -112,7 +112,7 @@ public class RemoteAssetLoader {
             long duration = System.currentTimeMillis() - time;
             DragonAPI.LOGGER.info("DRAGONAPI: All asset downloads complete. Elapsed time: " + ReikaDateHelper.millisToHMSms(duration));
             isComplete = true;
-            MinecraftForge.EVENT_BUS.post(new RemoteAssetsDownloadCompleteEvent(instance.downloadingAssets, totalSize));
+            NeoForge.EVENT_BUS.post(new RemoteAssetsDownloadCompleteEvent(instance.downloadingAssets, totalSize));
         }
 
         public float getTotalCompletion() {

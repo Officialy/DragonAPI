@@ -2,8 +2,8 @@ package reika.dragonapi.instantiable.data;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import reika.dragonapi.libraries.rendering.ReikaColorAPI;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.*;
 

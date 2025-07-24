@@ -12,7 +12,7 @@ package reika.dragonapi.interfaces.block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.neoforged.fluids.capability.IFluidHandler;
 
 /**
  * Implement this if the block can be treated as a liquid source block for some implementations

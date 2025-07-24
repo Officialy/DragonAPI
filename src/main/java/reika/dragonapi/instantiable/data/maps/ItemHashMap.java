@@ -10,13 +10,24 @@
 package reika.dragonapi.instantiable.data.maps;
 
 
-import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.registries.ForgeRegistries;
+<<<<<<< Updated upstream:Instantiable/Data/Maps/ItemHashMap.java
+import net.minecraft.block.Block;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraftforge.oredict.OreDictionary;
+=======
+import net.neoforged.items.ItemStackHandler;
+import net.neoforged.registries.ForgeRegistries;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.ImmutableItemStack;
 import reika.dragonapi.interfaces.Matcher;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.ReikaNBTHelper;
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/data/maps/ItemHashMap.java
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;

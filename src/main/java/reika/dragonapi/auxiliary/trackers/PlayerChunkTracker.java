@@ -10,7 +10,7 @@
 package reika.dragonapi.auxiliary.trackers;
 
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.TickEvent;
+import net.neoforged.event.TickEvent;
 
 import java.util.EnumSet;
 import java.util.HashMap;

@@ -9,10 +9,14 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable.event.client;
 
+<<<<<<< Updated upstream:Instantiable/Event/Client/ClientLogoutEvent.java
+import net.minecraft.entity.player.EntityPlayer;
+=======
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.eventbus.api.Event;
+>>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/ClientLogoutEvent.java
 
 public class ClientLogoutEvent extends Event {
 

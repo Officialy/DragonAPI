@@ -3,7 +3,7 @@ package reika.dragonapi.instantiable.io;
 import com.google.common.base.Strings;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLLoader;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.exception.InvalidConfigException;

@@ -49,7 +49,7 @@ public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements B
 /*    public final int bindTextureByName(String tex) {
         String over = textureOverrides.get(tex);
         if (over != null) {
-            return Minecraft.getInstance().textureManager.getTexture(new ResourceLocation(this.getModID(), over)).getId();
+            return Minecraft.getInstance().textureManager.getTexture(ResourceLocation.fromNamespaceAndPath(this.getModID(), over)).getId();
         }
         if (this.loadXmasTextures()) {
             String xmas = tex.replace(".png", "").replace("_xmas", "")+"_xmas.png";
@@ -58,7 +58,7 @@ public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements B
             textureOverrides.put(tex, xmas);
             return this.bindTextureByName(xmas);
         }
-        return Minecraft.getInstance().textureManager.getTexture(new ResourceLocation(this.getModID(), tex)).getId();
+        return Minecraft.getInstance().textureManager.getTexture(ResourceLocation.fromNamespaceAndPath(this.getModID(), tex)).getId();
     }*/
 
     protected boolean loadXmasTextures() {

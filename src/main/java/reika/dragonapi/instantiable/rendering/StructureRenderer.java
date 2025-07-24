@@ -10,7 +10,7 @@
 //import net.minecraft.world.level.block.Block;
 //import net.minecraft.world.level.block.Blocks;
 //import net.minecraft.world.level.block.entity.BlockEntity;
-//import net.minecraftforge.api.distmarker.Dist;
+//import net.neoforged.api.distmarker.Dist;
 //import reika.dragonapi.DragonAPI;
 //import reika.dragonapi.instantiable.data.blockstruct.FilledBlockArray;
 //import reika.dragonapi.instantiable.data.immutable.BlockKey;

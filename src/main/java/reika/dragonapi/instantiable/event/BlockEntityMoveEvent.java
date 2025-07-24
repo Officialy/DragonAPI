@@ -5,9 +5,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Cancelable;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.common.NeoForge;
+import net.neoforged.eventbus.api.Cancelable;
+import net.neoforged.eventbus.api.Event;
 
 @Cancelable
 public class BlockEntityMoveEvent extends Event {
@@ -26,6 +26,6 @@ public class BlockEntityMoveEvent extends Event {
     }
 
     public static boolean fireTileMoveEvent(Level world, BlockPos pos) {
-        return MinecraftForge.EVENT_BUS.post(new BlockEntityMoveEvent(world, pos, world.getBlockState(pos), world.getBlockEntity(pos)));
+        return NeoForge.EVENT_BUS.post(new BlockEntityMoveEvent(world, pos, world.getBlockState(pos), world.getBlockEntity(pos)));
     }
 }

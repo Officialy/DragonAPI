@@ -3,8 +3,8 @@ package reika.dragonapi.instantiable.io;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.libraries.rendering.ReikaColorAPI;
 

@@ -3,7 +3,7 @@ package reika.dragonapi.instantiable.event;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.neoforged.event.entity.player.PlayerEvent;
 
 public class GetPlayerLookEvent extends PlayerEvent {
 

@@ -2,7 +2,10 @@ package reika.dragonapi.libraries.registry;
 
 import com.google.common.base.Strings;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
@@ -15,7 +18,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.crafting.ICustomIngredient;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
 import reika.dragonapi.instantiable.ItemFilter;
@@ -23,16 +27,16 @@ import reika.dragonapi.instantiable.ItemMatch;
 import reika.dragonapi.instantiable.data.KeyedItemStack;
 import reika.dragonapi.instantiable.data.immutable.BlockKey;
 import reika.dragonapi.instantiable.data.immutable.ImmutableItemStack;
+import reika.dragonapi.libraries.ReikaIngredientHelper;
 import reika.dragonapi.libraries.ReikaNBTHelper;
 import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static reika.dragonapi.DragonAPI.rand;
 
 public class ReikaItemHelper {
-
-
 
     public static final Comparator<ItemStack> comparator = new ItemComparator();
     public static final Comparator<Object> itemListComparator = new ItemListComparator();
@@ -76,19 +80,12 @@ public class ReikaItemHelper {
             if (o1.getItem() == o2.getItem()) {
                 if (o1.getDamageValue() == o2.getDamageValue()) {
                     if (o1.getCount() == o2.getCount()) {
-                        if (o1.getTag() == o2.getTag() || (o1.getTag() != null && o1.getTag().equals(o2.getTag()))) {
+                        if (ItemStack.isSameItemSameComponents(o1, o2)) {
                             return 0;
                         }
                         else {
-                            if (o1.getTag() == null && o2.getTag() != null) {
-                                return -1;
-                            }
-                            else if (o2.getTag() == null && o1.getTag() != null) {
-                                return 1;
-                            }
-                            else {
-                                return ReikaNBTHelper.compareNBTTags(o1.getTag(), o2.getTag());
-                            }
+                            // For component-based comparison, we compare hash codes as a fallback
+                            return Integer.compare(o1.hashCode(), o2.hashCode());
                         }
                     }
                     else {
@@ -164,7 +161,7 @@ public class ReikaItemHelper {
     }
 
     public static ItemStack lookupItem(String mod, String item) {
-        Item i = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath(mod, item));
+        Item i = BuiltInRegistries.ITEM.getValue(ResourceLocation.fromNamespaceAndPath(mod, item));
         return i != null ? new ItemStack(i, 1) : null;
     }
 
@@ -174,7 +171,7 @@ public class ReikaItemHelper {
     public static boolean areStacksCombinable(ItemStack is1, ItemStack is2, int limit) {
         if (is1 != null && limit != Integer.MAX_VALUE)
             limit = Math.min(limit, is1.getMaxStackSize());
-        return is1 != null && is2 != null && matchStacks(is1, is2) && ItemStack.isSameItemSameTags(is1, is2) && is1.getCount() + is2.getCount() <= limit;
+        return is1 != null && is2 != null && matchStacks(is1, is2) && ItemStack.isSameItemSameComponents(is1, is2) && is1.getCount() + is2.getCount() <= limit;
     }
 
     public static boolean verifyItemStack(ItemStack is, boolean fullCheck) {
@@ -257,19 +254,11 @@ public class ReikaItemHelper {
         }
         return true;
     }
+    
     public static boolean matchStackCollections(NonNullList<Ingredient> c1, NonNullList<Ingredient> c2) {
-        if (c1.size() != c2.size())
-            return false;
-        ArrayList<Ingredient> li = new ArrayList<>(c1);
-        ArrayList<Ingredient> li2 = new ArrayList<>(c2);
-        for (int i = 0; i < li.size(); i++) {
-            Ingredient o1 = li.get(i);
-            Ingredient o2 = li2.get(i);
-            if (!matchStacks(o1.getItems()[i], o2.getItems()[i]))
-                return false;
-        }
-        return true;
+    return ReikaIngredientHelper.matchStackCollections(c1, c2, RegistryAccess.EMPTY);
     }
+
 /*
     public static ItemStack lookupItem(String s) {
         if (Strings.isNullOrEmpty(s))
@@ -280,7 +269,7 @@ public class ReikaItemHelper {
     }
 
     public static ItemStack lookupItem(String mod, String item) {
-        Item i = ForgeRegistries.ITEMS.getValue(new ResourceLocation(mod, item);
+        Item i = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath(mod, item));
         return i != null ? new ItemStack(i, 1) : null;
     }
 
@@ -370,8 +359,8 @@ public class ReikaItemHelper {
                     int count = itemstack.getCount() - 1;
                     itemstack.setCount(count);
                     ItemEntity ei = new ItemEntity(ep.level(), ep.getX() + f, ep.getY() + 0.25 + f1, ep.getZ() + f2, new ItemStack(itemstack.getItem(), j));
-                    if (itemstack.hasTag())
-                        ei.getItem().save(itemstack.getTag().copy());
+                    if (itemstack.has(DataComponents.CUSTOM_DATA))
+                        ei.getItem().set(DataComponents.CUSTOM_DATA, itemstack.get(DataComponents.CUSTOM_DATA));
                     float f3 = 0.05F;
                     ei.setDeltaMovement((float) par5Random.nextGaussian() * f3, (float) par5Random.nextGaussian() * f3 + 0.2F, (float) par5Random.nextGaussian() * f3);
                     ei.setPickUpDelay(10);
@@ -403,8 +392,8 @@ public class ReikaItemHelper {
                     int count = itemstack.getCount();
                     itemstack.setCount(count - j);
                     ItemEntity ei = new ItemEntity(world, pos.getX() + f, pos.getY() + f1, pos.getZ() + f2, new ItemStack(itemstack.getItem(), j));
-                    if (itemstack.hasTag())
-                        ei.getItem().save(itemstack.getTag().copy());
+                    if (itemstack.has(DataComponents.CUSTOM_DATA))
+                        ei.getItem().set(DataComponents.CUSTOM_DATA, itemstack.get(DataComponents.CUSTOM_DATA));
                     float f3 = 0.05F;
                     ei.setDeltaMovement((float) par5Random.nextGaussian() * f3, (float) par5Random.nextGaussian() * f3 + 0.2F, (float) par5Random.nextGaussian() * f3);
                     ei.setPickUpDelay(10);

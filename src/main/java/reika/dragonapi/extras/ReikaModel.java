@@ -85,7 +85,7 @@ public class ReikaModel extends ModifiedPlayerModel {
 
 	@Override
 	public ResourceLocation getTexture() {
-		return new ResourceLocation(DragonAPI.MODID, "textures/reika_tex.png");
+		return ResourceLocation.fromNamespaceAndPath(DragonAPI.MODID, "textures/reika_tex.png");
 	}
 
 	@Override

@@ -117,7 +117,7 @@ public class RemoteSourcedAsset {
             long time = System.currentTimeMillis();
             DragonAPI.LOGGER.info("Remote asset download thread starting...");
             this.tryDownload(5);
-            //MinecraftForge.EVENT_BUS.post(new RemoteAssetsDownloadCompleteEvent(instance.downloadingAssets, totalSize));
+            //NeoForge.EVENT_BUS.post(new RemoteAssetsDownloadCompleteEvent(instance.downloadingAssets, totalSize));
         }
 
         private void tryDownload(int max) {

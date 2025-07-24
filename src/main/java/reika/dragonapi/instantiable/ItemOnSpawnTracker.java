@@ -1,6 +1,6 @@
 package reika.dragonapi.instantiable;
 
-import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.neoforged.event.entity.player.PlayerEvent;
 import reika.dragonapi.auxiliary.trackers.PlayerFirstTimeTracker;
 import reika.dragonapi.auxiliary.trackers.PlayerHandler;
 

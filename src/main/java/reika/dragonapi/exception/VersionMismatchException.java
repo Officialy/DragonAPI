@@ -11,7 +11,7 @@ package reika.dragonapi.exception;
 
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.forgespi.language.IModInfo;
 
 public class VersionMismatchException extends DragonAPIException {
 
