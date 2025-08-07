@@ -24,7 +24,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 
@@ -234,3 +234,4 @@ public final class ReikaChatHelper {
 	}*/
 
 }
+

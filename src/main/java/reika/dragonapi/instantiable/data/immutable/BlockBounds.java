@@ -154,13 +154,13 @@ public class BlockBounds {
     }
 
     public static BlockBounds load(String id, CompoundTag nbt) {
-        CompoundTag tag = nbt.getCompound(id);
-        double nx = tag.getDouble("nx");
-        double ny = tag.getDouble("ny");
-        double nz = tag.getDouble("nz");
-        double px = tag.getDouble("px");
-        double py = tag.getDouble("py");
-        double pz = tag.getDouble("pz");
+        CompoundTag tag = reika.dragonapi.libraries.io.NBTCompat.getCompound(nbt, id);
+        double nx = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "nx", 0);
+        double ny = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "ny", 0);
+        double nz = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "nz", 0);
+        double px = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "px", 1);
+        double py = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "py", 1);
+        double pz = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "pz", 1);
         return new BlockBounds(nx, ny, nz, px, py, pz);
     }
 

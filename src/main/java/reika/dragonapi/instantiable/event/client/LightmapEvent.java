@@ -9,15 +9,11 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable.event.client;
 
-
-<<<<<<< Updated upstream:Instantiable/Event/Client/LightmapEvent.java
 import net.minecraftforge.common.MinecraftForge;
 
 import cpw.mods.fml.common.eventhandler.Event;
-=======
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.Event;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/LightmapEvent.java
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.Event;
 
 
 public class LightmapEvent extends Event {
@@ -27,3 +23,4 @@ public class LightmapEvent extends Event {
 	}
 
 }
+

@@ -7,9 +7,6 @@
  * Distribution of the software in any form is only allowed with
  * explicit, prior permission from the owner.
  ******************************************************************************/
-<<<<<<< Updated upstream:ModList.java
-package Reika.DragonAPI;
-=======
 package reika.dragonapi;
 
 import net.neoforged.fml.loading.FMLLoader;
@@ -18,7 +15,6 @@ import reika.dragonapi.interfaces.registry.Dependency;
 import reika.dragonapi.interfaces.registry.ModEntry;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.java.ReikaStringParser;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/ModList.java
 
 import java.util.ArrayList;
 import java.util.Arrays;

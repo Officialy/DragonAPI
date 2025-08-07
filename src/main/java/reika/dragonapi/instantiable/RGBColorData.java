@@ -93,9 +93,9 @@ public class RGBColorData {
     }
 
     public void load(CompoundTag tag) {
-        red = tag.getBoolean("red");
-        green = tag.getBoolean("green");
-        blue = tag.getBoolean("blue");
+        red = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "red", false);
+        green = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "green", false);
+        blue = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "blue", false);
     }
 
     public void saveAdditional(CompoundTag tag) {

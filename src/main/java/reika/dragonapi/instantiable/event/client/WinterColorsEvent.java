@@ -1,13 +1,10 @@
 package reika.dragonapi.instantiable.event.client;
 
-<<<<<<< Updated upstream:Instantiable/Event/Client/WinterColorsEvent.java
 import net.minecraftforge.common.MinecraftForge;
 
 import cpw.mods.fml.common.eventhandler.Event;
-=======
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.Event;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/WinterColorsEvent.java
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.Event;
 
 
 public abstract class WinterColorsEvent extends Event {
@@ -20,8 +17,6 @@ public abstract class WinterColorsEvent extends Event {
 		chosenColor = defaultColor;
 	}
 
-<<<<<<< Updated upstream:Instantiable/Event/Client/WinterColorsEvent.java
-=======
 	public static int getSkyColor() {
 		WinterColorsEvent evt = new WinterSkyColorsEvent();
 		NeoForge.EVENT_BUS.post(evt);
@@ -33,8 +28,6 @@ public abstract class WinterColorsEvent extends Event {
 		NeoForge.EVENT_BUS.post(evt);
 		return evt.chosenColor;
 	}
-
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/WinterColorsEvent.java
 	public static class WinterSkyColorsEvent extends WinterColorsEvent {
 
 		public WinterSkyColorsEvent() {
@@ -52,3 +45,4 @@ public abstract class WinterColorsEvent extends Event {
 	}
 
 }
+

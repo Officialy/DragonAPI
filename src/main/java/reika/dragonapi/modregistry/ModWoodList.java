@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.material.MapColor;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
 import reika.dragonapi.instantiable.data.immutable.BlockBox;
@@ -489,3 +489,4 @@ public enum ModWoodList implements TreeType {
         }
     }
 }
+

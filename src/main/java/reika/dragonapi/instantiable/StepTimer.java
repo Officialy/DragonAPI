@@ -87,8 +87,8 @@ public final class StepTimer {
 	}
 
 	protected void readSyncTag(CompoundTag NBT, String id) {
-		cap = NBT.getInt(id + "cap");
-		value = NBT.getInt(id + "tick");
+        cap = reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, id + "cap", cap);
+        value = reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, id + "tick", value);
 	}
 
 }

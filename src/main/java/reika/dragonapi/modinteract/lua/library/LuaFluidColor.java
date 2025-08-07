@@ -10,17 +10,14 @@
 package reika.dragonapi.modinteract.lua.library;
 
 
-<<<<<<< Updated upstream:ModInteract/Lua/Library/LuaFluidColor.java
 import Reika.DragonAPI.Libraries.ReikaFluidHelper;
 import Reika.DragonAPI.ModInteract.Lua.LibraryLuaMethod;
-=======
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.libraries.ReikaFluidHelper;
 import reika.dragonapi.modinteract.lua.LibraryLuaMethod;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/modinteract/lua/library/LuaFluidColor.java
 
 
 public class LuaFluidColor extends LibraryLuaMethod {
@@ -54,3 +51,4 @@ public class LuaFluidColor extends LibraryLuaMethod {
 	}
 
 }
+

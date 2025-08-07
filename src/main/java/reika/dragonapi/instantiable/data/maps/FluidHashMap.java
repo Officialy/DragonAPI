@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidStack;
 import reika.dragonapi.interfaces.Matcher;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 

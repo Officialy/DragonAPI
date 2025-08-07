@@ -10,9 +10,9 @@
 package reika.dragonapi.auxiliary.trackers;
 
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.common.NeoForge;
-import net.neoforged.event.TickEvent;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 
 import java.util.ArrayList;
@@ -147,3 +147,4 @@ public class TickRegistry {
     }
 
 }
+

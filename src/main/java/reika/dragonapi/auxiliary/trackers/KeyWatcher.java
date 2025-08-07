@@ -7,8 +7,8 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.common.ForgeConfigSpec;
-import net.neoforged.common.NeoForge;
-import net.neoforged.event.TickEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.TickEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
@@ -236,3 +236,4 @@ public class KeyWatcher {
 
     }
 }
+

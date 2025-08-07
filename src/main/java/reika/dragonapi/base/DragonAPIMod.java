@@ -22,13 +22,13 @@ import reika.dragonapi.extras.ModVersion;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.mathsci.ReikaDateHelper;
-import net.neoforged.common.NeoForge;
+import net.neoforged.neoforge.common.NeoForge;
 
 import java.io.File;
 import java.net.URL;
 import java.util.*;
 
-import static net.minecraftforge.fml.loading.FMLLoader.isProduction;
+import static net.neoforged.fml.loading.FMLLoader.isProduction;
 
 public abstract class DragonAPIMod {
 	private static final HashMap<String, ModVersion> modVersions = new HashMap<>();
@@ -208,3 +208,4 @@ public abstract class DragonAPIMod {
 	}
 
 }
+

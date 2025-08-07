@@ -12,7 +12,7 @@ package reika.dragonapi.instantiable.event.client;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 
 public class ClientLoginEvent extends Event {
@@ -27,3 +27,4 @@ public class ClientLoginEvent extends Event {
     }
 
 }
+

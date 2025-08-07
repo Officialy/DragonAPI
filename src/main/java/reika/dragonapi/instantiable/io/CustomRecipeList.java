@@ -17,7 +17,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.interfaces.IReikaRecipe;
 import reika.dragonapi.io.ReikaFileReader;
@@ -542,3 +542,4 @@ public class CustomRecipeList {
         return objects.toArray(new Object[objects.size()]);
     }
 }
+

@@ -12,9 +12,9 @@ package reika.dragonapi.auxiliary.trackers;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.neoforged.common.NeoForge;
-import net.neoforged.event.entity.player.PlayerEvent;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 
@@ -76,3 +76,4 @@ public class PlayerHandler {
     }
 
 }
+

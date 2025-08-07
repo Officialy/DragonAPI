@@ -9,9 +9,9 @@
  ******************************************************************************/
 package reika.dragonapi.auxiliary.trackers;
 
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.Event;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.PopupWriter;
@@ -434,3 +434,4 @@ public class RemoteAssetLoader {
     }
 
 }
+

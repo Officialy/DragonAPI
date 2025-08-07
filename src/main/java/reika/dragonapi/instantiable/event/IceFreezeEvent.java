@@ -2,7 +2,7 @@ package reika.dragonapi.instantiable.event;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
-import net.neoforged.common.NeoForge;
+import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 
 public class IceFreezeEvent extends WorldPositionEvent {
@@ -40,3 +40,4 @@ public class IceFreezeEvent extends WorldPositionEvent {
 
     
 }
+

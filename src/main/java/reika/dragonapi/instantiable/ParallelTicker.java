@@ -120,8 +120,8 @@ public class ParallelTicker {
     public void load(CompoundTag NBT, String id) {
         for (String ticker : tickers.keySet()) {
             String s = id + ticker;
-            this.setCap(ticker, NBT.getInt(s + "cap"));
-            this.setTickOf(ticker, NBT.getInt(s + "tick"));
+            this.setCap(ticker, reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, s + "cap", this.getCapOf(ticker)));
+            this.setTickOf(ticker, reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, s + "tick", this.getTickOf(ticker)));
         }
     }
 

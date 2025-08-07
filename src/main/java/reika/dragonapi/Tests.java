@@ -10,12 +10,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.client.event.EntityRenderersEvent;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.registries.DeferredRegister;
-import net.neoforged.registries.ForgeRegistries;
-import net.neoforged.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
 import reika.dragonapi.auxiliary.PopupWriter;
 import reika.dragonapi.auxiliary.trackers.EventProfiler;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
@@ -51,3 +51,4 @@ public class Tests {
     }
 
 }
+

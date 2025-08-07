@@ -13,8 +13,8 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.items.IItemHandler;
-import net.neoforged.items.SlotItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
 
 /**
  * Identical to Slot but disallows item insertion.
@@ -40,3 +40,4 @@ public class SlotNoClick extends SlotItemHandler {
         return allowExtraction && super.mayPickup(ep);
     }
 }
+

@@ -18,8 +18,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.client.extensions.IForgeGuiGraphics;
-import net.neoforged.client.gui.ScreenUtils;
+import net.neoforged.neoforge.client.extensions.IForgeGuiGraphics;
+import net.neoforged.neoforge.client.gui.ScreenUtils;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -138,27 +138,26 @@ public class PianoKeyboard extends Gui {
         @Override
         public void renderWidget(GuiGraphics guiGraphics, int x, int y, float p_93679_) {
             super.renderWidget(guiGraphics, x, y, p_93679_);
-            var stack = guiGraphics.pose();
             int c = guiInstance.getColorForChannel(guiInstance.getActiveChannel());
             int rgb = (c & 0xffffff) | (alpha << 24);
             if (alpha > 0) {
                 switch (hitbox) {
                     case BLACK ->
-                            ReikaGuiAPI.instance.drawRect(stack, getX() + 1, getY() + 1, getX() + 3, getY() + 20, rgb, true);
+                            ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY() + 1, getX() + 3, getY() + 20, rgb, true);
                     case LEFT -> {
-                        ReikaGuiAPI.instance.drawRect(stack, getX() + 1, getY(), getX() + 6, getY() + 35, rgb, true);
-                        ReikaGuiAPI.instance.drawRect(stack, getX() + 6, getY() + 21, getX() + 7, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY(), getX() + 6, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 6, getY() + 21, getX() + 7, getY() + 35, rgb, true);
                     }
                     case MIDDLE -> {
-                        ReikaGuiAPI.instance.drawRect(stack, getX() + 2, getY(), getX() + 6, getY() + 21, rgb, true);
-                        ReikaGuiAPI.instance.drawRect(stack, getX() + 1, getY() + 21, getX() + 7, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 2, getY(), getX() + 6, getY() + 21, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY() + 21, getX() + 7, getY() + 35, rgb, true);
                     }
                     case RIGHT -> {
-                        ReikaGuiAPI.instance.drawRect(stack, getX() + 2, getY(), getX() + 7, getY() + 35, rgb, true);
-                        ReikaGuiAPI.instance.drawRect(stack, getX() + 1, getY() + 21, getX() + 2, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 2, getY(), getX() + 7, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY() + 21, getX() + 2, getY() + 35, rgb, true);
                     }
                     case WHITE ->
-                            ReikaGuiAPI.instance.drawRect(stack, getX() + 1, getY(), getX() + 7, getY() + 35, rgb, true);
+                            ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY(), getX() + 7, getY() + 35, rgb, true);
                     default -> {
                     }
                 }

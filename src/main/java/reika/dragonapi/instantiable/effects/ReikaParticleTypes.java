@@ -2,11 +2,11 @@ package reika.dragonapi.instantiable.effects;
 
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
-import net.neoforged.client.event.RegisterParticleProvidersEvent;
-import net.neoforged.eventbus.api.SubscribeEvent;
-import net.neoforged.registries.DeferredRegister;
-import net.neoforged.registries.ForgeRegistries;
-import net.neoforged.registries.RegistryObject;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryObject;
 import reika.dragonapi.DragonAPI;
 
 public class ReikaParticleTypes {
@@ -21,3 +21,4 @@ public class ReikaParticleTypes {
     }
 
 }
+

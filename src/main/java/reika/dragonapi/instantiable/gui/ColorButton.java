@@ -50,18 +50,16 @@ public class ColorButton extends Button {
     @Override
     protected void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
         super.renderWidget(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
-        var stack = pGuiGraphics.pose();
         if (isSelected) {
-            ReikaGuiAPI.instance.drawRect(stack, getX(), getY(), getX()+width, getY()+height, 0xff777777, false);
-            ReikaGuiAPI.instance.drawRect(stack, getX(), getY(), getX()+width-1, getY()+height-1, 0xff333333, false);
-            ReikaGuiAPI.instance.drawRect(stack, getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xff000000 | brighter, false);
-            ReikaGuiAPI.instance.drawRect(stack, getX()+1, getY()+1, getX()+width-2, getY()+height-2, 0xff000000 | color, false);
-        }
-        else {
-            ReikaGuiAPI.instance.drawRect(stack, getX(), getY(), getX()+width, getY()+height, 0xff333333, false);
-            ReikaGuiAPI.instance.drawRect(stack, getX(), getY(), getX()+width-1, getY()+height-1, 0xff777777, false);
-            ReikaGuiAPI.instance.drawRect(stack, getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xff000000 | brighter, false);
-            ReikaGuiAPI.instance.drawRect(stack, getX()+2, getY()+2, getX()+width-1, getY()+height-1, 0xff000000 | color, false);
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width, getY()+height, 0xff777777, false);
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width-1, getY()+height-1, 0xff333333, false);
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xff000000 | brighter, false);
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+1, getY()+1, getX()+width-2, getY()+height-2, 0xff000000 | color, false);
+        } else {
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width, getY()+height, 0xff333333, false);
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width-1, getY()+height-1, 0xff777777, false);
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xff000000 | brighter, false);
+            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+2, getY()+2, getX()+width-1, getY()+height-1, 0xff000000 | color, false);
         }
     }
 }

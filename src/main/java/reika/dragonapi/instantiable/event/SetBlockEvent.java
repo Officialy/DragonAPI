@@ -5,7 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.neoforged.common.NeoForge;
+import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 
@@ -77,3 +77,4 @@ public abstract class SetBlockEvent extends WorldPositionEvent {
     }
 
 }
+

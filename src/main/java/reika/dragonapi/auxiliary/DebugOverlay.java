@@ -10,9 +10,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.client.event.RenderGuiOverlayEvent;
-import net.neoforged.client.gui.overlay.VanillaGuiOverlay;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
+import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -38,7 +38,7 @@ public class DebugOverlay {
                 var s = "Debug Mode Enabled!";
                 event.getGuiGraphics().drawString(f, s, 1, 1, 0xffffff);
                 stack.scale(1/d, 1/d, 1/d);
-                RenderSystem.setShaderTexture(0, ResourceLocation.parse("textures/gui/icons.png"));
+                // TODO 1.21+: setShaderTexture now expects a GpuTexture. Use GuiGraphics.blit with resource binding instead where needed. Previous code was using setShaderTexture(0, ResourceLocation.parse("textures/gui/icons.png"))
             }
 
             if (DragonOptions.TABNBT.getState() && InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), DragonOptions.DEBUGKEY.getValue())) {
@@ -69,7 +69,7 @@ public class DebugOverlay {
                                 for (int i = 0; i < li.size(); i++) {
                                     String s = li.get(i);
                                     event.getGuiGraphics().drawString(f, s, 1+event.getWindow().getGuiScaledWidth()/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
-                                    RenderSystem.setShaderTexture(0, ResourceLocation.parse("textures/gui/icons.png"));
+                                    // see above note on texture binding API
                                 }
                             }
                         }
@@ -79,3 +79,4 @@ public class DebugOverlay {
         }
     }
 }
+

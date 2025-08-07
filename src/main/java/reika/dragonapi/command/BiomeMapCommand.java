@@ -22,7 +22,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
@@ -476,3 +476,4 @@ public class BiomeMapCommand {
     }
 
 }
+

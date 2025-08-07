@@ -15,7 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.event.TickEvent;
+import net.neoforged.neoforge.event.TickEvent;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
@@ -220,7 +220,7 @@ public class CompoundSyncPacket implements DataSync, Packet {
             if (!received.getBoolean(ERROR_TAG)) {
                 Collection c = received.getAllKeys();
                 for (String name : (Iterable<String>) c) {
-                    CompoundTag local = received.getCompound(name);
+                    CompoundTag local = reika.dragonapi.libraries.io.NBTCompat.getCompound(received, name);
                     WorldLocation loc = WorldLocation.fromSerialString(name);
                     //try {
                     this.populateFromStream(loc, local);
@@ -322,3 +322,4 @@ public class CompoundSyncPacket implements DataSync, Packet {
 
     }
 }
+

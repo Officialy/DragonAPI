@@ -9,17 +9,14 @@
  ******************************************************************************/
 package reika.dragonapi.modinteract.lua;
 
-<<<<<<< Updated upstream:ModInteract/Lua/LuaReadTank.java
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.IFluidHandler;
-=======
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.fluids.IFluidTank;
-import net.neoforged.fluids.capability.IFluidHandler;
-import net.neoforged.registries.ForgeRegistries;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/modinteract/lua/LuaReadTank.java
+import net.neoforged.neoforge.fluids.IFluidTank;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 
 public class LuaReadTank extends LuaMethod {
 
@@ -56,3 +53,4 @@ public class LuaReadTank extends LuaMethod {
 	}
 
 }
+

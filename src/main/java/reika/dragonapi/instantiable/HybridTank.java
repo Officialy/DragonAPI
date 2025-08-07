@@ -3,9 +3,9 @@ package reika.dragonapi.instantiable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.fluids.FluidStack;
-import net.neoforged.fluids.capability.templates.FluidTank;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
@@ -43,8 +43,8 @@ public class HybridTank extends FluidTank {
     public final FluidTank readFromNBT(CompoundTag NBT) {
         try {
             if (NBT.contains(name)) {
-                CompoundTag tankData = NBT.getCompound(name);
-                String fluidName = tankData.getString("FluidName");
+                CompoundTag tankData = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, name);
+                String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
                 String repl = getFluidNameSwap(fluidName);
                 if (repl != null && ForgeRegistries.FLUIDS.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
                     tankData.putString("FluidName", repl);
@@ -64,7 +64,7 @@ public class HybridTank extends FluidTank {
         CompoundTag tankData = new CompoundTag();
         super.writeToNBT(tankData);
 
-        String fluidName = tankData.getString("FluidName");
+        String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
         String repl = getFluidNameSwap(fluidName);
         if (repl != null && ForgeRegistries.FLUIDS.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
             tankData.putString("FluidName", repl);
@@ -219,3 +219,4 @@ public class HybridTank extends FluidTank {
         return this.getFluid() != null && this.getFluid().getTag() != null && this.getFluid().getTag().getBoolean(key);
     }
 }
+

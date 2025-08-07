@@ -3,8 +3,8 @@ package reika.dragonapi.instantiable.event.client;
 import net.minecraft.client.Options;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.Event;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.Event;
 
 
 public abstract class SettingsEvent extends Event {
@@ -40,3 +40,4 @@ public abstract class SettingsEvent extends Event {
     }
 
 }
+

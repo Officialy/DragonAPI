@@ -1051,19 +1051,19 @@ public class BlockArray implements Iterable<BlockPos> {
         if (tag == null || tag.size() == 0)
             return;
         for (int i = 0; i < tag.size(); i++) {
-            CompoundTag coord = tag.getCompound(i);
-            int x = coord.getInt("x");
-            int y = coord.getInt("y");
-            int z = coord.getInt("z");
+            CompoundTag coord = reika.dragonapi.libraries.io.NBTCompat.getListCompound(tag, i);
+            int x = reika.dragonapi.libraries.io.NBTCompat.getInt(coord, "x", 0);
+            int y = reika.dragonapi.libraries.io.NBTCompat.getInt(coord, "y", 0);
+            int z = reika.dragonapi.libraries.io.NBTCompat.getInt(coord, "z", 0);
             this.addBlockCoordinate(new BlockPos(x, y, z));
         }
-        CompoundTag limit = NBT.getCompound(label + "_lim");
-        minX = limit.getInt("minx");
-        minY = limit.getInt("miny");
-        minZ = limit.getInt("minz");
-        maxX = limit.getInt("maxx");
-        maxY = limit.getInt("maxy");
-        maxZ = limit.getInt("maxz");
+        CompoundTag limit = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, label + "_lim");
+        minX = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "minx", minX);
+        minY = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "miny", minY);
+        minZ = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "minz", minZ);
+        maxX = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "maxx", maxX);
+        maxY = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "maxy", maxY);
+        maxZ = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "maxz", maxZ);
     }
 
     public void shaveToCube() {

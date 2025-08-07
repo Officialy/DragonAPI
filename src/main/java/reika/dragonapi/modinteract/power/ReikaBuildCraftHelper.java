@@ -10,7 +10,7 @@
 //package reika.dragonapi.modinteract.Power;
 //
 //import net.minecraft.world.level.material.Fluid;
-//import net.neoforged.fluids.FluidType;
+//import net.neoforged.neoforge.fluids.FluidType;
 //import reika.dragonapi.DragonAPI;
 //
 //public class ReikaBuildCraftHelper extends DragonAPI {
@@ -76,3 +76,4 @@
 //	}
 //
 //}
+

@@ -10,14 +10,11 @@
 package reika.dragonapi.instantiable.event.client;
 
 
-<<<<<<< Updated upstream:Instantiable/Event/Client/BossColorEvent.java
 import net.minecraftforge.common.MinecraftForge;
 
 import cpw.mods.fml.common.eventhandler.Event;
-=======
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.Event;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/instantiable/event/client/BossColorEvent.java
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.Event;
 
 
 public class BossColorEvent extends Event {
@@ -73,3 +70,4 @@ public class BossColorEvent extends Event {
 	}
 
 }
+

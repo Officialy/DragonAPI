@@ -2,8 +2,8 @@ package reika.dragonapi.instantiable.event;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.common.NeoForge;
-import net.neoforged.event.entity.EntityEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityEvent;
 
 public class EntityAboutToRayTraceEvent extends EntityEvent {
 
@@ -21,3 +21,4 @@ public class EntityAboutToRayTraceEvent extends EntityEvent {
         NeoForge.EVENT_BUS.post(new EntityAboutToRayTraceEvent(e));
     }
 }
+

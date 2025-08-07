@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
@@ -62,8 +62,8 @@ public final class ReikaNBTHelper extends DragonAPI {
         ItemStack[] inv = new ItemStack[ListTag.size()];
 
         for (int i = 0; i < ListTag.size(); i++) {
-            CompoundTag CompoundTag = ListTag.getCompound(i);
-            byte byte0 = CompoundTag.getByte("Slot");
+            CompoundTag CompoundTag = reika.dragonapi.libraries.io.NBTCompat.getCompound(ListTag, String.valueOf(i));
+            byte byte0 = (byte) reika.dragonapi.libraries.io.NBTCompat.getInt(CompoundTag, "Slot", 0);
 
             if (byte0 >= 0 && byte0 < inv.length) {
                 inv[byte0] = ItemStack.of(CompoundTag);
@@ -346,8 +346,8 @@ public final class ReikaNBTHelper extends DragonAPI {
         map.clear();
         for (Object o : li) {
             CompoundTag entry = (CompoundTag) o;
-            K key = (K) getValue(entry.getCompound("key"), converterK);
-            V val = (V) getValue(entry.getCompound("value"), converterV);
+            K key = (K) getValue(reika.dragonapi.libraries.io.NBTCompat.getCompound(entry, "key"), converterK);
+            V val = (V) getValue(reika.dragonapi.libraries.io.NBTCompat.getCompound(entry, "value"), converterV);
             map.put(key, val);
         }
     }
@@ -574,3 +574,4 @@ public final class ReikaNBTHelper extends DragonAPI {
 
     }
 }
+

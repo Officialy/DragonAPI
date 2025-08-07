@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.zip.ZipFile;
 
-import static net.minecraftforge.fml.loading.FMLLoader.isProduction;
+import static net.neoforged.fml.loading.FMLLoader.isProduction;
 
 public class ModVersion implements Comparable<ModVersion> {
 

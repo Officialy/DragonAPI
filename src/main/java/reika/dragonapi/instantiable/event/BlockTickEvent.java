@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FireBlock;
 import net.minecraft.world.level.block.GrassBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.common.NeoForge;
+import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 import reika.dragonapi.libraries.level.ReikaBlockHelper;
@@ -111,3 +111,4 @@ public class BlockTickEvent extends WorldPositionEvent {
         }
     }
 }
+

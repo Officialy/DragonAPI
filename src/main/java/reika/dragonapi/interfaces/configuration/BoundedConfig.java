@@ -9,11 +9,8 @@
  ******************************************************************************/
 package reika.dragonapi.interfaces.configuration;
 
-<<<<<<< Updated upstream:Interfaces/Configuration/BoundedConfig.java
-=======
 import net.neoforged.common.ForgeConfigSpec;
 import reika.dragonapi.instantiable.io.oldforge.Property;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/interfaces/configuration/BoundedConfig.java
 
 public interface BoundedConfig extends ConfigList {
 

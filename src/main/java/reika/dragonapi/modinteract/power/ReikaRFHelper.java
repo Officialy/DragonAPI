@@ -10,8 +10,8 @@
 package reika.dragonapi.modinteract.power;
 
 import net.minecraft.util.Mth;
-import net.neoforged.energy.EnergyStorage;
-import net.neoforged.energy.IEnergyStorage;
+import net.neoforged.neoforge.energy.EnergyStorage;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import reika.dragonapi.libraries.java.ReikaReflectionHelper;
 import reika.dragonapi.libraries.mathsci.ReikaThermoHelper;
 
@@ -111,3 +111,4 @@ public class ReikaRFHelper {
     }
 
 }
+

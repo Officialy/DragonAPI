@@ -7,7 +7,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.ReikaEntityHelper;
@@ -153,3 +153,4 @@ public abstract class PacketTarget {
         }
     }
 }
+

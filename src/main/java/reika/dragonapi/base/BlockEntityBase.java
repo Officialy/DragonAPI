@@ -30,7 +30,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.common.extensions.IForgeBlockEntity;
 import net.neoforged.common.util.FakePlayer;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -494,8 +494,8 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
     }
 
     protected void readSyncTag(CompoundTag tag) {
-        lastRedstone = tag.getBoolean("lastredstone");
-        redstoneInput = tag.getBoolean("thisredstone");
+        lastRedstone = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "lastredstone", false);
+        redstoneInput = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "thisredstone", false);
     }
 
     @Override
@@ -503,14 +503,14 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
         super.load(tag);
         this.readSyncTag(tag);
 
-        placer = tag.getString("place");
+        placer = reika.dragonapi.libraries.io.NBTCompat.getString(tag, "place", "");
         if (tag.contains("placeUUID"))
-            placerUUID = UUID.fromString(tag.getString("placeUUID"));
+            placerUUID = UUID.fromString(reika.dragonapi.libraries.io.NBTCompat.getString(tag, "placeUUID", "00000000-0000-0000-0000-000000000000"));
 
-        unharvestable = tag.getBoolean("no_drops");
-        unmineable = tag.getBoolean("no_mine");
+        unharvestable = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "no_drops", false);
+        unmineable = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "no_mine", false);
 
-        tileAge = tag.getLong("age_ticks");
+        tileAge = reika.dragonapi.libraries.io.NBTCompat.getLong(tag, "age_ticks", 0);
     }
 
     @Override
@@ -653,3 +653,4 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
     }
 
 }
+

@@ -3,9 +3,9 @@ package reika.dragonapi.instantiable.event;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.eventbus.api.Event;
-import net.neoforged.fluids.capability.IFluidHandler;
-import net.neoforged.items.IItemHandler;
+import net.neoforged.bus.api.Event;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.items.IItemHandler;
 
 public abstract class BlockEntityEvent extends Event {
 
@@ -36,3 +36,4 @@ public abstract class BlockEntityEvent extends Event {
     }
 
 }
+

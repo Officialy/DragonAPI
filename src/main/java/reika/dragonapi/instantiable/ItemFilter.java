@@ -83,7 +83,7 @@ public abstract class ItemFilter {
 
         @Override
         public void load(CompoundTag tag) {
-            category = getCategory(tag.getString("id"));
+            category = getCategory(reika.dragonapi.libraries.io.NBTCompat.getString(tag, "id", ""));
         }
 
         @Override

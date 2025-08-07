@@ -86,7 +86,7 @@ public class StatisticalRandom<K> {
     public void load(CompoundTag tag) {
         data.clear();
         HashSet<K> set = new HashSet();
-        data.load(tag.getCompound("data"), converter);
+        data.load(reika.dragonapi.libraries.io.NBTCompat.getCompound(tag, "data"), converter);
         ReikaNBTHelper.readCollectionFromNBT(set, tag, "set", converter);
         options.addAll(set);
     }

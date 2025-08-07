@@ -20,9 +20,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.network.NetworkEvent;
-import net.neoforged.network.NetworkRegistry;
-import net.neoforged.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.event.RegisterClientPayloadHandlersEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.ClientPacketDistributor;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.PacketTypes;
@@ -49,24 +53,42 @@ public class ReikaPacketHelper {
 
     private static final HashMap<String, PacketPipeline> pipelines = new HashMap<>();
     private static final HashBiMap<Short, PacketHandler> handlers = HashBiMap.create();
-    public static SimpleChannel INSTANCE;
+    public static CustomNetworkBridge INSTANCE;
 
     private static short handlerID = 0;
 
     public static void registerPacketHandler(DragonAPIMod mod, String channel, PacketHandler handler) {
         DragonAPI.LOGGER.info("Registering packet handler for mod " + mod.getModId() + ", channel " + channel + ", handler " + handler.getClass().getName());
         DragonAPI.LOGGER.info("Current handler ID count: " + handlerID + ", existing handlers: " + handlers.size());
-        
-        INSTANCE = NetworkRegistry.newSimpleChannel(ResourceLocation.fromNamespaceAndPath(mod.getModId(), channel.toLowerCase()), () -> DragonAPI.last_API_Version, DragonAPI.last_API_Version::equals, DragonAPI.last_API_Version::equals);
-        PacketPipeline p = new PacketPipeline(mod, channel, handler, INSTANCE);
-        p.registerPacket(DataPacket.class, DataPacket::encode, DataPacket::decode);
-        p.registerPacket(SyncPacket.class, SyncPacket::encode, SyncPacket::decode);
+        // Initialize payload-based pipeline
+        INSTANCE = new CustomNetworkBridge(mod.getModId(), channel);
+        PacketPipeline p = new PacketPipeline(mod, channel, handler);
 //        p.registerPacket(NBTPacket.class);
         handlers.put(handlerID, handler);
         pipelines.put(channel, p);
         handlerID++;
         DragonAPI.LOGGER.info("Registered packet handler " + handler + " for channel " + channel + " with ID " + (handlerID - 1));
         DragonAPI.LOGGER.info("Updated handler maps - handlers: " + handlers.size() + ", pipelines: " + pipelines.size());
+    }
+
+    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+    public static class PayloadRegistrationHooks {
+        @SubscribeEvent
+        public static void registerPayloads(RegisterPayloadHandlersEvent event) {
+            if (INSTANCE != null) {
+                INSTANCE.registerAll(event);
+            }
+        }
+        @SubscribeEvent
+        public static void registerClientPayloads(RegisterClientPayloadHandlersEvent event) {
+            if (INSTANCE != null) {
+                INSTANCE.registerAllClient(event);
+            }
+        }
+    }
+
+    public static CustomPacketPayload toPayload(String modId, PacketObj p) {
+        return INSTANCE.toPayload(modId, p);
     }
 
 /*    public static void registerPacketClass(String channel, Class<? extends PacketObj> c, Function<FriendlyByteBuf, ? extends PacketObj> decoder) {
@@ -78,6 +100,11 @@ public class ReikaPacketHelper {
 
     private static short getHandlerID(PacketHandler handler) {
         return handlers.containsValue(handler) ? handlers.inverse().get(handler) : -1;
+    }
+
+    // Exposed for payload codec
+    public static short getHandlerIdFor(PacketObj p) {
+        return getHandlerID(p.handler);
     }
 
     private static PacketHandler getHandlerFromID(short id) {
@@ -1647,6 +1674,10 @@ public class ReikaPacketHelper {
             return this.getSize() == 0;
         }
 
+        public byte[] getBytes() {
+            return bytes;
+        }
+
         @Override
         public DataInputStream getDataIn() {
             if (in == null) {
@@ -1692,12 +1723,11 @@ public class ReikaPacketHelper {
 
         public void handleClient(Supplier<NetworkEvent.Context> ctx) {
             try {
-                ctx.get().enqueueWork(() -> this.handler.handleData(this, Minecraft.getInstance().level, Minecraft.getInstance().player));
+                // Legacy path unused in payload system
             } catch (Exception e) {
                 e.printStackTrace();
             }
             this.close();
-            ctx.get().setPacketHandled(true);
         }
 
         public void handleServer(Supplier<NetworkEvent.Context> ctx) {
@@ -1708,17 +1738,15 @@ public class ReikaPacketHelper {
                 
                 // Simply mark as handled and return - no fallback handling
                 DragonAPI.LOGGER.error("Discarding packet to prevent further errors");
-                ctx.get().setPacketHandled(true);
                 return;
             }
             
             try {
-                ctx.get().enqueueWork(() -> this.handler.handleData(this, ctx.get().getSender().level(), ctx.get().getSender()));
+                // Legacy path unused in payload system
             } catch (Exception e) {
                 e.printStackTrace();
             }
             this.close();
-            ctx.get().setPacketHandled(true);
         }
 
         @Override
@@ -1812,6 +1840,52 @@ public class ReikaPacketHelper {
             List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).inflate(4, 4, 4)); //todo inflate or expandtowards
             for (ServerPlayer ep : li)
                 sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.VTILESYNC.ordinal(), NBT, new PacketTarget.PlayerTarget(ep));
+        }
+    }
+
+    // --- Payload bridge ---
+    public static final class CustomNetworkBridge {
+        private final String modId;
+        private final String channel;
+
+        public CustomNetworkBridge(String modId, String channel) {
+            this.modId = modId;
+            this.channel = channel;
+        }
+
+        public void registerAll(RegisterPayloadHandlersEvent event) {
+            var registrar = event.registrar("1");
+            reika.dragonapi.network.payload.SyncPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.RawBytesPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.DataPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.StringPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.StringIntPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.FloatPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.PosPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.NBTPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.TankPayload.register(registrar, modId);
+            reika.dragonapi.network.payload.SoundPayload.register(registrar, modId);
+        }
+
+        public void registerAllClient(RegisterClientPayloadHandlersEvent event) {
+            reika.dragonapi.network.payload.SyncPayload.registerClient(event);
+            reika.dragonapi.network.payload.RawBytesPayload.registerClient(event);
+            reika.dragonapi.network.payload.DataPayload.registerClient(event);
+            reika.dragonapi.network.payload.StringPayload.registerClient(event);
+            reika.dragonapi.network.payload.StringIntPayload.registerClient(event);
+            reika.dragonapi.network.payload.FloatPayload.registerClient(event);
+            reika.dragonapi.network.payload.PosPayload.registerClient(event);
+            reika.dragonapi.network.payload.NBTPayload.registerClient(event);
+            reika.dragonapi.network.payload.TankPayload.registerClient(event);
+            reika.dragonapi.network.payload.SoundPayload.registerClient(event);
+        }
+
+        public CustomPacketPayload toPayload(String modId, PacketObj p) {
+            // Map PacketObj to corresponding payload type
+            if (p instanceof reika.dragonapi.instantiable.io.SyncPacket sp) {
+                return new reika.dragonapi.network.payload.SyncPayload(modId, sp);
+            }
+            return new reika.dragonapi.network.payload.RawBytesPayload(modId, p);
         }
     }
 }

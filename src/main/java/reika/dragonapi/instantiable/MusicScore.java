@@ -40,12 +40,12 @@ public class MusicScore {
     }
 
     public static MusicScore load(CompoundTag tag) {
-        MusicScore mus = new MusicScore(tag.getInt("numchan"));
+        MusicScore mus = new MusicScore(reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "numchan", 0));
 
         for (int i = 0; i < mus.channelCount; i++) {
             if (tag.contains("Ch_" + i)) {
                 mus.music[i] = new ScoreTrack(i);
-                CompoundTag nbt = tag.getCompound("Ch_" + i);
+                CompoundTag nbt = reika.dragonapi.libraries.io.NBTCompat.getCompound(tag, "Ch_" + i);
                 for (Object o : nbt.getAllKeys()) {
                     String s = (String) o;
                     int time = Integer.parseInt(s);
@@ -60,12 +60,12 @@ public class MusicScore {
             }
         }
 
-        mus.length = tag.getInt("len");
-        mus.firstNoteTime = tag.getInt("first");
-        mus.noteCount = tag.getInt("count");
-        int low = tag.getInt("lowest");
+        mus.length = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "len", 0);
+        mus.firstNoteTime = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "first", 0);
+        mus.noteCount = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "count", 0);
+        int low = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "lowest", -1);
         mus.lowest = low == -1 ? null : MusicKey.getByIndex(low);
-        int high = tag.getInt("highest");
+        int high = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "highest", -1);
         mus.highest = high == -1 ? null : MusicKey.getByIndex(high);
 
         return mus;
@@ -500,7 +500,12 @@ public class MusicScore {
         }
 
         public static Note load(CompoundTag nbt) {
-            return new Note(MusicKey.getByIndex(nbt.getInt("key")), nbt.getInt("voice"), nbt.getInt("volume"), nbt.getInt("length"), nbt.getBoolean("percussion"));
+            int key = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "key", 0);
+            int voice = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "voice", 0);
+            int volume = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "volume", 0);
+            int length = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "length", 0);
+            boolean perc = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "percussion", false);
+            return new Note(MusicKey.getByIndex(key), voice, volume, length, perc);
         }
 
         public Note scaleSpeed(float speed) {

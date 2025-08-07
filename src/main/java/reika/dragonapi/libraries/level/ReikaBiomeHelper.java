@@ -12,7 +12,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.common.Tags;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
 import reika.dragonapi.interfaces.registry.TreeType;
 import reika.dragonapi.libraries.java.ReikaStringParser;

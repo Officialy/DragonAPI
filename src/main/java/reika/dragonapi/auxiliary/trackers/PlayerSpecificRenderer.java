@@ -18,7 +18,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.neoforged.client.event.ScreenEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.joml.Quaternionf;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -331,3 +331,4 @@ public final class PlayerSpecificRenderer {
    }
 
 }
+

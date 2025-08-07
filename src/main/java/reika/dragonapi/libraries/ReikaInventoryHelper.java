@@ -10,8 +10,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.items.IItemHandler;
-import net.neoforged.items.ItemStackHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import reika.dragonapi.instantiable.ItemMatch;
 import reika.dragonapi.instantiable.data.KeyedItemStack;
 import reika.dragonapi.instantiable.data.maps.ItemHashMap;
@@ -1309,3 +1309,4 @@ public class ReikaInventoryHelper {
         }
     }
 }
+

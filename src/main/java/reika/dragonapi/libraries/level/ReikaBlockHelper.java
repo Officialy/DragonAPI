@@ -13,8 +13,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.fluids.IFluidBlock;
-import net.neoforged.registries.ForgeRegistries;
+import net.neoforged.neoforge.fluids.IFluidBlock;
+import net.neoforged.neoforge.registries.ForgeRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.BlockTieredResource;
 import reika.dragonapi.extras.BlockProperties;
@@ -180,3 +180,4 @@ public class ReikaBlockHelper {
     }
 
 }
+

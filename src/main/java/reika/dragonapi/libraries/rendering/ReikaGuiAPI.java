@@ -15,9 +15,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.client.event.ScreenEvent;
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
@@ -173,6 +173,11 @@ public final class ReikaGuiAPI extends Screen {
 
         RenderSystem.disableBlend();
 //        RenderSystem.enableTexture();
+    }
+
+    public void drawRect(GuiGraphics guiGraphics, int x, int y, int width, int height, int color, boolean enableAlpha) {
+        int c = enableAlpha ? color : (color | 0xff000000);
+        guiGraphics.fill(x, y, width, height, c);
     }
 
     public void drawTexturedRect(PoseStack matrixStack, int x, int y, int w, int h, int color, float u0, float v0, float u1, float v1) {
@@ -450,15 +455,12 @@ public final class ReikaGuiAPI extends Screen {
     }
 
     public void drawMultilineTooltip(PoseStack stack, GuiGraphics guiGraphics, List<String> li, int x, int y) {
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0.0F, 0.0F, 64.0F);
+        // In 1.21, pose is 2D; use zLevel tracking to control draw order rather than Z-translate on pose
         int dy = y;
         for (String s : li) {
             this.drawTooltipAt(guiGraphics, minecraft.font, s, x, dy);
             dy += 17;
         }
-        guiGraphics.pose().translate(0.0F, 0.0F, -64.0F);
-        guiGraphics.pose().popPose();
     }
 
     public void drawMultilineTooltip(PoseStack stack, GuiGraphics graphics, ItemStack is, int x, int y, double mouseX, double mouseY) {
@@ -631,3 +633,4 @@ public final class ReikaGuiAPI extends Screen {
         zLevel = z;
     }
 }
+

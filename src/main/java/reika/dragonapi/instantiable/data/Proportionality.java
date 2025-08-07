@@ -195,14 +195,14 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
     }
 
     public void load(CompoundTag NBT, ReikaNBTHelper.NBTIO<F> converter) {
-        totalValue = NBT.getDouble("total");
-        this.drawSeparationLines = NBT.getBoolean("lines");
+        totalValue = reika.dragonapi.libraries.io.NBTCompat.getDouble(NBT, "total", 0);
+        this.drawSeparationLines = reika.dragonapi.libraries.io.NBTCompat.getBoolean(NBT, "lines", false);
         data.clear();
         ListTag li = NBT.getList("data", Tag.TAG_COMPOUND);
         for (Object o : li) {
             CompoundTag tag = (CompoundTag)o;
             F obj = converter.createFromNBT(tag.get("key"));
-            double val = tag.getDouble("value");
+            double val = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "value", 0);
             data.put(obj, val);
         }
     }

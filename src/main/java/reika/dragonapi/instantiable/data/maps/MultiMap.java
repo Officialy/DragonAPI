@@ -284,7 +284,7 @@ public final class MultiMap<K, V> {
         this.clear();
         for (Object o : li.copy()) { //listtag todo listtag
             CompoundTag entry = (CompoundTag) o;
-            K key = (K) ReikaNBTHelper.getValue(entry.getCompound("key"), converterK);
+            K key = (K) ReikaNBTHelper.getValue(reika.dragonapi.libraries.io.NBTCompat.getCompound(entry, "key"), converterK);
             Collection<V> val = this.createCollection();
             ReikaNBTHelper.readCollectionFromNBT(val, entry, "values", converterV);
             this.put(key, val);

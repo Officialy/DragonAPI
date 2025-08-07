@@ -328,12 +328,12 @@ public final class BlockBox {
     }
 
     public static BlockBox load(CompoundTag tag) {
-        int minx = tag.getInt("minx");
-        int miny = tag.getInt("miny");
-        int minz = tag.getInt("minz");
-        int maxx = tag.getInt("maxx");
-        int maxy = tag.getInt("maxy");
-        int maxz = tag.getInt("maxz");
+        int minx = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "minx", 0);
+        int miny = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "miny", 0);
+        int minz = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "minz", 0);
+        int maxx = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "maxx", 0);
+        int maxy = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "maxy", 0);
+        int maxz = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "maxz", 0);
         return new BlockBox(minx, miny, minz, maxx, maxy, maxz);
     }
 

@@ -1,6 +1,6 @@
 package reika.dragonapi.instantiable.event.client;
 
-import net.neoforged.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 public class TextureReloadEvent extends Event {
 
@@ -8,3 +8,4 @@ public class TextureReloadEvent extends Event {
 
     }
 }
+

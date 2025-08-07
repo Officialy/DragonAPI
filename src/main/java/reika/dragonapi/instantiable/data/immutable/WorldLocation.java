@@ -21,8 +21,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.registries.ForgeRegistries;
-import net.neoforged.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import reika.dragonapi.interfaces.Location;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
@@ -237,20 +237,20 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public static WorldLocation readTag(CompoundTag data) {
-        int x = data.getInt("x");
-        int y = data.getInt("y");
-        int z = data.getInt("z");
-        String dim = data.getString("dim");
+        int x = reika.dragonapi.libraries.io.NBTCompat.getInt(data, "x", 0);
+        int y = reika.dragonapi.libraries.io.NBTCompat.getInt(data, "y", 0);
+        int z = reika.dragonapi.libraries.io.NBTCompat.getInt(data, "z", 0);
+        String dim = reika.dragonapi.libraries.io.NBTCompat.getString(data, "dim", "minecraft:overworld");
         return new WorldLocation(
                 ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(dim)),
                 x,
                 y,
-                z); // todo fix null dimension / level
+                z);
     }
 
     public static WorldLocation load(String tag, CompoundTag NBT) {
         if (!NBT.contains(tag)) return null;
-        CompoundTag data = NBT.getCompound(tag);
+        CompoundTag data = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, tag);
         if (data != null) {
             return readTag(data);
         }
@@ -433,3 +433,4 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         }
     }
 }
+

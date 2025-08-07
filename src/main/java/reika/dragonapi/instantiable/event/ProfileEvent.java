@@ -1,8 +1,8 @@
 package reika.dragonapi.instantiable.event;
 
 
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.Event;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.Event;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
 
 import java.util.Collection;

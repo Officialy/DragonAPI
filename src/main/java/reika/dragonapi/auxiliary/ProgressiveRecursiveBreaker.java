@@ -15,13 +15,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.common.NeoForge;
-import net.neoforged.event.TickEvent;
-import net.neoforged.event.entity.player.EntityItemPickupEvent;
-import net.neoforged.event.level.LevelEvent;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.neoforge.event.entity.player.EntityItemPickupEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.items.ItemStackHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.base.BlockTieredResource;
@@ -419,3 +419,4 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         }
     }
 }
+

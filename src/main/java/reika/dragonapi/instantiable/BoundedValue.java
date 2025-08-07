@@ -52,7 +52,13 @@ public class BoundedValue<N extends Number> {
 
     public static BoundedValue load(CompoundTag tag) {
         try {
-            return new BoundedValue(tag.getDouble("min"), tag.getDouble("max"), tag.getDouble("val"), tag.getDouble("step"), tag.getBoolean("decimal"), Class.forName(tag.getString("type")));
+            double min = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "min", 0);
+            double max = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "max", 0);
+            double val = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "val", 0);
+            double step = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "step", 0);
+            boolean dec = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "decimal", false);
+            String type = reika.dragonapi.libraries.io.NBTCompat.getString(tag, "type", Double.class.getName());
+            return new BoundedValue(min, max, val, step, dec, Class.forName(type));
         } catch (Exception e) {
             return null;
         }

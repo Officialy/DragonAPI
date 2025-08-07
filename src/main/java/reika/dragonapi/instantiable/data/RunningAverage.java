@@ -27,9 +27,9 @@ public class RunningAverage {
     }
 
     public void load(String key, CompoundTag nbt) {
-        CompoundTag tag = nbt.getCompound(key);
-        numberDataPoints = tag.getInt("npoints");
-        currentAverage = tag.getDouble("avg");
+        CompoundTag tag = reika.dragonapi.libraries.io.NBTCompat.getCompound(nbt, key);
+        numberDataPoints = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "npoints", 0);
+        currentAverage = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "avg", 0);
     }
 
     public void saveAdditional(String key, CompoundTag nbt) {

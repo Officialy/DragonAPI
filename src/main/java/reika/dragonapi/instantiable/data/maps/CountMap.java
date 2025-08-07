@@ -133,14 +133,14 @@ public class CountMap<V> {
     }
 
     public void load(CompoundTag tag, ReikaNBTHelper.NBTIO<V> converter) {
-        total = tag.getInt("total");
+        total = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "total", 0);
 
         data.clear();
         ListTag li = tag.getList("data", Tag.TAG_COMPOUND);
-        for (Object o : li) {
-            CompoundTag dat = (CompoundTag) o;
+        for (int i = 0; i < li.size(); i++) {
+            CompoundTag dat = reika.dragonapi.libraries.io.NBTCompat.getListCompound(li, i);
             V key = converter.createFromNBT(dat.get("key"));
-            int amt = dat.getInt("value");
+            int amt = reika.dragonapi.libraries.io.NBTCompat.getInt(dat, "value", 0);
             data.put(key, amt);
         }
     }

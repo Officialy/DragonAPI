@@ -9,15 +9,17 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.network.NetworkDirection;
-import net.neoforged.network.PacketDistributor;
-import net.neoforged.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.server.level.ServerLevel;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.interfaces.PacketHandler;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.ReikaPacketHelper.PacketObj;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
@@ -30,25 +32,17 @@ public class PacketPipeline {
     private final DragonAPIMod mod;
     public final String packetChannel;
     private final PacketHandler handler;
-    private final SimpleChannel wrapper;
+    private final String modId;
 
-    public PacketPipeline(DragonAPIMod mod, String modChannel, PacketHandler handler, SimpleChannel wrapper) {
+    public PacketPipeline(DragonAPIMod mod, String modChannel, PacketHandler handler) {
         packetChannel = modChannel;
         this.mod = mod;
         this.handler = handler;
-        this.wrapper = wrapper;
+        this.modId = mod.getModId();
     }
 
     public <MSG extends PacketObj> void registerPacket(Class<MSG> cl, BiConsumer<MSG, FriendlyByteBuf> encoder, Function<FriendlyByteBuf, MSG> decoder) {
-        int id = packets.size();
-
-        wrapper.registerMessage(id, cl, encoder, decoder, (msg, ctx) -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
-                msg.handleClient(ctx);
-            } else {
-                msg.handleServer(ctx);
-            }
-        });
+        // No-op in payload system; kept for API compat
         packets.add(cl);
     }
 
@@ -66,14 +60,13 @@ public class PacketPipeline {
 	}
 
     public void sendToAllOnServer(PacketObj p) {
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.ALL);
-//        channels.get(Dist.DEDICATED_SERVER).writeAndFlush(p);
-        wrapper.send(PacketDistributor.ALL.noArg(), p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        PacketDistributor.sendToAllPlayers(payload);
     }
 
     public Packet<?> getMinecraftPacket(PacketObj p) {
-//todo used to be       return wrapper.getPacketFrom(p);
-        return wrapper.toVanillaPacket(p, NetworkDirection.PLAY_TO_SERVER); // TODO MAX THIS MIGHT NOT WORK PLS CHECK
+        // Not supported with payload system; return null
+        return null;
     }
 
     public void sendToPlayer(PacketObj p, ServerPlayer player) {
@@ -81,10 +74,8 @@ public class PacketPipeline {
             throw new MisuseException("You cannot send a packet to a null player!");
         if (ReikaPlayerAPI.isFake(player))
             throw new MisuseException("You cannot send a packet to a fake player!");
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.PLAYER);
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(player);
-        //channels.get(Dist.DEDICATED_SERVER).writeAndFlush(p);
-        wrapper.send(PacketDistributor.PLAYER.with(() -> player), p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        PacketDistributor.sendToPlayer(player, payload);
     }
 
     public void sendToAllAround(PacketObj p, BlockEntity te, double range) {
@@ -96,24 +87,18 @@ public class PacketPipeline {
     }
 
     public void sendToAllAround(PacketObj p, ResourceKey<Level> world, double x, double y, double z, double range) {
-        PacketDistributor.TargetPoint pt = new PacketDistributor.TargetPoint(x, y, z, range, world);
-        wrapper.send(PacketDistributor.NEAR.with(() -> pt), p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        PacketDistributor.sendToAllPlayers(payload);
     }
 
     public void sendToAllAround(PacketObj p, Entity e, double range) {
-        PacketDistributor.TargetPoint pt = new PacketDistributor.TargetPoint(e.getX(), e.getY(), e.getZ(), range, e.level().dimension());
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.ALLAROUNDPOINT);
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(pt);
-        //channels.get(Dist.DEDICATED_SERVER).writeAndFlush(p);
-        wrapper.send(PacketDistributor.NEAR.with(() -> pt), p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        PacketDistributor.sendToAllPlayers(payload);
     }
 
     public void sendToAllAround(PacketObj p, WorldLocation loc, double range) {
-        PacketDistributor.TargetPoint pt = new PacketDistributor.TargetPoint(loc.pos.getX(), loc.pos.getY(), loc.pos.getZ(), range, loc.getDimension());
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.ALLAROUNDPOINT);
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(pt);
-        //channels.get(Dist.DEDICATED_SERVER).writeAndFlush(p);
-        wrapper.send(PacketDistributor.NEAR.with(() -> pt), p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        PacketDistributor.sendToAllPlayers(payload);
     }
 
     public void sendToDimension(PacketObj p, Level world) {
@@ -121,16 +106,14 @@ public class PacketPipeline {
     }
 
     public void sendToDimension(PacketObj p, ResourceKey<Level> dimensionId) {
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.DIMENSION);
-        //channels.get(Dist.DEDICATED_SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(dimensionId);
-        //channels.get(Dist.DEDICATED_SERVER).writeAndFlush(p);
-        wrapper.send(PacketDistributor.DIMENSION.with(() -> dimensionId), p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        PacketDistributor.sendToAllPlayers(payload);
     }
 
     public void sendToServer(PacketObj p) {
-//        channels.get(Dist.CLIENT).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.TOSERVER);
-//        channels.get(Dist.CLIENT).writeAndFlush(p);
-        wrapper.sendToServer(p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        ReikaPacketHelper.INSTANCE.sendToServer(payload);
     }
 
 }
+

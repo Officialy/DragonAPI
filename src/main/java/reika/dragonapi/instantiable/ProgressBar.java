@@ -73,8 +73,8 @@ public class ProgressBar {
     }
 
     public void load(CompoundTag tag) {
-        duration = tag.getInt("duration");
-        tick = tag.getInt("tick");
+        duration = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "duration", duration);
+        tick = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "tick", tick);
     }
 
     public interface DurationCallback {

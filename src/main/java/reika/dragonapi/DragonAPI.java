@@ -39,7 +39,7 @@ import java.net.URL;
 import java.util.Random;
 import java.util.UUID;
 
-import static net.minecraftforge.fml.loading.FMLLoader.isProduction;
+import static net.neoforged.fml.loading.FMLLoader.isProduction;
 
 @Mod(DragonAPI.MODID)
 public class DragonAPI extends DragonAPIMod {

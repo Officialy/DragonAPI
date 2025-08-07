@@ -240,18 +240,18 @@ public class WeightedRandom<V> {
     public void load(String s, CompoundTag tag, ObjectToNBTSerializer<V> serializer) {
         if (!tag.contains(s))
             return;
-        CompoundTag data = tag.getCompound(s);
+        CompoundTag data = reika.dragonapi.libraries.io.NBTCompat.getCompound(tag, s);
         this.clear();
         ListTag li = data.getList("entries", Tag.TAG_COMPOUND);
         for (Object o : li) {
             CompoundTag e = (CompoundTag) o;
-            V key = serializer.construct(e.getCompound("key"));
-            double wt = e.getDouble("weight");
+            V key = serializer.construct(reika.dragonapi.libraries.io.NBTCompat.getCompound(e, "key"));
+            double wt = reika.dragonapi.libraries.io.NBTCompat.getDouble(e, "weight", 0);
             this.data.put(key, wt);
         }
-        this.weightSum = data.getDouble("total");
-        this.maxWeight = data.getDouble("max");
-        this.isDynamic = data.getBoolean("dynamic");
+        this.weightSum = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "total", 0);
+        this.maxWeight = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "max", 0);
+        this.isDynamic = reika.dragonapi.libraries.io.NBTCompat.getBoolean(data, "dynamic", false);
     }
 
     public void setHistorical() {

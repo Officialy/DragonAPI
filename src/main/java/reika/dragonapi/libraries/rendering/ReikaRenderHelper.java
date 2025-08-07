@@ -20,7 +20,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.event.TickEvent;
+import net.neoforged.neoforge.event.TickEvent;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.lwjgl.BufferUtils;
@@ -187,9 +187,9 @@ public class ReikaRenderHelper {
             double f12a = r1 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
             double f11b = r2 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
             double f12b = r2 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
-            double f13 = i % sides / sides;
-            renderer.vertex(f11a, f12a, 0).color(c1 & 0xffffff, c1 >> 24 & 255, c1, c1).endVertex();
-            renderer.vertex(f11b, f12b, f8).color(c2 & 0xffffff, c2 >> 24 & 255, c2, c2).endVertex();
+            double f13 = i % sides / (double) sides;
+            renderer.vertex((float)f11a, (float)f12a, 0F).color(c1 & 0xff, (c1 >> 8) & 0xff, (c1 >> 16) & 0xff, (c1 >> 24) & 0xff).endVertex();
+            renderer.vertex((float)f11b, (float)f12b, (float)f8).color(c2 & 0xff, (c2 >> 8) & 0xff, (c2 >> 16) & 0xff, (c2 >> 24) & 0xff).endVertex();
         }
         tessellator.end();
 
@@ -391,4 +391,5 @@ public class ReikaRenderHelper {
     }
 
 }
+
 

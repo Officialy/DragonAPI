@@ -2,8 +2,8 @@ package reika.dragonapi.instantiable.gui.slot;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.items.IItemHandler;
-import net.neoforged.items.SlotItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
 
 public class ResultSlotItemHandler extends SlotItemHandler {
 

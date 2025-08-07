@@ -7,7 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.network.NetworkEvent;
+// Legacy import removed; now bridged via payloads
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.interfaces.DataSync;
@@ -51,7 +51,7 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
 
         changes.clear();
         HashSet<String> unused = new HashSet<>(data.keySet());
-        for (String name : NBT.getAllKeys()) {
+        for (String name : NBT.getAllKeys()) { // 1.21: method exists
             if (name == null) {
                 DragonAPI.LOGGER.error("Null key in SyncPacket data from " + te);
             } else {
@@ -143,17 +143,7 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
         return pkt;
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            BlockEntity te = Minecraft.getInstance().level.getBlockEntity(pos);
-            if (te != null) {
-                CompoundTag nbt = new CompoundTag();
-                readForSync(te, nbt);
-                te.load(nbt);
-            }
-        });
-        ctx.get().setPacketHandled(true);
-    }
+    // Handler migrated to payload version
 
     private void saveChanges(CompoundTag toSend) {
         for (String key : changes.keySet()) {
@@ -163,6 +153,21 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
             else
                 toSend.put(key, val);
         }
+    }
+
+    // Accessors for payload bridge
+    public BlockPos getPos() {
+        return pos;
+    }
+
+    public int getBlockEntityTypeId() {
+        return blockEntityTypeId;
+    }
+
+    public CompoundTag getChangesForSend() {
+        CompoundTag tag = new CompoundTag();
+        saveChanges(tag);
+        return tag;
     }
 
     private boolean match(Tag old, Tag cur) {

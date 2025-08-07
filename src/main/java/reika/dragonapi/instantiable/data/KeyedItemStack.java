@@ -45,7 +45,10 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     public static KeyedItemStack load(CompoundTag nbt) {
-        return new KeyedItemStack(ItemStack.of(nbt)).setIgnoreNBT(nbt.getBoolean("ignorenbt")).setSized(nbt.getBoolean("sized")).setSimpleHash(nbt.getBoolean("simplehash"));
+        boolean ignore = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "ignorenbt", false);
+        boolean sized = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "sized", false);
+        boolean simple = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "simplehash", false);
+        return new KeyedItemStack(ItemStack.of(nbt)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple);
     }
 
     public KeyedItemStack setSized(boolean size) {

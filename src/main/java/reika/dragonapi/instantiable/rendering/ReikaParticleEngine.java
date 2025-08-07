@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
-import net.neoforged.common.NeoForge;
+import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.extras.ThrottleableEffectRenderer;
 import reika.dragonapi.instantiable.data.maps.PluralMap;
@@ -485,3 +485,4 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
         }
     }
 }
+

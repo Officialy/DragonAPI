@@ -33,15 +33,15 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.common.NeoForge;
-import net.neoforged.event.entity.item.ItemTossEvent;
-import net.neoforged.fluids.FluidStack;
-import net.neoforged.fluids.FluidType;
-import net.neoforged.fluids.IFluidBlock;
-import net.neoforged.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidType;
+import net.neoforged.neoforge.fluids.IFluidBlock;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import net.neoforged.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -1094,3 +1094,4 @@ public class ReikaWorldHelper {
         }
     }
 }
+

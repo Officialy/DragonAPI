@@ -12,8 +12,8 @@
 //import net.minecraft.nbt.CompoundTag;
 //import net.minecraft.world.item.ItemStack;
 //import net.minecraft.world.level.material.Fluid;
-//import net.neoforged.common.NeoForge;
-//import net.neoforged.fluids.FluidStack;
+//import net.neoforged.neoforge.common.NeoForge;
+//import net.neoforged.neoforge.fluids.FluidStack;
 //import net.neoforged.fml.InterModComms;
 //
 //public class ThermalRecipeHelper {
@@ -181,3 +181,4 @@
 //	}
 //
 //}
+

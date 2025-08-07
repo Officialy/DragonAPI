@@ -16,10 +16,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.common.NeoForge;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.common.util.FakePlayer;
 import net.neoforged.common.util.FakePlayerFactory;
-import net.neoforged.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -176,9 +176,10 @@ public class ReikaPlayerAPI {
     }
 
     public static CompoundTag getDeathPersistentNBT(Player ep) {
-        CompoundTag nbt = ep.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag nbt = reika.dragonapi.libraries.io.NBTCompat.getCompound(ep.getPersistentData(), Player.PERSISTED_NBT_TAG);
         ep.getPersistentData().put(Player.PERSISTED_NBT_TAG, nbt);
         return nbt;
     }
 
 }
+

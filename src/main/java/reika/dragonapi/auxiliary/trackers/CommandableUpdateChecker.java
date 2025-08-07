@@ -28,8 +28,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.common.NeoForge;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.InterModComms;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLLoader;
@@ -594,3 +594,4 @@ public class CommandableUpdateChecker {
         }
 
     }
+

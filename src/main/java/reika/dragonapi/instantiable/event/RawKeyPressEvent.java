@@ -1,7 +1,7 @@
 package reika.dragonapi.instantiable.event;
 
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 import reika.dragonapi.auxiliary.trackers.KeyWatcher;
 
 public class RawKeyPressEvent extends Event {
@@ -15,3 +15,4 @@ public class RawKeyPressEvent extends Event {
     }
 
 }
+

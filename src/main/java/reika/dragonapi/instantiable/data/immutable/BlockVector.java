@@ -36,10 +36,11 @@ public final class BlockVector {
     }
 
     public static BlockVector load(CompoundTag tag) {
-        int x = tag.getInt("x");
-        int y = tag.getInt("y");
-        int z = tag.getInt("z");
-        Direction dir = Direction.values()[tag.getInt("dir")];
+        int x = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "x", 0);
+        int y = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "y", 0);
+        int z = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "z", 0);
+        int di = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "dir", 0);
+        Direction dir = Direction.values()[Math.max(0, Math.min(Direction.values().length - 1, di))];
         return new BlockVector(x, y, z, dir);
     }
 

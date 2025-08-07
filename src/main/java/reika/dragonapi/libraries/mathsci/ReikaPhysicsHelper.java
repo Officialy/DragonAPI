@@ -14,7 +14,7 @@ import reika.dragonapi.instantiable.Interpolation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.fluids.IFluidBlock;
+import net.neoforged.neoforge.fluids.IFluidBlock;
 
 public final class ReikaPhysicsHelper extends DragonAPI {
 
@@ -246,3 +246,4 @@ public final class ReikaPhysicsHelper extends DragonAPI {
 		return (int) tempColorList.getValue(temp);
 	}
 }
+

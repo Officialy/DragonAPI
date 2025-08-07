@@ -10,12 +10,8 @@
 package reika.dragonapi.modinteract.lua;
 
 
-<<<<<<< Updated upstream:ModInteract/Lua/LuaGetRFCapacity.java
-import Reika.DragonAPI.ModInteract.Lua.LuaMethod.ModTileDependent;
-=======
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.energy.IEnergyStorage;
->>>>>>> Stashed changes:src/main/java/reika/dragonapi/modinteract/lua/LuaGetRFCapacity.java
+import net.neoforged.neoforge.energy.IEnergyStorage;
 
 public class LuaGetRFCapacity extends LuaMethod {
 
@@ -44,3 +40,4 @@ public class LuaGetRFCapacity extends LuaMethod {
 	}
 
 }
+

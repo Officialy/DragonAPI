@@ -1,6 +1,6 @@
 package reika.dragonapi.instantiable;
 
-import net.neoforged.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import reika.dragonapi.auxiliary.trackers.PlayerFirstTimeTracker;
 import reika.dragonapi.auxiliary.trackers.PlayerHandler;
 
@@ -21,3 +21,4 @@ public abstract class ItemOnSpawnTracker implements PlayerFirstTimeTracker.Playe
 	public abstract ItemStack getItem();
 
 }
+

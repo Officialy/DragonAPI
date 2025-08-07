@@ -10,7 +10,7 @@
 package reika.dragonapi.auxiliary.trackers;
 
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.event.TickEvent;
+import net.neoforged.neoforge.event.TickEvent;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -134,3 +134,4 @@ public class PlayerChunkTracker implements TickRegistry.TickHandler {
     }
 
 }
+

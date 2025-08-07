@@ -16,11 +16,11 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.client.event.InputEvent;
-import net.neoforged.client.event.RenderGuiOverlayEvent;
-import net.neoforged.client.event.ScreenEvent;
-import net.neoforged.client.gui.overlay.VanillaGuiOverlay;
-import net.neoforged.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLLoader;
 import org.joml.Matrix4f;
@@ -121,7 +121,7 @@ public class PopupWriter extends Screen {
     public static void drawOverlay(RenderGuiOverlayEvent event) {
         if (!list.isEmpty() && event.getOverlay() == VanillaGuiOverlay.TITLE_TEXT.type()) {
             GuiGraphics gui = event.getGuiGraphics();
-            PoseStack matrixStack = gui.pose();
+            PoseStack matrixStack = new PoseStack();
             Warning s = list.get(0);
             Font fr = Minecraft.getInstance().font;
 
@@ -155,7 +155,6 @@ public class PopupWriter extends Screen {
 
             // Draw warning icon
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/warning.png"));
 
             Tesselator tesselator = Tesselator.getInstance();
             BufferBuilder buffer = tesselator.getBuilder();
@@ -177,7 +176,6 @@ public class PopupWriter extends Screen {
             buttonY = dy;
             buttonSize = sz;
 
-            RenderSystem.setShaderTexture(0, ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/buttons.png"));
             buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
             buffer.vertex(matrix, dx, dy + sz, 0).uv(0.5f, 0.25f).endVertex();
             buffer.vertex(matrix, dx + sz, dy + sz, 0).uv(0.75f, 0.25f).endVertex();
@@ -268,3 +266,4 @@ public class PopupWriter extends Screen {
     }
 
 }
+

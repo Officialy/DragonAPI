@@ -75,20 +75,20 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
     public static DecimalPosition load(String tag, CompoundTag NBT) {
         if (!NBT.contains(tag))
             return null;
-        CompoundTag data = NBT.getCompound(tag);
+        CompoundTag data = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, tag);
         if (data != null) {
-            double x = data.getDouble("x");
-            double y = data.getDouble("y");
-            double z = data.getDouble("z");
+            double x = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "x", 0);
+            double y = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "y", 0);
+            double z = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "z", 0);
             return new DecimalPosition(x, y, z);
         }
         return null;
     }
 
     public static DecimalPosition readTag(CompoundTag data) {
-        double x = data.getDouble("x");
-        double y = data.getDouble("y");
-        double z = data.getDouble("z");
+        double x = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "x", 0);
+        double y = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "y", 0);
+        double z = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "z", 0);
         return new DecimalPosition(x, y, z);
     }
 

@@ -13,7 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 public abstract class PositionEventBase extends Event {
 
@@ -56,3 +56,4 @@ public abstract class PositionEventBase extends Event {
     }
 
 }
+

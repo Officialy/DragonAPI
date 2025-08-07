@@ -13,9 +13,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.neoforged.common.capabilities.ForgeCapabilities;
-import net.neoforged.items.IItemHandler;
-import net.neoforged.items.ItemStackHandler;
-import net.neoforged.items.SlotItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.instantiable.data.immutable.InventorySlot;
@@ -355,3 +355,4 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     }
 
 }
+

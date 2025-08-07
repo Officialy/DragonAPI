@@ -1,7 +1,7 @@
 package reika.dragonapi.instantiable.event;
 
 import net.minecraft.world.entity.item.ItemEntity;
-import net.neoforged.event.entity.item.ItemEvent;
+import net.neoforged.neoforge.event.entity.item.ItemEvent;
 import reika.dragonapi.interfaces.registry.ItemEnum;
 
 public class ItemUpdateEvent extends ItemEvent {
@@ -10,3 +10,4 @@ public class ItemUpdateEvent extends ItemEvent {
         super(ei);
     }
 }
+
