@@ -8,11 +8,15 @@ import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.commands.CommandSourceStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.client.ClientCommandHandler;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker;
@@ -105,7 +109,7 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     private static GameProfile loadSessionProfile() {
-        return Minecraft.getInstance().getUser().getGameProfile();
+        return Minecraft.getInstance().getGameProfile();
     }
 
     public static boolean isOnActualServer() {
