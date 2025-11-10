@@ -43,8 +43,6 @@ import java.net.URL;
 import java.util.Random;
 import java.util.UUID;
 
-import static net.neoforged.fml.loading.FMLLoader.isProduction;
-
 @Mod(DragonAPI.MODID)
 public class DragonAPI extends DragonAPIMod {
     public static final String last_API_Version = "1" + "0";
