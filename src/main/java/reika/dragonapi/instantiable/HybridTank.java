@@ -5,7 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
@@ -46,7 +46,7 @@ public class HybridTank extends FluidTank {
                 CompoundTag tankData = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, name);
                 String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
                 String repl = getFluidNameSwap(fluidName);
-                if (repl != null && ForgeRegistries.FLUIDS.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
+                if (repl != null && BuiltInRegistries.FLUID.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
                     tankData.putString("FluidName", repl);
                     DragonAPI.LOGGER.info("Tank " + this + " has replaced its FluidName of '" + fluidName + "' with '" + repl + "', as the fluid has changed names.");
                 }
@@ -66,7 +66,7 @@ public class HybridTank extends FluidTank {
 
         String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
         String repl = getFluidNameSwap(fluidName);
-        if (repl != null && ForgeRegistries.FLUIDS.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
+        if (repl != null && BuiltInRegistries.FLUID.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
             tankData.putString("FluidName", repl);
             DragonAPI.LOGGER.info("Tank " + this + " has replaced its FluidName of '" + fluidName + "' with '" + repl + "', as the fluid has changed names.");
         }

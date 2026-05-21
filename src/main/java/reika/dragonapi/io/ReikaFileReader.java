@@ -28,7 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.jar.JarFile;
 
-import static net.neoforged.fml.loading.FMLLoader.isProduction;
+import static net.neoforged.fml.loading.FMLEnvironment.isProduction;
 
 public class ReikaFileReader extends DragonAPI {
 

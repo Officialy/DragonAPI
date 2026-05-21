@@ -7,6 +7,12 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 public class PlayerInteractEventClient extends PlayerEvent {
 
+    public enum Result {
+        ALLOW,
+        DENY,
+        DEFAULT
+    }
+
     public final Result action;
     public final int x;
     public final int y;

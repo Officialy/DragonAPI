@@ -2,6 +2,7 @@ package reika.dragonapi.instantiable.io;
 
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 import reika.dragonapi.interfaces.registry.StreamableSound;
@@ -100,7 +101,7 @@ public class SoundLoader {
 
         private SoundResource(SoundEnum s) {
             sound = s;
-            reference = FMLLoader.getDist().isClient() ? getReference(s) : null;
+            reference = FMLEnvironment.dist == net.neoforged.api.distmarker.Dist.CLIENT ? getReference(s) : null;
         }
 
         private static ResourceLocation getReference(SoundEnum s) {

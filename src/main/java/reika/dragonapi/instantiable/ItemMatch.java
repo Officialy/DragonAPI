@@ -9,6 +9,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 import java.util.*;
 
@@ -73,7 +74,7 @@ public class ItemMatch {
     public ItemMatch addItem(KeyedItemStack ks) {
         ks = ks.setSimpleHash(true).setIgnoreNBT(ks.getItemStack().getTag() == null).lock();
         items.add(ks);
-        //if (FMLLoader.getDist() == Dist.CLIENT)
+        //if (FMLEnvironment.dist == Dist.CLIENT)
         ItemStack is2 = ks.getItemStack();
         displayList.add(is2);
         return this;

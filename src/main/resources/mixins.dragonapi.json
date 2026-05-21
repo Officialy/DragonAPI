@@ -1,0 +1,12 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "reika.dragonapi.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "MixinChunkMap"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

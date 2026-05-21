@@ -11,15 +11,16 @@ package reika.dragonapi.exception;
 
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
-import net.neoforged.forgespi.language.IModInfo;
+import reika.dragonapi.extras.ModVersion;
+import net.neoforged.fml.ModList;
 
 public class VersionMismatchException extends DragonAPIException {
 
-    public VersionMismatchException(DragonAPIMod mod, IModInfo.ModVersion v, DragonAPI mod2, IModInfo.ModVersion v2, String req) {
+    public VersionMismatchException(DragonAPIMod mod, ModVersion v, DragonAPI mod2, ModVersion v2, String req) {
         this(mod, v, mod2.getDisplayName(), v2, req);
     }
 
-    public VersionMismatchException(DragonAPIMod mod, IModInfo.ModVersion v, String mod2, IModInfo.ModVersion v2, String req) {
+    public VersionMismatchException(DragonAPIMod mod, ModVersion v, String mod2, ModVersion v2, String req) {
         message.append(mod.getDisplayName() + " was not installed correctly:\n");
         message.append(mod.getDisplayName() + " " + v + " was installed with " + mod2 + " " + v2 + "\n");
         //if (v.majorVersion != v2.majorVersion) {  -TODO Fix this major version matching
@@ -34,7 +35,7 @@ public class VersionMismatchException extends DragonAPIException {
 
     public static final class APIMismatchException extends VersionMismatchException {
 
-        public APIMismatchException(DragonAPIMod mod, IModInfo.ModVersion version, IModInfo.ModVersion api, String req) {
+        public APIMismatchException(DragonAPIMod mod, ModVersion version, ModVersion api, String req) {
             super(mod, version, "DragonAPI", api, req);
         }
 

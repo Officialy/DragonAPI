@@ -13,8 +13,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.fluids.IFluidBlock;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+// IFluidBlock removed in NeoForge - fluid blocks are handled differently
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.BlockTieredResource;
 import reika.dragonapi.extras.BlockProperties;
@@ -125,7 +125,7 @@ public class ReikaBlockHelper {
         if (get != null)
             return get;
         if (Item.BY_BLOCK.get(id).getDefaultInstance() == ItemStack.EMPTY) {
-            DragonAPI.LOGGER.error("Something tried to silktouch null-item block " + ForgeRegistries.BLOCKS.getKey(id).getNamespace());
+            DragonAPI.LOGGER.error("Something tried to silktouch null-item block " + BuiltInRegistries.BLOCK.getKey(id).getNamespace());
             return null;
         }
         if (ReikaBlockHelper.isLiquid(id.defaultBlockState()))// && !(dropFluids && ReikaWorldHelper.isLiquidSourceBlock(world, pos)))

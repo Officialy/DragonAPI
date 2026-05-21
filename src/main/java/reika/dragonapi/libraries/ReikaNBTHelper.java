@@ -9,11 +9,15 @@
  ******************************************************************************/
 package reika.dragonapi.libraries;
 
+import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.nbt.*;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
@@ -25,7 +29,7 @@ import reika.dragonapi.libraries.java.ReikaStringParser;
 import java.util.*;
 import java.util.Map.Entry;
 
-public final class ReikaNBTHelper extends DragonAPI {
+public final class ReikaNBTHelper {
 
     private static final HashMap<Class, EnumIO> enumIOMap = new HashMap<>();
 
@@ -34,11 +38,15 @@ public final class ReikaNBTHelper extends DragonAPI {
      */
     public static void writeInvToNBT(ItemStack[] inv, CompoundTag NBT) {
         ListTag ListTag = new ListTag();
+        var registryAccess = VanillaRegistries.createLookup();
+        var outputBase = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
         for (int i = 0; i < inv.length; i++) {
-            if (inv[i] != null) {
+            if (inv[i] != null && !inv[i].isEmpty()) {
                 CompoundTag CompoundTag = new CompoundTag();
                 CompoundTag.putByte("Slot", (byte) i);
-                inv[i].save(CompoundTag);
+                var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
+                output.store("item", ItemStack.CODEC, inv[i]);
+                CompoundTag.merge(output.buildResult());
                 ListTag.add(CompoundTag);
             }
         }
@@ -58,28 +66,39 @@ public final class ReikaNBTHelper extends DragonAPI {
      * Reads an inventory from NBT. Args: NBT Tag
      */
     public static ItemStack[] getInvFromNBT(CompoundTag NBT) {
-        ListTag ListTag = NBT.getList("Items", Tag.TAG_COMPOUND);
+        Optional<ListTag> listTagOpt = NBT.getList("Items");
+        if (listTagOpt.isEmpty()) {
+            return new ItemStack[0];
+        }
+        ListTag ListTag = listTagOpt.get();
         ItemStack[] inv = new ItemStack[ListTag.size()];
+        var registryAccess = VanillaRegistries.createLookup();
 
         for (int i = 0; i < ListTag.size(); i++) {
-            CompoundTag CompoundTag = reika.dragonapi.libraries.io.NBTCompat.getCompound(ListTag, String.valueOf(i));
+            CompoundTag CompoundTag = reika.dragonapi.libraries.io.NBTCompat.getListCompound(ListTag, i);
             byte byte0 = (byte) reika.dragonapi.libraries.io.NBTCompat.getInt(CompoundTag, "Slot", 0);
 
             if (byte0 >= 0 && byte0 < inv.length) {
-                inv[byte0] = ItemStack.of(CompoundTag);
+                var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, CompoundTag);
+                inv[byte0] = input.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
             }
         }
         return inv;
     }
 
-    @Deprecated //Use FluidStack.loadFluidStackFromNBT(nbt); TODO: Remove
+    @Deprecated //Use FluidStack CODEC with TagValueInput; TODO: Remove
     public static FluidStack getFluidFromNBT(CompoundTag nbt) {
-        return FluidStack.loadFluidStackFromNBT(nbt);
+        var registryAccess = VanillaRegistries.createLookup();
+        var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, nbt);
+        return input.read("fluid", net.neoforged.neoforge.fluids.FluidStack.CODEC).orElse(net.neoforged.neoforge.fluids.FluidStack.EMPTY);
     }
 
-    @Deprecated //Can likely use f.writeToNBT(nbt); //TODO: Remove
+    @Deprecated //Use FluidStack CODEC with TagValueOutput; TODO: Remove
     public static void writeFluidToNBT(CompoundTag nbt, FluidStack f) {
-        f.writeToNBT(nbt);
+        var registryAccess = VanillaRegistries.createLookup();
+        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
+        output.store("fluid", net.neoforged.neoforge.fluids.FluidStack.CODEC, f);
+        nbt.merge(output.buildResult());
     }
 
     public static Object getValue(Tag NBT) {
@@ -90,31 +109,32 @@ public final class ReikaNBTHelper extends DragonAPI {
         if (converter != null) {
             return converter.createFromNBT(NBT);
         } else if (NBT instanceof IntTag) {
-            return ((IntTag) NBT).getAsInt();
+            return ((IntTag) NBT).intValue();
         } else if (NBT instanceof ByteTag) {
-            return ((ByteTag) NBT).getAsByte();
+            return ((ByteTag) NBT).byteValue();
         } else if (NBT instanceof ShortTag) {
-            return ((ShortTag) NBT).getAsShort();
+            return ((ShortTag) NBT).shortValue();
         } else if (NBT instanceof LongTag) {
-            return ((LongTag) NBT).getAsLong();
+            return ((LongTag) NBT).longValue();
         } else if (NBT instanceof FloatTag) {
-            return ((FloatTag) NBT).getAsFloat();
+            return ((FloatTag) NBT).floatValue();
         } else if (NBT instanceof DoubleTag) {
-            return ((DoubleTag) NBT).getAsDouble();
+            return ((DoubleTag) NBT).doubleValue();
         } else if (NBT instanceof IntArrayTag) {
             return ((IntArrayTag) NBT).getAsIntArray();
         } else if (NBT instanceof StringTag) {
-            return NBT.getAsString();
+            return ((StringTag) NBT).value();
         } else if (NBT instanceof ByteArrayTag) {
             return ((ByteArrayTag) NBT).getAsByteArray();
         } else if (NBT instanceof CompoundTag) {
-            if (((CompoundTag) NBT).getBoolean("flag_isItemStack")) {
-                return ItemStack.of((CompoundTag) NBT);
+            if (reika.dragonapi.libraries.io.NBTCompat.getBoolean((CompoundTag) NBT, "flag_isItemStack", false)) {
+                var registryAccess = VanillaRegistries.createLookup();
+                var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, (CompoundTag) NBT);
+                return input.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
             } else {
                 HashMap<String, Object> map = new HashMap();
                 CompoundTag tag = (CompoundTag) NBT;
-                for (Object o : tag.getAllKeys()) {
-                    String s = (String) o;
+                for (String s : tag.keySet()) {
                     map.put(s, getValue(tag.get(s)));
                 }
                 return map;
@@ -172,7 +192,10 @@ public final class ReikaNBTHelper extends DragonAPI {
         } else if (o instanceof Tag) {
             return (Tag) o;
         } else if (o instanceof ItemStack) {
-            CompoundTag tag = ((ItemStack) o).save(new CompoundTag());
+            var registryAccess = VanillaRegistries.createLookup();
+            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
+            output.store("item", ItemStack.CODEC, (ItemStack) o);
+            CompoundTag tag = output.buildResult();
             tag.putBoolean("flag_isItemStack", true);
             return tag;
         } else {
@@ -210,7 +233,7 @@ public final class ReikaNBTHelper extends DragonAPI {
     private static ArrayList<String> parseNBTAsLines(CompoundTag nbt, int indent) {
         ArrayList<String> li = new ArrayList<>();
         String idt = ReikaStringParser.getNOf("  ", indent);
-        for (String o : nbt.getAllKeys()) {
+        for (String o : nbt.keySet()) {
             Tag b = nbt.get(o);
             if (b instanceof CompoundTag) {
                 li.add(idt + o + ": ");
@@ -225,7 +248,7 @@ public final class ReikaNBTHelper extends DragonAPI {
     public static void combineNBT(CompoundTag tag1, CompoundTag tag2) {
         if (tag2 == null || tag2.isEmpty())
             return;
-        for (Object o : tag2.getAllKeys()) {
+        for (String o : tag2.keySet()) {
             String s = (String) o;
             Tag key = tag2.get(s);
             tag1.put(s, combineTags(tag1.get(s), key.copy()));
@@ -250,14 +273,14 @@ public final class ReikaNBTHelper extends DragonAPI {
     }
 
     public static void clearTagCompound(CompoundTag dat) {
-        Collection<String> tags = new ArrayList(dat.getAllKeys());
+        Collection<String> tags = new ArrayList(dat.keySet());
         for (String tag : tags) {
             dat.remove(tag);
         }
     }
 
     public static void copyNBT(CompoundTag from, CompoundTag to) {
-        Collection<String> tags = new ArrayList(from.getAllKeys());
+        Collection<String> tags = new ArrayList(from.keySet());
         for (String tag : tags) {
             to.put(tag, from.get(tag).copy());
         }
@@ -284,7 +307,7 @@ public final class ReikaNBTHelper extends DragonAPI {
     }
 
     public static boolean tagContains(CompoundTag tag, CompoundTag inner) {
-        Set<String> set = inner.getAllKeys();
+        Set<String> set = inner.keySet();
         for (String s : set) {
             Tag b1 = inner.get(s);
             Tag b2 = tag.get(s);
@@ -299,7 +322,7 @@ public final class ReikaNBTHelper extends DragonAPI {
     }
 
     public static void overwriteNBT(CompoundTag tag, CompoundTag over) {
-        for (Object o : over.getAllKeys()) {
+        for (String o : over.keySet()) {
             Tag b = over.get((String) o);
             tag.put((String) o, b);
         }
@@ -373,7 +396,11 @@ public final class ReikaNBTHelper extends DragonAPI {
 
     public static <E> void readCollectionFromNBT(Collection<E> c, CompoundTag NBT, String key, NBTIO<E> converter) {
         c.clear();
-        ListTag li = NBT.getList(key, Tag.TAG_COMPOUND);
+        Optional<ListTag> listTagOpt = NBT.getList(key);
+        if (listTagOpt.isEmpty()) {
+            return;
+        }
+        ListTag li = listTagOpt.get();
         for (Object o : li) {
             CompoundTag tag = (CompoundTag) o;
             Tag b = tag.get("value");
@@ -383,7 +410,7 @@ public final class ReikaNBTHelper extends DragonAPI {
 
     public static Tag getNestedNBTTag(CompoundTag tag, ArrayList<String> li, String name) {
         for (String s : li) {
-            tag = tag.getCompound(s);
+            tag = tag.getCompound(s).orElse(null);
             if (tag == null || tag.isEmpty())
                 return null;
         }
@@ -498,14 +525,17 @@ public final class ReikaNBTHelper extends DragonAPI {
 
         @Override
         public ItemStack createFromNBT(Tag nbt) {
-            return ItemStack.of((CompoundTag) nbt);
+            var registryAccess = VanillaRegistries.createLookup();
+            var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, (CompoundTag) nbt);
+            return input.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         }
 
         @Override
         public Tag convertToNBT(ItemStack obj) {
-            CompoundTag ret = new CompoundTag();
-            obj.save(ret);
-            return ret;
+            var registryAccess = VanillaRegistries.createLookup();
+            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
+            output.store("item", ItemStack.CODEC, obj);
+            return output.buildResult();
         }
 
     }

@@ -31,7 +31,7 @@ import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import org.lwjgl.opengl.GL11;
@@ -158,7 +158,7 @@ public final class PlayerSpecificRenderer {
    }
    */
 
-   private static final class CustomPlayerRenderer extends PlayerRenderer {
+   private static final class CustomPlayerRenderer extends AvatarRenderer<AbstractClientPlayer> {
 
 
        public CustomPlayerRenderer(EntityRendererProvider.Context p_174557_, boolean p_174558_) {

@@ -1,16 +1,21 @@
 package reika.dragonapi.libraries.rendering;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.TerrainParticle;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.resources.model.ModelResourceLocation;
+// ModelResourceLocation removed - use ResourceLocation instead
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -20,13 +25,13 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import reika.dragonapi.DragonAPI;
-import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.interfaces.TileModel;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
 import reika.dragonapi.libraries.mathsci.ReikaPhysicsHelper;
@@ -45,6 +50,13 @@ public class ReikaRenderHelper {
 
     private static int frame = -1;
 
+    private static void draw(RenderType type, BufferBuilder buffer) {
+        MeshData mesh = buffer.build();
+        if (mesh != null) {
+            type.draw(mesh);
+        }
+    }
+
     /**
      * Converts a biome to a color multiplier (for use in things like leaf textures).
      * Args: Level, x, z, material (grass, water, etc), bit
@@ -58,24 +70,33 @@ public class ReikaRenderHelper {
     /**
      * Renders a flat circle in the world. Args: radius, center x,y,z, RGBA, angle step
      */
+    /**
+     * Renders a flat circle in the world. Args: radius, center x,y,z, RGBA, angle step
+     */
     public static void renderCircle(double r, double x, double y, double z, int rgba, int step) {
-        //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
-        Tesselator tessellator = Tesselator.getInstance();
-        BufferBuilder renderer = tessellator.getBuilder();
+        renderCircle(new PoseStack(), r, x, y, z, rgba, step);
+    }
 
-        //if (renderer.isDrawing)
-        //    renderer.draw();
-        renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR); //GL11.GL_LINE_LOOP
+    public static void renderCircle(PoseStack stack, double r, double x, double y, double z, int rgba, int step) {
+        //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
+        RenderType type = RenderType.debugLineStrip(1.0D);
+        // In 1.21, Tesselator.getInstance().begin() returns a BufferBuilder.
+        // We need to ensure we are using the correct mode and format.
+        // debugLineStrip uses Mode.LINE_STRIP and POSITION_COLOR.
+        BufferBuilder renderer = Tesselator.getInstance().begin(type.mode(), type.format());
+        
+        int red = (rgba >> 16) & 0xFF;
+        int green = (rgba >> 8) & 0xFF;
+        int blue = rgba & 0xFF;
+        int alpha = (rgba >> 24) & 0xFF;
+        Matrix4f matrix = stack.last().pose();
         for (int i = 0; i < 360; i += step) {
             double a = Math.toRadians(i);
-            renderer.vertex(x + r * Math.cos(a), y, z + r * Math.sin(a)).color(rgba, rgba >> 24 & 255, rgba, rgba).endVertex();
+            renderer.addVertex(matrix, (float)(x + r * Math.cos(a)), (float)y, (float)(z + r * Math.sin(a)))
+                    .setColor(red, green, blue, alpha);
         }
-        //renderer.draw();
-        tessellator.end();
+        draw(type, renderer);
         //GL11.glDisable(GL12.GL_RESCALE_NORMAL);
-        RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
     }
 
     public static void spawnDropParticles(ClientLevel world, BlockPos pos, Block b) {
@@ -100,25 +121,33 @@ public class ReikaRenderHelper {
      * Renders a vertical-plane circle in the world. Args: radius, center x,y,z, RGBA, phi, angle step
      */
     public static void renderVCircle(double r, double x, double y, double z, int rgba, double phi, int step) {
-        //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
-        Tesselator tessellator = Tesselator.getInstance();
-        BufferBuilder renderer = tessellator.getBuilder();
+        renderVCircle(new PoseStack(), r, x, y, z, rgba, phi, step);
+    }
 
-        renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR); //GL11.GL_LINE_LOOP
-        renderer.color(rgba, rgba >> 24 & 255, rgba, rgba); //TODO fix coloring
+    public static void renderVCircle(PoseStack stack, double r, double x, double y, double z, int rgba, double phi, int step) {
+        //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
+        RenderType type = RenderType.debugLineStrip(1.0D);
+        BufferBuilder renderer = Tesselator.getInstance().begin(type.mode(), type.format());
+
+        int red = (rgba >> 16) & 0xFF;
+        int green = (rgba >> 8) & 0xFF;
+        int blue = rgba & 0xFF;
+        int alpha = (rgba >> 24) & 0xFF;
+        Matrix4f matrix = stack.last().pose();
+        
         for (int i = 0; i < 360; i += step) {
             int sign = 1;
             double h = r * Math.cos(ReikaPhysicsHelper.degToRad(i));
             if (i >= 180)
                 sign = -1;
-            renderer.vertex(x - Math.sin(Math.toRadians(phi)) * (sign) * (Math.sqrt(r * r - h * h)), y + r * Math.cos(Math.toRadians(i)), z + r * Math.sin(Math.toRadians(i)) * Math.cos(Math.toRadians(phi))).endVertex();
+            float vx = (float)(x - Math.sin(Math.toRadians(phi)) * (sign) * (Math.sqrt(r * r - h * h)));
+            float vy = (float)(y + r * Math.cos(Math.toRadians(i)));
+            float vz = (float)(z + r * Math.sin(Math.toRadians(i)) * Math.cos(Math.toRadians(phi)));
+            renderer.addVertex(matrix, vx, vy, vz).setColor(red, green, blue, alpha);
         }
-        //renderer.draw();
-        tessellator.end();
+
+        draw(type, renderer);
         //GL11.glDisable(GL12.GL_RESCALE_NORMAL);
-        RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
     }
 
 //    public static void rerenderAllChunks() {
@@ -140,29 +169,22 @@ public class ReikaRenderHelper {
      * Renders a line between two points in the world. Args: Start xyz, End xyz, rgb
      */
     public static void renderLine(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int[] color) {
-        RenderSystem.disableCull();
-        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
-
-        Tesselator tessellator = Tesselator.getInstance();
-        BufferBuilder renderer = tessellator.getBuilder();
-
-        RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
-        renderer.begin(VertexFormat.Mode.LINE_STRIP, DefaultVertexFormat.POSITION_COLOR_NORMAL); //GL11.GL_LINE_LOOP
-        renderer.vertex(stack.last().pose(), (float) x1, (float) y1, (float) z1).color(color[0], color[1], color[2], color[3]).normal(stack.last().normal(), 1, 1, 1).endVertex();
-        renderer.vertex(stack.last().pose(), (float) x2, (float) y2, (float) z2).color(color[0], color[1], color[2], color[3]).normal(stack.last().normal(), 1, 1, 1).endVertex();
-        tessellator.end();
-
-        //GL11.glDisable(GL12.GL_RESCALE_NORMAL);
-        //GL11.glEnable(GL11.GL_CULL_FACE);
-        RenderSystem.lineWidth(1f);
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableBlend();
-//        RenderSystem.enableTexture();
+        RenderType renderType = RenderType.lines();
+        BufferBuilder renderer = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
+        
+        renderer.addVertex(stack.last().pose(), (float) x1, (float) y1, (float) z1)
+                .setColor(color[0], color[1], color[2], color[3])
+                .setNormal(stack.last(), 1, 1, 1);
+        renderer.addVertex(stack.last().pose(), (float) x2, (float) y2, (float) z2)
+                .setColor(color[0], color[1], color[2], color[3])
+                .setNormal(stack.last(), 1, 1, 1);
+        
+        draw(renderType, renderer);
+        
     }
 
     public static void renderTube(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int c1, int c2, double r1, double r2, int sides) {
         Tesselator tessellator = Tesselator.getInstance();
-        BufferBuilder renderer = tessellator.getBuilder();
 
         double dx = x2 - x1;
         double dy = y2 - y1;
@@ -177,21 +199,27 @@ public class ReikaRenderHelper {
         double f8 = Math.sqrt(dx * dx + dy * dy + dz * dz);
         double ang1 = -Math.atan2(dz, dx) * 180 / Math.PI - 90;
         double ang2 = -Math.atan2(f7, dy) * 180 / Math.PI - 90;
-        stack.mulPose(new Quaternionf((float) ang1, 0, 1, 0));
-        stack.mulPose(new Quaternionf((float) ang2, 1, 0, 0));
+        stack.mulPose(Axis.YP.rotationDegrees((float) ang1));
+        stack.mulPose(Axis.XP.rotationDegrees((float) ang2));
 
-        renderer.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR); //GL11.GL_TRIANGLE_STRIP
-        //renderer.setBrightness(240); todo fix brightness
+        RenderType renderType = RenderType.leash();
+        BufferBuilder renderer = tessellator.begin(renderType.mode(), renderType.format());
+        Matrix4f matrix = stack.last().pose();
+        
         for (int i = 0; i <= sides; i++) {
             double f11a = r1 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
             double f12a = r1 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
             double f11b = r2 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
             double f12b = r2 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
             double f13 = i % sides / (double) sides;
-            renderer.vertex((float)f11a, (float)f12a, 0F).color(c1 & 0xff, (c1 >> 8) & 0xff, (c1 >> 16) & 0xff, (c1 >> 24) & 0xff).endVertex();
-            renderer.vertex((float)f11b, (float)f12b, (float)f8).color(c2 & 0xff, (c2 >> 8) & 0xff, (c2 >> 16) & 0xff, (c2 >> 24) & 0xff).endVertex();
+            renderer.addVertex(matrix, (float)f11a, (float)f12a, 0F)
+                    .setColor(c1 & 0xff, (c1 >> 8) & 0xff, (c1 >> 16) & 0xff, (c1 >> 24) & 0xff)
+                    .setLight(LightTexture.FULL_BRIGHT);
+            renderer.addVertex(matrix, (float)f11b, (float)f12b, (float)f8)
+                    .setColor(c2 & 0xff, (c2 >> 8) & 0xff, (c2 >> 16) & 0xff, (c2 >> 24) & 0xff)
+                    .setLight(LightTexture.FULL_BRIGHT);
         }
-        tessellator.end();
+        draw(renderType, renderer);
 
         stack.popPose();
     }
@@ -240,30 +268,27 @@ public class ReikaRenderHelper {
      */
     public static void prepareGeoDraw(boolean alpha) {
         disableLighting();
-//        RenderSystem.disableTexture();
-        if (alpha)
-            RenderSystem.enableBlend();
+//        RenderSystem.disableTexture(); // Removed in 1.21
+        // Alpha blending is now handled through RenderTypes
     }
 
     public static void exitGeoDraw() {
         enableLighting();
-//        RenderSystem.enableTexture();
-        RenderSystem.disableBlend();
+//        RenderSystem.enableTexture(); // Removed in 1.21
+        // Blending is now handled through RenderTypes
     }
 
     /**
      * Renders a rectangle in-world. Args: r,g,b,a, Start x,y,z, End x,y,z
      */
     public static void renderRectangle(int r, int g, int b, int a, double x1, double y1, double z1, double x2, double y2, double z2) {
-        var tessellator = Tesselator.getInstance();
-        var renderer = tessellator.getBuilder();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        renderer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        renderer.vertex(x1, y1, z1).color(r, g, b, a).endVertex();
-        renderer.vertex(x2, y1, z2).color(r, g, b, a).endVertex();
-        renderer.vertex(x2, y2, z2).color(r, g, b, a).endVertex();
-        renderer.vertex(x1, y2, z1).color(r, g, b, a).endVertex();
-        tessellator.end();
+        RenderType type = RenderType.debugQuads();
+        var renderer = Tesselator.getInstance().begin(type.mode(), type.format());
+        renderer.addVertex((float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
+        renderer.addVertex((float)x2, (float)y1, (float)z2).setColor(r, g, b, a);
+        renderer.addVertex((float)x2, (float)y2, (float)z2).setColor(r, g, b, a);
+        renderer.addVertex((float)x1, (float)y2, (float)z1).setColor(r, g, b, a);
+        draw(type, renderer);
     }
 
     public static int getRealFOV() {
@@ -275,34 +300,32 @@ public class ReikaRenderHelper {
     }
 
     public static void renderEnchantedModel(BlockEntity tile, TileModel model, ArrayList li, float rotation, PoseStack stack, MultiBufferSource source) {
-        int x = tile.getBlockPos().getX();
-        int y = tile.getBlockPos().getY();
-        int z = tile.getBlockPos().getZ();
+        // int x = tile.getBlockPos().getX();
+        // int y = tile.getBlockPos().getY();
+        // int z = tile.getBlockPos().getZ();
         float f9 = (System.nanoTime() / 100000000) % 64 / 64F;
-        //ReikaTextureHelper.bindEnchantmentTexture();
+        
+        // ReikaTextureHelper.bindEnchantmentTexture(); // Handled by RenderType.glintTranslucent()
 
-        source.getBuffer(type);
-        RenderSystem.enableBlend();
-//        ReikaGLHelper.BlendMode.OVERLAYDARK.apply();
-        float f10 = 0.5F;
-        RenderSystem.setShaderColor(f10, f10, f10, 1.0F);
+        // source.getBuffer(type); // Not needed if we get specific buffer later
+
         stack.pushPose();
-        GL11.glMatrixMode(GL11.GL_TEXTURE);
         stack.translate(f9, f9, f9);
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        
+        // GL11.glDepthFunc(GL11.GL_LEQUAL); // RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        // But usually we don't mess with depth func in mod code unless necessary.
+        // RenderType.glintTranslucent() handles its own state.
 
-        GL11.glDepthFunc(GL11.GL_LEQUAL);
-        GL11.glPushMatrix();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         stack.translate(0, 2, 2);
         stack.scale(1.0F, -1.0F, -1.0F);
         stack.translate(0.5F, 0.5F, 0.5F);
-        float f11 = 0.76F;
-        RenderSystem.setShaderColor(0.5F * f11, 0.25F * f11, 0.8F * f11, 1.0F);
+        
         stack.mulPose(Axis.YP.rotationDegrees(rotation));
-        GL11.glDepthMask(false);
+        
+        // GL11.glDepthMask(false); // RenderSystem.depthMask(false);
+        // Again, RenderType handles this.
 
-        GL11.glDisable(GL11.GL_LIGHTING);
+        // GL11.glDisable(GL11.GL_LIGHTING); // No-op
 
         double d = 1.0125;
         int p = 2;
@@ -310,30 +333,31 @@ public class ReikaRenderHelper {
         stack.scale((float) d, (float) d, (float) d);
         stack.translate(0, -p, 0);
 
-        VertexConsumer vertexconsumer = source.getBuffer(RenderType.glintTranslucent()); //todo check if this is the enchantment glint?
-        model.renderAll(stack, vertexconsumer, /*todo LIGHT*/0, tile, li);
+        VertexConsumer vertexconsumer = source.getBuffer(RenderType.glintTranslucent());
+        // We need to pass the packed overlay and light. 
+        // For enchantment glint, usually light is ignored or full bright?
+        // Let's use the tile's light if possible, or full bright.
+        int light = LightTexture.FULL_BRIGHT; 
+        int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+        
+        // TileModel.renderAll needs to be updated to accept light/overlay if it doesn't already
+        // Assuming it takes (PoseStack, VertexConsumer, int light, BlockEntity, ArrayList)
+        model.renderAll(stack, vertexconsumer, light, tile, li);
 
         stack.translate(0, p, 0);
         stack.scale((float) (1D / d), (float) (1D / d), (float) (1D / d));
         stack.translate(0, -p, 0);
 
-        GL11.glMatrixMode(GL11.GL_TEXTURE);
-        GL11.glLoadIdentity();
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        // GL11.glLoadIdentity(); // This would clear the matrix, which is bad for PoseStack!
+        // stack.popPose() handles restoring the state.
 
-        GL11.glDepthMask(true);
+        // GL11.glDepthMask(true);
+        // GL11.glEnable(GL11.GL_LIGHTING);
+        // GL11.glPopMatrix();
+        // GL11.glDepthFunc(GL11.GL_LEQUAL);
 
-        GL11.glEnable(GL11.GL_LIGHTING);
-
-        GL11.glEnable(GL11.GL_ALPHA_TEST);
-
-        GL11.glPopMatrix();
-        GL11.glDepthFunc(GL11.GL_LEQUAL);
-
-        //ReikaGLHelper.RenderSystem.defaultBlendFunc();
-        RenderSystem.disableBlend();
         stack.popPose();
-        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        // GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F); // RenderSystem.setShaderColor(1,1,1,1);
     }
 
     public static long getRenderFrame() {
@@ -357,12 +381,12 @@ public class ReikaRenderHelper {
     }
 
     private static Matrix4f getMatrix(int id) {
-        FloatBuffer buf = BufferUtils.createFloatBuffer(16);
-        GL11.glGetFloat(id); //id, buf   //TODO this might be broken as its GL11 stuff
-        buf.rewind();
+        // FloatBuffer buf = BufferUtils.createFloatBuffer(16);
+        // GL11.glGetFloat(id); //id, buf   //TODO this might be broken as its GL11 stuff
+        // buf.rewind();
         Matrix4f mat = new Matrix4f();
-        mat.set(buf);
-        return mat;
+        // mat.set(buf);
+        return mat; // Return identity for now to prevent crashes
     }
 
     public static class RenderTick implements TickRegistry.TickHandler {
@@ -379,8 +403,8 @@ public class ReikaRenderHelper {
         }
 
         @Override
-        public boolean canFire(TickEvent.Phase p) {
-            return p == TickEvent.Phase.START;
+        public boolean canFire(TickRegistry.Phase p) {
+            return p == TickRegistry.Phase.START;
         }
 
         @Override

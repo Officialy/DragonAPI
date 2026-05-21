@@ -9,14 +9,14 @@
  ******************************************************************************/
 package reika.dragonapi.libraries.mathsci;
 
-import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.Interpolation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.fluids.IFluidBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 
-public final class ReikaPhysicsHelper extends DragonAPI {
+public final class ReikaPhysicsHelper {
 
 	public static final double TNTenergy = 12420000000D;
 
@@ -172,8 +172,10 @@ public final class ReikaPhysicsHelper extends DragonAPI {
 			return 2800;
 		if (b == Blocks.GRAVEL)
 			return 1680;
-		if (b instanceof IFluidBlock)
-			return ((IFluidBlock) b).getFluid().getFluidType().getDensity();
+		BlockState state = b.defaultBlockState();
+		FluidState fluidState = state.getFluidState();
+		if (!fluidState.isEmpty())
+			return fluidState.getFluidType().getDensity();
 		/*todo if (b.defaultBlockState().getMaterial() == Material.STONE)
 			return ReikaEngLibrary.rhorock;
 		if (b.defaultBlockState().getMaterial() == Material.GLASS)

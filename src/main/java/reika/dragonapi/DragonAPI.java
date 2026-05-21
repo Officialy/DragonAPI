@@ -12,10 +12,12 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
+import static net.neoforged.fml.loading.FMLEnvironment.isProduction;
 import net.neoforged.neoforge.client.ClientCommandHandler;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,8 +34,8 @@ import reika.dragonapi.instantiable.rendering.ReikaRenderDispatcher;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.registry.ReikaDyeHelper;
-import reika.dragonapi.modregistry.ModOreList;
-import reika.dragonapi.modregistry.PowerTypes;
+//import reika.dragonapi.modregistry.ModOreList;
+//import reika.dragonapi.modregistry.PowerTypes;
 import reika.dragonapi.trackers.PatreonController;
 
 import java.io.File;
@@ -103,7 +105,7 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     protected static Dist getSide() {
-        return FMLLoader.getDist();
+        return net.neoforged.fml.loading.FMLEnvironment.getDist();
     }
 
     private static GameProfile loadSessionProfile() {
@@ -111,7 +113,7 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     public static boolean isOnActualServer() {
-        return getSide() == Dist.DEDICATED_SERVER && FMLLoader.getDist().isDedicatedServer();
+        return getSide() == Dist.DEDICATED_SERVER;
     }
 
     public static boolean isSinglePlayerFromClient() {
@@ -158,7 +160,7 @@ public class DragonAPI extends DragonAPIMod {
         config.loadSubfolderedConfigFile();
         config.initProps();
 
-        instance.loadHandlers();
+        // instance.loadHandlers(); // Method removed - handlers are loaded automatically
         Tests.runTests();
 
         TickRegistry.instance.registerTickHandler(PlayerChunkTracker.instance);
@@ -244,25 +246,10 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     public void serverStarting(ServerAboutToStartEvent evt) {
-        ModOreList.initializeAll();
         ReikaDyeHelper.buildItemCache();
         if (ModList.FORESTRY.isLoaded()) {
             //ReikaBeeHelper.buildSpeciesList();
         }
-    }
-
-    public void serverStarted(ServerStartingEvent evt) {
-        LOGGER.info("Server Started.");
-        //DragonAPI.LOGGER.info("Total Crafting Recipes: "+CraftingManager.getInstance().getRecipeList().size());
-        //DragonAPI.LOGGER.info("Dimensions Present: "+ Arrays.toString(DimensionManager.getStaticDimensionIDs()));
-        DragonAPI.LOGGER.info("Mods Present: " + FMLLoader.modLauncherModList().size());
-
-        //if (MinecraftServer.getServer() != null)
-        //   DragonAPI.LOGGER.info("Commands Loaded: "+ ReikaCommandHelper.getCommandList().size());
-    }
-
-    private void loadHandlers() {
-        ReikaJavaLibrary.initClass(PowerTypes.class);
     }
 
     public String getDisplayName() {

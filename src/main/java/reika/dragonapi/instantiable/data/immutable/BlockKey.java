@@ -9,7 +9,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.interfaces.BlockCheck;
 import reika.dragonapi.interfaces.registry.TileEnum;
@@ -66,7 +66,7 @@ public final class BlockKey implements BlockCheck, Comparable<BlockKey> {
 
     @Override
     public String toString() {
-        return Objects.requireNonNull(ForgeRegistries.BLOCKS.getKey(blockID.getBlock()).getNamespace()).toLowerCase(Locale.ROOT);
+        return Objects.requireNonNull(BuiltInRegistries.BLOCK.getKey(blockID.getBlock()).getNamespace()).toLowerCase(Locale.ROOT);
     }
 
     public ItemStack asItemStack() {

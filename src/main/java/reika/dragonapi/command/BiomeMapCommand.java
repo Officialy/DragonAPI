@@ -22,7 +22,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
@@ -325,8 +325,8 @@ public class BiomeMapCommand {
 
         @Override
         protected int getColor(int x, int z, Integer data) {
-            var b = (Biome) ForgeRegistries.BIOMES.getValues().toArray()[data];
-            var key = ForgeRegistries.BIOMES.getResourceKey(b);
+            var b = (Biome) BuiltInRegistries.BIOME.getValues().toArray()[data];
+            var key = BuiltInRegistries.BIOME.getResourceKey(b);
             return key.map(biomeResourceKey -> getBiomeColor(x, z, biomeResourceKey)).orElse(0);
         }
 
@@ -362,8 +362,8 @@ public class BiomeMapCommand {
         }
 
         private void createLegendEntry(int b, int x, int y, Graphics g, BufferedImage img, int hpb) {
-            Biome biome = (Biome) ForgeRegistries.BIOMES.getValues().toArray()[b];
-            ResourceKey<Biome> key = ForgeRegistries.BIOMES.getResourceKey(biome).get();
+            Biome biome = (Biome) BuiltInRegistries.BIOME.getValues().toArray()[b];
+            ResourceKey<Biome> key = BuiltInRegistries.BIOME.getResourceKey(biome).get();
             g.drawString(biome.toString(), x + hpb + 4, y + hpb / 2 + 4);
             for (int i = -1; i <= hpb; i++) {
                 for (int k = -1; k <= hpb; k++) {
@@ -406,13 +406,13 @@ public class BiomeMapCommand {
 //        }
 
         //Because some BoP forests secretly identify as ocean-kin
-        if (ForgeRegistries.BIOMES.getHolder(b).toString().equalsIgnoreCase("Shield")) {
+        if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Shield")) {
             return 0x387F4D;
-        } else if (ForgeRegistries.BIOMES.getHolder(b).toString().equalsIgnoreCase("Tropics")) {
+        } else if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Tropics")) {
             return 0x00ff00;
-        } else if (ForgeRegistries.BIOMES.getHolder(b).toString().equalsIgnoreCase("Lush Swamp")) {
+        } else if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Lush Swamp")) {
             return 0x009000;
-        } else if (ForgeRegistries.BIOMES.getHolder(b).toString().equalsIgnoreCase("Bayou")) {
+        } else if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Bayou")) {
             return 0x7B7F4F; //Eew
         }/* else if (ReikaBiomeHelper.isOcean(null, b)) { //todo this will crash without a level so its commented out for now, sorry future max
             if (b == Biomes.DEEP_OCEAN)
@@ -435,21 +435,21 @@ public class BiomeMapCommand {
             return 0x9B6839;
         }
 
-       /* if (ForgeRegistries.BIOMES.getHolder(b).get().get().topBlock == Blocks.SAND) {
+       /* if (BuiltInRegistries.BIOME.getHolder(b).get().get().topBlock == Blocks.SAND) {
             return 0xE2C995;
         }
-        if (ForgeRegistries.BIOMES.getHolder(b).get().get().topBlock == Blocks.STONE) {
+        if (BuiltInRegistries.BIOME.getHolder(b).get().get().topBlock == Blocks.STONE) {
             return 0x808080;
         }*/
 
-        if (ForgeRegistries.BIOMES.getHolder(b).toString().equalsIgnoreCase("Coniferous Forest")) {
+        if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Coniferous Forest")) {
             return 0x007F42;
         }
-        if (ForgeRegistries.BIOMES.getHolder(b).toString().equalsIgnoreCase("Maple Forest")) {
+        if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Maple Forest")) {
             return 0x3A7F52;
         }
 
-        int c = ForgeRegistries.BIOMES.getHolder(b).get().value().getGrassColor(x, z);
+        int c = BuiltInRegistries.BIOME.getHolder(b).get().value().getGrassColor(x, z);
 
         if (ReikaBiomeHelper.isSnowBiome(b)) {
             c = 0xffffff;

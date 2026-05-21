@@ -9,17 +9,16 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.TickEvent;
-import net.neoforged.neoforge.event.entity.player.EntityItemPickupEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import reika.dragonapi.DragonAPI;
@@ -38,11 +37,10 @@ import reika.dragonapi.libraries.io.ReikaSoundHelper;
 import reika.dragonapi.libraries.level.ReikaBlockHelper;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
-import reika.dragonapi.modregistry.ModWoodList;
 
 import java.util.*;
 
-@Mod.EventBusSubscriber(modid = DragonAPI.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DragonAPI.MODID)
 public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
 
     public static final ProgressiveRecursiveBreaker instance = new ProgressiveRecursiveBreaker();
@@ -91,6 +89,9 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         ids.add(new BlockKey(log));
         ids.add(new BlockKey(leaf));
         int depth = 30;
+        // ModWoodList package doesn't exist - commenting out special tree depth handling
+        // TODO: Use Tags for wood types / logs & leaves, maybe some way to associate each log with their leaves? idk
+        /*
         if (tree == ModWoodList.SEQUOIA)
             depth = 350;
         if (tree == ModWoodList.TWILIGHTOAK)
@@ -99,6 +100,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
             depth = 32;
         if (tree == ModWoodList.GIANTPINKTREE)
             depth = 180;
+        */
         ProgressiveBreaker b = new ProgressiveBreaker(world, pos, depth, ids);
         b.extraSpread = true;
         b.bounds = tree.getTypicalMaximumSize().offset(pos);
@@ -157,8 +159,8 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
     }
 
     @Override
-    public boolean canFire(TickEvent.Phase p) {
-        return p == TickEvent.Phase.START;
+    public boolean canFire(TickRegistry.Phase p) {
+        return p == TickRegistry.Phase.START;
     }
 
     public void clearBreakers() {
@@ -382,9 +384,8 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                     for (ItemStack is : drops) {
                         boolean flag = false;
                         if (dropInventory != null) {
-                            if (NeoForge.EVENT_BUS.post(new EntityItemPickupEvent(Minecraft.getInstance().player, new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, is)))) {
-                                continue;
-                            }
+                            // Try to add directly to inventory instead of using ItemEntityPickupEvent
+                            // ItemEntityPickupEvent is for actual item entity pickups, not for inventory checks
                             flag = ReikaInventoryHelper.addToIInv(is, dropInventory);
                         }
                         if (!flag) {

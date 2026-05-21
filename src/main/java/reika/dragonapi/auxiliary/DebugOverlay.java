@@ -10,9 +10,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
-import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -23,12 +24,12 @@ import java.util.ArrayList;
 
 import static reika.dragonapi.DragonAPI.MODID;
 
-@Mod.EventBusSubscriber(modid = MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class DebugOverlay {
 
     @SubscribeEvent
-    public static void drawDebugOverlay(RenderGuiOverlayEvent event) {
-        if (event.getOverlay() == VanillaGuiOverlay.TITLE_TEXT.type()) {
+    public static void drawDebugOverlay(RenderGuiLayerEvent.Post event) {
+        if (event.getName().equals(VanillaGuiLayers.TITLE)) {
             var stack = new PoseStack();
             var mc = Minecraft.getInstance();
             if (DragonAPI.debugtest) {
@@ -41,7 +42,7 @@ public class DebugOverlay {
                 // TODO 1.21+: setShaderTexture now expects a GpuTexture. Use GuiGraphics.blit with resource binding instead where needed. Previous code was using setShaderTexture(0, ResourceLocation.parse("textures/gui/icons.png"))
             }
 
-            if (DragonOptions.TABNBT.getState() && InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), DragonOptions.DEBUGKEY.getValue())) {
+            if (DragonOptions.TABNBT.getState() && InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), DragonOptions.DEBUGKEY.getValue())) {
                 //if (APIProxyClient.key_nbt.isPressed()) {
                 var ep = mc.player;
                 var f = mc.font;
@@ -56,7 +57,8 @@ public class DebugOverlay {
                                 CompoundTag NBT = new CompoundTag();
                                 ArrayList<String> li = new ArrayList<>();
                                 try {
-                                    te.load(NBT);
+                                    // Note: This is debug code - using saveWithoutMetadata for inspection
+                                    te.saveWithoutMetadata(ep.level().registryAccess());
                                     li.addAll(ReikaNBTHelper.parseNBTAsLines(NBT));
                                 }
                                 catch (Exception e) {
@@ -68,7 +70,8 @@ public class DebugOverlay {
                                 }
                                 for (int i = 0; i < li.size(); i++) {
                                     String s = li.get(i);
-                                    event.getGuiGraphics().drawString(f, s, 1+event.getWindow().getGuiScaledWidth()/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
+                                    int windowWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+                                    event.getGuiGraphics().drawString(f, s, 1+windowWidth/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
                                     // see above note on texture binding API
                                 }
                             }

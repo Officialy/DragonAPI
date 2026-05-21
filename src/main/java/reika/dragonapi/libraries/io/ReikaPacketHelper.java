@@ -21,11 +21,10 @@ import net.minecraft.world.level.material.Fluid;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.ClientPacketDistributor;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -41,6 +40,10 @@ import reika.dragonapi.interfaces.registry.SoundEnum;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.java.ReikaReflectionHelper;
+import reika.dragonapi.libraries.io.CustomNetworkBridge;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraft.server.MinecraftServer;
+
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -53,7 +56,7 @@ public class ReikaPacketHelper {
 
     private static final HashMap<String, PacketPipeline> pipelines = new HashMap<>();
     private static final HashBiMap<Short, PacketHandler> handlers = HashBiMap.create();
-    public static CustomNetworkBridge INSTANCE;
+    private static final Map<String, CustomNetworkBridge> bridges = new HashMap<>();
 
     private static short handlerID = 0;
 
@@ -61,7 +64,8 @@ public class ReikaPacketHelper {
         DragonAPI.LOGGER.info("Registering packet handler for mod " + mod.getModId() + ", channel " + channel + ", handler " + handler.getClass().getName());
         DragonAPI.LOGGER.info("Current handler ID count: " + handlerID + ", existing handlers: " + handlers.size());
         // Initialize payload-based pipeline
-        INSTANCE = new CustomNetworkBridge(mod.getModId(), channel);
+        CustomNetworkBridge bridge = new CustomNetworkBridge(mod.getModId(), channel);
+        bridges.put(channel, bridge);
         PacketPipeline p = new PacketPipeline(mod, channel, handler);
 //        p.registerPacket(NBTPacket.class);
         handlers.put(handlerID, handler);
@@ -71,24 +75,26 @@ public class ReikaPacketHelper {
         DragonAPI.LOGGER.info("Updated handler maps - handlers: " + handlers.size() + ", pipelines: " + pipelines.size());
     }
 
-    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber
     public static class PayloadRegistrationHooks {
         @SubscribeEvent
         public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-            if (INSTANCE != null) {
-                INSTANCE.registerAll(event);
-            }
-        }
-        @SubscribeEvent
-        public static void registerClientPayloads(RegisterClientPayloadHandlersEvent event) {
-            if (INSTANCE != null) {
-                INSTANCE.registerAllClient(event);
+            for (CustomNetworkBridge bridge : bridges.values()) {
+                bridge.registerAll(event);
             }
         }
     }
 
-    public static CustomPacketPayload toPayload(String modId, PacketObj p) {
-        return INSTANCE.toPayload(modId, p);
+    public static CustomPacketPayload toPayload(String modId, PacketObj p, String channel) {
+        CustomNetworkBridge bridge = bridges.get(channel);
+        if (bridge == null) {
+            throw new IllegalArgumentException("No network bridge found for channel: " + channel);
+        }
+        return bridge.toPayload(modId, p);
+    }
+    
+    public static PacketPipeline getPipeline(String channel) {
+        return pipelines.get(channel);
     }
 
 /*    public static void registerPacketClass(String channel, Class<? extends PacketObj> c, Function<FriendlyByteBuf, ? extends PacketObj> decoder) {
@@ -107,7 +113,7 @@ public class ReikaPacketHelper {
         return getHandlerID(p.handler);
     }
 
-    private static PacketHandler getHandlerFromID(short id) {
+    public static PacketHandler getHandlerFromID(short id) {
         // If the ID is out of bounds or not registered, log the error but return null
         if (id < 0 || id >= handlerID || !handlers.containsKey(id)) {
             DragonAPI.LOGGER.error("Attempted to get a handler with invalid ID: " + id + ". Valid range is 0-" + (handlerID-1));
@@ -144,7 +150,7 @@ public class ReikaPacketHelper {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding NIntPacket", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -179,17 +185,17 @@ public class ReikaPacketHelper {
         DataPacket pack = new DataPacket();
         pack.init(PacketTypes.RAW, pipe);
         pack.setData(dat);
-        Dist side = FMLLoader.getDist(); //TODO WONT WORK ON SERVER FIND FIX
-        if (side == Dist.DEDICATED_SERVER) {
-            //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
-
-        } else if (side == Dist.CLIENT) {
-            //PacketDispatcher.sendPacketToServer(packet);
-            pipe.sendToServer(pack);
+        Dist side = FMLLoader.getDist();
+    if (side == Dist.DEDICATED_SERVER) {
+        pipe.sendToAllOnServer(pack);
+    } else {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null && server.isSameThread()) {
+             pipe.sendToAllOnServer(pack);
         } else {
-            // We are on the Bukkit server.
+             pipe.sendToServer(pack);
         }
-    }
+    }    }
 
     public static void sendDataPacket(String ch, ByteArrayOutputStream bos) {
         DataOutputStream outputStream = new DataOutputStream(bos);
@@ -204,17 +210,17 @@ public class ReikaPacketHelper {
         DataPacket pack = new DataPacket();
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
-        Dist side = FMLLoader.getDist(); //TODO WONT WORK ON SERVER FIND FIX
-        if (side == Dist.DEDICATED_SERVER) {
-            //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
-
-        } else if (side == Dist.CLIENT) {
-            //PacketDispatcher.sendPacketToServer(packet);
-            pipe.sendToServer(pack);
+        Dist side = FMLLoader.getDist();
+    if (side == Dist.DEDICATED_SERVER) {
+        pipe.sendToAllOnServer(pack);
+    } else {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null && server.isSameThread()) {
+             pipe.sendToAllOnServer(pack);
         } else {
-            // We are on the Bukkit server.
+             pipe.sendToServer(pack);
         }
-    }
+    }    }
 
     public static void sendDataPacket(String ch, int id, ServerPlayer ep, int... data) {
         ArrayList<Integer> li = new ArrayList<>();
@@ -244,7 +250,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(0); //xyz
             outputStream.writeInt(0);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding DataPacket", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -284,7 +290,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(te.getBlockPos().getZ());
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding DataPacket with BlockEntity", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -330,7 +336,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(z);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding DataPacket with coords", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -380,7 +386,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(0);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding DataPacket with PacketTarget", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -428,7 +434,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(0);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding DataPacket to entire server", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -477,7 +483,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(z);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding DataPacket with coords and PacketTarget", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -524,7 +530,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(z);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding LongDataPacket", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -565,7 +571,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(z);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding UUIDPacket", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -665,8 +671,8 @@ public class ReikaPacketHelper {
 
             outputStream.writeBoolean(scale);
         } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException("Sound Packet for sound '" + name + "' @ " + x + ", " + y + ", " + z + " threw a packet exception!");
+            DragonAPI.LOGGER.error("Sound Packet for sound '" + name + "' @ " + x + ", " + y + ", " + z + " threw a packet exception!", ex);
+            throw new RuntimeException("Sound Packet for sound '" + name + "' @ " + x + ", " + y + ", " + z + " threw a packet exception!", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -682,20 +688,16 @@ public class ReikaPacketHelper {
         pack.setData(dat);
 
         Dist side = world.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
-        if (side == Dist.DEDICATED_SERVER) {
-            // We are on the server side.
-            //ServerPlayer player2 = (ServerPlayer) player;
-            //PacketDispatcher.sendPacketToAllAround(x, y, z, 20, world.provider.dimensionId, packet);
-            if (scale)
-                pipe.sendToAllAround(pack, world, x, y, z, 20);
-            else
-                pipe.sendToAllOnServer(pack);
-        } else if (side == Dist.CLIENT) {
-
-        } else {
-            // We are on the Bukkit server.
-        }
-    }
+    if (side == Dist.DEDICATED_SERVER) {
+        if (scale)
+            pipe.sendToAllAround(pack, world, x, y, z, 20);
+        else
+            pipe.sendToAllOnServer(pack);
+    } else {
+         // Client side, usually don't send sound packets to server like this?
+         // But if we do:
+         pipe.sendToServer(pack);
+    }    }
 
     public static void sendSoundPacket(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten) {
         sendSoundPacket(s, world, x, y, z, vol, pitch, atten, getSoundDistance(atten, s));
@@ -745,8 +747,7 @@ public class ReikaPacketHelper {
             outputStream.writeBoolean(atten);
 
         } catch (Exception ex) {
-            DragonAPI.LOGGER.error("Error writing sound packet data: " + ex.getMessage());
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error writing sound packet data: " + ex.getMessage(), ex);
             return;
         }
 
@@ -799,8 +800,8 @@ public class ReikaPacketHelper {
             outputStream.writeInt(0);
             outputStream.writeInt(0);
         } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException("String Packet for " + sg + " threw a packet exception!");
+            DragonAPI.LOGGER.error("String Packet for " + sg + " threw a packet exception!", ex);
+            throw new RuntimeException("String Packet for " + sg + " threw a packet exception!", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -832,8 +833,8 @@ public class ReikaPacketHelper {
             outputStream.writeInt(y);
             outputStream.writeInt(z);
         } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException("String Packet for " + sg + " threw a packet exception!");
+            DragonAPI.LOGGER.error("String Packet for " + sg + " threw a packet exception!", ex);
+            throw new RuntimeException("String Packet for " + sg + " threw a packet exception!", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -848,12 +849,17 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+        Level level = te.getLevel();
+        if (level == null) {
+            DragonAPI.LOGGER.error("Attempted to send string packet from BlockEntity with null level: " + te);
+            return;
+        }
+        Dist side = level.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
             //PacketDispatcher.sendPacketToAllInDimension(packet, te.level.provider.dimensionId);
-            pipe.sendToDimension(pack, te.getLevel());
+            pipe.sendToDimension(pack, level);
         } else if (side == Dist.CLIENT) {
             // We are on the client side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -876,8 +882,8 @@ public class ReikaPacketHelper {
             outputStream.writeInt(y);
             outputStream.writeInt(z);
         } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException("String Packet for " + sg + " threw a packet exception!");
+            DragonAPI.LOGGER.error("String Packet for " + sg + " threw a packet exception!", ex);
+            throw new RuntimeException("String Packet for " + sg + " threw a packet exception!", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -924,7 +930,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(0);
             outputStream.writeInt(0);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding StringIntPacket", ex);
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -972,7 +978,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(te.getBlockPos().getY());
             outputStream.writeInt(te.getBlockPos().getZ());
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding StringIntPacket with BlockEntity", ex);
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -988,7 +994,12 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRINGINTLOC, pipe);
         pack.setData(dat);
 
-        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+        Level level = te.getLevel();
+        if (level == null) {
+            DragonAPI.LOGGER.error("Attempted to send string int packet from BlockEntity with null level: " + te);
+            return;
+        }
+        Dist side = level.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -1020,7 +1031,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(0);
             outputStream.writeInt(0);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding StringIntPacket with PacketTarget", ex);
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -1050,7 +1061,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(0);
             outputStream.writeInt(0);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding StringPacket", ex);
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -1066,21 +1077,17 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();    //todo THIS WONT WORK ON SERVERS - FIND AN ALTERNATIVE ASAP
-        if (side == Dist.DEDICATED_SERVER) {
-            // We are on the server side.
-            //PacketDispatcher.sendPacketToServer(packet);
-            //PacketDispatcher.sendPacketToAllPlayers(packet);
-            pipe.sendToAllOnServer(pack);
-        } else if (side == Dist.CLIENT) {
-            // We are on the client side.
-            //PacketDispatcher.sendPacketToServer(packet);
-            //PacketDispatcher.sendPacketToAllPlayers(packet);
-            pipe.sendToServer(pack);
+        Dist side = FMLLoader.getDist();
+    if (side == Dist.DEDICATED_SERVER) {
+        pipe.sendToAllOnServer(pack);
+    } else {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null && server.isSameThread()) {
+             pipe.sendToAllOnServer(pack);
         } else {
-            // We are on the Bukkit server.
+             pipe.sendToServer(pack);
         }
-    }
+    }    }
 
     public static void sendStringPacketWithRadius(String ch, int id, BlockEntity te, int radius, String sg) {
         int length = 0;
@@ -1093,7 +1100,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(te.getBlockPos().getY());
             outputStream.writeInt(te.getBlockPos().getZ());
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding StringPacket with radius", ex);
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -1109,7 +1116,12 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+        Level level = te.getLevel();
+        if (level == null) {
+            DragonAPI.LOGGER.error("Attempted to send string packet with radius from BlockEntity with null level: " + te);
+            return;
+        }
+        Dist side = level.isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
         if (side == Dist.DEDICATED_SERVER) {
             // We are on the server side.
             //PacketDispatcher.sendPacketToServer(packet);
@@ -1138,8 +1150,8 @@ public class ReikaPacketHelper {
             outputStream.writeInt(y);
             outputStream.writeInt(z);
         } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException("Packet " + ch + "/" + id + " @ " + x + "," + y + "," + z + " threw an update packet exception!");
+            DragonAPI.LOGGER.error("Packet " + ch + "/" + id + " @ " + x + "," + y + "," + z + " threw an update packet exception!", ex);
+            throw new RuntimeException("Packet " + ch + "/" + id + " @ " + x + "," + y + "," + z + " threw an update packet exception!", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -1171,7 +1183,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(y);
             outputStream.writeInt(z);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding FloatPacket", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -1220,7 +1232,7 @@ public class ReikaPacketHelper {
             outputStream.writeDouble(z);
             for (int datum : data) outputStream.writeInt(datum);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding PositionPacket", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -1274,7 +1286,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(type.ordinal());
             type.write(outputStream, obj);
         } catch (IllegalAccessException | IOException ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding SyncPacket", ex);
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -1351,10 +1363,6 @@ public class ReikaPacketHelper {
             return classMap.get(o.getClass());
         }
 
-        private static PacketableData getType(String id) {
-            return typeMap.get(id);
-        }
-
         static {
             for (PacketableData packetableData : list) {
                 typeMap.put(packetableData.id, packetableData);
@@ -1383,7 +1391,7 @@ public class ReikaPacketHelper {
 //            ex.printStackTrace();
             DragonAPI.LOGGER.error(te + " tried to sync its tank, but it is not a HybridTank instance!");
         } catch (IllegalAccessException | IOException ex) {
-            ex.printStackTrace();
+            DragonAPI.LOGGER.error("Error encoding TankSyncPacket", ex);
         }
 
         var pipe = pipelines.get(ch);
@@ -1426,8 +1434,9 @@ public class ReikaPacketHelper {
     }
 
     public static void sendEntitySyncPacket(String ch, Entity e, double range) {
-        CompoundTag nbt = new CompoundTag();
-        e.save(nbt);
+        var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, e.level().registryAccess());
+        e.save(output);
+        CompoundTag nbt = output.buildResult();
         nbt.putInt("dispatchID", e.getId());
         DataPacket pack = getNBTPacket(APIPacketHandler.PacketIDs.ENTITYSYNC.ordinal(), nbt);
         PacketPipeline pipe = pipelines.get(ch);
@@ -1454,7 +1463,7 @@ public class ReikaPacketHelper {
     }
 
     public static void updateBlockEntityData(Level world, int x, int y, int z, String name, DataInputStream in) {
-        if (world.hasChunksAt(x, y, z, x, y, z)) {
+        if (world.isLoaded(new BlockPos(x, y, z))) {
             BlockEntity te = world.getBlockEntity(new BlockPos(x, y, z));
             if (te == null) {
                 DragonAPI.LOGGER.error("Null BlockEntity for syncing field " + name);
@@ -1470,13 +1479,13 @@ public class ReikaPacketHelper {
                 f.setAccessible(true);
                 f.set(te, data);
             } catch (Exception e) {
-                e.printStackTrace();
+                DragonAPI.LOGGER.error("Error updating BlockEntity data", e);
             }
         }
     }
 
     public static void updateBlockEntityTankData(Level world, int x, int y, int z, String name, int level) {
-        if (world.hasChunksAt(x, y, z, x, y, z)) {
+        if (world.isLoaded(new BlockPos(x, y, z))) {
             BlockEntity te = world.getBlockEntity(new BlockPos(x, y, z));
             if (te == null) {
                 DragonAPI.LOGGER.error("Null BlockEntity for syncing tank field " + name);
@@ -1588,12 +1597,13 @@ public class ReikaPacketHelper {
         public static DataPacket decode(FriendlyByteBuf data) {
             try {
                 // Store the current position to read the packet info
-                int readerIndex = data.readerIndex();
+                // int readerIndex = data.readerIndex();
                 
                 // Read the packet header info
                 short id = data.readShort();
                 byte typeByte = data.readByte();
-                int byteIndex = data.readVarInt();
+                // int byteIndex = data.readVarInt();
+                data.readVarInt();
                 
                 // Get the handler and type from the header
                 PacketHandler packetHandler = getHandlerFromID(id);
@@ -1721,33 +1731,7 @@ public class ReikaPacketHelper {
             data.writeVarInt(byteIndex);
         }
 
-        public void handleClient(Supplier<NetworkEvent.Context> ctx) {
-            try {
-                // Legacy path unused in payload system
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            this.close();
-        }
-
-        public void handleServer(Supplier<NetworkEvent.Context> ctx) {
-            if (this.handler == null) {
-                DragonAPI.LOGGER.error("Packet handler is null! This is a bug!");
-                DragonAPI.LOGGER.error("Packet type: " + this.getType());
-                DragonAPI.LOGGER.error("Packet class: " + this.getClass().getName());
-                
-                // Simply mark as handled and return - no fallback handling
-                DragonAPI.LOGGER.error("Discarding packet to prevent further errors");
-                return;
-            }
-            
-            try {
-                // Legacy path unused in payload system
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            this.close();
-        }
+        // Legacy handleClient/handleServer methods removed - using payload system instead
 
         @Override
         public String toString() {
@@ -1763,17 +1747,7 @@ public class ReikaPacketHelper {
             return getHandlerID(this.handler);  // Use instance variable
         }
 
-        private void close() {
-            try {
-                DataInputStream stream = this.getDataIn();
-                if (stream != null) {
-                    stream.close();
-                }
-            } catch (IOException e) {
-                DragonAPI.LOGGER.error("Error closing packet " + this + ". Memory may leak.");
-                e.printStackTrace();
-            }
-        }
+
 
         public abstract DataInputStream getDataIn();
 
@@ -1783,7 +1757,7 @@ public class ReikaPacketHelper {
             try {
                 return ReikaPacketHelper.readString(this.getDataIn());
             } catch (IOException e) {
-                e.printStackTrace();
+                DragonAPI.LOGGER.error("Error reading string from packet", e);
                 return "ERROR";
             }
         }
@@ -1816,7 +1790,7 @@ public class ReikaPacketHelper {
             else {
                 byte[] abyte = new byte[short1];
                 buf.readFully(abyte);
-                return read(abyte, NbtAccounter.UNLIMITED); //todo potentially broken
+                return read(abyte, NbtAccounter.unlimitedHeap()); // Use unlimitedHeap() instead of UNLIMITED constant
             }
         }
 
@@ -1835,57 +1809,14 @@ public class ReikaPacketHelper {
 
     public static void syncBlockEntity(BlockEntity tile) {
         if (tile != null && tile.getLevel() != null) {
-            CompoundTag NBT = new CompoundTag();
-            tile.load(NBT);
+            var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, tile.getLevel().registryAccess());
+            tile.saveWithoutMetadata(output);
+            CompoundTag NBT = output.buildResult();
             List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).inflate(4, 4, 4)); //todo inflate or expandtowards
             for (ServerPlayer ep : li)
                 sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.VTILESYNC.ordinal(), NBT, new PacketTarget.PlayerTarget(ep));
         }
     }
 
-    // --- Payload bridge ---
-    public static final class CustomNetworkBridge {
-        private final String modId;
-        private final String channel;
 
-        public CustomNetworkBridge(String modId, String channel) {
-            this.modId = modId;
-            this.channel = channel;
-        }
-
-        public void registerAll(RegisterPayloadHandlersEvent event) {
-            var registrar = event.registrar("1");
-            reika.dragonapi.network.payload.SyncPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.RawBytesPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.DataPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.StringPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.StringIntPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.FloatPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.PosPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.NBTPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.TankPayload.register(registrar, modId);
-            reika.dragonapi.network.payload.SoundPayload.register(registrar, modId);
-        }
-
-        public void registerAllClient(RegisterClientPayloadHandlersEvent event) {
-            reika.dragonapi.network.payload.SyncPayload.registerClient(event);
-            reika.dragonapi.network.payload.RawBytesPayload.registerClient(event);
-            reika.dragonapi.network.payload.DataPayload.registerClient(event);
-            reika.dragonapi.network.payload.StringPayload.registerClient(event);
-            reika.dragonapi.network.payload.StringIntPayload.registerClient(event);
-            reika.dragonapi.network.payload.FloatPayload.registerClient(event);
-            reika.dragonapi.network.payload.PosPayload.registerClient(event);
-            reika.dragonapi.network.payload.NBTPayload.registerClient(event);
-            reika.dragonapi.network.payload.TankPayload.registerClient(event);
-            reika.dragonapi.network.payload.SoundPayload.registerClient(event);
-        }
-
-        public CustomPacketPayload toPayload(String modId, PacketObj p) {
-            // Map PacketObj to corresponding payload type
-            if (p instanceof reika.dragonapi.instantiable.io.SyncPacket sp) {
-                return new reika.dragonapi.network.payload.SyncPayload(modId, sp);
-            }
-            return new reika.dragonapi.network.payload.RawBytesPayload(modId, p);
-        }
-    }
 }

@@ -2,6 +2,7 @@ package reika.dragonapi.network;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -12,8 +13,8 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforge.network.handling.IPayloadHandlerContext;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 import reika.dragonapi.libraries.io.ReikaSoundHelper;
@@ -34,7 +35,7 @@ public final class DragonPayloads {
     public record PlayerDataSyncPayload(UUID playerId, CompoundTag data) implements CustomPacketPayload {
         public static final Type<PlayerDataSyncPayload> TYPE = new Type<>(DragonNetwork.id("player_data_sync"));
         public static final StreamCodec<ByteBuf, PlayerDataSyncPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.UUID, PlayerDataSyncPayload::playerId,
+            UUIDUtil.STREAM_CODEC, PlayerDataSyncPayload::playerId,
             ByteBufCodecs.COMPOUND_TAG, PlayerDataSyncPayload::data,
             PlayerDataSyncPayload::new
         );
@@ -44,10 +45,10 @@ public final class DragonPayloads {
             return TYPE;
         }
         
-        public static void handle(PlayerDataSyncPayload payload, IPayloadHandlerContext context) {
-            context.workHandler().execute(() -> {
+        public static void handle(PlayerDataSyncPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
                 // Handle player data sync on client
-                if (FMLLoader.getDist() == Dist.CLIENT) {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
                     // Client-side handling
                     DragonAPI.LOGGER.debug("Received player data sync for {}", payload.playerId);
                 }
@@ -60,7 +61,7 @@ public final class DragonPayloads {
     public record BlockEntitySyncPayload(BlockPos pos, CompoundTag data) implements CustomPacketPayload {
         public static final Type<BlockEntitySyncPayload> TYPE = new Type<>(DragonNetwork.id("block_entity_sync"));
         public static final StreamCodec<ByteBuf, BlockEntitySyncPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.BLOCK_POS, BlockEntitySyncPayload::pos,
+            BlockPos.STREAM_CODEC, BlockEntitySyncPayload::pos,
             ByteBufCodecs.COMPOUND_TAG, BlockEntitySyncPayload::data,
             BlockEntitySyncPayload::new
         );
@@ -70,9 +71,9 @@ public final class DragonPayloads {
             return TYPE;
         }
         
-        public static void handle(BlockEntitySyncPayload payload, IPayloadHandlerContext context) {
-            context.workHandler().execute(() -> {
-                if (FMLLoader.getDist() == Dist.CLIENT) {
+        public static void handle(BlockEntitySyncPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
                     // Apply block entity data on client
                     DragonAPI.LOGGER.debug("Received block entity sync for {}", payload.pos);
                 }
@@ -86,8 +87,8 @@ public final class DragonPayloads {
                                  float volume, float pitch, boolean relative) implements CustomPacketPayload {
         public static final Type<SoundPlayPayload> TYPE = new Type<>(DragonNetwork.id("sound_play"));
         public static final StreamCodec<ByteBuf, SoundPlayPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.RESOURCE_LOCATION, SoundPlayPayload::soundId,
-            ByteBufCodecs.ENUM.apply(SoundSource.class), SoundPlayPayload::source,
+            ResourceLocation.STREAM_CODEC, SoundPlayPayload::soundId,
+            ByteBufCodecs.idMapper(i -> SoundSource.values()[i], SoundSource::ordinal), SoundPlayPayload::source,
             ByteBufCodecs.DOUBLE, SoundPlayPayload::x,
             ByteBufCodecs.DOUBLE, SoundPlayPayload::y,
             ByteBufCodecs.DOUBLE, SoundPlayPayload::z,
@@ -102,13 +103,13 @@ public final class DragonPayloads {
             return TYPE;
         }
         
-        public static void handle(SoundPlayPayload payload, IPayloadHandlerContext context) {
-            context.workHandler().execute(() -> {
-                if (FMLLoader.getDist() == Dist.CLIENT) {
-                    SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(payload.soundId);
-                    if (sound != null) {
+        public static void handle(SoundPlayPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
+                    var soundOptional = BuiltInRegistries.SOUND_EVENT.get(payload.soundId);
+                    if (soundOptional != null && soundOptional.isPresent()) {
                         Vec3 pos = new Vec3(payload.x, payload.y, payload.z);
-                        ReikaSoundHelper.playSound(sound, pos, payload.volume, payload.pitch, payload.source);
+                        ReikaSoundHelper.playSound(soundOptional.value(), pos, payload.volume, payload.pitch, payload.source);
                     }
                 }
             });
@@ -121,7 +122,7 @@ public final class DragonPayloads {
                                      double vx, double vy, double vz, int count) implements CustomPacketPayload {
         public static final Type<ParticleSpawnPayload> TYPE = new Type<>(DragonNetwork.id("particle_spawn"));
         public static final StreamCodec<ByteBuf, ParticleSpawnPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.RESOURCE_LOCATION, ParticleSpawnPayload::particleType,
+            ResourceLocation.STREAM_CODEC, ParticleSpawnPayload::particleType,
             ByteBufCodecs.DOUBLE, ParticleSpawnPayload::x,
             ByteBufCodecs.DOUBLE, ParticleSpawnPayload::y,
             ByteBufCodecs.DOUBLE, ParticleSpawnPayload::z,
@@ -137,14 +138,14 @@ public final class DragonPayloads {
             return TYPE;
         }
         
-        public static void handle(ParticleSpawnPayload payload, IPayloadHandlerContext context) {
-            context.workHandler().execute(() -> {
-                if (FMLLoader.getDist() == Dist.CLIENT) {
+        public static void handle(ParticleSpawnPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
                     var type = BuiltInRegistries.PARTICLE_TYPE.get(payload.particleType);
-                    if (type != null) {
+                    if (type != null && type.isPresent()) {
                         Vec3 pos = new Vec3(payload.x, payload.y, payload.z);
                         Vec3 vel = new Vec3(payload.vx, payload.vy, payload.vz);
-                        ReikaParticleHelper.spawnParticle(type, pos, vel, payload.count);
+                        ReikaParticleHelper.spawnColoredParticleAt(type.value(), pos, vel, payload.count);
                     }
                 }
             });
@@ -165,9 +166,9 @@ public final class DragonPayloads {
             return TYPE;
         }
         
-        public static void handle(ConfigSyncPayload payload, IPayloadHandlerContext context) {
-            context.workHandler().execute(() -> {
-                if (FMLLoader.getDist() == Dist.CLIENT) {
+        public static void handle(ConfigSyncPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
                     // Apply config sync on client
                     DragonAPI.LOGGER.debug("Received config sync");
                 }
@@ -186,9 +187,9 @@ public final class DragonPayloads {
             return TYPE;
         }
         
-        public static void handle(ChatClearPayload payload, IPayloadHandlerContext context) {
-            context.workHandler().execute(() -> {
-                if (FMLLoader.getDist() == Dist.CLIENT) {
+        public static void handle(ChatClearPayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
                     ReikaChatHelper.clearChat();
                 }
             });
@@ -210,9 +211,9 @@ public final class DragonPayloads {
             return TYPE;
         }
         
-        public static void handle(PopupMessagePayload payload, IPayloadHandlerContext context) {
-            context.workHandler().execute(() -> {
-                if (FMLLoader.getDist() == Dist.CLIENT) {
+        public static void handle(PopupMessagePayload payload, IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
                     // Show popup message on client
                     DragonAPI.LOGGER.debug("Received popup message: {}", payload.message);
                 }

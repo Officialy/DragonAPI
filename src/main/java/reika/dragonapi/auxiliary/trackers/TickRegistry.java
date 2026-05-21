@@ -11,8 +11,13 @@ package reika.dragonapi.auxiliary.trackers;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 
 import java.util.ArrayList;
@@ -20,7 +25,7 @@ import java.util.EnumSet;
 
 import static reika.dragonapi.DragonAPI.MODID;
 
-@Mod.EventBusSubscriber(modid = MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class TickRegistry {
 
     public static final TickRegistry instance = new TickRegistry();
@@ -36,46 +41,81 @@ public class TickRegistry {
     }
 
     @SubscribeEvent
-    public void playerTick(TickEvent.PlayerTickEvent evt) {
+    public void playerTickPre(PlayerTickEvent.Pre evt) {
         for (TickHandler h : playerTickers) {
-            if (h.canFire(evt.phase)) {
-                h.tick(TickType.PLAYER, evt.player, evt.phase);
+            if (h.canFire(Phase.START)) {
+                h.tick(TickType.PLAYER, evt.getEntity(), Phase.START);
             }
         }
     }
 
     @SubscribeEvent
-    public void renderTick(TickEvent.RenderTickEvent evt) {
+    public void playerTickPost(PlayerTickEvent.Post evt) {
+        for (TickHandler h : playerTickers) {
+            if (h.canFire(Phase.END)) {
+                h.tick(TickType.PLAYER, evt.getEntity(), Phase.END);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void renderTick(RenderFrameEvent.Pre evt) { // TODO: Verify this is correct event
         for (TickHandler h : renderTickers) {
-            if (h.canFire(evt.phase)) {
-                h.tick(TickType.RENDER, evt.renderTickTime, evt.phase);
-            }
+            // Phase concept may have changed in render events
+            h.tick(TickType.RENDER, evt.getPartialTick());
         }
     }
 
     @SubscribeEvent
-    public void clientTick(TickEvent.ClientTickEvent evt) {
+    public void clientTickPre(ClientTickEvent.Pre evt) {
         for (TickHandler h : clientTickers) {
-            if (h.canFire(evt.phase)) {
-                h.tick(TickType.CLIENT, evt.phase);
+            if (h.canFire(Phase.START)) {
+                h.tick(TickType.CLIENT, Phase.START);
             }
         }
     }
 
     @SubscribeEvent
-    public void worldTick(TickEvent.LevelTickEvent evt) {
+    public void clientTickPost(ClientTickEvent.Post evt) {
+        for (TickHandler h : clientTickers) {
+            if (h.canFire(Phase.END)) {
+                h.tick(TickType.CLIENT, Phase.END);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void worldTickPre(LevelTickEvent.Pre evt) {
         for (TickHandler h : worldTickers) {
-            if (h.canFire(evt.phase)) {
-                h.tick(TickType.WORLD, evt.level, evt.phase);
+            if (h.canFire(Phase.START)) {
+                h.tick(TickType.WORLD, evt.getLevel(), Phase.START);
             }
         }
     }
 
     @SubscribeEvent
-    public void serverTick(TickEvent.ServerTickEvent evt) {
+    public void worldTickPost(LevelTickEvent.Post evt) {
+        for (TickHandler h : worldTickers) {
+            if (h.canFire(Phase.END)) {
+                h.tick(TickType.WORLD, evt.getLevel(), Phase.END);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void serverTickPre(ServerTickEvent.Pre evt) {
         for (TickHandler h : serverTickers) {
-            if (h.canFire(evt.phase)) {
-                h.tick(TickType.SERVER, evt.phase);
+            if (h.canFire(Phase.START)) {
+                h.tick(TickType.SERVER, Phase.START);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void serverTickPost(ServerTickEvent.Post evt) {
+        for (TickHandler h : serverTickers) {
+            if (h.canFire(Phase.END)) {
+                h.tick(TickType.SERVER, Phase.END);
             }
         }
     }
@@ -134,13 +174,18 @@ public class TickRegistry {
         SERVER
     }
 
+    // Define Phase enum locally to maintain backward compatibility
+    public enum Phase {
+        START, END
+    }
+
     public interface TickHandler {
 
         void tick(TickType type, Object... tickData);
 
         EnumSet<TickType> getType();
 
-        boolean canFire(TickEvent.Phase p);
+        boolean canFire(Phase p);
 
         String getLabel();
 

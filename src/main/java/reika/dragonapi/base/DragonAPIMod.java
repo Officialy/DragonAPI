@@ -28,7 +28,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.*;
 
-import static net.neoforged.fml.loading.FMLLoader.isProduction;
+import static net.neoforged.fml.loading.FMLEnvironment.isProduction;
 
 public abstract class DragonAPIMod {
 	private static final HashMap<String, ModVersion> modVersions = new HashMap<>();

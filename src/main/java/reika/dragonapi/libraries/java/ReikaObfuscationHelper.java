@@ -12,8 +12,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.common.ForgeHooks;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.common.CommonHooks;
+import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.exception.VanillaIntegrityException;
 
 public class ReikaObfuscationHelper {
@@ -200,7 +200,7 @@ public class ReikaObfuscationHelper {
     }*/
 
     private static boolean isClientSide() {
-        return FMLLoader.getDist() == Dist.CLIENT;
+        return FMLEnvironment.dist == Dist.CLIENT;
     }
 
     public interface ReflectiveAccessExceptionHandler {

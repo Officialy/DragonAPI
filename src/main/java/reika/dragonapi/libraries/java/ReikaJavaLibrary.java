@@ -13,7 +13,7 @@ import com.google.common.reflect.ClassPath;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import reika.dragonapi.DragonAPI;
@@ -70,12 +70,12 @@ public final class ReikaJavaLibrary {
             pConsole(sg);
     }
 
-    public static void pConsole(String obj, Dist s) {
-        if (FMLLoader.getDist() == s)
+    public static void pConsole(String obj, net.neoforged.api.distmarker.Dist s) {
+        if (FMLEnvironment.dist == s)
             pConsole(obj);
     }
 
-    public static void pConsole(String obj, Dist s, boolean con) {
+    public static void pConsole(String obj, net.neoforged.api.distmarker.Dist s, boolean con) {
         if (con)
             pConsole(obj, s);
     }

@@ -18,6 +18,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
@@ -37,7 +38,7 @@ import java.util.Map;
 
 import static reika.dragonapi.DragonAPI.MODID;
 
-@Mod.EventBusSubscriber(modid = MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public final class ReikaGuiAPI extends Screen {
 
     public static final ReikaGuiAPI instance = new ReikaGuiAPI();
@@ -70,11 +71,11 @@ public final class ReikaGuiAPI extends Screen {
             return;
         }
 
-        Matrix4f m = matrixStack.last().pose();
-        buffer.vertex(m, x, y + h, 0).color(col).uv(u0, v1).endVertex();
-        buffer.vertex(m, x + w, y + h, 0).color(col).uv(u1, v1).endVertex();
-        buffer.vertex(m, x + w, y, 0).color(col).uv(u1, v0).endVertex();
-        buffer.vertex(m, x, y, 0).color(col).uv(u0, v0).endVertex();
+        PoseStack.Pose pose = matrixStack.last();
+        buffer.addVertex(pose, x, y + h, 0).setColor(col).setUv(u0, v1);
+        buffer.addVertex(pose, x + w, y + h, 0).setColor(col).setUv(u1, v1);
+        buffer.addVertex(pose, x + w, y, 0).setColor(col).setUv(u1, v0);
+        buffer.addVertex(pose, x, y, 0).setColor(col).setUv(u0, v0);
     }
 
     public int getScreenXInset() {

@@ -31,8 +31,10 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.InterModComms;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.minecraft.SharedConstants;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.extras.ModVersion;
@@ -52,7 +54,7 @@ import reika.dragonapi.libraries.io.ReikaChatHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.java.ReikaStringParser;
-@Mod.EventBusSubscriber(modid = DragonAPI.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DragonAPI.MODID)
 public class CommandableUpdateChecker {
 
     public static final CommandableUpdateChecker instance = new CommandableUpdateChecker();
@@ -135,7 +137,7 @@ public class CommandableUpdateChecker {
         }
         if (mod.getUpdateCheckURL() == null)
             return;
-        String url = mod.getUpdateCheckURL() + "_" + FMLLoader.versionInfo().mcVersion().replaceAll("\\.", "-") + ".txt";
+        String url = mod.getUpdateCheckURL() + "_" + SharedConstants.VERSION_NAME.replaceAll("\\.", "-") + ".txt";
         URL file = this.getURL(url);
         if (file == null) {
             mod.getModLogger().error("Could not create URL to update checker. Version will not be checked.");

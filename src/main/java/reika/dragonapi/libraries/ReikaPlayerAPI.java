@@ -17,8 +17,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.common.util.FakePlayer;
-import net.neoforged.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -119,7 +119,7 @@ public class ReikaPlayerAPI {
         return ep.getUUID().equals(DragonAPI.Reika_UUID);
     }
     public static Entity getLookedAtEntity(Player ep, double reach, double boxSize) {
-        Vec3 vec = new Vec3(ep.getX(), (ep.getY() + 1.62) - ep.yo, ep.getZ()); //yOffset
+        Vec3 vec = ep.getEyePosition(1.0F);
         Vec3 vec2 = ep.getLookAngle();
         double s = boxSize;
         for (double d = 0; d <= reach; d += boxSize * 2) {

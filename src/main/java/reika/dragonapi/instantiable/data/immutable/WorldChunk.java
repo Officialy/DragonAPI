@@ -67,7 +67,11 @@ public final class WorldChunk {
     }
 
     public static WorldChunk readFromTag(CompoundTag tag) {
-        return new WorldChunk(tag.getInt("dimension"), tag.getInt("xCoord"), tag.getInt("zCoord"));
+        return new WorldChunk(
+            reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "dimension", 0),
+            reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "xCoord", 0),
+            reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "zCoord", 0)
+        );
     }
 
 }

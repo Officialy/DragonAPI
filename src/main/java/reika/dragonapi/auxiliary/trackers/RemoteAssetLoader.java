@@ -12,6 +12,7 @@ package reika.dragonapi.auxiliary.trackers;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.PopupWriter;
@@ -32,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-@Mod.EventBusSubscriber(modid = DragonAPI.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DragonAPI.MODID)
 public class RemoteAssetLoader {
 
     public static final RemoteAssetLoader instance = new RemoteAssetLoader();

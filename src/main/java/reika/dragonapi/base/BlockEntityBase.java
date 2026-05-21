@@ -27,9 +27,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.common.extensions.IForgeBlockEntity;
-import net.neoforged.common.util.FakePlayer;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -57,7 +56,7 @@ import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 import java.lang.reflect.Field;
 import java.util.*;
 
-public abstract class BlockEntityBase extends BlockEntity implements IForgeBlockEntity, CompoundSyncPacket.CompoundSyncPacketHandler {
+public abstract class BlockEntityBase extends BlockEntity implements CompoundSyncPacket.CompoundSyncPacketHandler {
 
     protected static final Random rand = new Random();
     protected final Direction[] dirs = Direction.values();
@@ -548,12 +547,12 @@ public abstract class BlockEntityBase extends BlockEntity implements IForgeBlock
 
     public void writeError(Throwable e) {
         if (DragonOptions.CHATERRORS.getState()) {
-            ReikaChatHelper.write(this + " [" + FMLLoader.getDist() + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
+            ReikaChatHelper.write(this + " [" + FMLEnvironment.dist + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
             ReikaChatHelper.write(Arrays.toString(e.getStackTrace()));
             ReikaChatHelper.write("");
         }
 
-        DragonAPI.LOGGER.error(this + " [" + FMLLoader.getDist() + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
+        DragonAPI.LOGGER.error(this + " [" + FMLEnvironment.dist + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
         e.printStackTrace();
         DragonAPI.LOGGER.info("");
     }

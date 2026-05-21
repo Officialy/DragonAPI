@@ -136,7 +136,7 @@ public class CountMap<V> {
         total = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "total", 0);
 
         data.clear();
-        ListTag li = tag.getList("data", Tag.TAG_COMPOUND);
+        ListTag li = tag.getList("data").orElse(new ListTag());
         for (int i = 0; i < li.size(); i++) {
             CompoundTag dat = reika.dragonapi.libraries.io.NBTCompat.getListCompound(li, i);
             V key = converter.createFromNBT(dat.get("key"));

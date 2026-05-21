@@ -5,6 +5,9 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
 public record RawBytesPayload(String modId, ReikaPacketHelper.PacketObj source) implements CustomPacketPayload {
@@ -31,6 +34,17 @@ public record RawBytesPayload(String modId, ReikaPacketHelper.PacketObj source) 
 
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+    public static void register(PayloadRegistrar registrar, String modId) {
+        registrar.playBidirectional(TYPE, STREAM_CODEC, (payload, ctx) -> {
+            ctx.enqueueWork(() -> {
+                // Handle raw bytes payload - the payload already contains the packet object
+                // which should be handled by the packet pipeline system
+                // This is a stub for now - actual packet handling is done through PacketPipeline
+                // TODO: Route payload to appropriate handler based on packet type
+            });
+        });
+    }
 }
 
 

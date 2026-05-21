@@ -12,7 +12,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
-import net.neoforged.common.capabilities.ForgeCapabilities;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
@@ -48,7 +48,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         posY = tile.getBlockPos().getY();
         posZ = tile.getBlockPos().getZ();
         epInv = playerInv;
-        ii = te.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+        ii = te.getCapability(Capabilities.ItemHandler.BLOCK).orElse(null);
     }
 
     public CoreContainer<T> setAlwaysInteractable() {
@@ -246,7 +246,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     private boolean canAdd(ItemStack is, ItemStack inslot) {
         if (inslot.isEmpty())
             return true;
-        return ReikaItemHelper.matchStacks(is, inslot) && ItemStack.isSameItemSameTags(is, inslot);
+        return ReikaItemHelper.matchStacks(is, inslot) && ItemStack.isSameItemSameComponents(is, inslot);
     }
 
     @Override //To avoid a couple crashes with some mods (or vanilla packet system) not checking array bounds

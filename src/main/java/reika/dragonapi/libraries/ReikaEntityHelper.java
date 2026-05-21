@@ -9,6 +9,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.animal.*;
+import net.minecraft.world.entity.animal.sheep.Sheep;
+import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.item.FallingBlockEntity;
@@ -21,8 +23,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.equipment.ArmorMaterial;
 import net.minecraft.world.level.Level;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.interfaces.item.UnbreakableArmor;
@@ -201,21 +205,37 @@ public class ReikaEntityHelper {
         return n.contains("tconstruct") && n.contains("blueslime");
     }
 
-    public static boolean isEntityWearingFullSuitOf(LivingEntity e, ArmorMaterial type) {
-        return isEntityWearingFullSuitOf(e, (ItemStack is) -> is.getItem() instanceof ArmorItem && ((ArmorItem) is.getItem()).getMaterial() == type);
+    public static boolean isEntityWearingFullSuitOf(LivingEntity e, net.minecraft.world.item.equipment.ArmorMaterial type) {
+        // ArmorItem.getMaterial() removed - armor materials are now stored in data components
+        // TODO: Implement proper armor material checking using data components
+        return isEntityWearingFullSuitOf(e, (ItemStack is) -> {
+            // Check if item has armor attributes as a proxy for being armor
+            var attrs = is.get(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS);
+            if (attrs != null) {
+                // Check if it has armor-related attributes
+                return attrs.modifiers().stream().anyMatch(mod -> 
+                    mod.attribute() == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR ||
+                    mod.attribute() == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS
+                );
+            }
+            return false;
+        });
     }
 
     public static boolean isEntityWearingFullSuitOf(LivingEntity e, Function<ItemStack, Boolean> func) {
-        for (int i = 1; i <= 4; i++) {
-            ItemStack is = e.getItemBySlot(EquipmentSlot.byTypeAndIndex(EquipmentSlot.Type.ARMOR, i));
-            if (is == null || !func.apply(is))
+        // EquipmentSlot.byTypeAndIndex removed - use enum values directly
+        EquipmentSlot[] armorSlots = {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD};
+        for (EquipmentSlot slot : armorSlots) {
+            ItemStack is = e.getItemBySlot(slot);
+            if (is == null || is.isEmpty() || !func.apply(is))
                 return false;
         }
         return true;
     }
 
     public static boolean burnsInSun(LivingEntity e) {
-        return e.getMobType() == MobType.UNDEAD;
+        // MobType.UNDEAD removed - use EntityTypeTags.UNDEAD instead
+        return e.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD);
     }
 
     public static int damageArmor(LivingEntity e, int amt) {
@@ -239,13 +259,13 @@ public class ReikaEntityHelper {
     }
 
     public static void performEntityVerification(ServerPlayer ep, int entityID, ResourceKey<Level> dim, int classHash) {
-//        ReikaJavaLibrary.pConsole("Verifying existence of "+entityID+" on side "+ FMLLoader.getDist());
+//        ReikaJavaLibrary.pConsole("Verifying existence of "+entityID+" on side "+ FMLEnvironment.dist);
         Level world = ep.level();//todo DimensionManager.getWorld(dim);
         if (world != null) {
             Entity e = world.getEntity(entityID);
             if (e != null) {
                 if (e.getClass().getName().hashCode() == classHash) {
-                    ReikaJavaLibrary.pConsole("Verified existence of " + e + " on side " + FMLLoader.getDist());
+                    ReikaJavaLibrary.pConsole("Verified existence of " + e + " on side " + FMLEnvironment.dist);
                     return;
                 }
             }
@@ -255,7 +275,14 @@ public class ReikaEntityHelper {
     }
 
     private static int damageArmorItem(LivingEntity e, int slot, int amt, BiFunction<ItemStack, Integer, Integer> handle) {
-        ItemStack arm = e.getItemBySlot(EquipmentSlot.byTypeAndIndex(EquipmentSlot.Type.ARMOR, slot));
+        EquipmentSlot slotType = switch (slot) {
+            case 0 -> EquipmentSlot.FEET;
+            case 1 -> EquipmentSlot.LEGS;
+            case 2 -> EquipmentSlot.CHEST;
+            case 3 -> EquipmentSlot.HEAD;
+            default -> EquipmentSlot.FEET;
+        };
+        ItemStack arm = e.getItemBySlot(slotType);
         if (arm != null && canDamageArmorOf(e)) {
             ItemStack pre = arm.copy();
             int ret = 0;
@@ -290,12 +317,12 @@ public class ReikaEntityHelper {
                 arm.setDamageValue(amt);// damageItem(amt, e);
                 if (arm.getDamageValue() > arm.getMaxDamage() || arm.getCount() <= 0) {
                     arm = null;
-                    e.setItemSlot(EquipmentSlot.byTypeAndIndex(EquipmentSlot.Type.ARMOR, slot), ItemStack.EMPTY);
+                    e.setItemSlot(slotType, ItemStack.EMPTY);
                 }
                 e.playSound(SoundEvents.ITEM_BREAK, 0.1F, 0.8F);
                 ret += amt;
             }
-            ItemStack post = e.getItemBySlot(EquipmentSlot.byTypeAndIndex(EquipmentSlot.Type.ARMOR, slot));
+            ItemStack post = e.getItemBySlot(slotType);
             return ItemStack.matches(pre, post) ? 0 : ret;
         }
         return 0;

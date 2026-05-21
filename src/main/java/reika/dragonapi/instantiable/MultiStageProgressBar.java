@@ -64,7 +64,7 @@ public class MultiStageProgressBar {
 
     public void load(CompoundTag nbt) {
         bars.clear();
-        ListTag li = nbt.getList("bars", Tag.TAG_COMPOUND);
+        ListTag li = nbt.getList("bars").orElse(new ListTag());
         for (Object o : li) {  //li.tagList -- TODO might be wrong
             CompoundTag tag = (CompoundTag) o;
             ProgressBar b = new ProgressBar(0);

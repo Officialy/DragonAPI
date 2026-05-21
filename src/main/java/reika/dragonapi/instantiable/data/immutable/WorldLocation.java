@@ -21,7 +21,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import reika.dragonapi.interfaces.Location;
 import reika.dragonapi.libraries.ReikaAABBHelper;
@@ -169,9 +169,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public void triggerBlockUpdate(boolean adjacent) {
         Level world = this.getWorld();
         if (world != null) {
-            world.blockUpdated(
-                    new BlockPos(pos.getX(), pos.getY(), pos.getZ()),
-                    world.getBlockState(pos).getBlock());
+            world.updateNeighborsAt(pos, world.getBlockState(pos).getBlock());
             if (adjacent) {
                 ReikaWorldHelper.causeAdjacentUpdates(
                         world, new BlockPos(pos.getX(), pos.getY(), pos.getZ()));

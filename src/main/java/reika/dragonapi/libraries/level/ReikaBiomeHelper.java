@@ -11,12 +11,12 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.neoforged.common.Tags;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.Tags;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
-import reika.dragonapi.interfaces.registry.TreeType;
+// TreeType import removed - use Tags.Biomes.PRIMARY_WOOD_TYPE_* tags instead
 import reika.dragonapi.libraries.java.ReikaStringParser;
-import reika.dragonapi.libraries.registry.ReikaTreeHelper;
+// ReikaTreeHelper removed - use Tags.Biomes.PRIMARY_WOOD_TYPE_* tags instead
 import reika.dragonapi.libraries.rendering.ReikaColorAPI;
 
 import java.util.*;
@@ -27,7 +27,8 @@ public class ReikaBiomeHelper {
 
         @Override
         public int compare(Biome o1, Biome o2) {
-            return ForgeRegistries.BIOMES.getKey(o1).getNamespace().compareTo(ForgeRegistries.BIOMES.getKey(o2).getNamespace());
+            return BuiltInRegistries.BIOME.getResourceKey(o1).map(k -> k.location().getNamespace()).orElse("").compareTo(
+                    BuiltInRegistries.BIOME.getResourceKey(o2).map(k -> k.location().getNamespace()).orElse(""));
         }
 
     };
@@ -37,7 +38,7 @@ public class ReikaBiomeHelper {
     //    private static final ResourceKey<Biome> biomeColors = new int[40];
     private static final HashMap<String, Biome> nameMap = new HashMap<>();
     private static final HashMap<ResourceKey<Biome>, BiomeTemperatures> temperatures = new HashMap<>();
-    private static final HashMap<ResourceKey<Biome>, TreeType> biomeTrees = new HashMap<>();
+    // biomeTrees removed - use Tags.Biomes.PRIMARY_WOOD_TYPE_* tags to determine wood types from biomes
 
     static {
 //        addChildBiome(Biomes.DESERT, Biomes.DESERTHILLS);
@@ -146,32 +147,13 @@ public class ReikaBiomeHelper {
 
         temperatures.put(Biomes.THE_END, BiomeTemperatures.LUNAR);
 
-        biomeTrees.put(Biomes.SNOWY_TAIGA, ReikaTreeHelper.SPRUCE);
-        biomeTrees.put(Biomes.TAIGA, ReikaTreeHelper.SPRUCE);
-        biomeTrees.put(Biomes.OLD_GROWTH_PINE_TAIGA, ReikaTreeHelper.SPRUCE);
-        biomeTrees.put(Biomes.OLD_GROWTH_SPRUCE_TAIGA, ReikaTreeHelper.SPRUCE);
-
-        biomeTrees.put(Biomes.OCEAN, ReikaTreeHelper.OAK);
-        biomeTrees.put(Biomes.FOREST, ReikaTreeHelper.OAK);
-        biomeTrees.put(Biomes.SWAMP, ReikaTreeHelper.OAK);
-        biomeTrees.put(Biomes.RIVER, ReikaTreeHelper.OAK);
-        biomeTrees.put(Biomes.ICE_SPIKES, ReikaTreeHelper.OAK);
-        biomeTrees.put(Biomes.SNOWY_PLAINS, ReikaTreeHelper.OAK);
-
-        biomeTrees.put(Biomes.ERODED_BADLANDS, ReikaTreeHelper.OAK);
-        biomeTrees.put(Biomes.WOODED_BADLANDS, ReikaTreeHelper.OAK);
-        biomeTrees.put(Biomes.BADLANDS, ReikaTreeHelper.OAK);
-
-        biomeTrees.put(Biomes.BIRCH_FOREST, ReikaTreeHelper.BIRCH);
-
-        biomeTrees.put(Biomes.JUNGLE, ReikaTreeHelper.JUNGLE);
-        biomeTrees.put(Biomes.BAMBOO_JUNGLE, ReikaTreeHelper.JUNGLE);
-        biomeTrees.put(Biomes.SPARSE_JUNGLE, ReikaTreeHelper.JUNGLE);
-
-        biomeTrees.put(Biomes.SAVANNA, ReikaTreeHelper.ACACIA);
-        biomeTrees.put(Biomes.SAVANNA_PLATEAU, ReikaTreeHelper.ACACIA);
-
-        biomeTrees.put(Biomes.DARK_FOREST, ReikaTreeHelper.DARKOAK);
+        // Biome tree mappings removed - use Tags.Biomes.PRIMARY_WOOD_TYPE_* tags instead:
+        // - Tags.Biomes.PRIMARY_WOOD_TYPE_OAK for oak biomes
+        // - Tags.Biomes.PRIMARY_WOOD_TYPE_SPRUCE for spruce/taiga biomes  
+        // - Tags.Biomes.PRIMARY_WOOD_TYPE_BIRCH for birch biomes
+        // - Tags.Biomes.PRIMARY_WOOD_TYPE_JUNGLE for jungle biomes
+        // - Tags.Biomes.PRIMARY_WOOD_TYPE_ACACIA for savanna biomes
+        // - Tags.Biomes.PRIMARY_WOOD_TYPE_DARK_OAK for dark forest biomes
 
 //        for (int i = 0; i < Biome.biomeList; i++) { //todo list of biomes
 //            Biome b = Biome.biomeList[i];
@@ -418,7 +400,7 @@ public class ReikaBiomeHelper {
             return BiomeTemperatures.FIERY;
         else if (biome == Biomes.THE_END)
             return BiomeTemperatures.LUNAR;
-        var holder = level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(biome);
+        var holder = level.registryAccess().lookupOrThrow(Registries.BIOME).getHolder(biome);
         if (holder.isPresent()) {
             List<TagKey<Biome>> types = holder.get().tags().toList();//todo might be broken
             for (TagKey<Biome> type : types) {
@@ -486,7 +468,7 @@ public class ReikaBiomeHelper {
         if (biome == Biomes.MUSHROOM_FIELDS)
             return 0.75F;
 
-        TagKey<Biome>[] types = (TagKey<Biome>[]) level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(biome).get().getTagKeys().toArray();//todo might be casting wrong idk //BiomeDictionary.getTypes(biome).toArray(new BiomeDictionary.Type[0]);
+        TagKey<Biome>[] types = level.registryAccess().lookupOrThrow(Registries.BIOME).getHolder(biome).get().tags().toArray(TagKey[]::new);//todo might be casting wrong idk //BiomeDictionary.getTypes(biome).toArray(new BiomeDictionary.Type[0]);
         float val = 0.5F;
         for (TagKey<Biome> type : types) {
             if (type == BiomeTags.IS_BEACH)

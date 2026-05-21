@@ -7,7 +7,7 @@ import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+// BlockEntityWithoutLevelRenderer no longer needed
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -15,14 +15,16 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.client.model.data.ModelData;
+import net.neoforged.neoforge.model.data.ModelData;
 import reika.dragonapi.interfaces.IBlockRenderer;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.function.Predicate;
 
 
@@ -34,16 +36,41 @@ public class ReikaRenderDispatcher extends BlockRenderDispatcher {
     private static final List<IBlockRenderer> renderers = new ArrayList<>();
     public final BlockRenderDispatcher parentDispatcher;
 
-    public ReikaRenderDispatcher(BlockRenderDispatcher parentDispatcher, BlockEntityWithoutLevelRenderer renderer, BlockColors p_173401_) {
-        super(parentDispatcher.getBlockModelShaper(), renderer, p_173401_);
+    public ReikaRenderDispatcher(BlockRenderDispatcher parentDispatcher, BlockColors p_173401_) {
+        super(parentDispatcher.getBlockModelShaper(), 
+              getPrivateField(parentDispatcher, "materials"),
+              getPrivateField(parentDispatcher, "specialBlockModelRenderer"),
+              p_173401_);
         this.parentDispatcher = parentDispatcher;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private static <T> T getPrivateField(Object obj, String fieldName) {
+        try {
+            Class<?> c = obj.getClass();
+            Field f = null;
+            while (f == null && c != null) {
+                try {
+                    f = c.getDeclaredField(fieldName);
+                } catch (NoSuchFieldException e2) {
+                    c = c.getSuperclass();
+                }
+            }
+            if (f == null) {
+                throw new NoSuchFieldException("Could not find field " + fieldName);
+            }
+            f.setAccessible(true);
+            return (T) f.get(obj);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to access field " + fieldName, e);
+        }
     }
 
     public static void init() {
         Minecraft mc = Minecraft.getInstance();
         BlockRenderDispatcher parentDispatcher = mc.getBlockRenderer();
 
-        mc.blockRenderer = new ReikaRenderDispatcher(parentDispatcher, new BlockEntityWithoutLevelRenderer(mc.getBlockEntityRenderDispatcher(), mc.getEntityModels()), mc.getBlockColors());
+        mc.blockRenderer = new ReikaRenderDispatcher(parentDispatcher, mc.getBlockColors());
     }
 
     public static synchronized void registerBlockRenderer(Block block, IBlockRenderer renderer) {

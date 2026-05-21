@@ -2,7 +2,7 @@ package reika.dragonapi;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -12,22 +12,23 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.ForgeRegistries;
-import net.neoforged.neoforge.registries.RegistryObject;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import reika.dragonapi.auxiliary.PopupWriter;
 import reika.dragonapi.auxiliary.trackers.EventProfiler;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.instantiable.effects.StringParticleFX;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 
-@Mod.EventBusSubscriber(modid = "DragonAPI", bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = "DragonAPI")
 public class Tests {
 
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, DragonAPI.MODID);
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, DragonAPI.MODID);
 
-    public static final RegistryObject<Item> TEST_ITEM = ITEMS.register("test_item", () -> new ItemTest(new Item.Properties()));
+    public static final DeferredHolder<Item, Item> TEST_ITEM = ITEMS.register("test_item", () -> new ItemTest(new Item.Properties()));
     public static void runTests() {
 
     }
@@ -39,14 +40,14 @@ public class Tests {
         }
 
         @Override
-        public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        public InteractionResult use(Level level, Player player, InteractionHand hand) {
             if (!player.isShiftKeyDown()) {
                 PopupWriter.instance.addMessage("Popup test with a super duper extra fancy long message, to test spacing!");
             } else if (player.isShiftKeyDown()) {
                 PopupWriter.list.remove(0);
             }
 
-            return InteractionResultHolder.pass(this.getDefaultInstance());
+            return InteractionResult.PASS;
         }
     }
 

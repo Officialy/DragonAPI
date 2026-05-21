@@ -6,11 +6,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.bus.api.Cancelable;
+import net.neoforged.bus.api.ICancellableEvent;
 import net.neoforged.bus.api.Event;
 
-@Cancelable
-public class BlockEntityMoveEvent extends Event {
+public class BlockEntityMoveEvent extends Event implements ICancellableEvent {
 
     public final Level world;
     public final BlockPos pos;

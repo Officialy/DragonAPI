@@ -10,6 +10,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.world.level.block.state.BlockState;
 import reika.dragonapi.instantiable.data.immutable.BlockBox;
 
@@ -20,9 +21,9 @@ public abstract class BlockCustomLeaf extends LeavesBlock {
 
     protected final Random rand = new Random();
 
-    protected BlockCustomLeaf(BlockBehaviour.Properties properties, boolean tick) {
-        super(properties.destroyTime(0.2f).randomTicks().sound(SoundType.GRASS));
-//        if (FMLLoader.getDist() == Dist.CLIENT)
+    protected BlockCustomLeaf(BlockBehaviour.Properties properties) {
+        super(properties);
+//        if (FMLEnvironment.dist == Dist.CLIENT)
 //            this.setGraphicsLevel(Minecraft.getInstance().options.fancyGraphics);
     }
 

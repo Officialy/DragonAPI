@@ -18,9 +18,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import cpw.mods.modlauncher.Launcher;
+// Removed cpw.mods.modlauncher.Launcher - doesn't exist in NeoForge
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
+import static net.neoforged.fml.loading.FMLEnvironment.isProduction;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,7 +110,7 @@ public class ReikaASMHelper {
     }
 
     public static FieldNode getFieldByName(ClassNode c, String obf, String deobf) throws ASMException.NoSuchASMFieldException {
-        String s = FMLLoader.isProduction() ? obf : deobf;
+        String s = isProduction() ? obf : deobf;
         List<FieldNode> fields = c.fields;
         for (int k = 0; k < fields.size(); k++) {
             FieldNode f = fields.get(k);
@@ -224,7 +225,7 @@ public class ReikaASMHelper {
 
     public static boolean isMethodCall(AbstractInsnNode ain, String obf, String deobf) {
         if (ain instanceof MethodInsnNode min) {
-            String s = FMLLoader.isProduction() ? obf : deobf;
+            String s = isProduction() ? obf : deobf;
             return min.name.equals(s);
         }
         return false;
@@ -1200,12 +1201,12 @@ public class ReikaASMHelper {
     }
 
     public static Dist getSide() {
-        return FMLLoader.getDist();
+        return FMLEnvironment.dist;
     }
 
     public static void writeClassFile(ClassNode cn, String path) {
         try {
-            if (FMLLoader.isProduction()) {
+            if (isProduction()) {
                 cn = copyClassNode(cn);
                 deobfClassFile(cn);
             }
@@ -1440,7 +1441,7 @@ public class ReikaASMHelper {
                     if (p.isEnabled()) {
                         p.activate();
                         enabledCount++;
-                        String s = !FMLLoader.isProduction() ? p.deobfName : p.obfName;
+                        String s = !isProduction() ? p.deobfName : p.obfName;
                         ret.addValue(s, p);
                     }
                     else if (!p.isDisabledByDefault()) {

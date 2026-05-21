@@ -3,24 +3,41 @@ package reika.dragonapi.base;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.debug.StructureRenderer;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nullable;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 
 import static reika.dragonapi.DragonAPI.MODID;
 
-public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements BlockEntityRenderer<TE> {
+public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements BlockEntityRenderer<TE, BlockEntityRenderState> {
 
     protected final Direction[] dirs = Direction.values();
 
     private final HashMap<String, String> textureOverrides = new HashMap<>();
+
+    @Override
+    public BlockEntityRenderState createRenderState() {
+        return new BlockEntityRenderState();
+    }
+
+    @Override
+    public void submit(BlockEntityRenderState blockEntityRenderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState cameraRenderState) {
+        // This method needs to be implemented by subclasses
+        // For now, we'll provide a default implementation that does nothing
+    }
 
     public final boolean isValidMachineRenderPass(BlockEntityBase te) {
 //     todo   if (!te.isInWorld() || StructureRenderer.isRenderingTiles())

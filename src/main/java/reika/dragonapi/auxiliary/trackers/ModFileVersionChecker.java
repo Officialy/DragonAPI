@@ -6,8 +6,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.bus.api.Cancelable;
+import net.neoforged.bus.api.ICancellableEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -18,7 +19,7 @@ import reika.dragonapi.instantiable.io.PacketTarget;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
 import java.util.HashMap;
-@Mod.EventBusSubscriber(modid = DragonAPI.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DragonAPI.MODID)
 public class ModFileVersionChecker {
 
     public static final ModFileVersionChecker instance = new ModFileVersionChecker();
@@ -74,8 +75,7 @@ public class ModFileVersionChecker {
         }
     }
 
-    @Cancelable
-    public static class HashKickEvent extends PlayerEvent {
+    public static class HashKickEvent extends PlayerEvent implements ICancellableEvent {
 
         public final String serverHash;
         public final String clientHash;

@@ -37,10 +37,11 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
-import net.neoforged.neoforge.fluids.IFluidBlock;
+// IFluidBlock removed in NeoForge - fluid blocks are handled differently
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import reika.dragonapi.APIPacketHandler;
@@ -1046,7 +1047,7 @@ public class ReikaWorldHelper {
 
         private static HashSet<String> getModList() {
             HashSet<String> ret = new HashSet<>();
-            for (ModInfo mc : FMLLoader.getLoadingModList().getMods()) {
+            for (ModInfo mc : FMLLoader.getCurrent().getLoadingModList().getMods()) {
                 ret.add(mc.getModId());
             }
             return ret;

@@ -10,9 +10,6 @@
 package reika.dragonapi.instantiable.event.client;
 
 
-import net.minecraftforge.common.MinecraftForge;
-
-import cpw.mods.fml.common.eventhandler.Event;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.Event;
 

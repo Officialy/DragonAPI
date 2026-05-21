@@ -6,7 +6,6 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.IFluidBlock;
 import reika.dragonapi.instantiable.HybridTank;
 
 import java.util.HashMap;
@@ -71,10 +70,8 @@ public class ReikaFluidHelper {
             return Fluids.LAVA;
         if (b == Blocks.WATER.defaultBlockState() || b == Fluids.FLOWING_WATER.getFlowing().defaultFluidState().createLegacyBlock())
             return Fluids.WATER;
-        Fluid f = b.getBlock().getFluidState(b).getType();//todo FluidRegistry.lookupFluidForBlock(b);
-        if (f == null && b instanceof IFluidBlock)
-            f = ((IFluidBlock) b).getFluid();
-        return f;
+        FluidState fluidState = b.getFluidState();
+        return fluidState.isEmpty() ? null : fluidState.getType();
     }
 
 }

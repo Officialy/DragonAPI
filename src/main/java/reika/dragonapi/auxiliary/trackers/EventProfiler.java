@@ -1,14 +1,14 @@
 package reika.dragonapi.auxiliary.trackers;
 
-import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
-import net.neoforged.neoforge.event.entity.living.LivingHurtEvent;
-import net.neoforged.neoforge.event.entity.player.EntityItemPickupEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.IEventListener;
+// IEventListener no longer exists in NeoForge 1.21.10 - using Object instead
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.event.BlockTickEvent;
 import reika.dragonapi.instantiable.event.EntityAboutToRayTraceEvent;
@@ -30,13 +30,13 @@ public class EventProfiler {
 //   todo     addShortcut(ReplaceBiomeBlocks.class);
 //        addShortcut(PopulateChunkEvent.Populate.class);
         addShortcut(EntityJoinLevelEvent.class);
-        addShortcut(LivingHurtEvent.class);
-        addShortcut(EntityItemPickupEvent.class);
+        addShortcut(LivingDamageEvent.Pre.class);
+        addShortcut(ItemEntityPickupEvent.Pre.class);
         addShortcut(ItemTooltipEvent.class);
         addShortcut(LivingEvent.LivingTickEvent.class);
 
         //CLIENT
-        addShortcut(RenderGuiOverlayEvent.class);
+        addShortcut(RenderGuiLayerEvent.Post.class);
         addShortcut(RenderLevelStageEvent.class);
 
         //DRAGONAPI
@@ -52,7 +52,7 @@ public class EventProfiler {
     }
 
     private static Class currentProfile;
-    private static final HashMap<IEventListener, EventProfile> profileData = new HashMap<>(); //not class as keys, since all are basically ASMEventHandler
+    private static final HashMap<Object, EventProfile> profileData = new HashMap<>(); //not class as keys, since all are basically ASMEventHandler (IEventListener no longer exists)
     private static int totalCount;
 
     //private EventProfiler() {
@@ -122,7 +122,7 @@ public class EventProfiler {
         return totalCount/profileData.size(); //since count is incremented once per handle, not per fire
     }
 
-    private static EventProfile getOrCreateProfile(IEventListener e) {
+    private static EventProfile getOrCreateProfile(Object e) {
         EventProfile a = profileData.get(e);
         if (a == null) {
             a = new EventProfile(e);
@@ -131,7 +131,7 @@ public class EventProfiler {
         return a;
     }
 
-    public static void firePre(Event e, IEventListener listener) {
+    public static void firePre(Event e, Object listener) {
         if (e.getClass() == currentProfile) {
             EventProfile a = getOrCreateProfile(listener);
             if (a.identifier != null) {
@@ -141,7 +141,7 @@ public class EventProfiler {
         }
     }
 
-    public static void firePost(Event e, IEventListener listener) {
+    public static void firePost(Event e, Object listener) {
         if (e.getClass() == currentProfile) {
             EventProfile a = getOrCreateProfile(listener);
             if (a.identifier != null) {
@@ -167,7 +167,7 @@ public class EventProfiler {
         private int fireCount;
         private long lastStart;
 
-        private EventProfile(IEventListener e) {
+        private EventProfile(Object e) {
             identifyingClass = e.getClass();
             String s = e.toString(); //not getClass
             String arg = currentProfile.getName().replace(".", "/");

@@ -216,8 +216,8 @@ public class ReikaShader implements ShaderHook, TickRegistry.TickHandler {
 	}
 
 	@Override
-	public boolean canFire(TickEvent.Phase p) {
-		return p == TickEvent.Phase.END;
+	public boolean canFire(TickRegistry.Phase p) {
+		return p == TickRegistry.Phase.END;
 	}
 
 	@Override

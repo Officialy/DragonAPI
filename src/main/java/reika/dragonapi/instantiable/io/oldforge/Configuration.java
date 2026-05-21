@@ -85,7 +85,7 @@ public class Configuration {
     {
         this.file = file;
         this.definedConfigVersion = configVersion;
-        String basePath = ((FMLLoader.getGamePath().toFile())).getAbsolutePath().replace(File.separatorChar, '/').replace("/.", "");
+        String basePath = ((net.neoforged.fml.loading.FMLPaths.GAMEDIR.get().toFile())).getAbsolutePath().replace(File.separatorChar, '/').replace("/.", "");
         String path = file.getAbsolutePath().replace(File.separatorChar, '/').replace("/./", "/").replace(basePath, "");
         if (PARENT != null)
         {

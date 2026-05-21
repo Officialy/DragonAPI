@@ -24,7 +24,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 
@@ -35,7 +36,7 @@ public final class ReikaChatHelper {
     }
 
     public static void clearChat(ServerPlayer ep) {
-        if (FMLLoader.getDist() == Dist.CLIENT) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
             clearChatGui();
         } else if (ep != null) {
             ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.CLEARCHAT.ordinal(), ep);
@@ -121,7 +122,7 @@ public final class ReikaChatHelper {
     }
 
     public static void writeString(String sg) {
-        if (FMLLoader.getDist() == Dist.CLIENT) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
             writeChatString(sg);
         }
     }
@@ -189,11 +190,11 @@ public final class ReikaChatHelper {
             //else if (id > 4096)
             //	writeItem(world, id, meta);
         else
-            writeString(id + ":" + " is " + ForgeRegistries.BLOCKS.getKey(id).getNamespace());
+            writeString(id + ":" + " is " + BuiltInRegistries.BLOCK.getKey(id).getNamespace());
     }
 
     public static void writeSide() {
-        writeString(String.valueOf(FMLLoader.getDist()));
+        writeString(String.valueOf(FMLEnvironment.dist));
     }
 
     public static void sendChatToPlayer(Player ep, String sg) {

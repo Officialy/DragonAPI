@@ -10,7 +10,8 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable.math;
 
-import com.mojang.blaze3d.shaders.BlendMode;
+import com.mojang.blaze3d.platform.SourceFactor;
+import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -55,7 +56,7 @@ public class Spline {
     }
 
 
-    public void render(double x, double y, double z, int color, boolean glow, boolean closed, int fineness, float lineWidthFactor, BlendMode blend) {
+    public void render(double x, double y, double z, int color, boolean glow, boolean closed, int fineness, float lineWidthFactor, SourceFactor srcFactor, DestFactor dstFactor) {
         var tesselator = Tesselator.getInstance();
         var renderer = tesselator.getBuilder();
 

@@ -4,7 +4,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.*;
 
@@ -125,7 +125,7 @@ public class ReikaEnchantmentHelper {
 
         @Override
         public int compare(Enchantment o1, Enchantment o2) {
-            return ForgeRegistries.ENCHANTMENTS.getKey(o1).getNamespace().compareTo(ForgeRegistries.ENCHANTMENTS.getKey(o2).getNamespace());
+            return BuiltInRegistries.ENCHANTMENT.getKey(o1).getNamespace().compareTo(BuiltInRegistries.ENCHANTMENT.getKey(o2).getNamespace());
         }
 
     }

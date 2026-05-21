@@ -10,9 +10,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.level.ChunkPos;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+
 import net.minecraft.server.level.ServerLevel;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
@@ -60,7 +61,7 @@ public class PacketPipeline {
 	}
 
     public void sendToAllOnServer(PacketObj p) {
-        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
         PacketDistributor.sendToAllPlayers(payload);
     }
 
@@ -74,7 +75,7 @@ public class PacketPipeline {
             throw new MisuseException("You cannot send a packet to a null player!");
         if (ReikaPlayerAPI.isFake(player))
             throw new MisuseException("You cannot send a packet to a fake player!");
-        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
         PacketDistributor.sendToPlayer(player, payload);
     }
 
@@ -83,37 +84,52 @@ public class PacketPipeline {
     }
 
     public void sendToAllAround(PacketObj p, Level world, double x, double y, double z, double range) {
-        this.sendToAllAround(p, world.dimension(), x, y, z, range);
+        if (world instanceof ServerLevel serverLevel) {
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
+            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, x, y, z, range, payload);
+        }
     }
 
     public void sendToAllAround(PacketObj p, ResourceKey<Level> world, double x, double y, double z, double range) {
-        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
-        PacketDistributor.sendToAllPlayers(payload);
+        ServerLevel serverLevel = ServerLifecycleHooks.getCurrentServer().getLevel(world);
+        if (serverLevel != null) {
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
+            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, x, y, z, range, payload);
+        }
     }
 
     public void sendToAllAround(PacketObj p, Entity e, double range) {
-        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
-        PacketDistributor.sendToAllPlayers(payload);
+        if (e.level() instanceof ServerLevel serverLevel) {
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
+            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, e.getX(), e.getY(), e.getZ(), range, payload);
+        }
     }
 
     public void sendToAllAround(PacketObj p, WorldLocation loc, double range) {
-        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
-        PacketDistributor.sendToAllPlayers(payload);
+        if (loc.getWorld() instanceof ServerLevel serverLevel) {
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
+            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, loc.pos.getX(), loc.pos.getY(), loc.pos.getZ(), range, payload);
+        }
     }
 
     public void sendToDimension(PacketObj p, Level world) {
-        this.sendToDimension(p, world.dimension());
+        if (world instanceof ServerLevel serverLevel) {
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
+            PacketDistributor.sendToPlayersInDimension(serverLevel, payload);
+        }
     }
 
     public void sendToDimension(PacketObj p, ResourceKey<Level> dimensionId) {
-        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
-        PacketDistributor.sendToAllPlayers(payload);
+        ServerLevel serverLevel = ServerLifecycleHooks.getCurrentServer().getLevel(dimensionId);
+        if (serverLevel != null) {
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
+            PacketDistributor.sendToPlayersInDimension(serverLevel, payload);
+        }
     }
 
     public void sendToServer(PacketObj p) {
-        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p);
-        ReikaPacketHelper.INSTANCE.sendToServer(payload);
+        CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
+        ClientPacketDistributor.sendToServer(payload);
     }
 
 }
-

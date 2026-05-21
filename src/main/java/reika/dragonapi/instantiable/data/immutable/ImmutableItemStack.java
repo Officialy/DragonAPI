@@ -1,70 +1,52 @@
-/*******************************************************************************
- * @author Reika Kalseki
- *
- * Copyright 2017
- *
- * All rights reserved.
- * Distribution of the software in any form is only allowed with
- * explicit, prior permission from the owner.
- ******************************************************************************/
 package reika.dragonapi.instantiable.data.immutable;
 
-import reika.dragonapi.interfaces.registry.BlockEnum;
-import reika.dragonapi.interfaces.registry.ItemEnum;
-import net.minecraft.world.item.Item;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.registries.VanillaRegistries;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.storage.TagValueOutput;
 
+/**
+ * Immutable wrapper around ItemStack for use as map keys and in collections.
+ */
 public final class ImmutableItemStack {
-
-	private final ItemStack data;
-
-	public ImmutableItemStack(Item i) {
-		this(new ItemStack(i));
-	}
-
-	public ImmutableItemStack(Block b) {
-		this(new ItemStack(b));
-	}
-
-	public ImmutableItemStack(ItemEnum i) {
-		this(new ItemStack(i.getItem()));
-	}
-
-	public ImmutableItemStack(BlockEnum b) {
-		this(new ItemStack(b.getBlock()));
-	}
-
-	public ImmutableItemStack(Item i, int num) {
-		this(new ItemStack(i, num));
-	}
-
-	public ImmutableItemStack(ItemStack is) {
-		data = is.copy();
-	}
-
-	public int getCount() {
-		return data.getCount();
-	}
-
-	public Item getItem() {
-		return data.getItem();
-	}
-
-	public int getMaxStackSize() {
-		return data.getMaxStackSize();
-	}
-
-	public ItemStack getItemStack() {
-		return data.copy();
-	}
-
-	public boolean match(ItemStack is) {
-		return is == this.getItemStack();
-	}
-
-	public boolean match(ImmutableItemStack is) {
-		return is.getItemStack() == this.getItemStack();
-	}
-
+    private final ItemStack stack;
+    
+    public ImmutableItemStack(ItemStack stack) {
+        this.stack = stack != null ? stack.copy() : ItemStack.EMPTY;
+    }
+    
+    public ItemStack getItemStack() {
+        return stack.copy();
+    }
+    
+    public ItemStack getItemStackReference() {
+        return stack;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ImmutableItemStack that = (ImmutableItemStack) obj;
+        return ItemStack.isSameItemSameComponents(stack, that.stack);
+    }
+    
+    @Override
+    public int hashCode() {
+        int hash = stack.getItem().hashCode() * 31;
+        if (!stack.isEmpty() && !stack.getComponentsPatch().isEmpty()) {
+            // Use VanillaRegistries to get a HolderLookup.Provider for serialization
+            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, VanillaRegistries.createLookup());
+            output.store("item", net.minecraft.world.item.ItemStack.CODEC, stack);
+            hash += output.buildResult().hashCode();
+        }
+        return hash;
+    }
+    
+    @Override
+    public String toString() {
+        return "ImmutableItemStack{" + stack + "}";
+    }
 }
+

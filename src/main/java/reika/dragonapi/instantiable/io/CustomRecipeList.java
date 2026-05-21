@@ -17,7 +17,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.interfaces.IReikaRecipe;
 import reika.dragonapi.io.ReikaFileReader;
@@ -156,7 +156,7 @@ public class CustomRecipeList {
     }
 
     public static void writeItem(LuaBlock lb, ItemStack is) {
-        String base = ForgeRegistries.ITEMS.getKey(is.getItem()).getPath();
+        String base = BuiltInRegistries.ITEM.getKey(is.getItem()).getPath();
         if (is.getCount() > 1) {
             base = base + "*" + is.getCount();
         }
@@ -316,9 +316,9 @@ public class CustomRecipeList {
         if (o instanceof Collection)
             return ((Collection) o).stream().map(e -> fullID(e)).collect(Collectors.toList()).toString();
         if (o instanceof Item)
-            return ForgeRegistries.ITEMS.getKey((Item) o) + "[" + ForgeRegistries.ITEMS.getKey((Item) o).getNamespace() + "]";
+            return BuiltInRegistries.ITEM.getKey((Item) o) + "[" + BuiltInRegistries.ITEM.getKey((Item) o).getNamespace() + "]";
         if (o instanceof Block)
-            return ForgeRegistries.BLOCKS.getKey((Block) o) + "[" + ForgeRegistries.BLOCKS.getKey((Block) o).getNamespace() + "]";
+            return BuiltInRegistries.BLOCK.getKey((Block) o) + "[" + BuiltInRegistries.BLOCK.getKey((Block) o).getNamespace() + "]";
         return String.valueOf(o);
     }
 
@@ -327,7 +327,7 @@ public class CustomRecipeList {
             return "[null]";
         else if (is.getItem() == null)
             return "[null-item stack]";
-        return is.getCount() + "x" + ForgeRegistries.ITEMS.getKey(is.getItem()) + "{" + is.getTag() + "}" + "[" + ForgeRegistries.ITEMS.getKey(is.getItem()).getNamespace() + "]";
+        return is.getCount() + "x" + BuiltInRegistries.ITEM.getKey(is.getItem()) + "{" + is.getTag() + "}" + "[" + BuiltInRegistries.ITEM.getKey(is.getItem()).getNamespace() + "]";
     }
 
     private static class ExampleLuaBlock extends LuaBlock {

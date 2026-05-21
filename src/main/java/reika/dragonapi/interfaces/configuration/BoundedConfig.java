@@ -9,7 +9,7 @@
  ******************************************************************************/
 package reika.dragonapi.interfaces.configuration;
 
-import net.neoforged.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import reika.dragonapi.instantiable.io.oldforge.Property;
 
 public interface BoundedConfig extends ConfigList {

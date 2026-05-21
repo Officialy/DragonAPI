@@ -1,6 +1,7 @@
 package reika.dragonapi.instantiable.rendering;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.SourceFactor;
+import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -457,7 +458,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
                 case ADDITIVE:
                     if (set) {
 //                todo        BlendMode.ADDITIVEDARK.apply();
-                        RenderSystem.blendFunc(GlStateManager.SourceFactor.DST_ALPHA, GlStateManager.DestFactor.ONE);
+                        RenderSystem.blendFunc(SourceFactor.DST_ALPHA, DestFactor.ONE);
                     }
                     else {
                         RenderSystem.defaultBlendFunc();

@@ -9,13 +9,15 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.PacketType;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.event.TickEvent;
+// Removed unused ClientTickEvent import
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
@@ -25,7 +27,7 @@ import reika.dragonapi.interfaces.DataSync;
 import java.io.IOException;
 import java.util.*;
 
-public class CompoundSyncPacket implements DataSync, Packet {
+public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
 
     private static final String ERROR_TAG = "erroredPacket";
 
@@ -257,7 +259,12 @@ public class CompoundSyncPacket implements DataSync, Packet {
     }
 
     @Override
+    public PacketType<? extends Packet<PacketListener>> type() {
+        // TODO: This is a legacy packet - should be migrated to CustomPacketPayload
+        return new PacketType<>(PacketFlow.CLIENTBOUND, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("dragonapi", "compound_sync"));
+    }
 
+    @Override
     public void handle(PacketListener inh) { //Ignore default handling
         Level world = Minecraft.getInstance().level;
         for (WorldLocation loc : data.keySet()) {
@@ -311,8 +318,8 @@ public class CompoundSyncPacket implements DataSync, Packet {
         }
 
         @Override
-        public boolean canFire(TickEvent.Phase p) {
-            return p == TickEvent.Phase.END;
+        public boolean canFire(TickRegistry.Phase p) {
+            return p == TickRegistry.Phase.END;
         }
 
         @Override

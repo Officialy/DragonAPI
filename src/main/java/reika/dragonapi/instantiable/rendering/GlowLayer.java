@@ -17,11 +17,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class GlowLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
+public class GlowLayer extends RenderLayer<AbstractClientPlayer, PlayerModel> {
 
     private static final Map<String, RenderType> RENDER_TYPES = new HashMap<>();
 
-    public GlowLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> pRenderer) {
+    public GlowLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel> pRenderer) {
         super(pRenderer);
     }
 

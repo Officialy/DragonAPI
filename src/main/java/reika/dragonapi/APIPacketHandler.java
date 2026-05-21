@@ -19,6 +19,11 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import reika.dragonapi.auxiliary.ModularLogger;
@@ -235,7 +240,10 @@ public class APIPacketHandler implements PacketHandler {
                     }
                     break;
                 case BIOMECHANGE:
-                    ReikaWorldHelper.setBiomeForXZ(world, x, z, (Biome) world.registryAccess().registryOrThrow(Registries.BIOME).stream().toArray()[data[0]]);
+                    var biomeList = world.registryAccess().lookupOrThrow(Registries.BIOME).listElements().toList();
+                    if (data[0] >= 0 && data[0] < biomeList.size()) {
+                        ReikaWorldHelper.setBiomeForXZ(world, x, z, biomeList.get(data[0]).value());
+                    }
 //                    world.markBlockRangeForRenderUpdate(x, 0, z, x, world.getHeight(), z);
                     world.sendBlockUpdated(new BlockPos(x, 0, z), world.getBlockState(new BlockPos(x, world.getHeight(), z)), world.getBlockState(new BlockPos(x, world.getHeight(), z)), 3);
                     break;
@@ -262,22 +270,25 @@ public class APIPacketHandler implements PacketHandler {
                     }
                     break;
                 case VTILESYNC:
-                    int tx = NBT.getInt("x");
-                    int ty = NBT.getInt("y");
-                    int tz = NBT.getInt("z");
+                    int tx = NBT.getIntOr("x", 0);
+                    int ty = NBT.getIntOr("y", 0);
+                    int tz = NBT.getIntOr("z", 0);
                     BlockEntity tile = world.getBlockEntity(new BlockPos(tx, ty, tz));
                     //ReikaJavaLibrary.pConsole(((Container)tile).getStackInSlot(0));
-                    tile.load(NBT);
+                    if (tile != null) {
+                        try (var scopedCollector = new ProblemReporter.ScopedCollector(tile.problemPath(), LoggerFactory.getLogger(DragonAPI.class))) {
+                            tile.loadWithComponents(TagValueInput.create(scopedCollector, world.registryAccess(), NBT));
+                        }
+                    }
                     break;
                 case TILEDELETE:
                     world.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 3);
                     break;
                 case PLAYERDATSYNC:
                 case PLAYERDATSYNC_CLIENT:
-                    for (Object o : NBT.getAllKeys()) {
-                        String name = (String) o;
-                        Tag tag = NBT.get(name);
-                        ep.serializeNBT().put(name, tag);
+                    // Player NBT sync - use ValueInput API directly
+                    try (var scopedCollector = new ProblemReporter.ScopedCollector(ep.problemPath(), LoggerFactory.getLogger(DragonAPI.class))) {
+                        ep.load(TagValueInput.create(scopedCollector, world.registryAccess(), NBT));
                     }
                     break;/*=
 			case PLAYERATTRSYNC:
@@ -331,15 +342,22 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case ITEMDROPPERREQUEST: {
                     Entity e = world.getEntity(data[0]);
-                    if (e instanceof ItemEntity && e.serializeNBT().contains("dropper")) {
-                        String s = e.serializeNBT().getString("dropper");
-                        //ReikaJavaLibrary.pConsole("Received request for Entity ID "+data[0]+"; response = '"+s+"'");
-                        ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, PacketIDs.ITEMDROPPER.ordinal(), (ServerPlayer) ep, s, data[0]);
+                    if (e instanceof ItemEntity) {
+                        var entityOutput = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, world.registryAccess());
+                        e.saveWithoutId(entityOutput);
+                        var entityNBT = entityOutput.buildResult();
+                        if (entityNBT.contains("dropper")) {
+                            String s = entityNBT.getStringOr("dropper", "");
+                            //ReikaJavaLibrary.pConsole("Received request for Entity ID "+data[0]+"; response = '"+s+"'");
+                            if (!s.isEmpty()) {
+                                ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, PacketIDs.ITEMDROPPER.ordinal(), (ServerPlayer) ep, s, data[0]);
+                            }
+                        }
                     }
                     break;
                 }
                 case PLAYERINTERACT:
-                    NeoForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEvent.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
+                    NeoForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEventClient.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
                     break;
                 case BIOMEPNGSTART:
                     BiomeMapCommand.startCollecting(data[0], stringdata, world.dimension()/*todo old dimension id's data[1]*/, data[2], data[3], data[4], data[5], data[6], data[7] > 0);
@@ -358,10 +376,12 @@ public class APIPacketHandler implements PacketHandler {
                     ModFileVersionChecker.instance.checkFiles((ServerPlayer) ep, stringdata);
                     break;
                 case ENTITYSYNC: {
-                    int id = NBT.getInt("dispatchID");
+                    int id = NBT.getIntOr("dispatchID", 0);
                     Entity e = world.getEntity(id);
                     if (e != null) {
-                        e.load(NBT);
+                        try (var scopedCollector = new ProblemReporter.ScopedCollector(e.problemPath(), LoggerFactory.getLogger(DragonAPI.class))) {
+                            e.load(TagValueInput.create(scopedCollector, world.registryAccess(), NBT));
+                        }
                     } else {
                         DragonAPI.LOGGER.error("Entity does not exist clientside to be synced!");
                     }
@@ -379,8 +399,12 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case ENTITYVERIFYFAIL:
                     Entity e = world.getEntity(data[0]);
-                    if (e != null) {
-                        e.kill();
+                    if (e != null && world instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                        e.kill(serverLevel);
+                        DragonAPI.LOGGER.info("Removing client-only entity " + e);
+                    } else if (e != null) {
+                        // Client-side: use remove instead
+                        e.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
                         DragonAPI.LOGGER.info("Removing client-only entity " + e);
                     }
                     break;
@@ -405,7 +429,7 @@ public class APIPacketHandler implements PacketHandler {
             }
             case ENTITYDUMP -> EntityListCommand.dumpClientside();
             case EXPLODE -> {
-                ReikaSoundHelper.playSoundAtBlock(world, x, y, z, SoundEvents.GENERIC_EXPLODE);
+                ReikaSoundHelper.playSoundAtBlock(world, x, y, z, SoundEvents.GENERIC_EXPLODE.value());
                 ReikaParticleHelper.EXPLODE.spawnAroundBlock(world, new BlockPos(x, y, z), 1);
             }
             case OLDMODS -> CommandableUpdateChecker.instance.onClientReceiveOldModID(sg);

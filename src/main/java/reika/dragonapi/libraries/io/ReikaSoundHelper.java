@@ -13,7 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
@@ -110,7 +110,7 @@ public class ReikaSoundHelper {
             plays.addValue(s, new SoundPlay(time, x, y, z));
         }
 //        sendSound(s, world, x, y, z, vol, pitch, atten);
-//        if (FMLLoader.getDist().isClient()) {
+//        if (FMLEnvironment.dist.isClient()) {
             playClientSound(s, x, y, z, vol, pitch, atten);
 //        } else {
 //            sendSound(s, world, x, y, z, vol, pitch, atten);
@@ -157,7 +157,7 @@ public class ReikaSoundHelper {
     }
 
     public static void broadcastSound(SoundEnum s, float vol, float pitch) {
-        if (FMLLoader.getDist() == Dist.CLIENT) //todo getdist wont work in this context
+        if (FMLEnvironment.dist == Dist.CLIENT)
             throw new MisuseException("You cannot call this from the client!");
             Iterable<ServerLevel> worlds = Minecraft.getInstance().level.getServer().getAllLevels();
             for (ServerLevel world : worlds) {

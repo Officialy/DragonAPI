@@ -242,7 +242,7 @@ public class WeightedRandom<V> {
             return;
         CompoundTag data = reika.dragonapi.libraries.io.NBTCompat.getCompound(tag, s);
         this.clear();
-        ListTag li = data.getList("entries", Tag.TAG_COMPOUND);
+        ListTag li = data.getList("entries").orElse(new ListTag());
         for (Object o : li) {
             CompoundTag e = (CompoundTag) o;
             V key = serializer.construct(reika.dragonapi.libraries.io.NBTCompat.getCompound(e, "key"));

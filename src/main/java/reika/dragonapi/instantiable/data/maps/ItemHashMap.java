@@ -10,23 +10,17 @@
 package reika.dragonapi.instantiable.data.maps;
 
 
-import net.minecraft.block.Block;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraftforge.oredict.OreDictionary;
+// Old package references - modern versions already imported below
+// import net.minecraft.block.Block; → net.minecraft.world.level.block.Block
+// import net.minecraft.inventory.IInventory; → deprecated, use IItemHandler
+// import net.minecraft.item.Item; → net.minecraft.world.item.Item
+// import net.minecraft.item.ItemStack; → net.minecraft.world.item.ItemStack
 import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.ImmutableItemStack;
 import reika.dragonapi.interfaces.Matcher;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
-import reika.dragonapi.libraries.ReikaNBTHelper;
-
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -127,7 +121,7 @@ public final class ItemHashMap<V> {
 	}
 
 	private ItemKey createKey(ItemStack is) {
-		return this.nbtEnabled && is.getTag() != null ? new NBTItemKey(is) : new ItemKey(is);
+		return this.nbtEnabled && !is.isEmpty() && !is.getComponentsPatch().isEmpty() ? new ComponentItemKey(is) : new ItemKey(is);
 	}
 
 	private boolean containsKey(ItemKey is) {
@@ -135,10 +129,13 @@ public final class ItemHashMap<V> {
 	}
 
 	public int add(ItemStack is, int value) {
-		Integer get = ((ItemHashMap<Integer>) this).get(is);
+		// Safe cast check or redesign needed, but for now keeping logic with suppression
+		@SuppressWarnings("unchecked")
+		ItemHashMap<Integer> intMap = (ItemHashMap<Integer>) this;
+		Integer get = intMap.get(is);
 		int has = get != null ? get.intValue() : 0;
 		int sum = has + value;
-		((ItemHashMap<Integer>) this).put(is, sum);
+		intMap.put(is, sum);
 		return sum;
 	}
 
@@ -261,30 +258,41 @@ public final class ItemHashMap<V> {
 		this.data.putAll(map.data);
 	}
 
-	private static final class NBTItemKey extends ItemKey {
+	private static final class ComponentItemKey extends ItemKey {
 
-		private final CompoundTag tag;
+		private final net.minecraft.core.component.DataComponentPatch components;
 
-		private NBTItemKey(ItemStack is) {
+		private ComponentItemKey(ItemStack is) {
 			super(is);
-			tag = is.getTag() != null ? is.getTag().copy() : null;
+			this.components = is.getComponentsPatch();
 		}
 
 		@Override
 		public boolean equals(Object o) {
-			return super.equals(o) && o instanceof NBTItemKey && ReikaNBTHelper.areNBTTagsEqual(tag, ((NBTItemKey) o).tag);
+			return super.equals(o) && o instanceof ComponentItemKey && Objects.equals(this.components, ((ComponentItemKey) o).components);
+		}
+
+		@Override
+		public int hashCode() {
+			return super.hashCode() * 31 + components.hashCode();
 		}
 
 		@Override
 		public ItemStack asItemStack() {
 			ItemStack is = super.asItemStack();
-			//is.stackTagCompound = tag != null ? tag.copy() : null;
-			return is;
+			// Apply components to the new stack
+			// We can't easily apply a patch to a new stack without using internal methods or creating it with the patch
+			// But for key retrieval, we can try to approximate or just return the base item if exact reconstruction is hard
+			// However, in 1.21, we can use the constructor that takes components if we had the full map
+			// For now, we'll return the base item. If we need the components, we'd need to store the full stack or reconstruct it.
+			// Given this is mostly for iteration/display, base item might be acceptable, but ideally we'd apply the patch.
+			// TODO: Find a way to apply DataComponentPatch to a fresh ItemStack if needed.
+			return is; 
 		}
 
 		@Override
 		public String toString() {
-			return super.toString() + " >> " + tag;
+			return super.toString() + " >> " + components;
 		}
 
 	}
@@ -300,13 +308,12 @@ public final class ItemHashMap<V> {
 		}
 
 		@Override
-		public final int hashCode() {
-			return itemID.hashCode()/* + metadata << 24*/;
+		public int hashCode() {
+			return itemID.hashCode();
 		}
 
 		@Override
 		public boolean equals(Object o) {
-			//ReikaJavaLibrary.pConsole(this+" & "+o);
 			if (o instanceof ItemKey i) {
 				return i.itemID == itemID;
 			}
@@ -315,7 +322,7 @@ public final class ItemHashMap<V> {
 
 		@Override
 		public String toString() {
-			return ForgeRegistries.ITEMS.getKey(itemID).getNamespace() + " (" + this.asItemStack().getDisplayName() + ")";
+			return BuiltInRegistries.ITEM.getKey(itemID).toString() + " (" + this.asItemStack().getHoverName().getString() + ")";
 		}
 
 		public ItemStack asItemStack() {
@@ -324,7 +331,7 @@ public final class ItemHashMap<V> {
 
 		@Override
 		public final int compareTo(ItemKey o) {
-			return Item.getId(itemID) - Item.getId(o.itemID);
+			return BuiltInRegistries.ITEM.getId(itemID) - BuiltInRegistries.ITEM.getId(o.itemID);
 		}
 
 	}

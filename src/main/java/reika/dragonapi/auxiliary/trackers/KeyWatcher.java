@@ -6,9 +6,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.common.ForgeConfigSpec;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.TickEvent;
+ import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
@@ -230,8 +229,8 @@ public class KeyWatcher {
         }
 
         @Override
-        public boolean canFire(TickEvent.Phase p) {
-            return p == TickEvent.Phase.START;
+        public boolean canFire(TickRegistry.Phase p) {
+            return p == TickRegistry.Phase.START;
         }
 
     }

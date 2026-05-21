@@ -10,6 +10,7 @@
 package reika.dragonapi;
 
 import net.neoforged.fml.loading.FMLLoader;
+// Using fully qualified name to avoid conflict with this enum class name
 import reika.dragonapi.auxiliary.trackers.ReflectiveFailureTracker;
 import reika.dragonapi.interfaces.registry.Dependency;
 import reika.dragonapi.interfaces.registry.ModEntry;
@@ -140,7 +141,7 @@ public enum ModList implements ModEntry, Dependency {
 
 	ModList(String label, String[] blocks, String[] items) {
 		modid = label;
-		var modList = FMLLoader.getLoadingModList().getMods();
+		var modList = FMLLoader.getCurrent().getLoadingModList().getMods();
 		condition = modList.stream().anyMatch(modContainer -> modContainer.getModId().equals(modid));
 		itemClasses = items;
 		blockClasses = blocks;
@@ -289,7 +290,7 @@ public enum ModList implements ModEntry, Dependency {
 	}
 
 	public String getRegisteredName() {
-		return FMLLoader.getLoadingModList().getModFileById(modid).moduleName();
+		return net.neoforged.fml.ModList.get().getModFileById(modid).moduleName();
 	}
 
 }

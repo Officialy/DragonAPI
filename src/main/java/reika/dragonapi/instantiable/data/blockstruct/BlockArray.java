@@ -1047,7 +1047,7 @@ public class BlockArray implements Iterable<BlockPos> {
 
     public void load(String label, CompoundTag NBT) {
         this.clear();
-        ListTag tag = NBT.getList(label, Tag.TAG_COMPOUND);
+        ListTag tag = NBT.getListOrEmpty(label);
         if (tag == null || tag.size() == 0)
             return;
         for (int i = 0; i < tag.size(); i++) {
