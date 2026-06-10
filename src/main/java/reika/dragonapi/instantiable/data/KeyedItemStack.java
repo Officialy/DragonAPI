@@ -45,10 +45,14 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     public static KeyedItemStack load(CompoundTag nbt) {
+        return load(nbt, null);
+    }
+
+    public static KeyedItemStack load(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider provider) {
         boolean ignore = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "ignorenbt", false);
         boolean sized = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "sized", false);
         boolean simple = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "simplehash", false);
-        return new KeyedItemStack(ItemStack.of(nbt)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple);
+        return new KeyedItemStack(net.minecraft.world.item.ItemStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, nbt).result().orElse(net.minecraft.world.item.ItemStack.EMPTY)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple);
     }
 
     public KeyedItemStack setSized(boolean size) {
@@ -151,7 +155,11 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     public void saveAdditional(CompoundTag nbt) {
-        item.save(nbt);
+        saveAdditional(nbt, null);
+    }
+
+    public void saveAdditional(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider provider) {
+        nbt.merge((net.minecraft.nbt.CompoundTag)net.minecraft.world.item.ItemStack.OPTIONAL_CODEC.encodeStart(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, item).getOrThrow());
         nbt.putBoolean("sized", enabledCriteria[Criteria.SIZE.ordinal()]);
         nbt.putBoolean("ignorenbt", !enabledCriteria[Criteria.NBT.ordinal()]);
         nbt.putBoolean("ignoremeta", !enabledCriteria[Criteria.METADATA.ordinal()]);
@@ -207,7 +215,7 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
                 case SIZE:
                     return ks.item.getCount();
                 case NBT:
-                    return ks.item.getTag() != null ? ks.item.getTag().hashCode() : -1;
+                    return ks.item.getComponents().hashCode();
                 default:
                     return 0;
             }

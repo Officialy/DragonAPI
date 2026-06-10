@@ -55,14 +55,14 @@ public final class WorldChunk {
     }
 
     public String toSerialString() {
-        return dimensionID+","+chunk.x+","+chunk.z;
+        return dimensionID+","+chunk.x()+","+chunk.z();
     }
 
     public CompoundTag writeToTag() {
         CompoundTag ret = new CompoundTag();
         ret.putInt("dimension", dimensionID);
-        ret.putInt("x()", chunk.x);
-        ret.putInt("zCoord", chunk.z);
+        ret.putInt("x()", chunk.x());
+        ret.putInt("zCoord", chunk.z());
         return ret;
     }
 
@@ -75,3 +75,4 @@ public final class WorldChunk {
     }
 
 }
+

@@ -84,7 +84,7 @@ public class WorldgenProfiler {
     }
 
     public static long getTotalGenTime(int cx, int cz) {
-        return getTotalGenTime(ChunkPos.asLong(cx, cz));
+        return getTotalGenTime(ChunkPos.pack(cx, cz));
     }
 
     private static long getTotalGenTime(long id) {
@@ -112,14 +112,14 @@ public class WorldgenProfiler {
 
     public static void startChunk(int cx, int cz) {
         ProfileTiming p = new ProfileTiming("Chunk Total", cx, cz);
-        profiledChunks.put(ChunkPos.asLong(cx, cz), p);
+        profiledChunks.put(ChunkPos.pack(cx, cz), p);
         p.start();
     }
 
     public static void finishChunk(long now, int cx, int cz) {
         //if (SpillageProfile.instance.isRunning)
         //	finishGenerator(SpillageProfile.instance, System.nanoTime(), cx, cz);
-        ProfileTiming p = profiledChunks.get(ChunkPos.asLong(cx, cz));
+        ProfileTiming p = profiledChunks.get(ChunkPos.pack(cx, cz));
         if (p == null) { //this is not actually wrong; since population is decoupled from generation, this can be called much later, even in a later load of the save
             //throw new IllegalStateException("Chunk "+cx+", "+cz+" was finished generating before it started!?");
         } else {
@@ -402,7 +402,7 @@ public class WorldgenProfiler {
                 type = Feature<?>.class;
             }*/
             else if (o instanceof Biome) {
-                value = getLevel().registryAccess().registryOrThrow(Registries.BIOME).getKey((Biome) o).toString();
+                value = getLevel().registryAccess().lookupOrThrow(Registries.BIOME).getKey((Biome) o).toString();
                 type = Biome.class;
             } else if (o instanceof String) {
                 value = o;
@@ -484,7 +484,7 @@ public class WorldgenProfiler {
     private static final class BiomeTerrainProfile extends GeneratorProfile implements Comparable<GeneratorProfile> {
 
         private BiomeTerrainProfile(Biome gen) {
-            super("Biome Terrain " + getLevel().registryAccess().registryOrThrow(Registries.BIOME).getKey(gen).getPath());
+            super("Biome Terrain " + getLevel().registryAccess().lookupOrThrow(Registries.BIOME).getKey(gen).getPath());
         }
     }
 
@@ -546,12 +546,12 @@ public class WorldgenProfiler {
         }
 
         public boolean isRunning(int cx, int cz) {
-            long key = ChunkPos.asLong(cx, cz);
+            long key = ChunkPos.pack(cx, cz);
             return timing.containsKey(key);
         }
 
         protected void start(int cx, int cz) {
-            long key = ChunkPos.asLong(cx, cz);
+            long key = ChunkPos.pack(cx, cz);
             if (timing.containsKey(key))
                 DragonAPI.LOGGER.error("GeneratorProfile '" + identifier + "' is already running on chunk " + cx + ", " + cz + "!");
             ProfileTiming p = new ProfileTiming(identifier, cx, cz);
@@ -561,7 +561,7 @@ public class WorldgenProfiler {
         }
 
         protected void finish(long time, int cx, int cz) {
-            long key = ChunkPos.asLong(cx, cz);
+            long key = ChunkPos.pack(cx, cz);
             //DragonAPI.LOGGER.info("Finishing "+identifier+" on "+cx+", "+cz);
             ProfileTiming p = timing.remove(key);
             if (p == null) {
@@ -574,7 +574,7 @@ public class WorldgenProfiler {
 
         protected void pause(long time, int cx, int cz) {
             //DragonAPI.LOGGER.info("Pausing "+identifier+" on "+cx+", "+cz);
-            long key = ChunkPos.asLong(cx, cz);
+            long key = ChunkPos.pack(cx, cz);
             ProfileTiming p = timing.get(key);
             if (p == null)
                 DragonAPI.LOGGER.error("GeneratorProfile '" + identifier + "' is not running on chunk " + cx + ", " + cz + "!");
@@ -584,7 +584,7 @@ public class WorldgenProfiler {
 
         protected void resume(long time, int cx, int cz) {
             //DragonAPI.LOGGER.info("Resuming "+identifier+" on "+cx+", "+cz);
-            long key = ChunkPos.asLong(cx, cz);
+            long key = ChunkPos.pack(cx, cz);
             ProfileTiming p = timing.get(key);
             if (p == null)
                 DragonAPI.LOGGER.error("GeneratorProfile '" + identifier + "' is not running on chunk " + cx + ", " + cz + "!");
@@ -593,8 +593,8 @@ public class WorldgenProfiler {
         }
 
         protected final boolean addSpilledChunk(int cx, int cz, int cx2, int cz2, boolean gen) {
-            long from = ChunkPos.asLong(cx, cz);
-            long to = ChunkPos.asLong(cx2, cz2);
+            long from = ChunkPos.pack(cx, cz);
+            long to = ChunkPos.pack(cx2, cz2);
             if (spilledChunks.addValue(from, to)) {
                 //DragonAPI.LOGGER.info("Generator "+identifier+" has spilled from ["+cx+", "+cz+"] into adjacent chunk ["+cx2+", "+cz2+"]!");
                 if (gen) {

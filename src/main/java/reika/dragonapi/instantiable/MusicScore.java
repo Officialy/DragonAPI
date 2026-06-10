@@ -46,10 +46,10 @@ public class MusicScore {
             if (tag.contains("Ch_" + i)) {
                 mus.music[i] = new ScoreTrack(i);
                 CompoundTag nbt = reika.dragonapi.libraries.io.NBTCompat.getCompound(tag, "Ch_" + i);
-                for (Object o : nbt.getAllKeys()) {
+                for (Object o : nbt.keySet()) {
                     String s = (String) o;
                     int time = Integer.parseInt(s);
-                    ListTag li = nbt.getList(s, Tag.TAG_COMPOUND);
+                    ListTag li = nbt.getListOrEmpty(s);
                     NoteData c = NoteData.load(time, li);
                     mus.music[i].put(time, c);
                 }
@@ -413,7 +413,7 @@ public class MusicScore {
 
         private static NoteData load(int t, ListTag li) {
             NoteData dat = new NoteData(t);
-            for (Object o2 : li.getList(t)) { //listTag
+            for (Object o2 : li.getListOrEmpty(t)) { //listTag
                 CompoundTag val = (CompoundTag) o2;
                 Note n = Note.load(val);
                 dat.add(n);

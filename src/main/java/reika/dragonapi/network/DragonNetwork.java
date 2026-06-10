@@ -1,6 +1,6 @@
 package reika.dragonapi.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import reika.dragonapi.DragonAPI;
 
 /**
@@ -11,10 +11,10 @@ public final class DragonNetwork {
     private DragonNetwork() {}
     
     /**
-     * Creates a ResourceLocation in the DragonAPI namespace.
+     * Creates a Identifier in the DragonAPI namespace.
      */
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(DragonAPI.MODID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(DragonAPI.MODID, path);
     }
 }
 

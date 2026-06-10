@@ -13,12 +13,27 @@ import java.awt.Color;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import reika.dragonapi.libraries.rendering.ReikaGuiAPI;
 
 public class ColorButton extends Button {
+    @Override
+    protected void extractContents(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        if (isSelected) {
+            graphics.fill(getX(), getY(), getX()+width, getY()+height, 0xff777777);
+            graphics.fill(getX(), getY(), getX()+width-1, getY()+height-1, 0xff333333);
+            graphics.fill(getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xffaaaaaa);
+        }
+        else {
+            graphics.fill(getX(), getY(), getX()+width, getY()+height, 0xffffffff);
+            graphics.fill(getX(), getY(), getX()+width-1, getY()+height-1, 0xffaaaaaa);
+            graphics.fill(getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xff666666);
+        }
+        graphics.fill(getX()+1, getY()+1, getX()+width-1, getY()+height-1, isHovered ? brighter : (color | 0xff000000));
+    }
+
 
     private final int color;
     private final int brighter;
@@ -31,7 +46,7 @@ public class ColorButton extends Button {
     /** Draw a Gui Button with an image background. Args: id, x, y, width, height, color*/
     public ColorButton(int par1, int par2, int par3, int par4, int par5, int par9)
     {
-        super(new Builder(Component.literal(""), Button::onPress).pos(par2, par3).size(par4, par5));
+        super(new Builder(Component.literal(""), b -> {}).pos(par2, par3).size(par4, par5));
 //        enable = true;
         visible = true;
 //        id = par1;
@@ -47,19 +62,4 @@ public class ColorButton extends Button {
         brighter = new Color(r, g, b).getRGB();
     }
 
-    @Override
-    protected void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
-        super.renderWidget(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
-        if (isSelected) {
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width, getY()+height, 0xff777777, false);
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width-1, getY()+height-1, 0xff333333, false);
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xff000000 | brighter, false);
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+1, getY()+1, getX()+width-2, getY()+height-2, 0xff000000 | color, false);
-        } else {
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width, getY()+height, 0xff333333, false);
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX(), getY(), getX()+width-1, getY()+height-1, 0xff777777, false);
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+1, getY()+1, getX()+width-1, getY()+height-1, 0xff000000 | brighter, false);
-            ReikaGuiAPI.instance.drawRect(pGuiGraphics, getX()+2, getY()+2, getX()+width-1, getY()+height-1, 0xff000000 | color, false);
-        }
-    }
 }

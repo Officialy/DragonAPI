@@ -3,7 +3,7 @@ package reika.dragonapi.auxiliary.trackers;
 import joptsimple.internal.Strings;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
@@ -35,7 +35,7 @@ public class VersionTransitionTracker {
     }
 
     private File getFilename(Level world) {
-        return new File(world.getServer().getServerDirectory(), "modversions.list"); //world.getSaveHandler().getWorldDirectory()
+        return world.getServer().getServerDirectory().resolve("modversions.list").toFile(); //world.getSaveHandler().getWorldDirectory()
     }
 
     public void onWorldLoad(Level world) {
@@ -58,7 +58,7 @@ public class VersionTransitionTracker {
             }
 
             for (IModInfo mc : ModList.get().getMods()) {
-                if (this.updated((ModContainer) mc)) {
+                if (this.updated(mc)) {
                     newVersions.add(mc.getModId());
                 }
             }
@@ -77,7 +77,7 @@ public class VersionTransitionTracker {
             ArrayList<String> li = new ArrayList<>();
 
             for (IModInfo mc : ModList.get().getMods()) {
-                li.add(mc.getModId()+"="+this.parseModVersion((ModContainer) mc));
+                li.add(mc.getModId()+"="+this.parseModVersion(mc));
             }
 
             ReikaFileReader.writeLinesToFile(f, li, true);
@@ -87,24 +87,26 @@ public class VersionTransitionTracker {
         }
     }
 
-    private String parseModVersion(ModContainer mc) {
-        String ret = mc.getMod() instanceof DragonAPIMod ? ((DragonAPIMod)mc.getMod()).getModVersion().toString() : String.valueOf(mc.getModInfo().getVersion());
+    private String parseModVersion(IModInfo mc) {
+        DragonAPIMod m = reika.dragonapi.base.DragonAPIMod.getByName(mc.getDisplayName().toUpperCase());
+        String ret = m != null ? m.getModVersion().toString() : String.valueOf(mc.getVersion());
         return Strings.isNullOrEmpty(ret) ? "[NONE]" : ret;
     }
 
-    private String getDisplayName(ModContainer mc) {
-        return mc.getMod() instanceof DragonAPIMod ? ((DragonAPIMod)mc.getMod()).getDisplayName() : mc.getModInfo().getDisplayName();
+    private String getDisplayName(IModInfo mc) {
+        DragonAPIMod m = reika.dragonapi.base.DragonAPIMod.getByName(mc.getDisplayName().toUpperCase());
+        return m != null ? m.getDisplayName() : mc.getDisplayName();
     }
 
-    public String getPreviousModVersion(ModContainer mod) {
+    public String getPreviousModVersion(IModInfo mod) {
         return lastVersions.get(mod.getModId());
     }
 
-    public boolean updated(ModContainer mod) {
+    public boolean updated(IModInfo mod) {
         if (DragonOptions.VERSIONCHANGEWARN.getValue() == 1) {
-            Object modo = mod.getMod();
-            if (modo instanceof DragonAPIMod) {
-                if (!((DragonAPIMod)modo).isReikasMod())
+            DragonAPIMod modo = reika.dragonapi.base.DragonAPIMod.getByName(mod.getDisplayName().toUpperCase());
+            if (modo != null) {
+                if (!modo.isReikasMod())
                     return false;
             }
             else {
@@ -117,7 +119,7 @@ public class VersionTransitionTracker {
     public void notifyPlayerOfVersionChanges(ServerPlayer emp) {
         if (this.haveModsUpdated()) {
             String s0 = newVersions.size()+" of your mods have changed version (see the log for more details). It is strongly recommended you read their changelogs.";
-            PopupWriter.instance.addMessage(s0);
+            PopupWriter.instance().addMessage(s0);
             DragonAPI.LOGGER.info(newVersions.size()+" mod version changes detected: ");
         /* todo   Map<String, ModContainer> mods = Loader.instance.getIndexedModList();
             for (String s : newVersions) {

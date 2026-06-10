@@ -6,20 +6,19 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
+import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.instantiable.data.immutable.InventorySlot;
 import reika.dragonapi.instantiable.gui.slot.SlotNoClick;
+import reika.dragonapi.interfaces.blockentity.HasItemHandler;
 import reika.dragonapi.interfaces.blockentity.MultiPageInventory;
 import reika.dragonapi.interfaces.blockentity.XPProducer;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
@@ -32,7 +31,13 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
 
     private static final ChestBlockEntity fakeChest = new ChestBlockEntity(BlockPos.ZERO, Blocks.CHEST.defaultBlockState());
     public final T tile;
-    protected final IItemHandler ii;
+    /**
+     * 1.21.9: was {@code IItemHandler ii}. The legacy {@code IItemHandler} family is being
+     * removed; we keep the same field name (and protected access — every subclass references
+     * it directly) but switch the type to our {@link ManagedItemHandler} shim, resolved via
+     * {@link HasItemHandler#getItemHandler()} on the tile.
+     */
+    protected final ManagedItemHandler ii;
     private final ArrayList<InventorySlot> relaySlots = new ArrayList<>();
     protected Inventory epInv;
     protected ItemStack[] oldInv;
@@ -48,7 +53,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         posY = tile.getBlockPos().getY();
         posZ = tile.getBlockPos().getZ();
         epInv = playerInv;
-        ii = te.getCapability(Capabilities.ItemHandler.BLOCK).orElse(null);
+        ii = te instanceof HasItemHandler hi ? hi.getItemHandler() : null;
     }
 
     public CoreContainer<T> setAlwaysInteractable() {
@@ -282,7 +287,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     protected void addSlot(int i, int x, int y) {
         if (ii == null)
             return;
-        this.addSlot(new SlotItemHandler(ii, i, x, y));
+        this.addSlot(ii.slot(i, x, y));
     }
 
     protected void addSlotNoClick(int i, int x, int y) {
@@ -296,7 +301,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     }
 
     @Override
-    public void clicked(int id, int button, ClickType type, Player ep) {
+    public void clicked(int id, int button, ContainerInput type, Player ep) {
         //DragonAPI.LOGGER.info(ID, Dist.DEDICATED_SERVER);
 //        ItemStack is = super.slotClick(id, button, type, ep);
         if (ii != null && tile instanceof XPProducer) {
@@ -355,4 +360,5 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     }
 
 }
+
 

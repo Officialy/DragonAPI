@@ -1,59 +1,42 @@
 package reika.dragonapi.auxiliary.trackers;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.function.Supplier;
-
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.ChatFormatting;
+import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.InterModComms;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.minecraft.SharedConstants;
-import reika.dragonapi.DragonAPI;
-import reika.dragonapi.base.DragonAPIMod;
-import reika.dragonapi.extras.ModVersion;
-
 import reika.dragonapi.APIPacketHandler.PacketIDs;
+import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.auxiliary.PopupWriter;
-import reika.dragonapi.io.ReikaFileReader;
-import reika.dragonapi.io.ReikaFileReader.ConnectionErrorHandler;
-import reika.dragonapi.io.ReikaFileReader.DataFetcher;
+import reika.dragonapi.base.DragonAPIMod;
+import reika.dragonapi.extras.ModVersion;
 import reika.dragonapi.instantiable.data.collections.OneWayCollections.OneWayList;
 import reika.dragonapi.instantiable.data.collections.OneWayCollections.OneWayMap;
 import reika.dragonapi.instantiable.event.client.ClientLoginEvent;
 import reika.dragonapi.instantiable.io.PacketTarget;
+import reika.dragonapi.io.ReikaFileReader;
+import reika.dragonapi.io.ReikaFileReader.ConnectionErrorHandler;
+import reika.dragonapi.io.ReikaFileReader.DataFetcher;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.java.ReikaStringParser;
+
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
 @EventBusSubscriber(modid = DragonAPI.MODID)
 public class CommandableUpdateChecker {
 
@@ -61,7 +44,7 @@ public class CommandableUpdateChecker {
 
     public static final String reikaURL = "http://server.techjargaming.com/Reika/versions";
 
-    private final HashMap<DragonAPIMod, ModVersion> latestVersions = new OneWayMap<>();
+    private static final HashMap<DragonAPIMod, ModVersion> latestVersions = new OneWayMap<>();
     private final Collection<UpdateChecker> checkers = new OneWayList<>();
     private final Collection<DragonAPIMod> oldMods = new OneWayList<>();
     private final Collection<DragonAPIMod> noURLMods = new OneWayList<>();
@@ -71,13 +54,12 @@ public class CommandableUpdateChecker {
 
     private final HashMap<DragonAPIMod, Boolean> overrides = new OneWayMap<>();
 
-    private final Collection<DragonAPIMod> dispatchedOldMods = new ArrayList<>();
-    private final Collection<DragonAPIMod> dispatchedURLMods = new ArrayList<>();
+    private static final Collection<DragonAPIMod> dispatchedOldMods = new ArrayList<>();
+    private static final Collection<DragonAPIMod> dispatchedURLMods = new ArrayList<>();
 
     private final HashMap<DragonAPIMod, UpdateHash> hashes = new HashMap<>();
 
     private CommandableUpdateChecker() {
-        NeoForge.EVENT_BUS.register(this);
     }
 
     public void checkAll() {
@@ -125,7 +107,7 @@ public class CommandableUpdateChecker {
             nbt.putString("updateUrl", mod.getDocumentationSite().toString());
             nbt.putBoolean("isDirectLink", false);
             nbt.putString("changeLog", mod.getDocumentationSite().toString());
-            InterModComms.sendTo(mod.getModContainer().getModId(), "VersionChecker", "addUpdate", (Supplier<?>) nbt);
+            InterModComms.sendTo(mod.getModContainer().getModId(), "VersionChecker", "addUpdate", () -> nbt);
         }
     }
 
@@ -137,7 +119,7 @@ public class CommandableUpdateChecker {
         }
         if (mod.getUpdateCheckURL() == null)
             return;
-        String url = mod.getUpdateCheckURL() + "_" + SharedConstants.VERSION_NAME.replaceAll("\\.", "-") + ".txt";
+        String url = mod.getUpdateCheckURL() + "_" + SharedConstants.getCurrentVersion().name().replaceAll("\\.", "-") + ".txt";
         URL file = this.getURL(url);
         if (file == null) {
             mod.getModLogger().error("Could not create URL to update checker. Version will not be checked.");
@@ -354,8 +336,7 @@ public class CommandableUpdateChecker {
     }
 
     @SubscribeEvent
-
-    public void onClientReceiveOldModsNote(ClientLoginEvent evt) {
+    public static void onClientReceiveOldModsNote(ClientLoginEvent evt) {
         if (evt.newLogin) {
             ArrayList<String> li = new ArrayList<>();
             for (DragonAPIMod mod : dispatchedOldMods) {
@@ -375,7 +356,7 @@ public class CommandableUpdateChecker {
                 li.add(sb);
             }
             for (String s : li) {
-                PopupWriter.instance.addMessage(s);
+                PopupWriter.instance().addMessage(s);
             }
         }
     }
@@ -596,4 +577,5 @@ public class CommandableUpdateChecker {
         }
 
     }
+
 

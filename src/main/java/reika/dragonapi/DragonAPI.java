@@ -2,7 +2,7 @@ package reika.dragonapi;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.commands.CommandSourceStack;
@@ -121,8 +121,8 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     public static boolean isSinglePlayer() {
-//        DragonAPI.LOGGER.info("The side is" + getSide() + "Am I a dedicated server?" + FMLLoader.getDist().isDedicatedServer());
-        return false;//getSide() == Dist.DEDICATED_SERVER && !FMLLoader.getDist().isDedicatedServer();
+//        DragonAPI.LOGGER.info("The side is" + getSide() + "Am I a dedicated server?" + FMLEnvironment.getDist().isDedicatedServer());
+        return false;//getSide() == Dist.DEDICATED_SERVER && !FMLEnvironment.getDist().isDedicatedServer();
     }
 
     public static long getLaunchTime() {
@@ -176,7 +176,7 @@ public class DragonAPI extends DragonAPIMod {
     public void clientSetup(final FMLClientSetupEvent evt) {
         RemoteAssetLoader.instance.checkAndStartDownloads();
         CommandDispatcher<CommandSourceStack> commandDispatcher = ClientCommandHandler.getDispatcher();
-        ReikaRenderDispatcher.init();
+        // ReikaRenderDispatcher.init();
 //            ClientCommandHandler.instance.registerCommand(new ToggleBlockChangePacketCommand());
 //            ClientCommandHandler.instance.registerCommand(new GetLatencyCommand());
 //            ClientCommandHandler.instance.registerCommand(new ClearParticlesCommand());
@@ -257,3 +257,5 @@ public class DragonAPI extends DragonAPIMod {
     }
 
 }
+
+

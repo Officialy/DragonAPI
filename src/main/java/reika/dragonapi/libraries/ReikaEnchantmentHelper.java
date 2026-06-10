@@ -1,45 +1,48 @@
 package reika.dragonapi.libraries;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.minecraft.core.Holder;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.level.Level;
 
 import java.util.*;
 
 public class ReikaEnchantmentHelper {
-    public static final Comparator<Enchantment> enchantmentNameSorter = new EnchantmentNameComparator();
-    public static final Comparator<Enchantment> enchantmentTypeSorter = new EnchantmentTypeComparator();
+    public static final Comparator<Holder<Enchantment>> enchantmentNameSorter = new EnchantmentNameComparator();
+    public static final Comparator<Holder<Enchantment>> enchantmentTypeSorter = new EnchantmentWeightComparator();
 
     /** Get a listing of all enchantments on an ItemStack. Args: ItemStack */
-    public static HashMap<Enchantment,Integer> getEnchantments(ItemStack is) {
-        Map<Enchantment, Integer> enchants = EnchantmentHelper.getEnchantments(is);
-        if (enchants == null)
+    public static HashMap<Holder<Enchantment>, Integer> getEnchantments(ItemStack is) {
+        ItemEnchantments enchants = is.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        if (enchants.isEmpty())
             return null;
-        HashMap<Enchantment, Integer> ench = new HashMap<>();
-        for (Enchantment id : enchants.keySet()) {
-            Enchantment e = Enchantment.byId(id.category.ordinal()); //was enchantmentsList todo this is for sure wrong lol
-            int level = enchants.get(id);
-            ench.put(e, level);
+        HashMap<Holder<Enchantment>, Integer> ench = new HashMap<>();
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchants.entrySet()) {
+            ench.put(entry.getKey(), entry.getIntValue());
         }
         return ench;
     }
 
-    public static void applyEnchantment(ItemStack is, Enchantment e, int level) {
-        if (is.getItem() == Items.ENCHANTED_BOOK) {
-            //Items.ENCHANTED_BOOK.addEnchantment(is, new EnchantmentData(e, level));
-        }
-        else {
-            is.enchant(e, level);
-        }
+    public static void applyEnchantment(ItemStack is, Holder<Enchantment> e, int level) {
+        is.enchant(e, level);
     }
 
     /** Applies all enchantments to an ItemStack. Args: ItemStack, enchantment map */
-    public static void applyEnchantments(ItemStack is, Map<Enchantment,Integer> en) {
+    public static void applyEnchantments(ItemStack is, Map<Holder<Enchantment>, Integer> en) {
         if (en == null)
             return;
-        for (Enchantment e : en.keySet()) {
+        for (Holder<Enchantment> e : en.keySet()) {
             int level = en.get(e);
             if (level > 0) {
                 applyEnchantment(is, e, level);
@@ -47,28 +50,67 @@ public class ReikaEnchantmentHelper {
         }
     }
 
+    /** Strips a single enchantment from a stack via the component system. Args: ItemStack, enchantment key */
+    public static void removeEnchantment(ItemStack is, ResourceKey<Enchantment> key) {
+        if (is == null || key == null)
+            return;
+        EnchantmentHelper.updateEnchantments(is, m -> m.removeIf(h -> h.is(key)));
+    }
+
     /** Returns the enchantment level of an ItemStack. Args: Enchantment, ItemStack */
-    public static int getEnchantmentLevel(Enchantment e, ItemStack is) {
+    public static int getEnchantmentLevel(Holder<Enchantment> e, ItemStack is) {
         if (is == null)
             return 0;
-        Map<Enchantment, Integer> enchants = EnchantmentHelper.getEnchantments(is);
-        if (enchants == null)
-            return 0;
-        if (enchants.containsKey(e)) {
-            int level = enchants.get(e);
-            return level;
+        return EnchantmentHelper.getItemEnchantmentLevel(e, is);
+    }
+
+    /** Test whether an ItemStack has an enchantment. Args: Enchantment, ItemStack */
+    public static boolean hasEnchantment(Holder<Enchantment> e, ItemStack is) {
+        if (is == null)
+            return false;
+        return getEnchantmentLevel(e, is) > 0;
+    }
+
+    /** Resolve a ResourceKey<Enchantment> to a Holder<Enchantment> using the client/server registry access. Returns null if unavailable. */
+    public static Holder<Enchantment> resolve(ResourceKey<Enchantment> key) {
+        if (key == null) return null;
+        HolderLookup.Provider provider = null;
+        try {
+            MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server != null) provider = server.registryAccess();
+        } catch (Throwable ignored) {}
+        if (provider == null) {
+            try {
+                if (Minecraft.getInstance() != null && Minecraft.getInstance().level != null)
+                    provider = Minecraft.getInstance().level.registryAccess();
+            } catch (Throwable ignored) {}
+        }
+        if (provider == null) return null;
+        return provider.lookupOrThrow(Registries.ENCHANTMENT).get(key).orElse(null);
+    }
+
+    /** Convenience overloads that accept ResourceKey<Enchantment> (the new 1.21.5 vanilla Enchantments.X constants). */
+    public static boolean hasEnchantment(ResourceKey<Enchantment> key, ItemStack is) {
+        Holder<Enchantment> h = resolve(key);
+        return h != null && hasEnchantment(h, is);
+    }
+
+    public static int getEnchantmentLevel(ResourceKey<Enchantment> key, ItemStack is) {
+        Holder<Enchantment> h = resolve(key);
+        return h == null ? 0 : getEnchantmentLevel(h, is);
+    }
+
+    public static int getEnchantmentLevel(ResourceKey<Enchantment> key, Entity entity) {
+        if (entity instanceof net.minecraft.world.entity.LivingEntity le) {
+            // Probe main hand for now; callers that need slot-specific lookups should call directly.
+            return getEnchantmentLevel(key, le.getMainHandItem());
         }
         return 0;
     }
 
-    /** Test whether an ItemStack has an enchantment. Args: Enchantment, ItemStack */
-    public static boolean hasEnchantment(Enchantment e, ItemStack is) {
-        if (is == null)
-            return false;
-        Map<Enchantment, Integer> enchants = EnchantmentHelper.getEnchantments(is);
-        if (enchants == null)
-            return false;
-        return enchants.containsKey(e); //.getId()
+    public static void applyEnchantment(ItemStack is, ResourceKey<Enchantment> key, int level) {
+        Holder<Enchantment> h = resolve(key);
+        if (h != null) applyEnchantment(is, h, level);
     }
 
     /** Returns the speed bonus that efficiency that gives. Args: Level */
@@ -77,14 +119,11 @@ public class ReikaEnchantmentHelper {
     }
 
     /** Returns true iff all the enchantments are compatible with each other. */
-    public static boolean areCompatible(Collection<Enchantment> enchantments) {
-        Iterator<Enchantment> it = enchantments.iterator();
-        Iterator<Enchantment> it2 = enchantments.iterator();
-        while (it.hasNext()) {
-            Enchantment e = it.next();
-            while (it2.hasNext()) {
-                Enchantment e2 = it2.next();
-                if (!areEnchantsCompatible(e, e2))
+    public static boolean areCompatible(Collection<Holder<Enchantment>> enchantments) {
+        List<Holder<Enchantment>> list = new ArrayList<>(enchantments);
+        for (int i = 0; i < list.size(); i++) {
+            for (int j = i + 1; j < list.size(); j++) {
+                if (!areEnchantsCompatible(list.get(i), list.get(j)))
                     return false;
             }
         }
@@ -92,43 +131,41 @@ public class ReikaEnchantmentHelper {
     }
 
     /** Returns true iff the new enchantment is compatible with all the other enchantments. */
-    public static boolean isCompatible(Collection<Enchantment> enchantments, Enchantment addition) {
-        Iterator<Enchantment> it = enchantments.iterator();
-        Iterator<Enchantment> it2 = enchantments.iterator();
-        while (it.hasNext()) {
-            Enchantment e = it.next();
+    public static boolean isCompatible(Collection<Holder<Enchantment>> enchantments, Holder<Enchantment> addition) {
+        for (Holder<Enchantment> e : enchantments) {
             if (!areEnchantsCompatible(e, addition))
                 return false;
         }
         return true;
     }
 
-    public static boolean areEnchantsCompatible(Enchantment e, Enchantment e2) {
-        return e.isCompatibleWith(e2);
+    public static boolean areEnchantsCompatible(Holder<Enchantment> e, Holder<Enchantment> e2) {
+        return Enchantment.areCompatible(e, e2);
     }
 
     public static boolean hasEnchantments(ItemStack is) {
-        Map map = EnchantmentHelper.getEnchantments(is);
-        return map != null && !map.isEmpty();
+        return EnchantmentHelper.hasAnyEnchantments(is);
     }
 
-    private static class EnchantmentTypeComparator implements Comparator<Enchantment> {
+    /** Comparator that sorts by enchantment weight (replaces old category-based sorting). */
+    private static class EnchantmentWeightComparator implements Comparator<Holder<Enchantment>> {
 
         @Override
-        public int compare(Enchantment o1, Enchantment o2) {
-            return o1.category.ordinal()-o2.category.ordinal(); //todo was type, i bet this is wrong
+        public int compare(Holder<Enchantment> o1, Holder<Enchantment> o2) {
+            return Integer.compare(o1.value().getWeight(), o2.value().getWeight());
         }
 
     }
 
-    private static class EnchantmentNameComparator implements Comparator<Enchantment> {
+    private static class EnchantmentNameComparator implements Comparator<Holder<Enchantment>> {
 
         @Override
-        public int compare(Enchantment o1, Enchantment o2) {
-            return BuiltInRegistries.ENCHANTMENT.getKey(o1).getNamespace().compareTo(BuiltInRegistries.ENCHANTMENT.getKey(o2).getNamespace());
+        public int compare(Holder<Enchantment> o1, Holder<Enchantment> o2) {
+            String name1 = o1.getRegisteredName();
+            String name2 = o2.getRegisteredName();
+            return name1.compareTo(name2);
         }
 
     }
 
 }
-

@@ -2,7 +2,9 @@ package reika.dragonapi.libraries;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -19,35 +21,100 @@ import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 public class ReikaAABBHelper {
 
     /**
-     * Renders an AABB bounding box in the world. Very useful for debug purposes, or as a user-friendliness feature.
-     * Args: World, AABB, Render par2,4,6, x,y,z of machine, root alpha value (-ve for solid color), RGB, solid outline yes/no
+     * Legacy PoseStack-only overload — no-op in 26.1. Use the SubmitNodeCollector overload.
      */
     public static void renderAABB(PoseStack stack, AABB box, int x, int y, int z, int a, int r, int g, int b, boolean line) {
+    }
+
+    /**
+     * Renders an AABB bounding box via the 26.1 SubmitNodeCollector pipeline.
+     * Box is in world coordinates; blockX/Y/Z is the BER origin (subtracted to get local coords).
+     * Draws translucent filled faces + opaque wireframe edges.
+     *
+     * @param fillRT  RenderType for quads (e.g. debugFilledBox or a no-depth variant)
+     * @param lineRT  RenderType for lines (e.g. lines() or a no-depth variant)
+     */
+    public static void renderAABB(PoseStack stack, SubmitNodeCollector collector,
+                                   AABB box, int blockX, int blockY, int blockZ,
+                                   int a, int r, int g, int b, boolean line,
+                                   RenderType fillRT, RenderType lineRT) {
+        if (a <= 0) return;
+        final float x0 = (float) (box.minX - blockX);
+        final float y0 = (float) (box.minY - blockY);
+        final float z0 = (float) (box.minZ - blockZ);
+        final float x1 = (float) (box.maxX - blockX);
+        final float y1 = (float) (box.maxY - blockY);
+        final float z1 = (float) (box.maxZ - blockZ);
+
+        int alpha = Math.min(255, a);
+        int fillAlpha = Math.max(0, (int) (alpha * 0.375f));
+        int fillRgba = (fillAlpha << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+        int lineRgba = (alpha << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+
+        collector.submitCustomGeometry(stack, fillRT, (pose, vc) -> {
+            vc.addVertex(pose, x0, y0, z0).setColor(fillRgba);
+            vc.addVertex(pose, x1, y0, z0).setColor(fillRgba);
+            vc.addVertex(pose, x1, y0, z1).setColor(fillRgba);
+            vc.addVertex(pose, x0, y0, z1).setColor(fillRgba);
+
+            vc.addVertex(pose, x0, y1, z1).setColor(fillRgba);
+            vc.addVertex(pose, x1, y1, z1).setColor(fillRgba);
+            vc.addVertex(pose, x1, y1, z0).setColor(fillRgba);
+            vc.addVertex(pose, x0, y1, z0).setColor(fillRgba);
+
+            vc.addVertex(pose, x0, y0, z0).setColor(fillRgba);
+            vc.addVertex(pose, x0, y1, z0).setColor(fillRgba);
+            vc.addVertex(pose, x1, y1, z0).setColor(fillRgba);
+            vc.addVertex(pose, x1, y0, z0).setColor(fillRgba);
+
+            vc.addVertex(pose, x1, y0, z1).setColor(fillRgba);
+            vc.addVertex(pose, x1, y1, z1).setColor(fillRgba);
+            vc.addVertex(pose, x0, y1, z1).setColor(fillRgba);
+            vc.addVertex(pose, x0, y0, z1).setColor(fillRgba);
+
+            vc.addVertex(pose, x0, y0, z1).setColor(fillRgba);
+            vc.addVertex(pose, x0, y1, z1).setColor(fillRgba);
+            vc.addVertex(pose, x0, y1, z0).setColor(fillRgba);
+            vc.addVertex(pose, x0, y0, z0).setColor(fillRgba);
+
+            vc.addVertex(pose, x1, y0, z0).setColor(fillRgba);
+            vc.addVertex(pose, x1, y1, z0).setColor(fillRgba);
+            vc.addVertex(pose, x1, y1, z1).setColor(fillRgba);
+            vc.addVertex(pose, x1, y0, z1).setColor(fillRgba);
+        });
+
+        if (line) {
+            collector.submitCustomGeometry(stack, lineRT, (pose, vc) -> {
+                aabbEdge(pose, vc, x0, y0, z0, x1, y0, z0, lineRgba);
+                aabbEdge(pose, vc, x1, y0, z0, x1, y0, z1, lineRgba);
+                aabbEdge(pose, vc, x1, y0, z1, x0, y0, z1, lineRgba);
+                aabbEdge(pose, vc, x0, y0, z1, x0, y0, z0, lineRgba);
+                aabbEdge(pose, vc, x0, y1, z0, x1, y1, z0, lineRgba);
+                aabbEdge(pose, vc, x1, y1, z0, x1, y1, z1, lineRgba);
+                aabbEdge(pose, vc, x1, y1, z1, x0, y1, z1, lineRgba);
+                aabbEdge(pose, vc, x0, y1, z1, x0, y1, z0, lineRgba);
+                aabbEdge(pose, vc, x0, y0, z0, x0, y1, z0, lineRgba);
+                aabbEdge(pose, vc, x1, y0, z0, x1, y1, z0, lineRgba);
+                aabbEdge(pose, vc, x1, y0, z1, x1, y1, z1, lineRgba);
+                aabbEdge(pose, vc, x0, y0, z1, x0, y1, z1, lineRgba);
+            });
+        }
+    }
+
+    private static void aabbEdge(PoseStack.Pose pose, VertexConsumer vc,
+                                  float ax, float ay, float az, float bx, float by, float bz, int rgba) {
+        float nx = bx - ax, ny = by - ay, nz = bz - az;
+        float len = (float) Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (len > 0) { nx /= len; ny /= len; nz /= len; }
+        vc.addVertex(pose, ax, ay, az).setColor(rgba).setNormal(pose, nx, ny, nz).setLineWidth(2.0f);
+        vc.addVertex(pose, bx, by, bz).setColor(rgba).setNormal(pose, nx, ny, nz).setLineWidth(2.0f);
+    }
+
+    @SuppressWarnings("unused")
+    private static void renderAABB_legacy(PoseStack stack, AABB box, int x, int y, int z, int a, int r, int g, int b, boolean line) {
+        // Old Tesselator API (getBuilder, begin, vertex, end) removed in 26.1 — body preserved below as reference only
+        /*
         int[] color = {r, g, b, a};
-        float par2 = 0;
-        float par4 = 0;
-        float par6 = 0;
-        ReikaRenderHelper.prepareGeoDraw(true);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.disableCull();
-
-        PoseStack stack2 = new PoseStack();
-
-        stack2.pushPose();
-        stack2.scale(1.0F, -1.0F, -1.0F);
-        stack2.translate(0.5F, 0.5F, 0.5F);
-        Matrix4f mat = stack2.last().pose();
-
-//        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        if (color[3] > 255 && color[3] > 0)
-            color[3] = 255;
-        if (color[3] < 0)
-            color[3] *= -1;
-        boolean filled = true;
-        Tesselator tess = Tesselator.getInstance();
-        BufferBuilder builder = tess.getBuilder();
 
         float xdiff = (float) box.minX;// - x;
         float ydiff = (float) box.minY;// - y;
@@ -141,6 +208,7 @@ public class ReikaAABBHelper {
         RenderSystem.disableBlend();
         RenderSystem.enableDepthTest();
         stack2.popPose();
+        */
     }
 
     public static AABB getBlockAABB(BlockPos te) {
@@ -166,11 +234,11 @@ public class ReikaAABBHelper {
      * Returns a sized bounding box centered on a Blocks. Args: x, y, z
      */
     public static AABB getBlockCenteredAABB(int x, int y, int z, double range) {
-        return new AABB(x, y, z, x + 1, y + 1, z + 1).expandTowards(range, range, range);
+        return new AABB(x, y, z, x + 1, y + 1, z + 1).inflate(range, range, range);
     }
 
     public static AABB getEntityCenteredAABB(Entity e, double range) {
-        return new AABB(e.getX(), e.getY(), e.getZ(), e.getY(), e.getY(), e.getZ()).inflate(range, range, range); //todo either inflate or expandTowards
+        return new AABB(e.getX(), e.getY(), e.getZ(), e.getX(), e.getY(), e.getZ()).inflate(range, range, range);
     }
 
     public static AABB getSizedBlockAABB(int x, int y, int z, float size) {

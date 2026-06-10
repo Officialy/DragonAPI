@@ -11,7 +11,7 @@ package reika.dragonapi.libraries;
 
 import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.nbt.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -38,7 +38,7 @@ public final class ReikaNBTHelper {
      */
     public static void writeInvToNBT(ItemStack[] inv, CompoundTag NBT) {
         ListTag ListTag = new ListTag();
-        var registryAccess = VanillaRegistries.createLookup();
+        var registryAccess = cachedRegistryAccess();
         var outputBase = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
         for (int i = 0; i < inv.length; i++) {
             if (inv[i] != null && !inv[i].isEmpty()) {
@@ -66,16 +66,12 @@ public final class ReikaNBTHelper {
      * Reads an inventory from NBT. Args: NBT Tag
      */
     public static ItemStack[] getInvFromNBT(CompoundTag NBT) {
-        Optional<ListTag> listTagOpt = NBT.getList("Items");
-        if (listTagOpt.isEmpty()) {
-            return new ItemStack[0];
-        }
-        ListTag ListTag = listTagOpt.get();
+        ListTag ListTag = NBT.getListOrEmpty("Items");
         ItemStack[] inv = new ItemStack[ListTag.size()];
-        var registryAccess = VanillaRegistries.createLookup();
+        var registryAccess = cachedRegistryAccess();
 
         for (int i = 0; i < ListTag.size(); i++) {
-            CompoundTag CompoundTag = reika.dragonapi.libraries.io.NBTCompat.getListCompound(ListTag, i);
+            CompoundTag CompoundTag = ListTag.getCompoundOrEmpty(i);
             byte byte0 = (byte) reika.dragonapi.libraries.io.NBTCompat.getInt(CompoundTag, "Slot", 0);
 
             if (byte0 >= 0 && byte0 < inv.length) {
@@ -86,17 +82,30 @@ public final class ReikaNBTHelper {
         return inv;
     }
 
+    private static volatile net.minecraft.core.HolderLookup.Provider CACHED_REGISTRY_ACCESS;
+    private static net.minecraft.core.HolderLookup.Provider cachedRegistryAccess() {
+        var local = CACHED_REGISTRY_ACCESS;
+        if (local == null) {
+            synchronized (ReikaNBTHelper.class) {
+                local = CACHED_REGISTRY_ACCESS;
+                if (local == null) {
+                    local = VanillaRegistries.createLookup();
+                    CACHED_REGISTRY_ACCESS = local;
+                }
+            }
+        }
+        return local;
+    }
+
     @Deprecated //Use FluidStack CODEC with TagValueInput; TODO: Remove
     public static FluidStack getFluidFromNBT(CompoundTag nbt) {
-        var registryAccess = VanillaRegistries.createLookup();
-        var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, nbt);
+        var input = TagValueInput.create(ProblemReporter.DISCARDING, cachedRegistryAccess(), nbt);
         return input.read("fluid", net.neoforged.neoforge.fluids.FluidStack.CODEC).orElse(net.neoforged.neoforge.fluids.FluidStack.EMPTY);
     }
 
     @Deprecated //Use FluidStack CODEC with TagValueOutput; TODO: Remove
     public static void writeFluidToNBT(CompoundTag nbt, FluidStack f) {
-        var registryAccess = VanillaRegistries.createLookup();
-        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
+        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, cachedRegistryAccess());
         output.store("fluid", net.neoforged.neoforge.fluids.FluidStack.CODEC, f);
         nbt.merge(output.buildResult());
     }
@@ -127,8 +136,8 @@ public final class ReikaNBTHelper {
         } else if (NBT instanceof ByteArrayTag) {
             return ((ByteArrayTag) NBT).getAsByteArray();
         } else if (NBT instanceof CompoundTag) {
-            if (reika.dragonapi.libraries.io.NBTCompat.getBoolean((CompoundTag) NBT, "flag_isItemStack", false)) {
-                var registryAccess = VanillaRegistries.createLookup();
+            if (((CompoundTag) NBT).getBooleanOr("flag_isItemStack", false)) {
+                var registryAccess = cachedRegistryAccess();
                 var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, (CompoundTag) NBT);
                 return input.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
             } else {
@@ -192,7 +201,7 @@ public final class ReikaNBTHelper {
         } else if (o instanceof Tag) {
             return (Tag) o;
         } else if (o instanceof ItemStack) {
-            var registryAccess = VanillaRegistries.createLookup();
+            var registryAccess = cachedRegistryAccess();
             var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
             output.store("item", ItemStack.CODEC, (ItemStack) o);
             CompoundTag tag = output.buildResult();
@@ -369,8 +378,8 @@ public final class ReikaNBTHelper {
         map.clear();
         for (Object o : li) {
             CompoundTag entry = (CompoundTag) o;
-            K key = (K) getValue(reika.dragonapi.libraries.io.NBTCompat.getCompound(entry, "key"), converterK);
-            V val = (V) getValue(reika.dragonapi.libraries.io.NBTCompat.getCompound(entry, "value"), converterV);
+            K key = (K) getValue(entry.getCompoundOrEmpty("key"), converterK);
+            V val = (V) getValue(entry.getCompoundOrEmpty("value"), converterV);
             map.put(key, val);
         }
     }
@@ -396,21 +405,17 @@ public final class ReikaNBTHelper {
 
     public static <E> void readCollectionFromNBT(Collection<E> c, CompoundTag NBT, String key, NBTIO<E> converter) {
         c.clear();
-        Optional<ListTag> listTagOpt = NBT.getList(key);
-        if (listTagOpt.isEmpty()) {
-            return;
-        }
-        ListTag li = listTagOpt.get();
+        ListTag li = NBT.getListOrEmpty(key);
         for (Object o : li) {
             CompoundTag tag = (CompoundTag) o;
             Tag b = tag.get("value");
-            c.add((E) getValue(b, converter));
+            c.add((E) getValue(b));
         }
     }
 
     public static Tag getNestedNBTTag(CompoundTag tag, ArrayList<String> li, String name) {
         for (String s : li) {
-            tag = tag.getCompound(s).orElse(null);
+            tag = tag.getCompoundOrEmpty(s);
             if (tag == null || tag.isEmpty())
                 return null;
         }
@@ -464,7 +469,7 @@ public final class ReikaNBTHelper {
 
         @Override
         public Enum createFromNBT(Tag nbt) {
-            int idx = ((IntTag) nbt).getAsInt();
+            int idx = ((net.minecraft.nbt.IntTag) nbt).intValue();
             return idx >= 0 && idx < enumData.size() ? enumData.get(idx) : null;
         }
 
@@ -485,7 +490,7 @@ public final class ReikaNBTHelper {
 
         @Override
         public Block createFromNBT(Tag nbt) {
-            return BuiltInRegistries.BLOCK.getValue(ResourceLocation.parse((nbt.getAsString())));
+            return BuiltInRegistries.BLOCK.getValue(Identifier.parse((nbt.asString().orElse(""))));
         }
 
         @Override
@@ -505,7 +510,7 @@ public final class ReikaNBTHelper {
 
         @Override
         public Item createFromNBT(Tag nbt) {
-            return BuiltInRegistries.ITEM.getValue(((ResourceLocation.parse(nbt.getAsString()))));
+            return BuiltInRegistries.ITEM.getValue(((Identifier.parse(nbt.asString().orElse("")))));
         }
 
         @Override
@@ -525,14 +530,14 @@ public final class ReikaNBTHelper {
 
         @Override
         public ItemStack createFromNBT(Tag nbt) {
-            var registryAccess = VanillaRegistries.createLookup();
+            var registryAccess = cachedRegistryAccess();
             var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, (CompoundTag) nbt);
             return input.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         }
 
         @Override
         public Tag convertToNBT(ItemStack obj) {
-            var registryAccess = VanillaRegistries.createLookup();
+            var registryAccess = cachedRegistryAccess();
             var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryAccess);
             output.store("item", ItemStack.CODEC, obj);
             return output.buildResult();
@@ -572,7 +577,7 @@ public final class ReikaNBTHelper {
 
         @Override
         public UUID createFromNBT(Tag nbt) {
-            return UUID.fromString(nbt.getAsString());
+            return UUID.fromString(nbt.asString().orElse(""));
         }
 
         @Override
@@ -594,7 +599,7 @@ public final class ReikaNBTHelper {
 
         @Override
         public Enum createFromNBT(Tag nbt) {
-            return objects[((IntTag) nbt).getAsInt()];
+            return objects[((net.minecraft.nbt.IntTag) nbt).intValue()];
         }
 
         @Override
@@ -604,4 +609,6 @@ public final class ReikaNBTHelper {
 
     }
 }
+
+
 

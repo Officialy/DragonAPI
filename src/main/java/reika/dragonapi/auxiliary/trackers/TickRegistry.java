@@ -9,7 +9,6 @@
  ******************************************************************************/
 package reika.dragonapi.auxiliary.trackers;
 
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -17,15 +16,12 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 
-import static reika.dragonapi.DragonAPI.MODID;
-
-@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
+// 1.21.5: handlers here are instance methods; class is registered via NeoForge.EVENT_BUS.register(this)
+// in the constructor. Do NOT add @EventBusSubscriber — it requires static @SubscribeEvent methods.
 public class TickRegistry {
 
     public static final TickRegistry instance = new TickRegistry();

@@ -9,23 +9,26 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable.gui.slot;
 
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
+import net.neoforged.neoforge.transfer.item.ResourceHandlerSlot;
+import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 
 /**
- * Identical to Slot but disallows item insertion.
+ * Identical to a normal handler-backed slot but disallows item insertion and/or extraction
+ * based on the two flags passed in.
+ *
+ * <p>1.21.9: was a {@code SlotItemHandler} subclass. The whole {@code IItemHandler} family
+ * was deprecated; we now extend the new {@link ResourceHandlerSlot} and bind to a
+ * {@link ManagedItemHandler} via its {@code set} index modifier.
  */
-public class SlotNoClick extends SlotItemHandler {
+public class SlotNoClick extends ResourceHandlerSlot {
 
     public final boolean allowInsertion;
     public final boolean allowExtraction;
 
-    public SlotNoClick(IItemHandler ii, int id, int x, int y, boolean add, boolean take) {
-        super(ii, id, x, y);
+    public SlotNoClick(ManagedItemHandler ii, int id, int x, int y, boolean add, boolean take) {
+        super(ii, ii::set, id, x, y);
         allowInsertion = add;
         allowExtraction = take;
     }
@@ -40,4 +43,3 @@ public class SlotNoClick extends SlotItemHandler {
         return allowExtraction && super.mayPickup(ep);
     }
 }
-

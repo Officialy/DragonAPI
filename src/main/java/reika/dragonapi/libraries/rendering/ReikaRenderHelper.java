@@ -12,12 +12,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.TerrainParticle;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.client.renderer.culling.Frustum;
-// ModelResourceLocation removed - use ResourceLocation instead
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -79,7 +78,7 @@ public class ReikaRenderHelper {
 
     public static void renderCircle(PoseStack stack, double r, double x, double y, double z, int rgba, int step) {
         //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        RenderType type = RenderType.debugLineStrip(1.0D);
+        RenderType type = net.minecraft.client.renderer.rendertype.RenderTypes.lines();
         // In 1.21, Tesselator.getInstance().begin() returns a BufferBuilder.
         // We need to ensure we are using the correct mode and format.
         // debugLineStrip uses Mode.LINE_STRIP and POSITION_COLOR.
@@ -126,7 +125,7 @@ public class ReikaRenderHelper {
 
     public static void renderVCircle(PoseStack stack, double r, double x, double y, double z, int rgba, double phi, int step) {
         //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        RenderType type = RenderType.debugLineStrip(1.0D);
+        RenderType type = net.minecraft.client.renderer.rendertype.RenderTypes.lines();
         BufferBuilder renderer = Tesselator.getInstance().begin(type.mode(), type.format());
 
         int red = (rgba >> 16) & 0xFF;
@@ -169,7 +168,7 @@ public class ReikaRenderHelper {
      * Renders a line between two points in the world. Args: Start xyz, End xyz, rgb
      */
     public static void renderLine(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int[] color) {
-        RenderType renderType = RenderType.lines();
+        RenderType renderType = net.minecraft.client.renderer.rendertype.RenderTypes.lines();
         BufferBuilder renderer = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
         
         renderer.addVertex(stack.last().pose(), (float) x1, (float) y1, (float) z1)
@@ -202,7 +201,7 @@ public class ReikaRenderHelper {
         stack.mulPose(Axis.YP.rotationDegrees((float) ang1));
         stack.mulPose(Axis.XP.rotationDegrees((float) ang2));
 
-        RenderType renderType = RenderType.leash();
+        RenderType renderType = net.minecraft.client.renderer.rendertype.RenderTypes.leash();
         BufferBuilder renderer = tessellator.begin(renderType.mode(), renderType.format());
         Matrix4f matrix = stack.last().pose();
         
@@ -214,10 +213,10 @@ public class ReikaRenderHelper {
             double f13 = i % sides / (double) sides;
             renderer.addVertex(matrix, (float)f11a, (float)f12a, 0F)
                     .setColor(c1 & 0xff, (c1 >> 8) & 0xff, (c1 >> 16) & 0xff, (c1 >> 24) & 0xff)
-                    .setLight(LightTexture.FULL_BRIGHT);
+                    .setLight(LightCoordsUtil.FULL_BRIGHT);
             renderer.addVertex(matrix, (float)f11b, (float)f12b, (float)f8)
                     .setColor(c2 & 0xff, (c2 >> 8) & 0xff, (c2 >> 16) & 0xff, (c2 >> 24) & 0xff)
-                    .setLight(LightTexture.FULL_BRIGHT);
+                    .setLight(LightCoordsUtil.FULL_BRIGHT);
         }
         draw(renderType, renderer);
 
@@ -282,7 +281,7 @@ public class ReikaRenderHelper {
      * Renders a rectangle in-world. Args: r,g,b,a, Start x,y,z, End x,y,z
      */
     public static void renderRectangle(int r, int g, int b, int a, double x1, double y1, double z1, double x2, double y2, double z2) {
-        RenderType type = RenderType.debugQuads();
+        RenderType type = net.minecraft.client.renderer.rendertype.RenderTypes.debugQuads();
         var renderer = Tesselator.getInstance().begin(type.mode(), type.format());
         renderer.addVertex((float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
         renderer.addVertex((float)x2, (float)y1, (float)z2).setColor(r, g, b, a);
@@ -305,7 +304,7 @@ public class ReikaRenderHelper {
         // int z = tile.getBlockPos().getZ();
         float f9 = (System.nanoTime() / 100000000) % 64 / 64F;
         
-        // ReikaTextureHelper.bindEnchantmentTexture(); // Handled by RenderType.glintTranslucent()
+        // ReikaTextureHelper.bindEnchantmentTexture(); // Handled by net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent()
 
         // source.getBuffer(type); // Not needed if we get specific buffer later
 
@@ -314,7 +313,7 @@ public class ReikaRenderHelper {
         
         // GL11.glDepthFunc(GL11.GL_LEQUAL); // RenderSystem.depthFunc(GL11.GL_LEQUAL);
         // But usually we don't mess with depth func in mod code unless necessary.
-        // RenderType.glintTranslucent() handles its own state.
+        // net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent() handles its own state.
 
         stack.translate(0, 2, 2);
         stack.scale(1.0F, -1.0F, -1.0F);
@@ -333,11 +332,11 @@ public class ReikaRenderHelper {
         stack.scale((float) d, (float) d, (float) d);
         stack.translate(0, -p, 0);
 
-        VertexConsumer vertexconsumer = source.getBuffer(RenderType.glintTranslucent());
+        VertexConsumer vertexconsumer = source.getBuffer(net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent());
         // We need to pass the packed overlay and light. 
         // For enchantment glint, usually light is ignored or full bright?
         // Let's use the tile's light if possible, or full bright.
-        int light = LightTexture.FULL_BRIGHT; 
+        int light = LightCoordsUtil.FULL_BRIGHT; 
         int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
         
         // TileModel.renderAll needs to be updated to accept light/overlay if it doesn't already

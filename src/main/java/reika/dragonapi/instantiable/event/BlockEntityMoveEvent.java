@@ -25,7 +25,7 @@ public class BlockEntityMoveEvent extends Event implements ICancellableEvent {
     }
 
     public static boolean fireTileMoveEvent(Level world, BlockPos pos) {
-        return NeoForge.EVENT_BUS.post(new BlockEntityMoveEvent(world, pos, world.getBlockState(pos), world.getBlockEntity(pos)));
+        return NeoForge.EVENT_BUS.post(new BlockEntityMoveEvent(world, pos, world.getBlockState(pos), world.getBlockEntity(pos))).isCanceled();
     }
 }
 

@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.fml.loading.FMLEnvironment;
-import reika.dragonapi.exception.VanillaIntegrityException;
+import java.lang.RuntimeException;
 
 public class ReikaObfuscationHelper {
 
@@ -153,7 +153,7 @@ public class ReikaObfuscationHelper {
         }
         catch (NoSuchMethodException e) {
             //throw new VanillaIntegrityException("Tried to register nonexistent method "+deobf+"/"+obf+". Check signature.");
-            throw new VanillaIntegrityException(deobf, c, args);
+            throw new RuntimeException("Missing method: "+deobf+" in "+c);
         }
     }
 
@@ -200,7 +200,7 @@ public class ReikaObfuscationHelper {
     }*/
 
     private static boolean isClientSide() {
-        return FMLEnvironment.dist == Dist.CLIENT;
+        return FMLEnvironment.getDist() == Dist.CLIENT;
     }
 
     public interface ReflectiveAccessExceptionHandler {
@@ -210,3 +210,7 @@ public class ReikaObfuscationHelper {
 
     }
 }
+
+
+
+

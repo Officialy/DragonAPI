@@ -15,7 +15,7 @@ package reika.dragonapi.instantiable.data.maps;
 // import net.minecraft.inventory.IInventory; → deprecated, use IItemHandler
 // import net.minecraft.item.Item; → net.minecraft.world.item.Item
 // import net.minecraft.item.ItemStack; → net.minecraft.world.item.ItemStack
-import net.neoforged.neoforge.items.ItemStackHandler;
+import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.ImmutableItemStack;
@@ -43,7 +43,7 @@ public final class ItemHashMap<V> {
 
 	}
 
-	public static ItemHashMap<Integer> getFromInventory(ItemStackHandler ii) {
+	public static ItemHashMap<Integer> getFromInventory(ManagedItemHandler ii) {
 		ItemHashMap<Integer> map = new ItemHashMap<>();
 		int s = ii.getSlots();
 		for (int i = 0; i < s; i++) {

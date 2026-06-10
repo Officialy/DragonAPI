@@ -1,7 +1,7 @@
 package reika.dragonapi.instantiable;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
@@ -39,18 +39,18 @@ public class HybridTank extends FluidTank {
         return nameSwaps.get(oldName);
     }
 
-    @Override
-    public final FluidTank readFromNBT(CompoundTag NBT) {
+    public final net.neoforged.neoforge.fluids.capability.templates.FluidTank readFromNBT(net.minecraft.core.HolderLookup.Provider provider, CompoundTag NBT) {
         try {
             if (NBT.contains(name)) {
                 CompoundTag tankData = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, name);
                 String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
                 String repl = getFluidNameSwap(fluidName);
-                if (repl != null && BuiltInRegistries.FLUID.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
+                if (repl != null && BuiltInRegistries.FLUID.getValue(Identifier.parse(repl)) != null && !fluidName.equals(repl)) {
                     tankData.putString("FluidName", repl);
                     DragonAPI.LOGGER.info("Tank " + this + " has replaced its FluidName of '" + fluidName + "' with '" + repl + "', as the fluid has changed names.");
                 }
-                super.readFromNBT(tankData);
+                net.neoforged.neoforge.fluids.FluidStack fluid = net.neoforged.neoforge.fluids.FluidStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, tankData).result().orElse(net.neoforged.neoforge.fluids.FluidStack.EMPTY);
+                this.setFluid(fluid);
             }
         } catch (IllegalArgumentException e) { //"Empty String not allowed!" caused by fluid save failure
             DragonAPI.LOGGER.error("Loading HybridTank '" + name + "' has errored, its machine will not keep its fluid!");
@@ -59,14 +59,16 @@ public class HybridTank extends FluidTank {
         return this;
     }
 
-    @Override
-    public final CompoundTag writeToNBT(CompoundTag NBT) {
+    public final CompoundTag writeToNBT(net.minecraft.core.HolderLookup.Provider provider, CompoundTag NBT) {
         CompoundTag tankData = new CompoundTag();
-        super.writeToNBT(tankData);
+                net.minecraft.nbt.Tag serialized = net.neoforged.neoforge.fluids.FluidStack.OPTIONAL_CODEC.encodeStart(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, this.getFluid()).getOrThrow();
+        if (serialized instanceof CompoundTag c) {
+            tankData.merge(c);
+        }
 
         String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
         String repl = getFluidNameSwap(fluidName);
-        if (repl != null && BuiltInRegistries.FLUID.getValue(ResourceLocation.parse(repl)) != null && !fluidName.equals(repl)) {
+        if (repl != null && BuiltInRegistries.FLUID.getValue(Identifier.parse(repl)) != null && !fluidName.equals(repl)) {
             tankData.putString("FluidName", repl);
             DragonAPI.LOGGER.info("Tank " + this + " has replaced its FluidName of '" + fluidName + "' with '" + repl + "', as the fluid has changed names.");
         }
@@ -74,6 +76,16 @@ public class HybridTank extends FluidTank {
         NBT.put(name, tankData);
 
         return NBT;
+    }
+
+    /** Convenience overloads for the many BlockEntity call sites that don't have a HolderLookup.Provider
+     *  handy; the provider-aware versions already tolerate a null provider (plain NbtOps). */
+    public final net.neoforged.neoforge.fluids.capability.templates.FluidTank readFromNBT(CompoundTag NBT) {
+        return this.readFromNBT(null, NBT);
+    }
+
+    public final CompoundTag writeToNBT(CompoundTag NBT) {
+        return this.writeToNBT(null, NBT);
     }
 
     public boolean isEmpty() {
@@ -179,44 +191,47 @@ public class HybridTank extends FluidTank {
     }
 
     public void setNBT(CompoundTag nbt) {
-        if (this.getFluid() != null)
-            this.getFluid().writeToNBT(nbt);
+        if (!this.isEmpty())
+            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(nbt));
     }
 
     public void setNBTInt(String key, int val) {
-        if (this.getFluid() != null) {
-            if (this.getFluid().getTag() == null)
-                this.getFluid().writeToNBT(new CompoundTag());
-            this.getFluid().getTag().putInt(key, val);
+        if (!this.isEmpty()) {
+            net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putInt(key, val)));
         }
     }
 
     public void setNBTString(String key, String s) {
-        if (this.getFluid() != null) {
-            if (this.getFluid().getTag() == null)
-                this.getFluid().writeToNBT(new CompoundTag());
-            this.getFluid().getTag().putString(key, s);
+        if (!this.isEmpty()) {
+            net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putString(key, s)));
         }
     }
 
     public void setNBTBoolean(String key, boolean b) {
-        if (this.getFluid() != null) {
-            if (this.getFluid().getTag() == null)
-                this.getFluid().writeToNBT(new CompoundTag());
-            this.getFluid().getTag().putBoolean(key, b);
+        if (!this.isEmpty()) {
+            net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putBoolean(key, b)));
         }
     }
 
     public int getNBTInt(String key) {
-        return this.getFluid() != null && this.getFluid().getTag() != null ? this.getFluid().getTag().getInt(key) : 0;
+        if (this.isEmpty()) return 0;
+        net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+        return data.copyTag().getIntOr(key, 0);
     }
 
     public String getNBTString(String key) {
-        return this.getFluid() != null && this.getFluid().getTag() != null ? this.getFluid().getTag().getString(key) : "";
+        if (this.isEmpty()) return "";
+        net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+        return data.copyTag().getStringOr(key, "");
     }
 
     public boolean getNBTBoolean(String key) {
-        return this.getFluid() != null && this.getFluid().getTag() != null && this.getFluid().getTag().getBoolean(key);
+        if (this.isEmpty()) return false;
+        net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+        return data.copyTag().getBooleanOr(key, false);
     }
 }
 

@@ -2,32 +2,29 @@ package reika.dragonapi.auxiliary.trackers;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.ICancellableEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.instantiable.event.client.ClientLoginEvent;
-import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.instantiable.io.PacketTarget;
+import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
 import java.util.HashMap;
+
 @EventBusSubscriber(modid = DragonAPI.MODID)
 public class ModFileVersionChecker {
 
     public static final ModFileVersionChecker instance = new ModFileVersionChecker();
 
-    private final HashMap<String, String> data = new HashMap<>();
+    private static final HashMap<String, String> data = new HashMap<>();
 
     private ModFileVersionChecker() {
-        NeoForge.EVENT_BUS.register(this);
     }
 
     public void addMod(DragonAPIMod mod) {
@@ -35,8 +32,7 @@ public class ModFileVersionChecker {
     }
 
     @SubscribeEvent
-    
-    public void dispatch(ClientLoginEvent evt) {
+    public static void dispatch(ClientLoginEvent evt) {
         for (String mod : data.keySet()) {
             String s = mod+":"+data.get(mod);
             ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.FILEMATCH.ordinal(), PacketTarget.server, s);
@@ -65,7 +61,7 @@ public class ModFileVersionChecker {
 
     private void kick(ServerPlayer ep, String mod, String client, String server) {
         HashKickEvent evt = new HashKickEvent(ep, mod, client, server);
-        if (!NeoForge.EVENT_BUS.post(evt)) {
+        if (!NeoForge.EVENT_BUS.post(evt).isCanceled()) {
             String msg = mod+" jarfile mismatch. Client Hash: "+client+"; Expected (Server) Hash: "+server;
             ReikaPlayerAPI.kickPlayer(ep, msg);
             DragonAPI.LOGGER.info("Player "+ep.getName()+" kicked due to "+msg);
@@ -91,4 +87,5 @@ public class ModFileVersionChecker {
     }
 
 }
+
 

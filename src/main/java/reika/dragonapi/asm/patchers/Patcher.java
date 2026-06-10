@@ -6,7 +6,6 @@ import net.neoforged.api.distmarker.Dist;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
-import reika.dragonapi.auxiliary.CoreModDetection;
 import reika.dragonapi.exception.ASMException;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.libraries.java.ReikaASMHelper;
@@ -50,15 +49,7 @@ public abstract class Patcher {
             return data;
         }
 
-        for (int i = 0; i < CoreModDetection.list.length; i++) {
-            CoreModDetection c = CoreModDetection.list[i];
-            if (c.isInstalled()) {
-                if (!this.runWithCoreMod(c)) {
-                    ReikaASMHelper.log("Skipping " + this + " ASM handler; not compatible with " + c);
-                    return data;
-                }
-            }
-        }
+        
 
         ClassNode cn = new ClassNode();
         ClassReader classReader = new ClassReader(data);
@@ -126,7 +117,7 @@ public abstract class Patcher {
     }
 
     public final boolean patchesForgeCode() {
-        return !this.isObfable() && (deobfName.startsWith("net.minecraftforge") || deobfName.startsWith("cpw.mods.fml"));
+        return !this.isObfable() && (deobfName.startsWith("net.neoforged") || deobfName.startsWith("cpw.mods.fml"));
     }
 
     public final boolean patchesModCode() {
@@ -137,9 +128,7 @@ public abstract class Patcher {
         return !deobfName.equals(obfName);
     }
 
-    public boolean runWithCoreMod(CoreModDetection c) {
-        return true;
-    }
+    
 
     public boolean runsOnSide(Dist s) {
         return true;
@@ -172,3 +161,5 @@ public abstract class Patcher {
     }
 
 }
+
+

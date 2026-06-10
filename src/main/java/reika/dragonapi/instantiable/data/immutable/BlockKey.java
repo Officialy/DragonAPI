@@ -107,8 +107,8 @@ public final class BlockKey implements BlockCheck, Comparable<BlockKey> {
     }
 
     public static BlockKey load(String s, CompoundTag tag) {
-        CompoundTag dat = tag.getCompound(s);
-        String id = dat.getString("id");
+        CompoundTag dat = tag.getCompoundOrEmpty(s);
+        String id = dat.getStringOr("id", "");
         BlockState b = Strings.isNullOrEmpty(id) ? null : Block.getBlockFromName(id);
         return b != null ? new BlockKey(b) : null;
     }*/

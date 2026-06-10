@@ -12,8 +12,6 @@ package reika.dragonapi.auxiliary.trackers;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.PopupWriter;
 import reika.dragonapi.base.DragonAPIMod;
@@ -33,7 +31,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-@EventBusSubscriber(modid = DragonAPI.MODID)
+// 1.21.5: instance handlers; registered via NeoForge.EVENT_BUS.register(this) in the constructor.
+// Do NOT add @EventBusSubscriber — it requires static @SubscribeEvent methods.
 public class RemoteAssetLoader {
 
     public static final RemoteAssetLoader instance = new RemoteAssetLoader();
@@ -87,7 +86,7 @@ public class RemoteAssetLoader {
     public void onClientReceiveWarning(ClientLoginEvent evt) {
         for (BigWarning w : bigWarnings) {
             String sg = w.message + " the file server for remote asset repository '" + w.repository.getDisplayName() + "' may be inaccessible. Check your internet settings, and please notify " + w.repository.mod.getModAuthorName() + " if the server is not accessible.";
-            PopupWriter.instance.addMessage(sg);
+            PopupWriter.instance().addMessage(sg);
         }
     }
 

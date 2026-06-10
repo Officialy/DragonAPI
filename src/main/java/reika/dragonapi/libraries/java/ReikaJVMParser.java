@@ -2,7 +2,7 @@ package reika.dragonapi.libraries.java;
 
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 import java.lang.management.ManagementFactory;
@@ -108,7 +108,7 @@ public class ReikaJVMParser {
     }
 
     public static String getLauncher() {
-        return FMLEnvironment.dist == net.neoforged.api.distmarker.Dist.CLIENT ? getLauncherClient() : "Server";
+        return FMLEnvironment.getDist() == net.neoforged.api.distmarker.Dist.CLIENT ? getLauncherClient() : "Server";
     }
 
 //
@@ -124,3 +124,6 @@ public class ReikaJVMParser {
         }
     }
 }
+
+
+

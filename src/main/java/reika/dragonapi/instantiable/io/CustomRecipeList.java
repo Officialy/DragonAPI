@@ -161,8 +161,8 @@ public class CustomRecipeList {
             base = base + "*" + is.getCount();
         }
         lb.putData("item", base);
-        if (is.getTag() != null) {
-            new LuaBlock.NBTLuaBlock("item_nbt", lb, lb.tree, is.getTag(), false);
+        if (is.has(net.minecraft.core.component.DataComponents.CUSTOM_DATA)) {
+            new LuaBlock.NBTLuaBlock("item_nbt", lb, lb.tree, is.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag(), false);
         }
     }
 
@@ -236,7 +236,7 @@ public class CustomRecipeList {
         ret = ReikaItemHelper.getSizedItemStack(ret, amt);
 
         if (ret != null && nbt != null) {
-            ret.setTag(ReikaNBTHelper.constructNBT(nbt));
+            ret.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(ReikaNBTHelper.constructNBT(nbt)));
         }
 
         if (ret == null && !tolerateNull) {
@@ -327,7 +327,7 @@ public class CustomRecipeList {
             return "[null]";
         else if (is.getItem() == null)
             return "[null-item stack]";
-        return is.getCount() + "x" + BuiltInRegistries.ITEM.getKey(is.getItem()) + "{" + is.getTag() + "}" + "[" + BuiltInRegistries.ITEM.getKey(is.getItem()).getNamespace() + "]";
+        return is.getCount() + "x" + BuiltInRegistries.ITEM.getKey(is.getItem()) + "{" + is.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag() + "}" + "[" + BuiltInRegistries.ITEM.getKey(is.getItem()).getNamespace() + "]";
     }
 
     private static class ExampleLuaBlock extends LuaBlock {

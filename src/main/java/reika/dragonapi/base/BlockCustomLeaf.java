@@ -22,8 +22,8 @@ public abstract class BlockCustomLeaf extends LeavesBlock {
     protected final Random rand = new Random();
 
     protected BlockCustomLeaf(BlockBehaviour.Properties properties) {
-        super(properties);
-//        if (FMLEnvironment.dist == Dist.CLIENT)
+        super(0.0F, properties);
+//        if (FMLEnvironment.getDist() == Dist.CLIENT)
 //            this.setGraphicsLevel(Minecraft.getInstance().options.fancyGraphics);
     }
 
@@ -60,3 +60,6 @@ public abstract class BlockCustomLeaf extends LeavesBlock {
     }
 
 }
+
+
+

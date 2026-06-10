@@ -58,50 +58,45 @@ public class Spline {
 
     public void render(double x, double y, double z, int color, boolean glow, boolean closed, int fineness, float lineWidthFactor, SourceFactor srcFactor, DestFactor dstFactor) {
         var tesselator = Tesselator.getInstance();
-        var renderer = tesselator.getBuilder();
 
 //        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        RenderSystem.depthMask(false);
+        // NOTE 1.21.5: RenderSystem.depthMask/enableBlend/blendFunc/lineWidth were removed; blend & depth
+        // state is now defined by the RenderPipeline. State left to the (still-TODO) mesh draw above.
         var li = this.get(fineness, closed);
-        RenderSystem.enableBlend();
-        blend.apply();
 //        GL11.glDisable(GL11.GL_TEXTURE_2D);
 //        RenderSystem.disableTexture();
         float w = 0xB21;//GL11.glGetFloat(GL11.GL_LINE_WIDTH); //todo line width
-        renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION); // GL11.GL_LINES
+        var renderer = tesselator.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR);
         int a = ReikaColorAPI.getAlpha(color);
-        int clr = color & 0xffffff;
-//  todo      if (blend.isColorBlending() && a < 255)
-//            clr = ReikaColorAPI.getColorWithBrightnessMultiplier(clr, a / 255F / lineWidthFactor);
-        renderer.color(clr, clr, clr, a);
-        this.renderPoints(renderer, li, x, y, z, closed);
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        this.renderPoints(renderer, li, x, y, z, closed, r, g, b, a);
+        var mesh = renderer.buildOrThrow();
+        /* TODO: draw mesh */ mesh.close();
 
         if (glow) {
-            renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION); // GL11.GL_LINES -TODO VertexFormat.Mode.LINES ALSO FIX COLOR PLS MAX
-            renderer.color(clr, clr, clr, a / 4);
-            RenderSystem.lineWidth(5 * lineWidthFactor);
-            this.renderPoints(renderer, li, x, y, z, closed);
-            tesselator.end();
+            var renderer2 = tesselator.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR);
+            // NOTE 1.21.5: RenderSystem.lineWidth removed (line width is a pipeline property now).
+            this.renderPoints(renderer2, li, x, y, z, closed, r, g, b, a / 4);
+            var mesh2 = renderer2.buildOrThrow();
+            /* TODO: draw mesh2 */ mesh2.close();
 
-            renderer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION); // GL11.GL_LINES
-//    todo        if (blend.isColorBlending())
-//                clr = ReikaColorAPI.getColorWithBrightnessMultiplier(clr, a / 4 / 255F);
-            renderer.color(clr, clr, clr, a / 4);
-            RenderSystem.lineWidth(10 * lineWidthFactor);
-            this.renderPoints(renderer, li, x, y, z, closed);
-            tesselator.end();
+            var renderer3 = tesselator.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR);
+            this.renderPoints(renderer3, li, x, y, z, closed, r, g, b, a / 4);
+            var mesh3 = renderer3.buildOrThrow();
+            /* TODO: draw mesh3 */ mesh3.close();
         }
-        RenderSystem.lineWidth(w);
 //        GL11.glPopAttrib();
     }
 
-    private void renderPoints(BufferBuilder renderer, List<DecimalPosition> li, double x, double y, double z, boolean closed) {
+    private void renderPoints(BufferBuilder renderer, List<DecimalPosition> li, double x, double y, double z, boolean closed, int r, int g, int b, int a) {
         for (DecimalPosition d : li) {
-            renderer.vertex(x + d.xCoord, y + d.yCoord, z + d.zCoord);
+            renderer.addVertex((float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
         }
         if (closed) {
             DecimalPosition d = li.get(0);
-            renderer.vertex(x + d.xCoord, y + d.yCoord, z + d.zCoord);
+            renderer.addVertex((float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
         }
     }
 

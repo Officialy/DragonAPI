@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.APIPacketHandler;
@@ -36,7 +36,7 @@ public final class ReikaChatHelper {
     }
 
     public static void clearChat(ServerPlayer ep) {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             clearChatGui();
         } else if (ep != null) {
             ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.CLEARCHAT.ordinal(), ep);
@@ -122,7 +122,7 @@ public final class ReikaChatHelper {
     }
 
     public static void writeString(String sg) {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             writeChatString(sg);
         }
     }
@@ -194,7 +194,7 @@ public final class ReikaChatHelper {
     }
 
     public static void writeSide() {
-        writeString(String.valueOf(FMLEnvironment.dist));
+        writeString(String.valueOf(FMLEnvironment.getDist()));
     }
 
     public static void sendChatToPlayer(Player ep, String sg) {
@@ -210,7 +210,7 @@ public final class ReikaChatHelper {
         String[] parts = sg.split("\\n");
         for (String part : parts) {
             Component chat = Component.literal(part);
-            ep.displayClientMessage(chat, true);
+            ep.sendSystemMessage(chat);
         }
     }
 /*
@@ -235,4 +235,7 @@ public final class ReikaChatHelper {
 	}*/
 
 }
+
+
+
 

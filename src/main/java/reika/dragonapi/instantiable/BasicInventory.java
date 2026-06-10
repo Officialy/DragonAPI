@@ -68,11 +68,9 @@ public abstract class BasicInventory implements Container {
 		return false;
 	}
 
-	@Override
 	public void startOpen(Player ep) {
 	}
 
-	@Override
 	public void stopOpen(Player ep) {
 	}
 

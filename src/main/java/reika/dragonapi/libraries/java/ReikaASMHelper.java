@@ -1201,7 +1201,7 @@ public class ReikaASMHelper {
     }
 
     public static Dist getSide() {
-        return FMLEnvironment.dist;
+        return FMLEnvironment.getDist();
     }
 
     public static void writeClassFile(ClassNode cn, String path) {
@@ -1465,3 +1465,6 @@ public class ReikaASMHelper {
         return ret;
     }
 }
+
+
+

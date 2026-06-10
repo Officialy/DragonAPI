@@ -123,7 +123,7 @@ public class RayTracer {
                 blockRay.add(BlockPos.containing(vec0)); //todo test
             }
 
-            HitResult mov = world.clip(new ClipContext(vec, vec0, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, null));
+            HitResult mov = world.clip(new ClipContext(vec, vec0, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, net.minecraft.world.phys.shapes.CollisionContext.empty()));
             if (mov != null) {
                 if (mov.getType() == HitResult.Type.BLOCK) {
                     int bx = (int) mov.getLocation().x();

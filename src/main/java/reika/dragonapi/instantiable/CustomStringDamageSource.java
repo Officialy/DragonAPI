@@ -1,29 +1,32 @@
 package reika.dragonapi.instantiable;
 
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.damagesource.DamageEffects;
-import net.minecraft.world.damagesource.DamageScaling;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 
 public class CustomStringDamageSource extends DamageSource {
 
     private final String message;
-;
-    /** Takes one arg - the rest of the message after the player's name.
-     * For example, supplying "was sucked into a jet engine" turns into
-     * "[Player] was sucked into a jet engine". */
-    public CustomStringDamageSource(String msg) {
-        super(new Holder.Direct<>(new DamageType("custom", DamageScaling.ALWAYS, 0.1F, DamageEffects.HURT))); //todo check what damage scaling does
+
+    /** The type must be a registered datapack {@link DamageType} (resolve via {@link #resolve});
+     * a direct/unregistered holder cannot be network-encoded for the damage-event packet. */
+    public CustomStringDamageSource(Holder<DamageType> type, String msg) {
+        super(type);
         message = msg;
     }
 
+    public static Holder<DamageType> resolve(Level level, ResourceKey<DamageType> key) {
+        return level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(key);
+    }
+
     @Override
-    public Component getLocalizedDeathMessage(LivingEntity pLivingEntity) {
-        return Component.literal(I18n.get(pLivingEntity.getName()+" "+message));
+    public Component getLocalizedDeathMessage(LivingEntity e) {
+        return Component.literal(e.getName().getString() + " " + message);
     }
 
 }

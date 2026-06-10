@@ -2,12 +2,10 @@ package reika.dragonapi.instantiable.effects;
 
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
-import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
-import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 public class ReikaParticleTypes {
 
@@ -15,10 +13,4 @@ public class ReikaParticleTypes {
 
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> STRING = REGISTRY.register("string", () -> new SimpleParticleType(true));
 
-    @SubscribeEvent
-    public static void registerParticleFactories(RegisterParticleProvidersEvent event) {
-        event.registerSpecial(STRING.get(), (type, level, x, y, z, xd, yd, zd) -> new StringParticleFX(level, x, y, z, null, xd, yd, zd));
-    }
-
 }
-

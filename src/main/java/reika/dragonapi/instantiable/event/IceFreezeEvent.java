@@ -5,7 +5,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 
-public class IceFreezeEvent extends WorldPositionEvent {
+public class IceFreezeEvent extends WorldPositionEvent implements net.neoforged.bus.api.ICancellableEvent {
 
 	public final boolean needsEdge;
 
@@ -21,21 +21,17 @@ public class IceFreezeEvent extends WorldPositionEvent {
 	public static boolean fire(Level world, int x, BlockPos pos, boolean edge) {
 		IceFreezeEvent evt = new IceFreezeEvent(world, pos, edge);
 		NeoForge.EVENT_BUS.post(evt);
-		switch(evt.getResult()) {
-			case ALLOW:
-				return true;
-			case DEFAULT:
-			default:
-				return evt.wouldFreezeNaturally();
-			case DENY:
-				return false;
-		}
+		if (evt.isCanceled()) {
+            return false;
+        } else {
+            return evt.wouldFreezeNaturally(); // todo: implement ALLOW
+        }
 	}
 
 	public static boolean fire_IgnoreVanilla(Level world, BlockPos pos) {
 		IceFreezeEvent evt = new IceFreezeEvent(world, pos, false);
 		NeoForge.EVENT_BUS.post(evt);
-		return evt.getResult() != Result.DENY;
+		return !evt.isCanceled();
 	}
 
     

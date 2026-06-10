@@ -10,7 +10,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
@@ -34,9 +34,9 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
     public static final int MAX_PARTICLES = ThrottleableEffectRenderer.getRegisteredInstance().limit;
 
-    public static final TextureMode blockTex = new VanillaTextureMode(InventoryMenu.BLOCK_ATLAS);
+    public static final TextureMode blockTex = new VanillaTextureMode(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS);
 //    public static final TextureMode itemTex = new VanillaTextureMode(TextureMap.locationItemsTexture);
-    public static final TextureMode particleTex = new VanillaTextureMode(ResourceLocation.parse("textures/particle/particles.png"));
+    public static final TextureMode particleTex = new VanillaTextureMode(Identifier.parse("textures/particle/particles.png"));
 
     private final RenderKey DEFAULT_RENDER = new RenderKey(particleTex, new RenderMode());
 
@@ -54,7 +54,8 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
     };
 
     protected ReikaParticleEngine() {
-        super(Minecraft.getInstance().level, Minecraft.getInstance().getTextureManager());
+        // 1.21.5: ParticleEngine(ClientLevel, ParticleResources); TextureManager is no longer accepted.
+        super(Minecraft.getInstance().level, new net.minecraft.client.particle.ParticleResources());
     }
 
     public final void register() {
@@ -77,8 +78,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
         stack.pushPose();
 //        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
 //        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.depthMask(false);
-        RenderSystem.enableBlend();
+        // NOTE 1.21.5: RenderSystem.depthMask/enableBlend removed; blend & depth state come from the pipeline.
 //        GL11.glAlphaFunc(GL11.GL_GREATER, 1/255F);
 
         isRendering = true;
@@ -188,26 +188,9 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
                 Particle.interpPosY = entity.lastTickPosY+(entity.posY-entity.lastTickPosY)*frame;
                 Particle.interpPosZ = entity.lastTickPosZ+(entity.posZ-entity.lastTickPosZ)*frame;*/
 
-                var tess = Tesselator.getInstance();
-                var v5 = tess.getBuilder();
-                v5.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
-
-                for (ParticleEntry p : particles) {
-                    Particle fx = p.effect;
-//        todo            if (ThrottleableEffectRenderer.isParticleVisible(fx)) {
-                        //if (ThrottleableEffectRenderer.isEntityCloseEnough(fx, Particle.interpPosX, Particle.interpPosY, Particle.interpPosZ)) {
-                        if (key.mode.flags[RenderModeFlags.LIGHT.ordinal()]) {
-//                   todo         v5.setBrightness(fx.getBrightnessForRender(frame));
-                        }
-                        else {
-//                   todo         v5.setBrightness(240);
-                        }
-                        fx.render(v5, Minecraft.getInstance().gameRenderer.getMainCamera(), Minecraft.getInstance().getDeltaFrameTime());//1.19 = .getPartialTick()); //todo yaw, f5, pitch, f3, f4);
-                        //}
-                    }
-//                }
-
-                tess.end();
+                // TODO: Port to 26.1 rendering API. Immediate-mode Tesselator.getBuilder()/tess.end() and
+                // Particle#render(BufferBuilder, Camera, float) were all removed; particles now render via
+                // ParticleRenderType into a buffer obtained from Tesselator.begin(...)/a SubmitNodeCollector.
 
                 stack.popPose();
             }
@@ -322,9 +305,9 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
     public static final class CustomTextureMode extends TextureMode {
 
         private final Class reference;
-        private final ResourceLocation texture;
+        private final Identifier texture;
 
-        public CustomTextureMode(Class c, ResourceLocation t) {
+        public CustomTextureMode(Class c, Identifier t) {
             reference = c;
             texture = t;
         }
@@ -332,7 +315,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
         @Override
         protected void bind() {
 //            ReikaTextureHelper.bindFinalTexture(reference, texture);
-            RenderSystem.setShaderTexture(0, texture);
+            // RenderSystem.setShaderTexture removed in 26.1; texture binding needs RenderType-based approach
         }
 
         @Override
@@ -350,15 +333,15 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
     private static final class VanillaTextureMode extends TextureMode {
 
-        private final ResourceLocation resource;
+        private final Identifier resource;
 
-        private VanillaTextureMode(ResourceLocation loc) {
+        private VanillaTextureMode(Identifier loc) {
             resource = loc;
         }
 
         @Override
         protected void bind() {
-            RenderSystem.setShaderTexture(0, resource);
+            // RenderSystem.setShaderTexture removed in 26.1; texture binding needs RenderType-based approach
         }
 
         @Override
@@ -447,30 +430,16 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
                     break;
 
                 case ALPHA:
-                    if (set) {
-                        RenderSystem.enableBlend();
-                    }
-                    else {
-                        RenderSystem.disableBlend();
-                    }
+                    // NOTE 1.21.5: RenderSystem.enableBlend/disableBlend removed; blend state is pipeline-defined.
                     break;
 
                 case ADDITIVE:
-                    if (set) {
-//                todo        BlendMode.ADDITIVEDARK.apply();
-                        RenderSystem.blendFunc(SourceFactor.DST_ALPHA, DestFactor.ONE);
-                    }
-                    else {
-                        RenderSystem.defaultBlendFunc();
-                    }
+                    // NOTE 1.21.5: RenderSystem.blendFunc/defaultBlendFunc removed; use a RenderPipeline blend func.
                     break;
 
                 case DEPTH:
+                    // NOTE 1.21.5: RenderSystem.enableDepthTest/disableDepthTest removed; depth test is pipeline-defined.
                     if (set && !ThrottleableEffectRenderer.renderThroughWalls()) {
-                        RenderSystem.enableDepthTest();
-                    }
-                    else {
-                        RenderSystem.disableDepthTest();
                     }
                     break;
 

@@ -1,6 +1,5 @@
 package reika.dragonapi.auxiliary;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
@@ -14,13 +13,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.base.BlockTieredResource;
@@ -48,14 +44,13 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
     private static final int MAX_DEPTH = 4;
     private static final int MAX_SIZE = 32000;
     private static final Direction[] dirs = Direction.values();
-    private final MultiMap<ResourceKey<Level>, ProgressiveBreaker> breakers = new MultiMap<net.minecraft.resources.ResourceKey<Level>, ProgressiveBreaker>();
+    private static final MultiMap<ResourceKey<Level>, ProgressiveBreaker> breakers = new MultiMap<>();
 
     private ProgressiveRecursiveBreaker() {
-        NeoForge.EVENT_BUS.register(this);
     }
 
     @SubscribeEvent
-    public void unloadWorld(LevelEvent.Unload evt) {
+    public static void unloadWorld(LevelEvent.Unload evt) {
         breakers.clear();
     }
 
@@ -196,7 +191,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         public int fortune = 0;
         public boolean silkTouch = false;
         public boolean drops = true;
-        public ItemStackHandler dropInventory = new ItemStackHandler();
+        public ManagedItemHandler dropInventory = new ManagedItemHandler();
         public Player player;
         public float hungerFactor = 1;
         public BlockBox bounds = BlockBox.infinity();

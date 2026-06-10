@@ -310,7 +310,7 @@ public abstract class LuaBlock {
             if (writeSize)
                 this.putData("stack_size", String.valueOf(is.getCount()));
             this.putData("display_name", is.getDisplayName().getString());
-            LuaBlock nbt = is.getTag() != null ? new NBTLuaBlock("nbt", this, tree, is.getTag(), true) : null;
+            LuaBlock nbt = is.has(net.minecraft.core.component.DataComponents.CUSTOM_DATA) ? new NBTLuaBlock("nbt", this, tree, is.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag(), true) : null;
         }
     }
 
@@ -709,3 +709,4 @@ public abstract class LuaBlock {
 
     }
 }
+

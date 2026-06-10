@@ -30,7 +30,7 @@ import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -130,9 +130,9 @@ public final class PlayerSpecificRenderer {
            return;
        Collection<PlayerRenderObj> c = renders.get(ep.getUUID());
        if (c != null) {
-           GuiGraphics gg = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
+           
            for (PlayerRenderObj r : c) {
-               r.render(gg, ep, ptick, new PlayerRotationData(ep, ptick));
+               r.extractRenderState(stack, ep, ptick, new PlayerRotationData(ep, ptick));
            }
        }
    }
@@ -158,6 +158,7 @@ public final class PlayerSpecificRenderer {
    }
    */
 
+/*
    private static final class CustomPlayerRenderer extends AvatarRenderer<AbstractClientPlayer> {
 
 
@@ -169,7 +170,7 @@ public final class PlayerSpecificRenderer {
 
        @Override
        public void render(AbstractClientPlayer pEntity, float pEntityYaw, float pPartialTicks, PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight) {
-           super.render(pEntity, pEntityYaw, pPartialTicks, pMatrixStack, pBuffer, pPackedLight);
+           super.extractRenderState(pEntity, pEntityYaw, pPartialTicks, pMatrixStack, pBuffer, pPackedLight);
            if (!pEntity.isInvisibleTo(Minecraft.getInstance().player))
                PlayerSpecificRenderer.instance.renderAdditionalObjects(pMatrixStack, pEntity, pPartialTicks);
        }
@@ -196,6 +197,7 @@ public final class PlayerSpecificRenderer {
        }
 
    }
+*/
 
    public static class PlayerRotationData {
 
@@ -306,8 +308,7 @@ public final class PlayerSpecificRenderer {
            model = m;
        }
 
-       public void render(GuiGraphics graphics, Player ep, float tick, PlayerRotationData dat) {
-           PoseStack stack = graphics.pose();
+       public void extractRenderState(PoseStack stack, Player ep, float tick, PlayerRotationData dat) {
            if (ep != null) {
                stack.pushPose();
                stack.translate(0, 1.6, 0);

@@ -48,7 +48,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
     }*/
 
     @Override
-    public void neighborChanged(BlockState pState, Level world, BlockPos pos, Block pBlock, BlockPos pFromPos, boolean pIsMoving) {
+    public void neighborChanged(BlockState pState, Level world, BlockPos pos, Block pBlock, net.minecraft.world.level.redstone.Orientation pFromPos, boolean pIsMoving) {
         BlockEntityBase te = (BlockEntityBase)world.getBlockEntity(pos);
         if (te != null)
             te.onBlockUpdate();
@@ -70,12 +70,13 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
         }
     }
 
-    @Override
-    public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
-        BlockEntityBase te = (BlockEntityBase) pLevel.getBlockEntity(pPos);
-        te.syncAllData(true);
-        return super.use(pState, pLevel, pPos, pPlayer, pHand, pHit);
-    }
+    // 1.21.5: removed the unconditional {@code te.syncAllData(true)} that previously fired on
+    // every right-click — for pipes / shafts that's an expensive {@code markAndNotifyBlock} +
+    // ClientboundBlockEntityDataPacket dispatch per click, and spamming right-click on a pipe
+    // was dropping the client to 0 FPS. BEs that mutate state on interaction (gearbox
+    // lubricant fill, music box disc, splitter bedrock upgrade, etc.) already call
+    // {@code syncAllData} themselves from their concrete useItemOn handlers, so the forced
+    // sync here was redundant for the meaningful cases and pure cost for everything else.
 
 
 /*    @Override
@@ -99,7 +100,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
     }*/
 
     @Override
-    public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
+    public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, net.minecraft.world.item.ItemStack toolStack, boolean willHarvest, FluidState fluid) {
         BlockEntity te = level.getBlockEntity(pos);
         boolean drops = te instanceof Container;
         if (te instanceof ConditionBreakDropsInventory) {
@@ -110,7 +111,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
         if (te instanceof BreakAction) {
             ((BreakAction) te).breakBlock();
         }
-        return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
+        return super.onDestroyedByPlayer(state, level, pos, player, toolStack, willHarvest, fluid);
     }
 
 }

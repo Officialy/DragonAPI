@@ -37,10 +37,10 @@ public abstract class SetBlockEvent extends WorldPositionEvent {
     public final ChunkPos chunkLocation;
 
     public SetBlockEvent(LevelChunk ch, int x, int y, int z) {
-        super(ch.getLevel(), new BlockPos(ch.getPos().x * 16 + x, y, ch.getPos().z * 16 + z));
+        super(ch.getLevel(), new BlockPos(ch.getPos().x() * 16 + x, y, ch.getPos().z() * 16 + z));
         chunk = ch;
-        chunkLocation = new ChunkPos(ch.getPos().x, ch.getPos().z);
-        isWorldgen = true;// todo !ReikaWorldHelper.isChunkPastCompletelyFinishedGenerating(world, ch.getPos().x, ch.getPos().z);
+        chunkLocation = new ChunkPos(ch.getPos().x(), ch.getPos().z());
+        isWorldgen = true;// todo !ReikaWorldHelper.isChunkPastCompletelyFinishedGenerating(world, ch.getPos().x(), ch.getPos().z());
     }
 
     public static class Pre extends SetBlockEvent {

@@ -10,7 +10,7 @@
 package reika.dragonapi.base;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -31,7 +31,7 @@ public abstract class InertEntity extends Entity {
      */
     @Override
     public void tick() {
-        level().getProfiler().push("entityBaseTick");
+        
 
         //prevDistanceWalkedModified = distanceWalkedModified;
         xOld = position().x;
@@ -43,61 +43,61 @@ public abstract class InertEntity extends Entity {
         //portalCounter = 0;
 
         if (getY() < -64.0D)
-            this.kill();
+            this.discard();
 
-        level().getProfiler().pop(); //endSection();
+        
 
         //this.move(motionX, motionY, motionZ);
 
         tickCount++;
     }
 
-    @Override
+    
     public void setRemainingFireTicks(int p_241209_1_) {
         super.setRemainingFireTicks(p_241209_1_);
     }
 
-    @Override
+    
     public int getRemainingFireTicks() {
         return super.getRemainingFireTicks();
     }
 
-    @Override
+    
     public void rideTick() {
         super.rideTick();
     }
 
-    @Override
+    
     protected int getFireImmuneTicks() {
         return super.getFireImmuneTicks();
     }
 
-    @Override
+    
     public boolean isInvulnerableTo(DamageSource p_20122_) {
         return true;
     }
 
-    @Override
+    
     public boolean isPushedByFluid() {
         return false;
     }
 
-    @Override
+    
     public boolean isAttackable() {
         return false;
     }
 
-    @Override
+    
     public boolean isPushable() {
         return false;
     }
 
-    @Override
+    
     protected SoundEvent getSwimSplashSound() {
-        return SoundEvent.createVariableRangeEvent(ResourceLocation.parse(""));
+        return SoundEvent.createVariableRangeEvent(Identifier.parse(""));
     }
 
-    @Override
+    
     public final boolean canBeCollidedWith() {
         return false;
     }

@@ -10,7 +10,7 @@
 package reika.dragonapi.interfaces.registry;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -23,7 +23,7 @@ public interface SoundEnum {
 
     String getName();
 
-    ResourceLocation getPath();
+    Identifier getPath();
 
     SoundSource getCategory();
 

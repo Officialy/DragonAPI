@@ -34,8 +34,12 @@ public abstract class BlockTieredResource extends Block {
 
 	protected static final Random rand = new Random();
 
-	public BlockTieredResource() {
-		super(Properties.of());
+	// 1.21.5: BlockBehaviour.Properties needs setId() before the constructor runs. DragonAPI itself
+	// doesn't own a DeferredRegister for these blocks, so callers must build the Properties via
+	// their mod's blockProperties() helper (which reads the per-mod ResourceKey threadlocal) and
+	// pass it in.
+	public BlockTieredResource(Properties properties) {
+		super(properties);
 	}
 
 	@Override

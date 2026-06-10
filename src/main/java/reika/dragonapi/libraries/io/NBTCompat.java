@@ -124,7 +124,7 @@ public final class NBTCompat {
     /** Convenience: safely get a CompoundTag from a ListTag index where API may vary. */
     public static CompoundTag getListCompound(net.minecraft.nbt.ListTag list, int index) {
         try {
-            Object ret = list.getCompound(index);
+            Object ret = list.getCompoundOrEmpty(index);
             if (ret instanceof CompoundTag ct) return ct;
         } catch (Throwable ignored) {
         }

@@ -33,7 +33,7 @@ public class EventProfiler {
         addShortcut(LivingDamageEvent.Pre.class);
         addShortcut(ItemEntityPickupEvent.Pre.class);
         addShortcut(ItemTooltipEvent.class);
-        addShortcut(LivingEvent.LivingTickEvent.class);
+        addShortcut(net.neoforged.neoforge.event.tick.EntityTickEvent.Pre.class);
 
         //CLIENT
         addShortcut(RenderGuiLayerEvent.Post.class);
@@ -204,4 +204,5 @@ public class EventProfiler {
     }
 
 }
+
 

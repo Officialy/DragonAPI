@@ -8,3 +8,26 @@ ext {
 dependencies {
     // Dependencies unique to DragonAPI
 }
+
+task inspectEnv(type: JavaExec) {
+    classpath = sourceSets.main.compileClasspath
+    mainClass = 'reika.dragonapi.test.EnvTest'
+}
+
+task dumpNeoForgeClasses {
+    doLast {
+        def cl = sourceSets.main.compileClasspath
+        def urls = cl.files.collect { it.toURI().toURL() } as java.net.URL[]
+        def loader = new java.net.URLClassLoader(urls, null)
+        try {
+            def c1 = loader.loadClass('net.neoforged.fml.loading.FMLEnvironment')
+            println 'FMLEnvironment fields: ' + c1.getDeclaredFields()*.name
+            println 'FMLEnvironment methods: ' + c1.getDeclaredMethods()*.name
+        } catch (Exception e) { println 'FMLEnvironment not found' }
+        try {
+            def c2 = loader.loadClass('net.neoforged.fml.loading.FMLLoader')
+            println 'FMLLoader fields: ' + c2.getDeclaredFields()*.name
+            println 'FMLLoader methods: ' + c2.getDeclaredMethods()*.name
+        } catch (Exception e) { println 'FMLLoader not found' }
+    }
+}

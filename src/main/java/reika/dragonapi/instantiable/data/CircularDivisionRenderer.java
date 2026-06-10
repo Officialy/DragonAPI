@@ -106,19 +106,19 @@ public abstract class CircularDivisionRenderer<F> {
 
     protected final void renderSection(BufferBuilder renderer, double ang1, double ang2) {
         if (innerRadius == 0) {
-            renderer.vertex(centerX, centerY, 0);
+            renderer.addVertex((float)centerX, (float)centerY, 0);
             for (double d = ang1; d <= ang2; d += 0.25) {
                 double d2 = Math.toRadians(d);
                 double r2 = this.getOuterRadiusAt(d2);
                 double dx = centerX + r2 * Math.cos(d2);
                 double dy = centerY + r2 * Math.sin(d2);
-                renderer.vertex(dx, dy, 0);
+                renderer.addVertex((float)dx, (float)dy, 0);
             }
             double d2 = Math.toRadians(ang2);
             double r2 = this.getOuterRadiusAt(d2);
             double dx = centerX + r2 * Math.cos(d2);
             double dy = centerY + r2 * Math.sin(d2);
-            renderer.vertex(dx, dy, 0);
+            renderer.addVertex((float)dx, (float)dy, 0);
         } else {
             for (double d = ang1; d <= ang2; d += 0.25) {
                 double d2 = Math.toRadians(d);
@@ -128,8 +128,8 @@ public abstract class CircularDivisionRenderer<F> {
                 double dy1 = centerY + r1 * Math.sin(d2);
                 double dx2 = centerX + r2 * Math.cos(d2);
                 double dy2 = centerY + r2 * Math.sin(d2);
-                renderer.vertex(dx1, dy1, 0);
-                renderer.vertex(dx2, dy2, 0);
+                renderer.addVertex((float)dx1, (float)dy1, 0);
+                renderer.addVertex((float)dx2, (float)dy2, 0);
             }
         }
     }

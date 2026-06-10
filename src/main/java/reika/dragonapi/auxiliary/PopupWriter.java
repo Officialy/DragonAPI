@@ -1,14 +1,9 @@
 package reika.dragonapi.auxiliary;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import com.mojang.blaze3d.vertex.PoseStack;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -28,16 +23,28 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
-import static reika.dragonapi.DragonAPI.MODID;
 import reika.dragonapi.instantiable.data.maps.PlayerMap;
 import reika.dragonapi.instantiable.io.PacketTarget;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.rendering.ReikaGuiAPI;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import static reika.dragonapi.DragonAPI.MODID;
+
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class PopupWriter extends Screen {
 
-    public static final PopupWriter instance = new PopupWriter(Component.literal("PopupWriterScreen"));
+    private static PopupWriter instance;
+
+    public static PopupWriter instance() {
+        if (instance == null)
+            instance = new PopupWriter(Component.literal("PopupWriterScreen"));
+        return instance;
+    }
+
     public static final ArrayList<Warning> list = new ArrayList<>();
     private final ArrayList<Warning> serverMessages = new ArrayList<>();
     private final PlayerMap<Collection<Warning>> alreadySent = new PlayerMap<>();
@@ -51,21 +58,21 @@ public class PopupWriter extends Screen {
     }
 
     public static void open() {
-        Minecraft.getInstance().setScreen(PopupWriter.instance);
+        Minecraft.getInstance().setScreen(PopupWriter.instance());
     }
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (Minecraft.getInstance().hasControlDown() && !PopupWriter.instance.ungrabbed) {
+        if (Minecraft.getInstance().hasControlDown() && !PopupWriter.instance().ungrabbed) {
             //ReikaJavaLibrary.pConsole("Press");
             Minecraft.getInstance().setScreen(this);
             Minecraft.getInstance().mouseHandler.releaseMouse();
-            PopupWriter.instance.ungrabbed = true;
+            PopupWriter.instance().ungrabbed = true;
             return true;
-        } else if (PopupWriter.instance.ungrabbed) {
+        } else if (PopupWriter.instance().ungrabbed) {
             //ReikaJavaLibrary.pConsole("Release");
             Minecraft.getInstance().mouseHandler.grabMouse();
-            PopupWriter.instance.ungrabbed = false;
+            PopupWriter.instance().ungrabbed = false;
             return true;
         }
         return super.keyPressed(keyEvent);
@@ -117,7 +124,7 @@ public class PopupWriter extends Screen {
     @SubscribeEvent
     public static void drawOverlay(RenderGuiLayerEvent.Post event) {
         if (!list.isEmpty() && event.getName().equals(VanillaGuiLayers.TITLE)) {
-            GuiGraphics gui = event.getGuiGraphics();
+            GuiGraphicsExtractor gui = event.getGuiGraphics();
             PoseStack matrixStack = new PoseStack();
             Warning s = list.get(0);
             Font fr = Minecraft.getInstance().font;
@@ -142,17 +149,19 @@ public class PopupWriter extends Screen {
             // Draw wrapped text
             int textY = y + 4;
             for (FormattedCharSequence line : linesList) {
-                gui.drawString(fr, line, x + 4, textY, 0xFFFFFF, false);
+                gui.text(fr, line, x + 4, textY, 0xFFFFFF, false);
                 textY += fr.lineHeight;
             }
 
-            // TODO: Update to modern rendering API - use GuiGraphics.blit() for textures
-            // Old immediate mode OpenGL rendering removed in 1.21
-            // For now, commenting out texture rendering to get compilation working
-            // Draw warning icon (stubbed)
-            // gui.blit(WARNING_ICON_TEXTURE, dx, dy, 0, 0, 0, sz, sz, 256, 256);
+            // 26.1: the legacy immediate-mode GL11 / RenderSystem.bindTexture path is gone, and we
+            // never had matching texture assets for the warning icon / close button anyway. Draw
+            // a coloured-rect + glyph fallback that still gives the close button a visible hit
+            // region (buttonX/Y/Size below feed the click handler).
+            // Warning icon: amber square with "!" glyph.
+            ReikaGuiAPI.instance.drawRect(matrixStack, dx, dy, dx + sz, dy + sz, 0xffd29b1f, false);
+            gui.text(fr, "!", dx + (sz / 2) - 2, dy + (sz / 2) - 4, 0xff202020, false);
 
-            // Draw close button
+            // Close button — grey square with "X" glyph.
             sz = 16;
             dx = x + w - sz - 4;
             dy = y + h - sz - 4;
@@ -160,14 +169,15 @@ public class PopupWriter extends Screen {
             buttonX = dx;
             buttonY = dy;
             buttonSize = sz;
-            
-            // TODO: Draw close button texture using GuiGraphics.blit()
-            // gui.blit(CLOSE_BUTTON_TEXTURE, dx, dy, 0, 0, 0, sz, sz, 256, 256);
+
+            ReikaGuiAPI.instance.drawRect(matrixStack, dx, dy, dx + sz, dy + sz, 0xff707070, false);
+            ReikaGuiAPI.instance.drawRectFrame(matrixStack, dx, dy, sz, sz, 0xffcfcfcf);
+            gui.text(fr, "x", dx + 4, dy + 4, 0xffffffff, false);
         }
     }
 
     @SubscribeEvent
-    public static void click(ScreenEvent.MouseButtonPressed evt) {
+    public static void click(ScreenEvent.MouseButtonPressed.Pre evt) {
 //        ReikaJavaLibrary.pConsole(buttonX + "," + buttonY);
 
         if (!list.isEmpty() && buttonX > 0 && buttonY > 0) {
@@ -244,4 +254,6 @@ public class PopupWriter extends Screen {
     }
 
 }
+
+
 

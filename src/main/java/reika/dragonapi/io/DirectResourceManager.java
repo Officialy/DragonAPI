@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.client.sounds.WeighedSoundEvents;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -42,7 +42,7 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
     }
 
     @Override
-    public Optional<Resource> getResource(ResourceLocation loc) {
+    public Optional<Resource> getResource(Identifier loc) {
         String dom = loc.getNamespace();
         String path = loc.getPath();
         RemoteSourcedAsset rem = dynamicAssets.get(path);
@@ -90,17 +90,17 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
     }
 
     @Override
-    public List<Resource> getResourceStack(ResourceLocation resource) {
+    public List<Resource> getResourceStack(Identifier resource) {
         return List.of(this.getResource(resource).get());
     }
 
     @Override
-    public Map<ResourceLocation, Resource> listResources(String p_215563_, Predicate<ResourceLocation> p_215564_) {
+    public Map<Identifier, Resource> listResources(String p_215563_, Predicate<Identifier> p_215564_) {
         return null;
     }
 
     @Override
-    public Map<ResourceLocation, List<Resource>> listResourceStacks(String p_215565_, Predicate<ResourceLocation> p_215566_) {
+    public Map<Identifier, List<Resource>> listResourceStacks(String p_215565_, Predicate<Identifier> p_215566_) {
         return null;
     }
 

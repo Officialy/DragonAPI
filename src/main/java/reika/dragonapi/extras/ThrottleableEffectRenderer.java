@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.AABB;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -35,11 +35,11 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
 
     private ArrayList<ParticleSpawnHandler> particleSpawnHandlers = null;
 
-    private static final ResourceLocation particleTextures = ResourceLocation.parse("textures/particle/particles.png");
+    private static final Identifier particleTextures = Identifier.parse("textures/particle/particles.png");
     private static final AABB particleBox = new AABB(0, 0, 0, 0, 0, 0);
 
     public ThrottleableEffectRenderer(ParticleEngine eff) {
-        super(Minecraft.getInstance().level, Minecraft.getInstance().getTextureManager());
+        super(Minecraft.getInstance().level, null);
 //        super(Minecraft.getInstance().level, Minecraft.getInstance().gameRenderer);
         limit = Math.max(250, DragonOptions.PARTICLELIMIT.getValue());
         original = eff;
@@ -130,13 +130,13 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
     public void renderParticles(PoseStack stack, Particle e, MultiBufferSource.BufferSource buffer, float ptick) {
         if (renderParticles) {
             if (renderThroughWalls())
-                RenderSystem.disableDepthTest();
+                // RenderSystem.disableDepthTest();
 //            super.renderParticles(e, ptick);
             this.doRenderParticles(e, ptick);
             for (ParticleEngine eff : delegateSet) {
-                eff.render(stack, buffer, Minecraft.getInstance().gameRenderer.lightTexture(), Minecraft.getInstance().gameRenderer.getMainCamera(), ptick);
+                // eff.render(stack, buffer, Minecraft.getInstance().gameRenderer.lightTexture(), Minecraft.getInstance().gameRenderer.getMainCamera(), ptick);
             }
-            RenderSystem.enableDepthTest();
+            // RenderSystem.enableDepthTest();
         }
     }
 
@@ -233,7 +233,7 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
     }
 
     public static boolean renderThroughWalls() {
-        return InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), InputConstants.KEY_INSERT);
+        return InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), InputConstants.KEY_INSERT);
     }
 
     public static boolean isParticleVisible(Particle fx) {

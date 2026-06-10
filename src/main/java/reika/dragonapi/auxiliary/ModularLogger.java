@@ -75,7 +75,7 @@ public class ModularLogger {
 
         public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
             dispatcher.register(Commands.literal("modularlog")
-                .requires((source) -> source.hasPermission(3))
+                .requires(net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_ADMINS))
                 .then(Commands.argument("id", StringArgumentType.string())
                     .then(Commands.argument("state", StringArgumentType.string())
                         .executes((context) -> {

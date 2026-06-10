@@ -12,6 +12,7 @@ package reika.dragonapi.base;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -175,7 +176,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     public final boolean isPlacer(Player ep) {
         if (placer == null || placerUUID == null || placer.isEmpty())
             return false;
-        return ep.getCommandSenderWorld().equals(placer) && ep.getUUID().equals(placerUUID);
+        return ep.level().equals(placer) && ep.getUUID().equals(placerUUID);
     }
 
     public final Block getTEBlock() {
@@ -198,33 +199,56 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
      * Can be called from the client to request a sync from the server
      */
     public final void syncAllData(boolean fullNBT) {
-        if (level.isClientSide) {
+        // 26.1 debug logging — track sync frequency to diagnose user-reported lag.
+        // String key encodes side + fullNBT so we can grep by category.
+        String _dbgTag = "syncAllData." + (level == null ? "noLevel" : (level.isClientSide() ? "client" : "server")) + "." + (fullNBT ? "full" : "delta");
+        long _saT0 = System.nanoTime();
+        try { Class.forName("reika.rotarycraft.auxiliary.PipeDebugLog").getMethod("event", String.class).invoke(null, _dbgTag); } catch (Throwable ignored) {}
+        if (level.isClientSide()) {
             ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.TILESYNC.ordinal(), this, 512, fullNBT ? 1 : 0);
         } else {
-            level.markAndNotifyBlock(worldPosition, level.getChunkAt(worldPosition), level.getBlockState(worldPosition), level.getBlockState(worldPosition), BlockFlags.BLOCK_UPDATE, 512); //todo check
+            // 26.1 PERF FIX: previously called {@code level.markAndNotifyBlock(pos, chunk,
+            // state, state, BLOCK_UPDATE, 512)} here with {@code oldState == newState}. That
+            // had two costly side effects on every BE sync:
+            //   (a) {@code sendBlockUpdated} was queued, shipping a ClientboundBlockUpdatePacket
+            //       to every client in range; the client then marks the chunk section dirty and
+            //       re-meshes — even though the actual blockstate didn't change.
+            //   (b) {@code updateNeighborShapes} was fired on the 6 neighbours with depth=511,
+            //       calling each neighbour's {@code updateShape}. For pipes this means
+            //       6 × {@code canConnect} → 6 BE lookups per sync, plus a cascade if any
+            //       neighbour's state happened to need updating.
+            // The user reported per-placement and per-flow-tick lag that scaled with the size
+            // of the pipe network — chunk re-meshes were piling up faster than the client
+            // could process them. The {@link ClientboundBlockEntityDataPacket} below is the
+            // actual sync mechanism (it ships the BE NBT to clients via the bridge → onDataPacket
+            // → readSyncTag). Vanilla handles blockstate sync for genuine state changes through
+            // its own {@code updateShape} path when a neighbour is placed/broken. So this
+            // markAndNotifyBlock call was pure overhead. Drop it. Net effect: BE-internal NBT
+            // changes still reach clients via the per-BE data packet, but no spurious chunk
+            // re-meshes and no cascading updateShape calls per sync.
             CompoundTag var1 = new CompoundTag();
             if (fullNBT)
                 this.saveAdditional(var1);
             this.writeSyncTag(var1);
             if (fullNBT)
                 var1.putBoolean("fullData", true);
-            ClientboundBlockEntityDataPacket p = ClientboundBlockEntityDataPacket.create(this, (blockEntity) -> var1);
+            ClientboundBlockEntityDataPacket p = ClientboundBlockEntityDataPacket.create(this, (blockEntity, provider) -> var1);
             int r = this.getUpdatePacketRadius();
-            if (r < 0 || r == Integer.MAX_VALUE) {
-                this.sendPacketToAllAround(p, r);
-            } else {
-                this.sendPacketToAllAround(p, r);
-            }
+            this.sendPacketToAllAround(p, r);
 
             this.onDataSync(fullNBT);
         }
         if (level.hasChunksAt(worldPosition, worldPosition))
             this.setChanged();
+        long _saDt = System.nanoTime() - _saT0;
+        if (_saDt > 5_000_000L) {
+            try { Class.forName("reika.rotarycraft.auxiliary.PipeDebugLog").getMethod("event", String.class).invoke(null, _dbgTag + ".slow_ms_" + (_saDt / 1_000_000L)); } catch (Throwable ignored) {}
+        }
     }
 
     private void sendPacketToAllAround(ClientboundBlockEntityDataPacket p, int r) {
         if (!level.isClientSide()) {
-            AABB box = ReikaAABBHelper.getBlockAABB(worldPosition).expandTowards(r, r, r);
+            AABB box = ReikaAABBHelper.getBlockAABB(worldPosition).inflate(r, r, r);
             List<ServerPlayer> li = ReikaPlayerAPI.getPlayersWithin(level, box);
             for (ServerPlayer serverPlayer : li) {
                 serverPlayer.connection.send(p);
@@ -234,7 +258,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     private void sendPacketToAll(ClientboundBlockEntityDataPacket p) {
         if (!level.isClientSide()) {
-            List<ServerPlayer> li = ReikaPlayerAPI.getPlayersWithin(level, INFINITE_EXTENT_AABB);
+            List<ServerPlayer> li = ReikaPlayerAPI.getPlayersWithin(level, new net.minecraft.world.phys.AABB(-1000000, -1000000, -1000000, 1000000, 1000000, 1000000));
             for (ServerPlayer serverPlayer : li) {
                 serverPlayer.connection.send(p);
             }
@@ -259,19 +283,32 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         this.writeSyncTag(nbt);
         this.saveAdditional(nbt);
         nbt.putBoolean("fullData", true);
-        return ClientboundBlockEntityDataPacket.create(this, (blockEntity) -> nbt);
+        return ClientboundBlockEntityDataPacket.create(this, (blockEntity, provider) -> nbt);
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        CompoundTag tag = super.getUpdateTag();
+    public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider provider) {
+        CompoundTag tag = super.getUpdateTag(provider);
         this.saveAdditional(tag);
         return tag;
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag nbt) {
-        this.load(nbt);
+    public void handleUpdateTag(net.minecraft.world.level.storage.ValueInput input) {
+        try {
+            if (input instanceof net.minecraft.world.level.storage.TagValueInput) {
+                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueInput.class.getDeclaredField("input");
+                f.setAccessible(true);
+                CompoundTag tag = (CompoundTag) f.get(input);
+                if (tag != null) {
+                    this.load(tag);
+                }
+            } else {
+                DragonAPI.LOGGER.error("BlockEntityBase handleUpdateTag called with non-TagValueInput: " + input.getClass());
+            }
+        } catch (Exception e) {
+            DragonAPI.LOGGER.error("Failed to extract CompoundTag from TagValueInput in handleUpdateTag", e);
+        }
     }
 
     private boolean shouldFullSync() {
@@ -302,7 +339,20 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         }
 
         if (isNaturalTick) {
-            if (this.getTicksExisted() < 20 && this.getTicksExisted() % 4 == 0)
+            // 26.1 fix: previously fired {@code syncAllData(true)} 5× in the first 20 ticks for
+            // every BE. With many BEs ticking in range simultaneously this triggered a packet
+            // storm — the user reported world-load freezes and per-placement 40s stalls when
+            // pipes use the inherited lifecycle. The full-NBT broadcast was always semi-redundant
+            // anyway: vanilla {@link BlockEntity#getUpdatePacket} already sends the BE state to
+            // clients when the chunk is delivered or the BE is freshly created. For BEs whose
+            // state changes during the first 20 ticks (e.g. pipes' connections populating from
+            // onFirstTick → recomputeConnections), the {@code BE_NBT_SYNC} periodic flow plus
+            // any per-BE sync hook (e.g. piping's state-tracker, reservoir's tank.onContentsChanged)
+            // delivers those changes. So we now gate the initial burst behind an overridable
+            // {@link #shouldDoInitialFullSync} hook — defaults to true to preserve existing
+            // behaviour for engines/machines that haven't been audited yet, false for the
+            // high-fanout types (pipes, reservoirs, etc.) that hit this lag.
+            if (this.shouldDoInitialFullSync() && this.getTicksExisted() < 20 && this.getTicksExisted() % 4 == 0)
                 this.syncAllData(true);
 
             fullSyncTimer.update();
@@ -341,6 +391,26 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         return true;
     }
 
+    /**
+     * Whether this BE should fire the legacy 5× full-NBT sync burst in its first 20 ticks
+     * ({@link #syncAllData}(true) at ticks 0, 4, 8, 12, 16). Defaults to {@code true} for
+     * compatibility with the broad set of BEs that haven't been audited yet.
+     *
+     * <p>Override to {@code false} on any BE that:
+     * <ul>
+     *   <li>has many instances in a contiguous chunk (pipes, cables, fluid ducts) — the burst
+     *       multiplied by every instance becomes a per-placement packet storm;</li>
+     *   <li>already syncs runtime state via a more targeted mechanism (the periodic
+     *       {@code BE_NBT_SYNC} flow, tank-contents-changed hooks, etc.);</li>
+     *   <li>has no client-visible state that needs to be delivered eagerly within 1s of
+     *       placement (vanilla's {@link BlockEntity#getUpdatePacket} already covers the
+     *       new-client-joining-range case).</li>
+     * </ul>
+     */
+    protected boolean shouldDoInitialFullSync() {
+        return true;
+    }
+
     protected void onFirstTick(Level world, BlockPos pos) {
 
     }
@@ -356,21 +426,20 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-        if (packet instanceof DataSync p) {
-            if (!p.hasNoData()) {
-                CompoundTag NBT = new CompoundTag();
-                this.writeSyncTag(NBT); //so unsent fields do not zero out, we sync the current values in
-                p.readForSync(this, NBT);
-                this.readSyncTag(NBT);
+    public void onDataPacket(Connection net, net.minecraft.world.level.storage.ValueInput input) {
+        try {
+            if (input instanceof net.minecraft.world.level.storage.TagValueInput) {
+                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueInput.class.getDeclaredField("input");
+                f.setAccessible(true);
+                CompoundTag tag = (CompoundTag) f.get(input);
+                if (tag != null) {
+                    this.readSyncTag(tag);
+                    if (tag.getBooleanOr("fullData", false)) {
+                        this.loadAdditional(input);
+                    }
+                }
             }
-        } else {
-            this.readSyncTag(packet.getTag());
-            if (packet.getTag().getBoolean("fullData")) {
-                this.load(packet.getTag());
-            }
-
-        }
+        } catch (Exception e) {}
     }
 
     protected void onSetPlacer(Player ep) {
@@ -395,8 +464,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     public final void setPlacer(Player ep) {
         placer = ep.getName().getString();
         fakePlaced = ReikaPlayerAPI.isFake(ep);
-        if (ep.getGameProfile().getId() != null)
-            placerUUID = ep.getGameProfile().getId();
+        if (ep.getUUID() != null)
+            placerUUID = ep.getUUID();
         this.onSetPlacer(ep);
     }
 
@@ -423,7 +492,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     public final void triggerBlockUpdate() {
-        getLevel().blockUpdated(getBlockPos(), this.getBlockState().getBlock()); //todo make sure block updating works
+        getLevel().updateNeighborsAt(getBlockPos(), this.getBlockState().getBlock()); //todo make sure block updating works
     }
 
     public final void scheduleBlockUpdate(int ticks) {
@@ -444,6 +513,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     private void sendSyncPacket() {
+        try { Class.forName("reika.rotarycraft.auxiliary.PipeDebugLog").getMethod("event", String.class).invoke(null, "sendSyncPacket.call." + (this.shouldFullSync() ? "forced" : "delta")); } catch (Throwable ignored) {}
         CompoundTag nbt = new CompoundTag();
         this.writeSyncTag(nbt);
         //if (DragonOptions.COMPOUNDSYNC.getState()) {
@@ -466,16 +536,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     private void sendPacketToAllAround(SyncPacket p, int radius) {
         if (!level.isClientSide()) {
-            ReikaPacketHelper.INSTANCE.send(
-                    PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(
-                            worldPosition.getX(),
-                            worldPosition.getY(),
-                            worldPosition.getZ(),
-                            radius,
-                            level.dimension()
-                    )),
-                    p
-            );
+            net.minecraft.network.protocol.common.custom.CustomPacketPayload payload = reika.dragonapi.libraries.io.ReikaPacketHelper.toPayload(DragonAPI.MODID, (reika.dragonapi.libraries.io.ReikaPacketHelper.PacketObj) p, DragonAPI.packetChannel);
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayersNear((ServerLevel) level, null, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), radius, payload);
         }
     }
 
@@ -497,9 +559,40 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         redstoneInput = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "thisredstone", false);
     }
 
-    @Override
+    /**
+     * Public entry point for the network bridge to deliver a periodic-sync NBT payload (sent by
+     * {@link #sendSyncPacket()} and decoded in {@code APIPacketHandler.BE_NBT_SYNC}). Calls into
+     * {@link #readSyncTag} with the same merge-in pattern as {@link #handleCompoundSyncPacket}:
+     * we write the current local state into a fresh tag first so fields that weren't included in
+     * the incremental sync packet don't zero out, then overlay the received values on top, then
+     * read the merged result. Without the merge, an incremental SyncPacket carrying only the
+     * changed keys would clobber unrelated fields back to their default-empty values.
+     */
+    public final void applySyncTag(CompoundTag incoming) {
+        if (incoming == null) return;
+        try { Class.forName("reika.rotarycraft.auxiliary.PipeDebugLog").getMethod("event", String.class).invoke(null, "applySyncTag.call"); } catch (Throwable ignored) {}
+        CompoundTag merged = new CompoundTag();
+        this.writeSyncTag(merged);
+        for (String key : incoming.keySet()) {
+            Tag val = incoming.get(key);
+            if (val == null) {
+                merged.remove(key);
+            } else {
+                merged.put(key, val);
+            }
+        }
+        this.readSyncTag(merged);
+        // 26.1 PERF: removed the {@code level.setBlocksDirty} call that used to live here. It
+        // was forcing the client to re-mesh the BE's chunk section on every BE NBT packet —
+        // which the user reported as severe lag when a pipe network was active (the periodic
+        // sync stream piled up re-mesh work faster than the client could process). BERs read
+        // the BE's fields every frame regardless of chunk re-mesh state, so dynamic BE-driven
+        // visuals (fluid levels, machine progress bars in BER form) update without forcing a
+        // re-mesh. Blockstate-property changes (e.g., pipe arm CONN_X flags via multipart
+        // JSON) trigger their own re-mesh via vanilla's ClientboundBlockUpdatePacket path.
+    }
+
     public void load(CompoundTag tag) {
-        super.load(tag);
         this.readSyncTag(tag);
 
         placer = reika.dragonapi.libraries.io.NBTCompat.getString(tag, "place", "");
@@ -513,8 +606,25 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        try {
+            if (input instanceof net.minecraft.world.level.storage.TagValueInput) {
+                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueInput.class.getDeclaredField("input");
+                f.setAccessible(true);
+                CompoundTag tag = (CompoundTag) f.get(input);
+                if (tag != null) {
+                    this.load(tag);
+                }
+            } else {
+                DragonAPI.LOGGER.error("BlockEntityBase loadAdditional called with non-TagValueInput: " + input.getClass());
+            }
+        } catch (Exception e) {
+            DragonAPI.LOGGER.error("Failed to extract CompoundTag from TagValueInput", e);
+        }
+    }
+
     protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
         this.writeSyncTag(tag);
 
         if (placer != null && !placer.isEmpty())
@@ -526,6 +636,25 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         tag.putBoolean("no_mine", unmineable);
 
         tag.putLong("age_ticks", tileAge);
+    }
+
+    @Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
+        try {
+            if (output instanceof net.minecraft.world.level.storage.TagValueOutput) {
+                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueOutput.class.getDeclaredField("output");
+                f.setAccessible(true);
+                CompoundTag tag = (CompoundTag) f.get(output);
+                if (tag != null) {
+                    this.saveAdditional(tag);
+                }
+            } else {
+                DragonAPI.LOGGER.error("BlockEntityBase saveAdditional called with non-TagValueOutput: " + output.getClass());
+            }
+        } catch (Exception e) {
+            DragonAPI.LOGGER.error("Failed to extract CompoundTag from TagValueOutput", e);
+        }
     }
 
 
@@ -547,12 +676,12 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     public void writeError(Throwable e) {
         if (DragonOptions.CHATERRORS.getState()) {
-            ReikaChatHelper.write(this + " [" + FMLEnvironment.dist + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
+            ReikaChatHelper.write(this + " [" + FMLEnvironment.getDist() + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
             ReikaChatHelper.write(Arrays.toString(e.getStackTrace()));
             ReikaChatHelper.write("");
         }
 
-        DragonAPI.LOGGER.error(this + " [" + FMLEnvironment.dist + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
+        DragonAPI.LOGGER.error(this + " [" + FMLEnvironment.getDist() + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
         e.printStackTrace();
         DragonAPI.LOGGER.info("");
     }
@@ -587,8 +716,33 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     public final BlockEntity getAdjacentBlockEntity(Direction dir) {
         if (this.cachesTEs()) {
-//            DragonAPI.LOGGER.info(this.getCachedTE(dir));
-            return this.getCachedTE(dir);
+            BlockEntity cached = this.getCachedTE(dir);
+            // 1.21.5 cache-validation: {@link #updateCache} is only called on the BE's first
+            // tick, so the cached reference can outlive the neighbour. If the neighbour is
+            // broken its BE Java object stays in memory (held by this very cache), with its
+            // last {@code omega}/{@code torque}/etc still set — every downstream consumer would
+            // then read from a zombie tile forever (and shafts in a chain happily kept their
+            // power after the source was removed, eventually overpressuring into explosions).
+            // Validate the cached entry against the live world here, and refresh on miss.
+            if (cached != null && cached.isRemoved()) {
+                cached = null;
+            }
+            if (cached == null) {
+                BlockPos npos = worldPosition.relative(dir);
+                BlockEntity fresh = level != null ? level.getBlockEntity(npos) : null;
+                adjTEMap[dir.ordinal()] = fresh;
+                return fresh;
+            }
+            // Also bail if the cached entry's position is no longer adjacent (chunk reload
+            // edge case): the same BlockEntity object cannot be at two positions, so a mismatch
+            // means our cache is stale even though {@code isRemoved()} hasn't fired yet.
+            BlockPos expected = worldPosition.relative(dir);
+            if (!cached.getBlockPos().equals(expected)) {
+                BlockEntity fresh = level != null ? level.getBlockEntity(expected) : null;
+                adjTEMap[dir.ordinal()] = fresh;
+                return fresh;
+            }
+            return cached;
         } else {
             int dx = worldPosition.getX() + dir.getStepX();
             int dy = worldPosition.getY() + dir.getStepY();
@@ -652,4 +806,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
 }
+
+
+
 

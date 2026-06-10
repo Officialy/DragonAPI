@@ -12,15 +12,15 @@ package reika.dragonapi.instantiable.gui;
 
 import java.util.ArrayList;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 // Removed IForgeGuiGraphics and ScreenUtils - no longer exist in NeoForge
 
 import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.Gui;
 import reika.dragonapi.libraries.rendering.ReikaGuiAPI;
 
@@ -49,7 +49,7 @@ public class PianoKeyboard extends Gui {
     };
 
     public PianoKeyboard(int x, int y, MusicGui gui) {
-        super(Minecraft.getInstance(), Minecraft.getInstance().getItemRenderer());
+        super(Minecraft.getInstance());
         guiX = x;
         guiY = y;
         guiInstance = gui;
@@ -100,26 +100,28 @@ public class PianoKeyboard extends Gui {
     }
 
     public void mouseClicked(double x, double y, int button) {
+        // 1.21.5: AbstractWidget#mouseClicked now takes a MouseButtonEvent + double-click flag.
+        net.minecraft.client.input.MouseButtonEvent event = new net.minecraft.client.input.MouseButtonEvent(x, y, new net.minecraft.client.input.MouseButtonInfo(button, 0));
         for (PianoKey key : keyList) {
-            if (key.mouseClicked(x, y, button)) {
+            if (key.mouseClicked(event, false)) {
                 guiInstance.onKeyPressed(key);
                 return;
             }
         }
     }
 
-    public void drawKeys(GuiGraphics stack) {
-        stack.blit(guiInstance.bindKeyboardTexture(), guiX, guiY, 0, 64, 232, 37);
+    public void drawKeys(GuiGraphicsExtractor stack) {
+        stack.blit(RenderPipelines.GUI_TEXTURED, guiInstance.bindKeyboardTexture(), guiX, guiY, 0, 64, 232, 37, 256, 256);
 
         Minecraft mc = Minecraft.getInstance();
-        RenderSystem.enableBlend();
+        
         for (PianoKey key : keyList) {
-            key.renderWidget(stack, 0, 0, 0);
+            key.extractRenderState(stack, 0, 0, 0f);
         }
-        RenderSystem.disableBlend();
+        
 
-        stack.drawString(mc.font, "F", guiX - 6, guiY + 28, 0);
-        stack.drawString(mc.font, "F", guiX + 233, guiY + 28, 0);
+        stack.text(mc.font, "F", guiX - 6, guiY + 28, 0);
+        stack.text(mc.font, "F", guiX + 233, guiY + 28, 0);
     }
 
     public static class PianoKey extends Button {
@@ -129,34 +131,33 @@ public class PianoKeyboard extends Gui {
         private final MusicGui guiInstance;
 
         public PianoKey(int note, int x, int y, KeyShape shape, MusicGui gui) {
-            super(new Builder(Component.literal(""), Button::onPress).pos(x, y).size(0, 0)); //todo i think note as an id of sorts
+            super(new Builder(Component.literal(""), b -> {}).pos(x, y).size(0, 0)); //todo i think note as an id of sorts
             hitbox = shape;
             guiInstance = gui;
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int x, int y, float p_93679_) {
-            super.renderWidget(guiGraphics, x, y, p_93679_);
+        protected void extractContents(net.minecraft.client.gui.GuiGraphicsExtractor GuiGraphicsExtractor, int x, int y, float p_93679_) {
             int c = guiInstance.getColorForChannel(guiInstance.getActiveChannel());
             int rgb = (c & 0xffffff) | (alpha << 24);
             if (alpha > 0) {
                 switch (hitbox) {
                     case BLACK ->
-                            ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY() + 1, getX() + 3, getY() + 20, rgb, true);
+                            ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 1, getY() + 1, getX() + 3, getY() + 20, rgb, true);
                     case LEFT -> {
-                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY(), getX() + 6, getY() + 35, rgb, true);
-                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 6, getY() + 21, getX() + 7, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 1, getY(), getX() + 6, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 6, getY() + 21, getX() + 7, getY() + 35, rgb, true);
                     }
                     case MIDDLE -> {
-                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 2, getY(), getX() + 6, getY() + 21, rgb, true);
-                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY() + 21, getX() + 7, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 2, getY(), getX() + 6, getY() + 21, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 1, getY() + 21, getX() + 7, getY() + 35, rgb, true);
                     }
                     case RIGHT -> {
-                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 2, getY(), getX() + 7, getY() + 35, rgb, true);
-                        ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY() + 21, getX() + 2, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 2, getY(), getX() + 7, getY() + 35, rgb, true);
+                        ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 1, getY() + 21, getX() + 2, getY() + 35, rgb, true);
                     }
                     case WHITE ->
-                            ReikaGuiAPI.instance.drawRect(guiGraphics, getX() + 1, getY(), getX() + 7, getY() + 35, rgb, true);
+                            ReikaGuiAPI.instance.drawRect(GuiGraphicsExtractor, getX() + 1, getY(), getX() + 7, getY() + 35, rgb, true);
                     default -> {
                     }
                 }
@@ -165,7 +166,10 @@ public class PianoKeyboard extends Gui {
         }
 
         @Override
-        public boolean mouseClicked(double x, double y, int button) {
+        public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+            double x = event.x();
+            double y = event.y();
+            int button = event.button();
             ReikaGuiAPI api = ReikaGuiAPI.instance;
             boolean flag = false;
             switch (hitbox) {
@@ -223,7 +227,7 @@ public class PianoKeyboard extends Gui {
 
         int getActiveChannel();
 
-        ResourceLocation bindKeyboardTexture();
+        Identifier bindKeyboardTexture();
 
         void onKeyPressed(PianoKey key);
 
@@ -231,3 +235,5 @@ public class PianoKeyboard extends Gui {
 
     }
 }
+
+

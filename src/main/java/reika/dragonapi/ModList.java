@@ -127,7 +127,11 @@ public enum ModList implements ModEntry, Dependency {
 	EREBUS("erebus", "erebus.ModBlocks", "erebus.ModItems"),
 	BETWEENLANDS("thebetweenlands", "thebetweenlands.Blocks.BLBLOCKREGISTRY", "thebetweenlands.items.BLItemRegistry"),
 	NETHERPAM("harvestthenether", "com.pam.harvestthenether.BlockRegistry", "com.pam.harvestthenether.RotaryItems"),
-	AETHER("aether", "net.aetherteam.aether.Blocks.AETHERBLOCKS", "net.aetherteam.aether.items.AetherItems");
+	AETHER("aether", "net.aetherteam.aether.Blocks.AETHERBLOCKS", "net.aetherteam.aether.items.AetherItems"),
+	// 26.1 user-requested compat targets. WAILA was the 1.7 legacy; modern fork is JADE
+	// (different mod id, different plugin API). JEI is the in-game recipe browser.
+	JADE("jade"),
+	JEI("jei");
 
 	public static final ModList[] modList = values();
 	private static final HashMap<String, ModList> modIDs = new HashMap();
@@ -290,7 +294,7 @@ public enum ModList implements ModEntry, Dependency {
 	}
 
 	public String getRegisteredName() {
-		return net.neoforged.fml.ModList.get().getModFileById(modid).moduleName();
+		return net.neoforged.fml.ModList.get().getModContainerById(modid).map(c -> c.getModInfo().getDisplayName()).orElse(modid);
 	}
 
 }

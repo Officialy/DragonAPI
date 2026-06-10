@@ -26,9 +26,9 @@ public class MovingAverage {
     public static MovingAverage load(CompoundTag tag) {
         int size = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "size", 0);
         MovingAverage mv = new MovingAverage(size);
-        ListTag li = tag.getList("data", Tag.TAG_DOUBLE);
+        ListTag li = tag.getListOrEmpty("data");
         for (int i = 0; i < li.size(); i++) {
-            mv.data[i] = (li.getList(i).getDouble(i));
+            mv.data[i] = li.getDoubleOr(i, 0.0);
         }
         return mv;
     }

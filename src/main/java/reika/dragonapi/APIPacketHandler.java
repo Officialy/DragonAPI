@@ -7,7 +7,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -189,6 +189,51 @@ public class APIPacketHandler implements PacketHandler {
                     for (int i = 0; i < data.length; i++)
                         data[i] = inputStream.readInt();
                 }
+                case BE_NBT_SYNC -> {
+                    // 26.1: routed via the new dedicated BE-NBT-sync type (see PacketTypes / SyncPacket).
+                    // Wire format inside the DataPacket's payload bytes — written by
+                    // {@link reika.dragonapi.instantiable.io.SyncPacket#encode}:
+                    //   - BlockPos        (FriendlyByteBuf#writeBlockPos = packed long, 8 bytes)
+                    //   - varInt typeId   (BlockEntityType registry id, currently unused on the receive
+                    //                      side but kept in case we want to add a type-mismatch guard)
+                    //   - NBT compound    (FriendlyByteBuf#writeNbt)
+                    // We can't decode that off the plain DataInputStream — varInt and writeNbt are
+                    // FriendlyByteBuf-format — so wrap the DataPacket's raw bytes into a
+                    // FriendlyByteBuf and decode through that. The previous routing used the SYNC
+                    // case below which reads readUTF + 3×readInt + reflection field-write, which
+                    // for SyncPacket data was reading bits of the packed BlockPos as a UTF length
+                    // and immediately falling into "unknown field" territory — silently dropping
+                    // every periodic BE sync after tick 20. With this case, runtime BE NBT updates
+                    // now reach the client correctly: reservoir tanks fill on the client, pipe
+                    // fluid renders, etc.
+                    if (packet instanceof ReikaPacketHelper.DataPacket dp) {
+                        byte[] body = dp.getBytes();
+                        net.minecraft.network.FriendlyByteBuf bbuf =
+                                new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.wrappedBuffer(body));
+                        try {
+                            BlockPos pos = bbuf.readBlockPos();
+                            bbuf.readVarInt(); // typeId — unused for now, kept for forward compat
+                            CompoundTag nbt = bbuf.readNbt();
+                            if (nbt != null) {
+                                BlockEntity te = world.getBlockEntity(pos);
+                                if (te instanceof BlockEntityBase beb) {
+                                    beb.applySyncTag(nbt);
+                                } else if (te == null) {
+                                    // Common case during chunk-edge resync; not worth a log line.
+                                } else {
+                                    DragonAPI.LOGGER.debug(
+                                            "BE_NBT_SYNC for {} dispatched but BE at {} is {} (not BlockEntityBase)",
+                                            world, pos, te.getClass().getSimpleName());
+                                }
+                            }
+                        } catch (Exception decodeErr) {
+                            DragonAPI.LOGGER.error("Failed to decode BE_NBT_SYNC payload", decodeErr);
+                        }
+                    } else {
+                        DragonAPI.LOGGER.error("BE_NBT_SYNC dispatched on non-DataPacket {}", packet);
+                    }
+                    return;
+                }
                 default -> {
                 }
             }
@@ -330,7 +375,7 @@ public class APIPacketHandler implements PacketHandler {
                         double dx = inputStream.readDouble();
                         double dy = inputStream.readDouble();
                         double dz = inputStream.readDouble();
-                        SoundEvent name = SoundEvent.createVariableRangeEvent(ResourceLocation.tryParse(packet.readString())); //todo check if this works
+                        SoundEvent name = SoundEvent.createVariableRangeEvent(Identifier.tryParse(packet.readString())); //todo check if this works
                         float vol = inputStream.readFloat();
                         float pitch = inputStream.readFloat();
                         boolean flag = inputStream.readBoolean();
@@ -452,7 +497,7 @@ public class APIPacketHandler implements PacketHandler {
 //                if (Minecraft.getInstance().screen != null)
 //                    Minecraft.getInstance().screen.initGui();
             }
-            case POPUP -> PopupWriter.instance.addMessage(new PopupWriter.Warning(sg, data[0]));
+            case POPUP -> PopupWriter.instance().addMessage(new PopupWriter.Warning(sg, data[0]));
             case SENDLATENCY -> {
                 long t3 = System.currentTimeMillis();
                 long t1 = ReikaJavaLibrary.buildLong(data[0], data[1]);

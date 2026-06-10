@@ -135,7 +135,7 @@ public class KeyWatcher {
         }
 
         public boolean pollKey() {
-            return key != null ? key.isDown() : InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), keyInt);
+            return key != null ? key.isDown() : InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), keyInt);
         }
 
         public int keyID() {
@@ -235,4 +235,5 @@ public class KeyWatcher {
 
     }
 }
+
 

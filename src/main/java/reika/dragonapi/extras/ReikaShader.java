@@ -127,7 +127,7 @@ public class ReikaShader implements ShaderHook, TickRegistry.TickHandler {
 		if (s == effectShader) {
 			int base = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
 			int offset = 2;
-			RenderSystem.setShaderTexture(offset, stencil); // Texture unit 1
+			// RenderSystem.setShaderTexture removed in 26.1; GL binding below still applies
 			s.setField("stencilTex", offset);
 			s.setField("stencilVal", (float)offset);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, stencil.framebufferTexture);

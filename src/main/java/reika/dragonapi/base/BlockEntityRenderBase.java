@@ -8,11 +8,11 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.debug.StructureRenderer;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
-import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
@@ -66,7 +66,7 @@ public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements B
 /*    public final int bindTextureByName(String tex) {
         String over = textureOverrides.get(tex);
         if (over != null) {
-            return Minecraft.getInstance().textureManager.getTexture(ResourceLocation.fromNamespaceAndPath(this.getModID(), over)).getId();
+            return Minecraft.getInstance().textureManager.getTexture(Identifier.fromNamespaceAndPath(this.getModID(), over)).getId();
         }
         if (this.loadXmasTextures()) {
             String xmas = tex.replace(".png", "").replace("_xmas", "")+"_xmas.png";
@@ -75,7 +75,7 @@ public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements B
             textureOverrides.put(tex, xmas);
             return this.bindTextureByName(xmas);
         }
-        return Minecraft.getInstance().textureManager.getTexture(ResourceLocation.fromNamespaceAndPath(this.getModID(), tex)).getId();
+        return Minecraft.getInstance().textureManager.getTexture(Identifier.fromNamespaceAndPath(this.getModID(), tex)).getId();
     }*/
 
     protected boolean loadXmasTextures() {
@@ -91,3 +91,4 @@ public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements B
     }
 
 }
+

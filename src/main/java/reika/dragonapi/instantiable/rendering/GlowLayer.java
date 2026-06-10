@@ -1,44 +1,36 @@
 package reika.dragonapi.instantiable.rendering;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.PlayerSpecificRenderer;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-public class GlowLayer extends RenderLayer<AbstractClientPlayer, PlayerModel> {
+public class GlowLayer extends RenderLayer<net.minecraft.client.renderer.entity.state.AvatarRenderState, PlayerModel> {
 
     private static final Map<String, RenderType> RENDER_TYPES = new HashMap<>();
 
-    public GlowLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel> pRenderer) {
+    public GlowLayer(RenderLayerParent<net.minecraft.client.renderer.entity.state.AvatarRenderState, PlayerModel> pRenderer) {
         super(pRenderer);
     }
 
     @Override
-    public void render(PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight, AbstractClientPlayer pLivingEntity, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-        String glow = PlayerSpecificRenderer.instance.getGlow(pLivingEntity.getUUID());
-        if (glow != null) {
-            RenderType renderType = getRenderType(glow);
-            VertexConsumer vertexconsumer = pBuffer.getBuffer(renderType);
-            this.getParentModel().renderToBuffer(pMatrixStack, vertexconsumer, pPackedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-        }
+    public void submit(PoseStack pMatrixStack, SubmitNodeCollector pBuffer, int pPackedLight, net.minecraft.client.renderer.entity.state.AvatarRenderState pLivingEntity, float pNetHeadYaw, float pHeadPitch) {
+        // TODO 1.21+: Port to SubmitNodeCollector
     }
 
     private static RenderType getRenderType(String texture) {
         return RENDER_TYPES.computeIfAbsent(texture, t -> {
-            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(DragonAPI.MODID, "textures/entity/glow/" + t + ".png");
-            return RenderType.entityTranslucentEmissive(loc);
+            Identifier loc = Identifier.fromNamespaceAndPath(DragonAPI.MODID, "textures/entity/glow/" + t + ".png");
+            return RenderTypes.entityTranslucentEmissive(loc);
         });
     }
 }

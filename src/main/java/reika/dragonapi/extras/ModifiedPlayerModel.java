@@ -16,11 +16,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
-public abstract class ModifiedPlayerModel extends HumanoidModel<Player> {
+public abstract class ModifiedPlayerModel extends HumanoidModel<net.minecraft.client.renderer.entity.state.AvatarRenderState> {
 
 	public ModifiedPlayerModel(ModelPart root) {
 		super(root);
@@ -41,9 +42,9 @@ public abstract class ModifiedPlayerModel extends HumanoidModel<Player> {
 
 	protected abstract void init();
 
-	protected abstract void setPartAngles(Player ep, float tick);
+	protected abstract void setPartAngles(AvatarRenderState state);
 
-	public abstract ResourceLocation getTexture();
+	public abstract Identifier getTexture();
 
 	public abstract void renderBodyParts(PoseStack stack, VertexConsumer buffer, int packedLight, int packedOverlay, Player ep, float tick);
 
@@ -94,3 +95,4 @@ public abstract class ModifiedPlayerModel extends HumanoidModel<Player> {
 		}
 	}
 }
+

@@ -147,7 +147,7 @@ public class BranchingTree<B, L> {
 				sb.append(b);
 				sb.append("=[");
 				TreeNode<B, L> n2 = n.children.get(b);
-				sb.append(this.getString(n2));
+				sb.append(this.getStringOr(n2, ""));
 				sb.append("]; ");
 			}
 			return sb.toString();

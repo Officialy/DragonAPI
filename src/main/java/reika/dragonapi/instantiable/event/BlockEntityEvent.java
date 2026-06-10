@@ -5,7 +5,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.bus.api.Event;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.items.IItemHandler;
+import reika.dragonapi.interfaces.blockentity.HasItemHandler;
 
 public abstract class BlockEntityEvent extends Event {
 
@@ -24,7 +24,7 @@ public abstract class BlockEntityEvent extends Event {
     }
 
     public final boolean isTileInventory() {
-        return tile instanceof IItemHandler;
+        return tile instanceof HasItemHandler;
     }
 
     public final boolean isTileFluidHandler() {

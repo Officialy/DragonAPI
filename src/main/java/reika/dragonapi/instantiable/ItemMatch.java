@@ -72,9 +72,9 @@ public class ItemMatch {
     }
 
     public ItemMatch addItem(KeyedItemStack ks) {
-        ks = ks.setSimpleHash(true).setIgnoreNBT(ks.getItemStack().getTag() == null).lock();
+        ks = ks.setSimpleHash(true).setIgnoreNBT(!ks.getItemStack().has(net.minecraft.core.component.DataComponents.CUSTOM_DATA)).lock();
         items.add(ks);
-        //if (FMLEnvironment.dist == Dist.CLIENT)
+        //if (FMLEnvironment.getDist() == Dist.CLIENT)
         ItemStack is2 = ks.getItemStack();
         displayList.add(is2);
         return this;
@@ -142,7 +142,8 @@ public class ItemMatch {
         li = new ListTag();
         for (ItemStack is : displayList) {
             CompoundTag tag = new CompoundTag();
-            is.save(tag);
+            tag.putString("id", net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(is.getItem()).toString());
+            tag.putInt("count", is.getCount());
             li.add(tag);
         }
         NBT.put("display", li);
@@ -151,17 +152,17 @@ public class ItemMatch {
     public static ItemMatch load(CompoundTag NBT) {
         ArrayList<ItemStack> dis = new ArrayList<>();
         HashSet<KeyedItemStack> set = new HashSet();
-        ListTag li = NBT.getList("items", Tag.TAG_COMPOUND);
+        ListTag li = NBT.getListOrEmpty("items");
         for (Object o : li) {
             CompoundTag tag = (CompoundTag) o;
             KeyedItemStack ks = KeyedItemStack.load(tag);
             set.add(ks);
         }
 
-        li = NBT.getList("display", Tag.TAG_COMPOUND);
+        li = NBT.getListOrEmpty("display");
         for (Object o : li) {
             CompoundTag tag = (CompoundTag) o;
-            ItemStack is = ItemStack.of(tag);
+            ItemStack is = net.minecraft.world.item.ItemStack.OPTIONAL_CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, tag).result().orElse(net.minecraft.world.item.ItemStack.EMPTY);
             dis.add(is);
         }
 
@@ -172,3 +173,6 @@ public class ItemMatch {
         return items.isEmpty();
     }
 }
+
+
+

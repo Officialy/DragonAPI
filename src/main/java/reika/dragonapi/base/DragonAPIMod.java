@@ -11,18 +11,12 @@ package reika.dragonapi.base;
 
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLLoader;
 import org.apache.logging.log4j.Logger;
 import reika.dragonapi.DragonAPI;
-import reika.dragonapi.DragonOptions;
-import reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker;
-import reika.dragonapi.auxiliary.trackers.ModFileVersionChecker;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.extras.ModVersion;
-import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.mathsci.ReikaDateHelper;
-import net.neoforged.neoforge.common.NeoForge;
 
 import java.io.File;
 import java.net.URL;
@@ -110,7 +104,6 @@ public abstract class DragonAPIMod {
 	}
 
 	protected final void basicSetup() {
-		NeoForge.EVENT_BUS.register(this);
 		checkFinalPreload(this);
 //todo		CommandableUpdateChecker.instance.registerMod(this);
 

@@ -12,7 +12,9 @@ import reika.dragonapi.base.CoreContainer;
 import reika.dragonapi.interfaces.blockentity.CraftingTile;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
-public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends CoreContainer<V> implements Container {
+// 1.21.5: Container now declares getSlot(int):SlotAccess, which clashes with AbstractContainerMenu's
+// getSlot(int):Slot. This menu never actually fulfilled the Container contract, so drop the interface.
+public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends CoreContainer<V> {
 
     private final Level world;
     private final CraftingContainer craftMatrix = new TransientCraftingContainer(this, 3, 3);
@@ -71,7 +73,7 @@ public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends 
     }
 
     @Override
-    public void clicked(int slot, int button, ClickType action, Player ep) {
+    public void clicked(int slot, int button, ContainerInput action, Player ep) {
 		/*
 		if (slot >= 18 && slot < tile.getSizeInventory()) {
 			ItemStack held = ep.inventory.getItemStack();
@@ -93,7 +95,7 @@ public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends 
             if (drop != null && (!ReikaItemHelper.matchStacks(drop, craft) || drop.getCount()+craft.getCount() > drop.getMaxStackSize()))
                 return;
             this.craft(wr, ep);
-            craft.onCraftedBy(world, ep, craft.getCount());
+            craft.onCraftedBy(ep, craft.getCount());
             int outslot = crafter.getOutputSlot();
             if (drop == null)
                 ip.addItem(crafter.getItem(outslot));
@@ -107,3 +109,4 @@ public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends 
 
     protected abstract V getRecipe(CraftingContainer craftMatrix, Level world);
 }
+

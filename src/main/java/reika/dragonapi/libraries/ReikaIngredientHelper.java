@@ -9,7 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -162,7 +162,7 @@ public class ReikaIngredientHelper {
      * Stable key over (item + full component map). Uses the same equality semantics
      * as {@link ItemStack#isSameItemSameComponents(ItemStack, ItemStack)}.
      */
-    private record Fingerprint(ResourceLocation itemId, DataComponentMap components) {
+    private record Fingerprint(Identifier itemId, DataComponentMap components) {
         static Fingerprint of(ItemStack s) {
             return new Fingerprint(BuiltInRegistries.ITEM.getKey(s.getItem()), s.getComponents());
         }

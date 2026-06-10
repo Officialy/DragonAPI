@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
@@ -166,10 +167,10 @@ public class ReikaWorldHelper {
     }
 
     private static Simplex3DGenerator getOrCreateTemperatureNoise(Level world) {
-        ImmutablePair<ResourceKey<Level>, Long> pair = new ImmutablePair<>(world.dimension(), ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
+        ImmutablePair<ResourceKey<Level>, Long> pair = new ImmutablePair<>(world.dimension(), ServerLifecycleHooks.getCurrentServer().overworld().getSeed());
         Simplex3DGenerator gen = tempNoise.get(pair);
         if (true) {
-            gen = new Simplex3DGenerator(ServerLifecycleHooks.getCurrentServer().getWorldData().worldGenOptions().seed());
+            gen = new Simplex3DGenerator(ServerLifecycleHooks.getCurrentServer().overworld().getSeed());
             gen.setFrequency(1 / 20D);
 //            gen.addOctave(3.7, 0.17, 117.6);
             tempNoise.put(pair, gen);
@@ -182,12 +183,13 @@ public class ReikaWorldHelper {
         if (b.getDestroySpeed(world, pos) < 0 && !breakAll)
             return;
         dropBlockAt(world, pos, ep);
-        if (ep != null)
-            b.onDestroyedByPlayer(world, pos, ep, true, null);
-        if (ep != null)
-            b.onRemove(world, pos, b, true);
-        else
+        if (ep != null) {
+            b.onDestroyedByPlayer(world, pos, ep, ep.getMainHandItem(), true, world.getFluidState(pos));
+            if (world instanceof ServerLevel sl)
+                b.affectNeighborsAfterRemoval(sl, pos, false);
+        } else {
             world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+        }
         if (FX) {
             ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BREAKPARTICLES.ordinal(), world, pos, 128, Block.getId(b));
             ReikaSoundHelper.playBreakSound(world, pos, b.getBlock());
@@ -609,10 +611,21 @@ public class ReikaWorldHelper {
     }
 
     /**
+     * 1.21.5: Level#getSunAngle(float) was removed. Reproduce the old celestial-angle-in-radians value
+     * from the overworld clock time so downstream brightness math is unchanged.
+     */
+    private static float getCelestialAngleRadians(Level world) {
+        double frac = Mth.frac((double) world.getOverworldClockTime() / 24000.0 - 0.25);
+        double d1 = 0.5 - Math.cos(frac * Math.PI) / 2.0;
+        float timeOfDay = (float) ((frac * 2.0 + d1) / 3.0);
+        return timeOfDay * ((float) Math.PI * 2F);
+    }
+
+    /**
      * Get the sun brightness as a fraction from 0-1. Args: World, whether to apply weather modulation
      */
     public static float getSunIntensity(Level world, boolean weather, float ptick) {
-        float ang = world.getSunAngle(ptick);
+        float ang = getCelestialAngleRadians(world);
         float base = 1.0F - (Mth.cos(ang * (float) Math.PI * 2.0F) * 2.0F + 0.2F);
 
         if (base < 0.0F)
@@ -633,7 +646,7 @@ public class ReikaWorldHelper {
      * Returns the sun's declination, clamped to 0-90. Args: World
      */
     public static float getSunAngle(Level world) {
-        int time = (int) (world.getDayTime() % 12000);
+        int time = (int) (world.getOverworldClockTime() % 12000);
         float suntheta = 0.5F * (float) (90 * Math.sin(Math.toRadians(time * 90D / 6000D)));
         return suntheta;
     }
@@ -757,11 +770,10 @@ public class ReikaWorldHelper {
             xp -= value;
             ExperienceOrb orb = new ExperienceOrb(world, x, y, z, value);
             orb.setDeltaMovement(-0.2 + 0.4 * rand.nextFloat(), 0.3 * rand.nextFloat(), -0.2 + 0.4 * rand.nextFloat());
-            CompoundTag nbt = new CompoundTag();
-            orb.addAdditionalSaveData(nbt);
-            nbt.putInt("Age", 6000 - life);
-            orb.readAdditionalSaveData(nbt);
-            if (!world.isClientSide) {
+            if (!world.isClientSide()) {
+                // NOTE: 1.21.5 made Entity#add/readAdditionalSaveData protected and ValueInput/ValueOutput-based,
+                // so the old "set Age via NBT" custom-lifespan hack is no longer reachable from here. Every
+                // active caller passes life == 6000 (the default spawn lifespan), so this is a no-op regression.
 //                orb.velocityChanged = true; no longer a thing
                 world.addFreshEntity(orb);
             }
@@ -781,7 +793,7 @@ public class ReikaWorldHelper {
     }
 
     private static String getWorldKey(Level world) {
-        File f = world.getServer().getServerDirectory();
+        File f = world.getServer().getServerDirectory().toFile();
         return ReikaFileReader.getRealPath(f);// return ReikaFileReader.getRelativePath(DragonAPI.getMinecraftDirectory(), f);
     }
 
@@ -797,7 +809,7 @@ public class ReikaWorldHelper {
     private static File getWorldMetadataFolder(Level world) {
         if (world.isClientSide())
             throw new MisuseException("This cannot be called from the client side!");
-        File ret = new File(world.getServer().getServerDirectory(), "DragonAPI_Data");
+        File ret = new File(world.getServer().getServerDirectory().toFile(), "DragonAPI_Data");
         ret.mkdirs();
         return ret;
     }
@@ -899,8 +911,8 @@ public class ReikaWorldHelper {
     public static void setBiomeForXZ(Level world, int x, int z, Biome biome) { //todo this doesnt work at all right now, pls fix xoxoxo
         ChunkAccess ch = world.getChunk(x, z);
 
-        int ax = x - ch.getPos().x * 16;
-        int az = z - ch.getPos().z * 16;
+        int ax = x - ch.getPos().x() * 16;
+        int az = z - ch.getPos().z() * 16;
 
 //        ResourceKey<Biome>[] biomes = ch.getBiomeArray();
         int index = az * 16 + ax;
@@ -910,7 +922,7 @@ public class ReikaWorldHelper {
 //        }
 //        biomes[index] = biome;
 //        ch.setBiomeArray(biomes);
-        ch.setUnsaved(true);//todo check if this is setChunkModified();
+        ch.markUnsaved();//todo check if this is setChunkModified();
         for (int i = 0; i < 256; i++)
             temperatureEnvironment(world, new BlockPos(x, i, z), (int) ReikaBiomeHelper.getBiomeTemp(biome));
 
@@ -935,16 +947,17 @@ public class ReikaWorldHelper {
 
     public static FluidStack getDrainableFluid(Level world, BlockPos pos) {
         BlockState b = world.getBlockState(pos);
-        if (b instanceof IFluidBlock) {
-            Fluid f = ((IFluidBlock) b).getFluid();
-            if (f == null) {
+        if (b.getBlock() instanceof LiquidBlock) {
+            Fluid f = ReikaFluidHelper.lookupFluidForBlock(b);
+            return f != null ? new FluidStack(f, FluidType.BUCKET_VOLUME) : null;
+        } else if (!b.getFluidState().isEmpty()) {
+            // 1.21.5: IFluidBlock was removed; derive the fluid from the block's fluid state instead.
+            Fluid f = b.getFluidState().getType();
+            if (f == null || f == Fluids.EMPTY) {
                 DragonAPI.LOGGER.error("Found a fluid block " + b + ":" + b.getBlock().getName() + " with a null fluid @ " + pos + "!");
                 return null;
             }
-            return ((IFluidBlock) b).drain(world, pos, IFluidHandler.FluidAction.EXECUTE);
-        } else if (b.getBlock() instanceof LiquidBlock) {
-            Fluid f = ReikaFluidHelper.lookupFluidForBlock(b);
-            return f != null ? new FluidStack(f, FluidType.BUCKET_VOLUME) : null;
+            return new FluidStack(f, FluidType.BUCKET_VOLUME);
         } else {
             return null;
         }
@@ -1032,7 +1045,7 @@ public class ReikaWorldHelper {
         private final HashSet<String> modList;
 
         private WorldID(Level world) {
-            this(System.currentTimeMillis(), DragonAPI.getLaunchTime(), worldsThisSession, ReikaFileReader.getRealPath(world.getServer().getServerDirectory()), getSessionName(), getModList());
+            this(System.currentTimeMillis(), DragonAPI.getLaunchTime(), worldsThisSession, ReikaFileReader.getRealPath(world.getServer().getServerDirectory().toFile()), getSessionName(), getModList());
             worldsThisSession++;
         }
 
@@ -1054,22 +1067,22 @@ public class ReikaWorldHelper {
         }
 
         private static String getSessionName() {
-            return DragonAPI.getLaunchingPlayer().getName();
+            return DragonAPI.getLaunchingPlayer().name();
         }
 
         private static WorldID readFile(File f) {
             try (FileInputStream in = new FileInputStream(f)) {
-                CompoundTag data = NbtIo.readCompressed(in);
-                long c = data.getLong("creationTime");
-                long s = data.getLong("sourceSession");
-                String folder = data.getString("originalFolder");
-                String player = data.getString("creatingPlayer");
+                CompoundTag data = NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap());
+                long c = data.getLongOr("creationTime", 0L);
+                long s = data.getLongOr("sourceSession", 0L);
+                String folder = data.getStringOr("originalFolder", "");
+                String player = data.getStringOr("creatingPlayer", "");
                 HashSet<String> modlist = new HashSet<>();
-                ListTag li = data.getList("mods", Tag.TAG_STRING);
+                ListTag li = data.getListOrEmpty("mods");
                 for (Object o : li) {
                     modlist.add((String) o);
                 }
-                return new WorldID(c, s, data.getInt("sessionIndex"), folder, player, modlist);
+                return new WorldID(c, s, data.getIntOr("sessionIndex", 0), folder, player, modlist);
             } catch (Exception e) {
                 e.printStackTrace();
                 return NONEXISTENT;

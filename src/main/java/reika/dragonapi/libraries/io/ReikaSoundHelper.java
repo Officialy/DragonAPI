@@ -3,7 +3,7 @@ package reika.dragonapi.libraries.io;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -110,7 +110,7 @@ public class ReikaSoundHelper {
             plays.addValue(s, new SoundPlay(time, x, y, z));
         }
 //        sendSound(s, world, x, y, z, vol, pitch, atten);
-//        if (FMLEnvironment.dist.isClient()) {
+//        if (FMLEnvironment.getDist().isClient()) {
             playClientSound(s, x, y, z, vol, pitch, atten);
 //        } else {
 //            sendSound(s, world, x, y, z, vol, pitch, atten);
@@ -157,7 +157,7 @@ public class ReikaSoundHelper {
     }
 
     public static void broadcastSound(SoundEnum s, float vol, float pitch) {
-        if (FMLEnvironment.dist == Dist.CLIENT)
+        if (FMLEnvironment.getDist() == Dist.CLIENT)
             throw new MisuseException("You cannot call this from the client!");
             Iterable<ServerLevel> worlds = Minecraft.getInstance().level.getServer().getAllLevels();
             for (ServerLevel world : worlds) {
@@ -178,11 +178,11 @@ public class ReikaSoundHelper {
         world.playLocalSound(e.getX(), e.getY(), e.getZ(), snd, SoundSource.AMBIENT, vol, p, false);
     }
 
-    public static void playSoundFromServer(Level world, double x, double y, double z, ResourceLocation loc, float vol, float pitch, boolean scale) {
+    public static void playSoundFromServer(Level world, double x, double y, double z, Identifier loc, float vol, float pitch, boolean scale) {
         ReikaPacketHelper.writeDirectSound(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.SERVERSOUND.ordinal(), world, x, y, z, loc, vol, pitch, scale);
     }
 
-    public static void playSoundFromServerAtBlock(Level world, int x, int y, int z, ResourceLocation loc, float vol, float pitch, boolean scale) {
+    public static void playSoundFromServerAtBlock(Level world, int x, int y, int z, Identifier loc, float vol, float pitch, boolean scale) {
         playSoundFromServer(world, x + 0.5, y + 0.5, z + 0.5, loc, vol, pitch, scale);
     }
 
@@ -375,3 +375,6 @@ public class ReikaSoundHelper {
         playSoundClientSide(s, world, x, y, z, vol, pitch, s.attenuate());
     }
 }
+
+
+

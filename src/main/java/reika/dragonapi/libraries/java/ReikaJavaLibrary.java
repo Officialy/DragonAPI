@@ -71,7 +71,7 @@ public final class ReikaJavaLibrary {
     }
 
     public static void pConsole(String obj, net.neoforged.api.distmarker.Dist s) {
-        if (FMLEnvironment.dist == s)
+        if (FMLEnvironment.getDist() == s)
             pConsole(obj);
     }
 
@@ -1001,3 +1001,6 @@ public final class ReikaJavaLibrary {
 
     }
 }
+
+
+

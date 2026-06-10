@@ -9,9 +9,11 @@
  ******************************************************************************/
 package reika.dragonapi.libraries.registry;
 
+import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SpellParticleOption;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
@@ -50,9 +52,11 @@ public enum ReikaParticleHelper {
     FIREWORK(ParticleTypes.FIREWORK),
     //SUSPEND(ParticleTypes.SUSPENDED), this is also gone as of 1.13, however it still exists in the jar
     //MOBSPELL(ParticleTypes.MOB_SPELL),
-    AMBIENTMOBSPELL(ParticleTypes.AMBIENT_ENTITY_EFFECT),
-    SPELL(ParticleTypes.ENTITY_EFFECT),
-    INSTANTSPELL(ParticleTypes.INSTANT_EFFECT),
+    // 1.21.5: AMBIENT_ENTITY_EFFECT was removed; ENTITY_EFFECT/INSTANT_EFFECT are now parameterized
+    // particle types (ColorParticleOption / SpellParticleOption) rather than ready-made ParticleOptions.
+    AMBIENTMOBSPELL(SpellParticleOption.create(ParticleTypes.EFFECT, 0xFFFFFF, 1.0F)),
+    SPELL(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, 0xFFFFFFFF)),
+    INSTANTSPELL(SpellParticleOption.create(ParticleTypes.INSTANT_EFFECT, 0xFFFFFF, 1.0F)),
     WITCH(ParticleTypes.WITCH),
     POOF(ParticleTypes.POOF),
     ANGRY(ParticleTypes.ANGRY_VILLAGER);
@@ -110,7 +114,7 @@ public enum ReikaParticleHelper {
         if (particle != DustParticleOptions.REDSTONE) {
             world.addParticle(particle, x, y, z, vx, vy, vz);
         } else {
-            var particle = new DustParticleOptions(new Vector3f((float) vx, (float) vy, (float) vz), 1F);
+            var particle = new DustParticleOptions((((int) (vx * 255F)) << 16) | (((int) (vy * 255F)) << 8) | ((int) (vz * 255F)), 1F);
             world.addParticle(particle, x, y, z, vx, vy, vz);
         }
     }
@@ -132,7 +136,7 @@ public enum ReikaParticleHelper {
             if (particle != DustParticleOptions.REDSTONE) {
                 world.addParticle(particle, pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), vx, vy, vz);
             } else {
-                var particle = new DustParticleOptions(new Vector3f((float) vx, (float) vy, (float) vz), 1F);
+                var particle = new DustParticleOptions((((int) (vx * 255F)) << 16) | (((int) (vy * 255F)) << 8) | ((int) (vz * 255F)), 1F);
                 world.addParticle(particle, pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), vx, vy, vz);
             }
         }
@@ -147,7 +151,7 @@ public enum ReikaParticleHelper {
             if (particle != DustParticleOptions.REDSTONE) {
                 world.addParticle(particle, rx, ry, rz, vx, vy, vz);
             } else {
-                var particle = new DustParticleOptions(new Vector3f((float) vx, (float) vy, (float) vz), 1F);
+                var particle = new DustParticleOptions((((int) (vx * 255F)) << 16) | (((int) (vy * 255F)) << 8) | ((int) (vz * 255F)), 1F);
                 world.addParticle(particle, rx, ry, rz, vx, vy, vz);
             }
         }

@@ -44,12 +44,13 @@ public class InventorySlot {
 
     public ItemStack setSlot(ItemStack is) {
         ItemStack prev = this.getStack();
-        inventory.setItem(slot, is);
+        inventory.setItem(slot, is != null ? is : ItemStack.EMPTY);
         return prev;
     }
 
     public boolean isEmpty() {
-        return this.getStack() == null;
+        ItemStack is = this.getStack();
+        return is == null || is.isEmpty();
     }
 
     @Override

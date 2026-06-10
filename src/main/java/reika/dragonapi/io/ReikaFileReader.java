@@ -30,7 +30,7 @@ import java.util.jar.JarFile;
 
 import static net.neoforged.fml.loading.FMLEnvironment.isProduction;
 
-public class ReikaFileReader extends DragonAPI {
+public class ReikaFileReader {
 
 	private static long internetLastUnavailable = -1;
 
@@ -585,7 +585,7 @@ public class ReikaFileReader extends DragonAPI {
 			get = ReikaJavaLibrary.flipBits(get);
 			get = (byte) (~get);
 			li.set(i, get);
-			li.add(i + 1, (byte) rand.nextInt(255));
+			li.add(i + 1, (byte) reika.dragonapi.DragonAPI.rand.nextInt(255));
 		}
 	}
 
@@ -816,3 +816,5 @@ public class ReikaFileReader extends DragonAPI {
 
 	}
 }
+
+

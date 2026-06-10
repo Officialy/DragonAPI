@@ -4,14 +4,15 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.CraftingContainer;
-// ArmorItem removed - use data components to check armor
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import reika.dragonapi.instantiable.storage.ManagedItemHandler;
+import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 import reika.dragonapi.instantiable.ItemMatch;
 import reika.dragonapi.instantiable.data.KeyedItemStack;
 import reika.dragonapi.instantiable.data.maps.ItemHashMap;
@@ -24,6 +25,12 @@ import java.util.*;
 import static reika.dragonapi.DragonAPI.rand;
 
 public class ReikaInventoryHelper {
+
+    /** 1.21.5: ArmorItem class was removed; armor is now defined by the Equippable data component. */
+    private static boolean isArmorItem(ItemStack is) {
+        Equippable eq = is.get(DataComponents.EQUIPPABLE);
+        return eq != null && eq.slot().isArmor();
+    }
 
     /**
      * Checks an itemstack array (eg an inventory) for an item of a specific id.
@@ -81,7 +88,7 @@ public class ReikaInventoryHelper {
                     if (ItemStack.matches(is, in))
                         return true;
                 } else {
-                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in))
+                    if (ItemStack.isSameItemSameComponents(is, in) && ReikaItemHelper.matchStacks(is, in))
                         return true;
                 }
             }
@@ -133,7 +140,7 @@ public class ReikaInventoryHelper {
                     if (ItemStack.matches(is, in))
                         return true;
                 } else {
-                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in))
+                    if (ItemStack.isSameItemSameComponents(is, in) && ReikaItemHelper.matchStacks(is, in))
                         return true;
                 }
             }
@@ -157,7 +164,7 @@ public class ReikaInventoryHelper {
                     if (ItemStack.matches(is, in))
                         return true;
                 } else {
-                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in))
+                    if (ItemStack.isSameItemSameComponents(is, in) && ReikaItemHelper.matchStacks(is, in))
                         return true;
                 }
             }
@@ -216,7 +223,7 @@ public class ReikaInventoryHelper {
         return canAcceptMoreOf(new ItemStack(item, amt), inv);
     }
 
-    public static boolean hasNEmptyStacks(ItemStackHandler ii, int n) {
+    public static boolean hasNEmptyStacks(ManagedItemHandler ii, int n) {
         int e = 0;
         for (int i = 0; i < ii.getSlots(); i++) {
             if (ii.getStackInSlot(i) == ItemStack.EMPTY)
@@ -257,7 +264,7 @@ public class ReikaInventoryHelper {
                 if (in == null)
                     return true;
                 else {
-                    if (ReikaItemHelper.matchStacks(in, is) && ItemStack.isSameItemSameTags(is, in)) {
+                    if (ReikaItemHelper.matchStacks(in, is) && ItemStack.isSameItemSameComponents(is, in)) {
                         int max = Math.min(in.getMaxStackSize(), inv.getMaxStackSize());
                         space += max - in.getCount();
                     }
@@ -276,32 +283,32 @@ public class ReikaInventoryHelper {
         return 0;
     }
 
-    public static boolean addToIInv(Block b, ItemStackHandler ii) {
+    public static boolean addToIInv(Block b, ManagedItemHandler ii) {
         return addToIInv(new ItemStack(b), ii);
     }
 
-    public static boolean addToIInv(Item is, ItemStackHandler ii) {
+    public static boolean addToIInv(Item is, ManagedItemHandler ii) {
         return addToIInv(new ItemStack(is), ii);
     }
     public static boolean addToIInv(Item is, Container ii) {
         return addToIInv(new ItemStack(is), ii);
     }
-    public static boolean addToIInv(ItemStack is, ItemStackHandler ii) {
+    public static boolean addToIInv(ItemStack is, ManagedItemHandler ii) {
         return addToIInv(is, ii, false);
     }
 
-    public static boolean addToIInv(ItemStack is, ItemStackHandler ii, boolean overrideValid) {
+    public static boolean addToIInv(ItemStack is, ManagedItemHandler ii, boolean overrideValid) {
         return addToIInv(is, ii, overrideValid, 0, ii.getSlots());
     }
 
-    public static boolean addToIInv(ItemStack is, ItemStackHandler ii, int first, int last) {
+    public static boolean addToIInv(ItemStack is, ManagedItemHandler ii, int first, int last) {
         return addToIInv(is, ii, false, first, last);
     }
 
     /**
      * Returns true if succeeded; adds if you can fit the whole stack
      */
-    public static boolean addToIInv(ItemStack is, ItemStackHandler ii, boolean overrideValid, int firstSlot, int maxSlot) {
+    public static boolean addToIInv(ItemStack is, ManagedItemHandler ii, boolean overrideValid, int firstSlot, int maxSlot) {
 //        if (InterfaceCache.DSU.instanceOf(ii))
 //            return addToDSU((IDeepStorageUnit)ii, is, false);
         is = is.copy();
@@ -311,7 +318,7 @@ public class ReikaInventoryHelper {
         int max = Math.min(ii.getSlots(), is.getCount());
         for (int i = firstSlot; i < maxSlot; i++) {
             if (overrideValid || ii.isItemValid(i, is)) {
-                if (!(is.getItem() instanceof ArmorItem)) {
+                if (!isArmorItem(is)) {
                     if (i >= (ii).getSlots())
                         continue;
                 }
@@ -368,7 +375,7 @@ public class ReikaInventoryHelper {
         int max = Math.min(ii.getContainerSize(), is.getCount());
         for (int i = firstSlot; i < maxSlot; i++) {
             if (overrideValid || ii.canPlaceItem(i, is)) {
-                if (!(is.getItem() instanceof ArmorItem)) {
+                if (!isArmorItem(is)) {
                     if (i >= (ii).getContainerSize())
                         continue;
                 }
@@ -417,7 +424,7 @@ public class ReikaInventoryHelper {
         return size;
     }
 
-    public static int addToInventoryWithLeftover(Item id, int size, ItemStackHandler inventory) {
+    public static int addToInventoryWithLeftover(Item id, int size, ManagedItemHandler inventory) {
         int slot = locateInInventory(id, inventory);
         int empty = findEmptySlot(inventory);
         if (slot == -1) {
@@ -451,9 +458,9 @@ public class ReikaInventoryHelper {
     /**
      * Adds as much of the specified item stack as it can and
      * returns the number of "leftover" items that did not fit.
-     * Args: Itemstack, ItemStackHandler
+     * Args: Itemstack, ManagedItemHandler
      */
-    public static int addToInventoryWithLeftover(ItemStack stack, ItemStackHandler inventory) {
+    public static int addToInventoryWithLeftover(ItemStack stack, ManagedItemHandler inventory) {
         int leftover = addToInventoryWithLeftover(stack.getItem(), stack.getCount(), inventory);
         return leftover;
     }
@@ -471,7 +478,7 @@ public class ReikaInventoryHelper {
                 if (left <= 0)
                     return 0;
             } else {
-                if (ReikaItemHelper.matchStacks(stack, in) && ItemStack.isSameItemSameTags(stack, in)) {
+                if (ReikaItemHelper.matchStacks(stack, in) && ItemStack.isSameItemSameComponents(stack, in)) {
                     int space = max - in.getCount();
                     int add = Math.min(space, stack.getCount());
                     if (add > 0) {
@@ -492,7 +499,7 @@ public class ReikaInventoryHelper {
      * Returns the location (array index) of an itemstack in the specified inventory.
      * Returns -1 if not present. Args: Itemstack to check, Inventory, Match size T/F
      */
-    public static int locateInInventory(ItemStack is, IItemHandler inv, boolean matchsize) {
+    public static int locateInInventory(ItemStack is, ManagedItemHandler inv, boolean matchsize) {
         for (int i = 0; i < inv.getSlots(); i++) {
             ItemStack in = inv.getStackInSlot(i);
             if (in != null) {
@@ -505,7 +512,7 @@ public class ReikaInventoryHelper {
                         return i;
                     }
                 } else {
-                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in)) {
+                    if (ItemStack.isSameItemSameComponents(is, in) && ReikaItemHelper.matchStacks(is, in)) {
                         return i;
                     }
                 }
@@ -563,7 +570,7 @@ public class ReikaInventoryHelper {
                         return i;
                     }
                 } else {
-                    if (ItemStack.isSameItemSameTags(is, in) && ReikaItemHelper.matchStacks(is, in)) {
+                    if (ItemStack.isSameItemSameComponents(is, in) && ReikaItemHelper.matchStacks(is, in)) {
                         return i;
                     }
                 }
@@ -592,9 +599,9 @@ public class ReikaInventoryHelper {
     }
     /**
      * Returns the location (array index) of an item in the specified inventory.
-     * Returns -1 if not present. Args: Item ID, IItemHandler
+     * Returns -1 if not present. Args: Item ID, ManagedItemHandler
      */
-    public static int locateInInventory(Item id, IItemHandler inv) {
+    public static int locateInInventory(Item id, ManagedItemHandler inv) {
         for (int i = 0; i < inv.getSlots(); i++) {
             ItemStack in = inv.getStackInSlot(i);
             if (in != null) {
@@ -638,9 +645,9 @@ public class ReikaInventoryHelper {
 
     /**
      * Returns the location of an empty slot in an inventory. Returns -1 if none.
-     * Args: ItemStackHandler
+     * Args: ManagedItemHandler
      */
-    public static int findEmptySlot(ItemStackHandler inventory) {
+    public static int findEmptySlot(ManagedItemHandler inventory) {
         for (int i = 0; i < inventory.getSlots(); i++) {
             if (inventory.getStackInSlot(i).isEmpty())
                 return i;
@@ -735,11 +742,11 @@ public class ReikaInventoryHelper {
         decrStack(slot, inv, 1);
     }
 
-    public static void decrStack(int slot, ItemStackHandler inv) {
+    public static void decrStack(int slot, ManagedItemHandler inv) {
         decrStack(slot, inv, 1);
     }
 
-    public static void decrStack(int slot, ItemStackHandler inv, int amount) {
+    public static void decrStack(int slot, ManagedItemHandler inv, int amount) {
         if (slot >= inv.getSlots()) {
             ReikaChatHelper.write("Tried to access Slot " + slot + ", which is larger than the inventory.");
             return;
@@ -753,11 +760,13 @@ public class ReikaInventoryHelper {
             ReikaChatHelper.write("Tried to access Slot " + slot + ", which is empty.");
             return;
         }
-        int count = in.getCount();
-        if (in.getCount() > amount)
-            in.setCount(count -= amount);
-        else
-            inv.setStackInSlot(slot, ItemStack.EMPTY);
+        // 26.1 fix: {@code ManagedItemHandler#getStackInSlot} returns a NEW {@link ItemStack}
+        // copy each call — mutating that copy (e.g. {@code in.setCount(...)}) has no effect on
+        // the underlying storage. Previously this method called {@code in.setCount(count - amount)}
+        // which silently did nothing, leaving engines with infinite fuel, grinders with infinite
+        // input, and every other caller broken. Route through {@code extractItem} which goes
+        // through the resource-handler transaction system and commits a real change.
+        inv.extractItem(slot, amount, false);
     }
 
     public static void decrStack(int slot, ItemStack[] inv, int amount) {
@@ -812,7 +821,7 @@ public class ReikaInventoryHelper {
     /**
      * Fill-in so one does not need to constantly rewrite the Inventory method
      */
-    public static ItemStack decrStackSize(ItemStackHandler ii, int slot, int decr) {
+    public static ItemStack decrStackSize(ManagedItemHandler ii, int slot, int decr) {
         if (!ii.getStackInSlot(slot).isEmpty()) {
             if (ii.getStackInSlot(slot).getCount() <= decr) {
                 ItemStack itemstack = ii.getStackInSlot(slot);
@@ -837,11 +846,11 @@ public class ReikaInventoryHelper {
         return -1;
     }
 
-    public static boolean hasSpaceFor(ItemStack is, ItemStackHandler ii, boolean overrideValid) {
+    public static boolean hasSpaceFor(ItemStack is, ManagedItemHandler ii, boolean overrideValid) {
         return hasSpaceFor(is, ii, overrideValid, 0, ii.getSlots());
     }
 
-    public static boolean hasSpaceFor(ItemStack is, ItemStackHandler ii, boolean overrideValid, int firstSlot, int maxSlot) {
+    public static boolean hasSpaceFor(ItemStack is, ManagedItemHandler ii, boolean overrideValid, int firstSlot, int maxSlot) {
         int size = is.getCount();
         for (int i = firstSlot; i < maxSlot && size > 0; i++) {
             int max = Math.min(ii.getSlotLimit(i), is.getMaxStackSize());
@@ -850,7 +859,7 @@ public class ReikaInventoryHelper {
                 if (in.isEmpty()) {
                     size -= max;
                 } else {
-                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.isSameItemSameTags(is, in)) {
+                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.isSameItemSameComponents(is, in)) {
                         int space = max - in.getCount();
                         size -= space;
                     }
@@ -868,7 +877,7 @@ public class ReikaInventoryHelper {
                 if (in.isEmpty()) {
                     size -= max;
                 } else {
-                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.isSameItemSameTags(is, in)) {
+                    if (ReikaItemHelper.matchStacks(is, in) && ItemStack.isSameItemSameComponents(is, in)) {
                         int space = max - in.getCount();
                         size -= space;
                     }
@@ -887,14 +896,14 @@ public class ReikaInventoryHelper {
             return true;
         }
         int max = at.getMaxStackSize();
-        if (!(ReikaItemHelper.matchStacks(is, at) && ItemStack.isSameItemSameTags(is, at)) || at.getCount() + is.getCount() > max)
+        if (!(ReikaItemHelper.matchStacks(is, at) && ItemStack.isSameItemSameComponents(is, at)) || at.getCount() + is.getCount() > max)
             return false;
         int count = at.getCount();
         at.setCount(count += is.getCount());
         return true;
     }
 
-    public static boolean addOrSetStack(ItemStack is, ItemStackHandler inv, int slot) {
+    public static boolean addOrSetStack(ItemStack is, ManagedItemHandler inv, int slot) {
         if (is == null)
             return false;
         if (inv.getStackInSlot(slot).isEmpty()) {
@@ -902,7 +911,7 @@ public class ReikaInventoryHelper {
             return true;
         }
         int max = inv.getStackInSlot(slot).getMaxStackSize();
-        if (!(ReikaItemHelper.matchStacks(is, inv.getStackInSlot(slot)) && ItemStack.isSameItemSameTags(is, inv.getStackInSlot(slot))) || inv.getStackInSlot(slot).getCount() + is.getCount() > max)
+        if (!(ReikaItemHelper.matchStacks(is, inv.getStackInSlot(slot)) && ItemStack.isSameItemSameComponents(is, inv.getStackInSlot(slot))) || inv.getStackInSlot(slot).getCount() + is.getCount() > max)
             return false;
 
         int count = inv.getStackInSlot(slot).getCount();
@@ -914,7 +923,7 @@ public class ReikaInventoryHelper {
      * Adds a certain amount of a specified ID to an inventory slot, creating the itemstack if necessary.
      * Returns true if the whole stack fit and was added. Args: ID, number, metadata (-1 for any), inventory, slot
      */
-    public static boolean addOrSetStack(Item id, int size, ItemStackHandler inv, int slot) {
+    public static boolean addOrSetStack(Item id, int size, ManagedItemHandler inv, int slot) {
         return addOrSetStack(new ItemStack(id, size), inv, slot);
     }
 
@@ -935,7 +944,7 @@ public class ReikaInventoryHelper {
     /**
      * Add multiple items to an inventory. Args: Inventory, Items. Returns the ones that could not be added.
      */
-    public static List<ItemStack> addMultipleItems(ItemStackHandler ii, List<ItemStack> items) {
+    public static List<ItemStack> addMultipleItems(ManagedItemHandler ii, List<ItemStack> items) {
         List<ItemStack> extra = new ArrayList<ItemStack>();
         for (ItemStack item : items) {
             if (!addToIInv(item, ii))
@@ -950,7 +959,7 @@ public class ReikaInventoryHelper {
     public static ItemStack getNextBlockInInventory(ItemStack[] inv, boolean decr) {
         for (int i = 0; i < inv.length; i++) {
             ItemStack is = inv[i];
-            if (is != null) {
+            if (!is.isEmpty()) {
                 Item item = is.getItem();
                 if (item instanceof BlockItem) {
                     if (decr)
@@ -965,10 +974,10 @@ public class ReikaInventoryHelper {
     /**
      * Gets the first block in an inventory, optionally consuming one. Args: Inventory, Decr yes/no
      */
-    public static ItemStack getNextBlockInInventory(ItemStackHandler inv, boolean decr) {
+    public static ItemStack getNextBlockInInventory(ManagedItemHandler inv, boolean decr) {
         for (int i = 0; i < inv.getSlots(); i++) {
             ItemStack is = inv.getStackInSlot(i);
-            if (is != null) {
+            if (!is.isEmpty()) {
                 Item item = is.getItem();
                 if (item instanceof BlockItem) {
                     if (decr)
@@ -1031,7 +1040,7 @@ public class ReikaInventoryHelper {
      * Spills the entire inventory of an Inventory at the specified coordinates with a 1-block spread.
      * Args: Level, x, y, z, Inventory
      */
-    public static void spillAndEmptyInventory(Level world, int x, int y, int z, IItemHandler ii) {
+    public static void spillAndEmptyInventory(Level world, int x, int y, int z, ManagedItemHandler ii) {
         int size = ii.getSlots();
         for (int i = 0; i < size; i++) {
             ItemStack s = ii.getStackInSlot(i);
@@ -1046,7 +1055,7 @@ public class ReikaInventoryHelper {
         }
     }
 
-    public static int getFirstNonEmptySlot(IItemHandler ii) {
+    public static int getFirstNonEmptySlot(ManagedItemHandler ii) {
         for (int i = 0; i < ii.getSlots(); i++) {
             if (!ii.getStackInSlot(i).isEmpty())
                 return i;
@@ -1057,12 +1066,12 @@ public class ReikaInventoryHelper {
     /**
      * Adds an ItemStack to an inventory and returns how many items were successfully added.
      */
-    public static int addStackAndReturnCount(ItemStack stack, IItemHandler ii) {
+    public static int addStackAndReturnCount(ItemStack stack, ManagedItemHandler ii) {
         return addStackAndReturnCount(stack, ii, 0, ii.getSlots() - 1);
     }
 
-    public static int addStackAndReturnCount(ItemStack stack, IItemHandler ii, int slotMin, int slotMax) {
-        int slots = ii.getSlots(); //todo ii instanceof IItemHandler ? ((IItemHandler)ii).getAccessibleSlotsFromSide(side.ordinal()) : ReikaArrayHelper.getLinearArray(slotMin, slotMax);
+    public static int addStackAndReturnCount(ItemStack stack, ManagedItemHandler ii, int slotMin, int slotMax) {
+        int slots = ii.getSlots(); //todo ii instanceof ManagedItemHandler ? ((ManagedItemHandler)ii).getAccessibleSlotsFromSide(side.ordinal()) : ReikaArrayHelper.getLinearArray(slotMin, slotMax);
         int transferred = 0;
         for (int idx = 0; idx < slots && stack.getCount() > 0; idx++) {
             ItemStack is = ii.getStackInSlot(slots);
@@ -1086,10 +1095,10 @@ public class ReikaInventoryHelper {
         return transferred;
     }
 
-    public static ArrayList<ItemStack> getAllTransferrables(IItemHandler source) {
+    public static ArrayList<ItemStack> getAllTransferrables(ManagedItemHandler source) {
         ArrayList<ItemStack> li = new ArrayList<>();
-        if (source instanceof IItemHandler) {
-            IItemHandler ii = source;
+        if (source instanceof ManagedItemHandler) {
+            ManagedItemHandler ii = source;
             for (int slot = 0; slot < source.getSlots(); slot++) {
                 ItemStack is = ii.getStackInSlot(slot);
                 if (is != null) {
@@ -1098,8 +1107,8 @@ public class ReikaInventoryHelper {
                     }
                 }
             }
-        } else if (source instanceof IItemHandler) {
-            IItemHandler ii = source;
+        } else if (source instanceof ManagedItemHandler) {
+            ManagedItemHandler ii = source;
             for (int slot = 0; slot < source.getSlots(); slot++) {
                 ItemStack is = ii.getStackInSlot(slot);
                 if (is != null) {
@@ -1110,10 +1119,10 @@ public class ReikaInventoryHelper {
         return li;
     }
 
-    public static HashMap<Integer, ItemStack> getLocatedTransferrables(IItemHandler source) {
+    public static HashMap<Integer, ItemStack> getLocatedTransferrables(ManagedItemHandler source) {
         HashMap<Integer, ItemStack> li = new HashMap<>();
-        if (source instanceof IItemHandler) {
-            IItemHandler ii = source;
+        if (source instanceof ManagedItemHandler) {
+            ManagedItemHandler ii = source;
             for (int slot = 0; slot < source.getSlots(); slot++) {
                 ItemStack is = ii.getStackInSlot(slot);
                 if (is != null) {
@@ -1122,8 +1131,8 @@ public class ReikaInventoryHelper {
                     }
                 }
             }
-        } else if (source instanceof IItemHandler) {
-            IItemHandler ii = source;
+        } else if (source instanceof ManagedItemHandler) {
+            ManagedItemHandler ii = source;
             for (int slot = 0; slot < source.getSlots(); slot++) {
                 ItemStack is = ii.getStackInSlot(slot);
                 if (is != null) {
@@ -1160,7 +1169,7 @@ public class ReikaInventoryHelper {
         return li;
     }
 
-    public static HashSet<Integer> getSlotsBetweenWithItemStack(ItemStack is, ItemStackHandler ii, int min, int max, boolean matchSize) {
+    public static HashSet<Integer> getSlotsBetweenWithItemStack(ItemStack is, ManagedItemHandler ii, int min, int max, boolean matchSize) {
         HashSet<Integer> li = new HashSet<>();
         for (int i = min; i <= max; i++) {
             ItemStack in = ii.getStackInSlot(i);
@@ -1173,7 +1182,7 @@ public class ReikaInventoryHelper {
         return li;
     }
 
-    public static boolean inventoryContains(ItemHashMap<Integer> map, ItemStackHandler ii) {
+    public static boolean inventoryContains(ItemHashMap<Integer> map, ManagedItemHandler ii) {
         ItemHashMap<Integer> inv = ItemHashMap.getFromInventory(ii);
         for (ItemStack is : map.keySet()) {
             int need = map.get(is);
@@ -1184,7 +1193,7 @@ public class ReikaInventoryHelper {
         return true;
     }
 
-    public static void removeFromInventory(ItemHashMap<Integer> map, ItemStackHandler ii) {
+    public static void removeFromInventory(ItemHashMap<Integer> map, ManagedItemHandler ii) {
         for (ItemStack is : map.keySet()) {
             int need = map.get(is);
             int loc = locateInInventory(is, ii, false);
@@ -1220,7 +1229,7 @@ public class ReikaInventoryHelper {
 //        }
 //    }
 
-    public static void addItems(ItemStackHandler ii, ArrayList<ItemStack> li) {
+    public static void addItems(ManagedItemHandler ii, ArrayList<ItemStack> li) {
         for (ItemStack is : li) {
             addToIInv(is, ii);
         }
@@ -1260,13 +1269,13 @@ public class ReikaInventoryHelper {
     }
 
     /**
-     * Returns whether an inventory is empty. Args: IItemHandler
+     * Returns whether an inventory is empty. Args: ManagedItemHandler
      */
-    public static boolean isEmpty(IItemHandler ii) {
+    public static boolean isEmpty(ManagedItemHandler ii) {
         return isEmptyFrom(ii, 0, ii.getSlots() - 1);
     }
 
-    public static boolean isEmptyFrom(IItemHandler ii, int from, int to) {
+    public static boolean isEmptyFrom(ManagedItemHandler ii, int from, int to) {
         for (int i = from; i <= to; i++) {
             ItemStack is = ii.getStackInSlot(i);
             if (!is.isEmpty())

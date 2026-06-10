@@ -17,8 +17,9 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import reika.dragonapi.DragonAPI;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
 import com.mojang.blaze3d.systems.RenderSystem;
 
@@ -78,14 +79,14 @@ public class ReikaModel extends ModifiedPlayerModel {
 	}
 
 	@Override
-	public void setupAnim(Player p_102618_, float p_102619_, float p_102620_, float p_102621_, float p_102622_, float p_102623_) {
-		super.setupAnim(p_102618_, p_102619_, p_102620_, p_102621_, p_102622_, p_102623_);
-		this.setPartAngles(p_102618_, p_102621_);
+	public void setupAnim(net.minecraft.client.renderer.entity.state.AvatarRenderState state) {
+		super.setupAnim(state);
+		this.setPartAngles(state);
 	}
 
 	@Override
-	public ResourceLocation getTexture() {
-		return ResourceLocation.fromNamespaceAndPath(DragonAPI.MODID, "textures/reika_tex.png");
+	public Identifier getTexture() {
+		return Identifier.fromNamespaceAndPath(DragonAPI.MODID, "textures/reika_tex.png");
 	}
 
 	@Override
@@ -141,16 +142,16 @@ public class ReikaModel extends ModifiedPlayerModel {
 //	}
 
 	@Override
-	protected void setPartAngles(Player ep, float tick) {
-		float pitch = -ep.getXRot();
-		float yawHead = -ep.getYRot()%360-tick*(ep.getYRot()-ep.yRotO);
-		float yaw = -ep.yBodyRot%360-tick*(ep.yBodyRot-ep.yBodyRotO)+180;
+	protected void setPartAngles(net.minecraft.client.renderer.entity.state.AvatarRenderState ep) {
+		float pitch = -ep.xRot;
+		float yawHead = -ep.yRot%360;
+		float yaw = -ep.bodyRot%360+180;
 
 		pc = pitch*RADIAN;
 		yc = yaw*RADIAN;
 		yhc = yawHead*RADIAN;
 
-		this.compensateAngles(tick);
+		this.compensateAngles(ep.ageInTicks);
 
 		hornL.xRot = pc;
 		//hornR.yRot = yawBody / (180F / (float)Math.PI);
@@ -181,3 +182,4 @@ public class ReikaModel extends ModifiedPlayerModel {
 	}
 
 }
+

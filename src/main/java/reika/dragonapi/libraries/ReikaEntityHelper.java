@@ -18,14 +18,28 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.entity.monster.piglin.Piglin;
-import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.monster.skeleton.Skeleton;
+import net.minecraft.world.entity.monster.skeleton.WitherSkeleton;
+import net.minecraft.world.entity.monster.spider.CaveSpider;
+import net.minecraft.world.entity.monster.spider.Spider;
+import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.monster.zombie.ZombieVillager;
+import net.minecraft.world.entity.animal.chicken.Chicken;
+import net.minecraft.world.entity.animal.cow.Cow;
+import net.minecraft.world.entity.animal.cow.MushroomCow;
+import net.minecraft.world.entity.animal.feline.Ocelot;
+import net.minecraft.world.entity.animal.golem.IronGolem;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.entity.animal.squid.Squid;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.Boat;
-import net.minecraft.world.entity.vehicle.Minecart;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.entity.vehicle.minecart.Minecart;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.equipment.ArmorMaterial;
 import net.minecraft.world.level.Level;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -235,7 +249,7 @@ public class ReikaEntityHelper {
 
     public static boolean burnsInSun(LivingEntity e) {
         // MobType.UNDEAD removed - use EntityTypeTags.UNDEAD instead
-        return e.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD);
+        return e.getType().builtInRegistryHolder().is(net.minecraft.tags.EntityTypeTags.UNDEAD);
     }
 
     public static int damageArmor(LivingEntity e, int amt) {
@@ -259,13 +273,13 @@ public class ReikaEntityHelper {
     }
 
     public static void performEntityVerification(ServerPlayer ep, int entityID, ResourceKey<Level> dim, int classHash) {
-//        ReikaJavaLibrary.pConsole("Verifying existence of "+entityID+" on side "+ FMLEnvironment.dist);
+//        ReikaJavaLibrary.pConsole("Verifying existence of "+entityID+" on side "+ FMLEnvironment.getDist());
         Level world = ep.level();//todo DimensionManager.getWorld(dim);
         if (world != null) {
             Entity e = world.getEntity(entityID);
             if (e != null) {
                 if (e.getClass().getName().hashCode() == classHash) {
-                    ReikaJavaLibrary.pConsole("Verified existence of " + e + " on side " + FMLEnvironment.dist);
+                    ReikaJavaLibrary.pConsole("Verified existence of " + e + " on side " + FMLEnvironment.getDist());
                     return;
                 }
             }
@@ -319,7 +333,7 @@ public class ReikaEntityHelper {
                     arm = null;
                     e.setItemSlot(slotType, ItemStack.EMPTY);
                 }
-                e.playSound(SoundEvents.ITEM_BREAK, 0.1F, 0.8F);
+                e.playSound(SoundEvents.ITEM_BREAK.value(), 0.1F, 0.8F);
                 ret += amt;
             }
             ItemStack post = e.getItemBySlot(slotType);
@@ -368,8 +382,12 @@ public class ReikaEntityHelper {
     }
 
     private static boolean canDamageArmorOf(LivingEntity target) {
-        MinecraftServer ms = target.getServer();
-        return !(target instanceof Player) || ms != null && ms.isPvpAllowed();
+        if (!(target instanceof Player))
+            return true;
+        return !(target.level() instanceof ServerLevel sl) || sl.isPvpAllowed();
     }
 
 }
+
+
+

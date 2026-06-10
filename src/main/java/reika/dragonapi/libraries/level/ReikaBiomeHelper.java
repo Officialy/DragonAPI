@@ -27,8 +27,9 @@ public class ReikaBiomeHelper {
 
         @Override
         public int compare(Biome o1, Biome o2) {
-            return BuiltInRegistries.BIOME.getResourceKey(o1).map(k -> k.location().getNamespace()).orElse("").compareTo(
-                    BuiltInRegistries.BIOME.getResourceKey(o2).map(k -> k.location().getNamespace()).orElse(""));
+            // 1.21.5: Biome is a dynamic (datapack) registry, no longer in BuiltInRegistries, so a
+            // static name lookup is unavailable here. Fall back to identity ordering (comparator unused).
+            return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
         }
 
     };
@@ -400,7 +401,7 @@ public class ReikaBiomeHelper {
             return BiomeTemperatures.FIERY;
         else if (biome == Biomes.THE_END)
             return BiomeTemperatures.LUNAR;
-        var holder = level.registryAccess().lookupOrThrow(Registries.BIOME).getHolder(biome);
+        var holder = level.registryAccess().lookupOrThrow(Registries.BIOME).get(biome);
         if (holder.isPresent()) {
             List<TagKey<Biome>> types = holder.get().tags().toList();//todo might be broken
             for (TagKey<Biome> type : types) {
@@ -468,7 +469,7 @@ public class ReikaBiomeHelper {
         if (biome == Biomes.MUSHROOM_FIELDS)
             return 0.75F;
 
-        TagKey<Biome>[] types = level.registryAccess().lookupOrThrow(Registries.BIOME).getHolder(biome).get().tags().toArray(TagKey[]::new);//todo might be casting wrong idk //BiomeDictionary.getTypes(biome).toArray(new BiomeDictionary.Type[0]);
+        TagKey<Biome>[] types = level.registryAccess().lookupOrThrow(Registries.BIOME).get(biome).get().tags().toArray(TagKey[]::new);//todo might be casting wrong idk //BiomeDictionary.getTypes(biome).toArray(new BiomeDictionary.Type[0]);
         float val = 0.5F;
         for (TagKey<Biome> type : types) {
             if (type == BiomeTags.IS_BEACH)
@@ -503,9 +504,9 @@ public class ReikaBiomeHelper {
                 || b == Biomes.DEEP_COLD_OCEAN || b == Biomes.WARM_OCEAN || b == Biomes.LUKEWARM_OCEAN || b == Biomes.DEEP_LUKEWARM_OCEAN)
             return true;
 
-        if (level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(b).get().is(BiomeTags.IS_OCEAN))
+        if (level.registryAccess().lookupOrThrow(Registries.BIOME).get(b).get().is(BiomeTags.IS_OCEAN))
             return true;
-        if (level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(b).get().is(BiomeTags.IS_DEEP_OCEAN))
+        if (level.registryAccess().lookupOrThrow(Registries.BIOME).get(b).get().is(BiomeTags.IS_DEEP_OCEAN))
             return true;
         /*if (b == Biomes.OCEAN || b == Biomes.FROZEN_OCEAN || b == Biomes.DEEP_OCEAN)
             return true;
@@ -517,7 +518,7 @@ public class ReikaBiomeHelper {
             return false;
         if (BiomeDictionary.hasType(b, BiomeDictionary.Type.OCEAN))
             return true;*/
-        return ReikaStringParser.containsWord(level.registryAccess().registry(Registries.BIOME).get().getKey(level.registryAccess().registry(Registries.BIOME).get().getHolder(b).get().value()).getNamespace().toLowerCase(Locale.ENGLISH), "ocean");
+        return ReikaStringParser.containsWord(level.registryAccess().lookup(Registries.BIOME).get().getKey(level.registryAccess().lookup(Registries.BIOME).get().get(b).get().value()).getNamespace().toLowerCase(Locale.ENGLISH), "ocean");
     }
 
     public static boolean isOcean(LevelAccessor level, BlockPos pos) {
@@ -540,7 +541,7 @@ public class ReikaBiomeHelper {
             return false;
         if (BiomeDictionary.hasType(biome, BiomeDictionary.Type.OCEAN))
             return true;*/
-        return ReikaStringParser.containsWord(level.registryAccess().registry(Registries.BIOME).get().getKey(level.getBiome(pos).value()).getNamespace().toLowerCase(Locale.ENGLISH), "ocean");
+        return ReikaStringParser.containsWord(level.registryAccess().lookup(Registries.BIOME).get().getKey(level.getBiome(pos).value()).getNamespace().toLowerCase(Locale.ENGLISH), "ocean");
     }
 
 //    public static int getBiomeUniqueColor(Biome b) {
@@ -591,7 +592,7 @@ public class ReikaBiomeHelper {
     }
 
     public static boolean doesBiomeHavePrecipitation(Biome b, BlockPos pos) {
-        return b.warmEnoughToRain(pos) || b.coldEnoughToSnow(pos);
+        return b.hasPrecipitation();
     }
 
     public enum BiomeTemperatures {

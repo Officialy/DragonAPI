@@ -11,7 +11,9 @@ import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -19,13 +21,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.PacketTypes;
@@ -33,22 +33,16 @@ import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.instantiable.HybridTank;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.instantiable.io.PacketTarget;
-import reika.dragonapi.instantiable.io.SyncPacket;
 import reika.dragonapi.interfaces.PacketHandler;
 import reika.dragonapi.interfaces.registry.CustomDistanceSound;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.java.ReikaReflectionHelper;
-import reika.dragonapi.libraries.io.CustomNetworkBridge;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
-import net.minecraft.server.MinecraftServer;
-
 
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -57,25 +51,43 @@ public class ReikaPacketHelper {
     private static final HashMap<String, PacketPipeline> pipelines = new HashMap<>();
     private static final HashBiMap<Short, PacketHandler> handlers = HashBiMap.create();
     private static final Map<String, CustomNetworkBridge> bridges = new HashMap<>();
+    /** One-shot guard so we only WARN about the first unknown handler id per JVM (see DataPacket.decode). */
+    static final java.util.concurrent.atomic.AtomicBoolean firstMissingHandlerWarning = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     private static short handlerID = 0;
 
+    /**
+     * Register a packet handler against a per-mod channel.
+     * <p>
+     * Each mod has exactly one {@link CustomNetworkBridge} (and therefore one NeoForge
+     * {@link CustomPacketPayload.Type}) per channel. The handler is keyed by registration
+     * order — both client and server must register in the same order for the IDs to line up.
+     * In practice this is fine because both sides load the same mod jars in the same
+     * dependency-driven order.
+     * <p>
+     * Safe to call multiple times for the same channel: the second call replaces the bridge.
+     */
     public static void registerPacketHandler(DragonAPIMod mod, String channel, PacketHandler handler) {
-        DragonAPI.LOGGER.info("Registering packet handler for mod " + mod.getModId() + ", channel " + channel + ", handler " + handler.getClass().getName());
-        DragonAPI.LOGGER.info("Current handler ID count: " + handlerID + ", existing handlers: " + handlers.size());
-        // Initialize payload-based pipeline
+        if (pipelines.containsKey(channel)) {
+            DragonAPI.LOGGER.warn("Replacing existing packet handler for channel {}", channel);
+        }
         CustomNetworkBridge bridge = new CustomNetworkBridge(mod.getModId(), channel);
         bridges.put(channel, bridge);
         PacketPipeline p = new PacketPipeline(mod, channel, handler);
-//        p.registerPacket(NBTPacket.class);
-        handlers.put(handlerID, handler);
+        short id = handlerID++;
+        handlers.put(id, handler);
         pipelines.put(channel, p);
-        handlerID++;
-        DragonAPI.LOGGER.info("Registered packet handler " + handler + " for channel " + channel + " with ID " + (handlerID - 1));
-        DragonAPI.LOGGER.info("Updated handler maps - handlers: " + handlers.size() + ", pipelines: " + pipelines.size());
+        DragonAPI.LOGGER.info("Registered packet handler {} for {}:{} as id {}",
+                handler.getClass().getSimpleName(), mod.getModId(), channel, id);
     }
 
-    @EventBusSubscriber
+    /**
+     * RegisterPayloadHandlersEvent is fired on each mod's MOD bus. We only need to react once
+     * (DragonAPI owns the registry of bridges across all mods), and each bridge calls
+     * {@code event.registrar(itsOwnModId)} so the per-mod payload type ends up under the right
+     * namespace regardless of which bus fired this handler.
+     */
+    @EventBusSubscriber(modid = DragonAPI.MODID)
     public static class PayloadRegistrationHooks {
         @SubscribeEvent
         public static void registerPayloads(RegisterPayloadHandlersEvent event) {
@@ -113,14 +125,12 @@ public class ReikaPacketHelper {
         return getHandlerID(p.handler);
     }
 
+    /**
+     * Look up the handler registered for a numeric id. Returns {@code null} if the id is
+     * unknown (mod-set / load-order mismatch between sides) — the caller should log + drop
+     * the packet rather than NPE.
+     */
     public static PacketHandler getHandlerFromID(short id) {
-        // If the ID is out of bounds or not registered, log the error but return null
-        if (id < 0 || id >= handlerID || !handlers.containsKey(id)) {
-            DragonAPI.LOGGER.error("Attempted to get a handler with invalid ID: " + id + ". Valid range is 0-" + (handlerID-1));
-            DragonAPI.LOGGER.error("This is likely due to a version mismatch between client and server.");
-            // Return null and let the calling code handle it gracefully
-            return null;
-        }
         return handlers.get(id);
     }
 
@@ -185,7 +195,7 @@ public class ReikaPacketHelper {
         DataPacket pack = new DataPacket();
         pack.init(PacketTypes.RAW, pipe);
         pack.setData(dat);
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLEnvironment.getDist();
     if (side == Dist.DEDICATED_SERVER) {
         pipe.sendToAllOnServer(pack);
     } else {
@@ -210,7 +220,7 @@ public class ReikaPacketHelper {
         DataPacket pack = new DataPacket();
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLEnvironment.getDist();
     if (side == Dist.DEDICATED_SERVER) {
         pipe.sendToAllOnServer(pack);
     } else {
@@ -401,7 +411,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist(); //todo WONT WORK ON SERVER FIND FIX
+        Dist side = FMLEnvironment.getDist(); //todo WONT WORK ON SERVER FIND FIX
 
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
@@ -449,7 +459,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.DATA, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist(); //todo WONT WORK ON SERVER FIND FIX
+        Dist side = FMLEnvironment.getDist(); //todo WONT WORK ON SERVER FIND FIX
 
         if (side == Dist.DEDICATED_SERVER) {
             //PacketDispatcher.sendPacketToAllInDimension(packet, world.provider.dimensionId);
@@ -653,7 +663,7 @@ public class ReikaPacketHelper {
         sendLongDataPacket(ch, id, te.getLevel(), te.getBlockPos().getX(), te.getBlockPos().getY(), te.getBlockPos().getZ(), ReikaJavaLibrary.makeListFrom(data));
     }
 
-    public static void writeDirectSound(String ch, int id, Level world, double x, double y, double z, ResourceLocation name, float vol, float pitch, boolean scale) {
+    public static void writeDirectSound(String ch, int id, Level world, double x, double y, double z, Identifier name, float vol, float pitch, boolean scale) {
         int length = 0;
         ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         DataOutputStream outputStream = new DataOutputStream(bos);
@@ -1077,7 +1087,7 @@ public class ReikaPacketHelper {
         pack.init(PacketTypes.STRING, pipe);
         pack.setData(dat);
 
-        Dist side = FMLLoader.getDist();
+        Dist side = FMLEnvironment.getDist();
     if (side == Dist.DEDICATED_SERVER) {
         pipe.sendToAllOnServer(pack);
     } else {
@@ -1525,7 +1535,7 @@ public class ReikaPacketHelper {
         }
     }
 
-    private static void writeResourceLocation(ResourceLocation loc, DataOutput par1DataOutput) throws IOException {
+    private static void writeResourceLocation(Identifier loc, DataOutput par1DataOutput) throws IOException {
         if (loc.toString().length() > 32767) {
             throw new IOException("String too big");
         } else {
@@ -1594,57 +1604,84 @@ public class ReikaPacketHelper {
             data.writeBytes(this.bytes);
         }
 
+        /**
+         * Wire format (inside the outer payload's byte[]):
+         * <pre>
+         *   short  handlerId  // index into ReikaPacketHelper.handlers
+         *   byte   typeOrdinal // index into PacketTypes
+         *   varInt payloadLen  // length of the per-packet payload that follows
+         *   byte[payloadLen]   // packet-type-specific data
+         * </pre>
+         * Symmetric with {@link PacketObj#encode}.
+         * <p>
+         * Returns {@code null} only if the buffer is structurally bad enough to be unrecoverable;
+         * caller (the network bridge) logs and drops in that case.
+         */
         public static DataPacket decode(FriendlyByteBuf data) {
             try {
-                // Store the current position to read the packet info
-                // int readerIndex = data.readerIndex();
-                
-                // Read the packet header info
                 short id = data.readShort();
                 byte typeByte = data.readByte();
-                // int byteIndex = data.readVarInt();
-                data.readVarInt();
-                
-                // Get the handler and type from the header
+
                 PacketHandler packetHandler = getHandlerFromID(id);
-                PacketTypes packetType = PacketTypes.getPacketType(typeByte);
-                
                 if (packetHandler == null) {
-                    DragonAPI.LOGGER.error("Failed to get handler from ID: " + id);
-                    DragonAPI.LOGGER.error("Available handlers: " + handlers.toString());
-                    Thread.dumpStack();
+                    // Unknown id. Most likely causes: (a) client/server mod-set/load-order mismatch
+                    // (real bug), (b) garbage bytes from a stale connection during reload, or (c)
+                    // a packet was queued before its mod registered a handler.
+                    //
+                    // To make these drops self-diagnosing we now read the rest of the packet
+                    // before logging so we can include the packet-type name, the declared length
+                    // (which is a hint about which call site built it), and a short hex prefix
+                    // of the payload so it's possible to grep back to the source. WARN the
+                    // first one per JVM with full detail; subsequent drops still go to DEBUG but
+                    // with the same fields so a single trace level flip surfaces every case.
+                    String typeName;
+                    int payloadLen = -1;
+                    String payloadHexPreview = "<unread>";
+                    try {
+                        PacketTypes pt = PacketTypes.getPacketType(typeByte);
+                        typeName = pt != null ? pt.name() : "unknown-type-" + (typeByte & 0xFF);
+                        payloadLen = data.readVarInt();
+                        if (payloadLen > 0) {
+                            int previewBytes = Math.min(payloadLen, 16);
+                            byte[] preview = new byte[previewBytes];
+                            data.readBytes(preview);
+                            // skip the rest of the payload to leave the buffer clean
+                            if (payloadLen > previewBytes) data.skipBytes(payloadLen - previewBytes);
+                            StringBuilder hex = new StringBuilder(previewBytes * 2);
+                            for (byte b : preview) hex.append(String.format("%02x", b & 0xFF));
+                            payloadHexPreview = hex.toString() + (payloadLen > previewBytes ? "…" : "");
+                        } else {
+                            payloadHexPreview = "<empty>";
+                        }
+                    } catch (Exception inner) {
+                        typeName = "type-byte=" + (typeByte & 0xFF) + " (decode failed: " + inner.getMessage() + ")";
+                    }
+                    if (firstMissingHandlerWarning.compareAndSet(false, true)) {
+                        DragonAPI.LOGGER.warn(
+                                "Dropping packet with unknown handler id {} type {} payloadLen={} hex16=[{}] (known handler ids: {}). Likely a packet built before its mod registered its handler, or a Java-side packet construction that skipped {@link PacketObj#init}. Subsequent drops at DEBUG.",
+                                id, typeName, payloadLen, payloadHexPreview, handlers.keySet());
+                    } else {
+                        DragonAPI.LOGGER.debug("Drop unknown-handler packet id={} type={} payloadLen={} hex16=[{}]",
+                                id, typeName, payloadLen, payloadHexPreview);
+                    }
                     return null;
-                } else {
-                    DragonAPI.LOGGER.debug("Successfully retrieved handler from ID: " + id + " = " + packetHandler.getClass().getName());
                 }
+                PacketTypes packetType = PacketTypes.getPacketType(typeByte);
 
                 int length = data.readVarInt();
                 if (length < 0) {
-                    DragonAPI.LOGGER.error("Invalid packet payload length: " + length);
-                    throw new IOException("Invalid packet payload length: " + length);
+                    DragonAPI.LOGGER.error("Invalid packet payload length {}", length);
+                    return null;
                 }
-                
-                if (length == 0) {
-                    DragonAPI.LOGGER.warn("Received packet with 0 length payload. This might indicate a network issue.");
-                    DataPacket packet = new DataPacket(new byte[0]);
-                    // Set the instance variables properly
-                    packet.handler = packetHandler;
-                    packet.type = packetType;
-                    return packet;
-                }
-                
-                byte[] payload = new byte[length];
-                data.readBytes(payload);
+                byte[] payload = length == 0 ? new byte[0] : new byte[length];
+                if (length > 0) data.readBytes(payload);
 
                 DataPacket packet = new DataPacket(payload);
-                // Set the instance variables properly
                 packet.handler = packetHandler;
                 packet.type = packetType;
                 return packet;
             } catch (Exception e) {
-                DragonAPI.LOGGER.error("Error decoding packet: " + e.getMessage(), e);
-                DragonAPI.LOGGER.error("Packet data available: " + data.readableBytes() + " bytes");
-                // Return null to indicate a failed decode
+                DragonAPI.LOGGER.error("Failed to decode packet ({} bytes remaining): {}", data.readableBytes(), e.getMessage(), e);
                 return null;
             }
         }
@@ -1704,31 +1741,28 @@ public class ReikaPacketHelper {
 
     public static abstract class PacketObj {
 
-        protected PacketHandler handler;  // Changed from static to instance variable
-        protected PacketTypes type;       // Changed from static to instance variable
-        private static int byteIndex = 0;
+        protected PacketHandler handler;
+        protected PacketTypes type;
 
         protected PacketObj() {
 
         }
 
         public void init(PacketTypes p, PacketPipeline l) {
-            this.type = p;  // Use instance variable
-            this.handler = l.getHandler();  // Use instance variable
+            this.type = p;
+            this.handler = l.getHandler();
             if (this.handler == null) {
-                DragonAPI.LOGGER.error("Initializing packet with null handler! PacketType: " + p);
-                DragonAPI.LOGGER.error("Pipeline channel: " + (l != null ? l.packetChannel : "null"));
-                DragonAPI.LOGGER.error("Packet class: " + this.getClass().getName());
-                Thread.dumpStack();
-            } else {
-                DragonAPI.LOGGER.debug("Packet initialized successfully - Type: " + p + ", Handler: " + this.handler.getClass().getName());
+                // This is a real configuration bug: the pipeline was constructed without a
+                // handler. Log loudly and once — no stack dump per-packet.
+                DragonAPI.LOGGER.error("Initialising {} on channel {} with a null handler!",
+                        this.getClass().getSimpleName(), l != null ? l.packetChannel : "null");
             }
         }
 
+        /** See {@link DataPacket#decode} for the symmetric wire format. */
         public void encode(FriendlyByteBuf data) {
-            data.writeShort(getHandlerID(this.handler));  // Use instance variable
-            data.writeByte(this.type.ordinal());          // Use instance variable
-            data.writeVarInt(byteIndex);
+            data.writeShort(getHandlerID(this.handler));
+            data.writeByte(this.type.ordinal());
         }
 
         // Legacy handleClient/handleServer methods removed - using payload system instead
@@ -1820,3 +1854,5 @@ public class ReikaPacketHelper {
 
 
 }
+
+

@@ -16,6 +16,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import reika.dragonapi.auxiliary.PopupWriter;
 import reika.dragonapi.auxiliary.trackers.EventProfiler;
@@ -28,7 +30,9 @@ public class Tests {
 
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, DragonAPI.MODID);
 
-    public static final DeferredHolder<Item, Item> TEST_ITEM = ITEMS.register("test_item", () -> new ItemTest(new Item.Properties()));
+    // 1.21.5: Item.Properties needs setId() before Item.<init> dereferences it via effectiveDescriptionId().
+    public static final DeferredHolder<Item, Item> TEST_ITEM = ITEMS.register("test_item",
+            rl -> new ItemTest(new Item.Properties().setId(ResourceKey.create(Registries.ITEM, rl))));
     public static void runTests() {
 
     }
@@ -42,7 +46,7 @@ public class Tests {
         @Override
         public InteractionResult use(Level level, Player player, InteractionHand hand) {
             if (!player.isShiftKeyDown()) {
-                PopupWriter.instance.addMessage("Popup test with a super duper extra fancy long message, to test spacing!");
+                PopupWriter.instance().addMessage("Popup test with a super duper extra fancy long message, to test spacing!");
             } else if (player.isShiftKeyDown()) {
                 PopupWriter.list.remove(0);
             }

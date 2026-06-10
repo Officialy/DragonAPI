@@ -85,7 +85,7 @@ public abstract class TemperatureEffect {
 
         @Override
         protected void doAction(Level world, BlockPos pos, int temperature) {
-            world.setBlock(pos, this.getBlock(temperature).defaultBlockState(), 0);
+            world.setBlock(pos, this.getBlock(temperature).defaultBlockState(), 3);
         }
 
         protected abstract Block getBlock(int temperature);

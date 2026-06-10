@@ -1,7 +1,7 @@
 package reika.dragonapi.instantiable.io;
 
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.loading.FMLLoader;
+import net.minecraft.resources.Identifier;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.interfaces.registry.SoundEnum;
@@ -68,7 +68,7 @@ public class SoundLoader {
     }
 
     private void registerSound(SoundEnum e, SoundResource sr) {
-        ResourceLocation p = e.getPath();
+        Identifier p = e.getPath();
         boolean stream = e instanceof StreamableSound && ((StreamableSound) e).isStreamed();
 //        DirectResourceManager.getInstance().registerCustomPath(p, e.getCategory(), stream);
         this.onRegister(e, p);
@@ -84,29 +84,32 @@ public class SoundLoader {
         }
     }
 
-    public final ResourceLocation getResource(SoundEnum sound) {
+    public final Identifier getResource(SoundEnum sound) {
         return soundMap.get(sound).reference;
     }
 
-    protected void onRegister(SoundEnum e, ResourceLocation p) {
+    protected void onRegister(SoundEnum e, Identifier p) {
 
     }
 
     private static class SoundResource {
 
         private final SoundEnum sound;
-        private final ResourceLocation reference;
+        private final Identifier reference;
 
         private DirectResource resource;
 
         private SoundResource(SoundEnum s) {
             sound = s;
-            reference = FMLEnvironment.dist == net.neoforged.api.distmarker.Dist.CLIENT ? getReference(s) : null;
+            reference = FMLEnvironment.getDist() == net.neoforged.api.distmarker.Dist.CLIENT ? getReference(s) : null;
         }
 
-        private static ResourceLocation getReference(SoundEnum s) {
+        private static Identifier getReference(SoundEnum s) {
             return s.getPath();
         }
 
     }
 }
+
+
+

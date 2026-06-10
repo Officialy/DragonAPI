@@ -128,39 +128,39 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
 //        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
 //        RenderSystem.disableTexture();
 //        GL11.glDisable(GL11.GL_LIGHTING);
-        RenderSystem.disableCull();
+        // RenderSystem.disableCull();
         double ang = renderOrigin;
         var tess = new Tesselator();
-        var v5 = tess.getBuilder();
+        
         int i = 0;
         for (F o : data.keySet()) {
             double angw = 360D*this.getFraction(o);
 
-            v5.begin(innerRadius == 0 ? VertexFormat.Mode.TRIANGLE_FAN : VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION);
+            var v5 = tess.begin(innerRadius == 0 ? VertexFormat.Mode.TRIANGLE_FAN : VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION);
             int c = this.getColorForElement(o, colorMap);
-            v5.color(c);
+            v5.setColor(c);
 
             //ReikaJavaLibrary.pConsole(o+" > "+this.getFraction(o)+" = "+angw);
 
             this.renderSection(v5, ang, ang+angw);
 
-            v5.end();
+            var mesh = v5.buildOrThrow(); /* TODO 1.21 draw mesh */ mesh.close();
 
             ang += angw;
         }
 
         if (drawSeparationLines && data.size() > 1) {
-            v5.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION);
-            v5.color(0x000000);
+            var v5 = tess.begin(VertexFormat.Mode.LINES, com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION);
+            v5.setColor(0x000000);
             for (F o : data.keySet()) {
                 double angw = 360D*this.getFraction(o);
                 if (innerRadius == 0) {
-                    v5.vertex(centerX, centerY, 0);
+                    v5.addVertex((float)(centerX), (float)(centerY), (float)(0));
                     double d2 = Math.toRadians(ang);
                     double r2 = this.getOuterRadiusAt(d2);
                     double dx = centerX+r2*Math.cos(d2);
                     double dy = centerY+r2*Math.sin(d2);
-                    v5.vertex(dx, dy, 0);
+                    v5.addVertex((float)(dx), (float)(dy), (float)(0));
                 }
                 else {
                     double d2 = Math.toRadians(ang);
@@ -170,12 +170,12 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
                     double dy1 = centerY+r1*Math.sin(d2);
                     double dx2 = centerX+r2*Math.cos(d2);
                     double dy2 = centerY+r2*Math.sin(d2);
-                    v5.vertex(dx1, dy1, 0);
-                    v5.vertex(dx2, dy2, 0);
+                    v5.addVertex((float)(dx1), (float)(dy1), (float)(0));
+                    v5.addVertex((float)(dx2), (float)(dy2), (float)(0));
                 }
                 ang += angw;
             }
-            v5.end();
+            var mesh = v5.buildOrThrow(); /* TODO 1.21 draw mesh */ mesh.close();
         }
 //        GL11.glPopAttrib();
     }
@@ -198,7 +198,7 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
         totalValue = reika.dragonapi.libraries.io.NBTCompat.getDouble(NBT, "total", 0);
         this.drawSeparationLines = reika.dragonapi.libraries.io.NBTCompat.getBoolean(NBT, "lines", false);
         data.clear();
-        ListTag li = NBT.getList("data", Tag.TAG_COMPOUND);
+        ListTag li = NBT.getListOrEmpty("data");
         for (Object o : li) {
             CompoundTag tag = (CompoundTag)o;
             F obj = converter.createFromNBT(tag.get("key"));

@@ -7,7 +7,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
@@ -184,9 +184,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public void dropItem(ItemStack is, double vscale) {
         Level world = this.getWorld();
         if (world != null && !world.isClientSide()) {
-            world.addFreshEntity(
-                    is
-                            .getEntityRepresentation()); // .dropItem(this.getWorld(),
+            world.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), is)); // .dropItem(this.getWorld(),
                                                          // pos.getX()+rand.nextDouble(),
                                                          // pos.getY()+rand.nextDouble(),
                                                          // pos.getZ()+rand.nextDouble(), is,
@@ -228,7 +226,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public void writeToTag(CompoundTag data) {
         data.putString(
                 "dim",
-                getWorld().dimension().location().toString()); // .getRegistryName().toString());
+                getWorld().dimension().identifier().toString()); // .getRegistryName().toString());
         data.putInt("x", pos.getX());
         data.putInt("y", pos.getY());
         data.putInt("z", pos.getZ());
@@ -240,7 +238,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         int z = reika.dragonapi.libraries.io.NBTCompat.getInt(data, "z", 0);
         String dim = reika.dragonapi.libraries.io.NBTCompat.getString(data, "dim", "minecraft:overworld");
         return new WorldLocation(
-                ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(dim)),
+                ResourceKey.create(Registries.DIMENSION, Identifier.tryParse(dim)),
                 x,
                 y,
                 z);
@@ -257,7 +255,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
 
     public CompoundTag writeToTag() {
         CompoundTag data = new CompoundTag();
-        data.putString("dim", dimension.location().getNamespace());
+        data.putString("dim", dimension.identifier().getNamespace());
         data.putInt("x", pos.getX());
         data.putInt("y", pos.getY());
         data.putInt("z", pos.getZ());
@@ -403,7 +401,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public String toSerialString() {
-        return String.format("%d:" + dimension.location())
+        return String.format("%d:" + dimension.identifier())
                 + String.format("%d:%d:%d", pos.getX(), pos.getY(), pos.getZ());
     }
 
@@ -411,7 +409,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         String[] parts = s.split(":");
         return new WorldLocation(
                 ResourceKey.create(
-                        Registries.DIMENSION, ResourceLocation.tryParse(String.valueOf(parts[0]))),
+                        Registries.DIMENSION, Identifier.tryParse(String.valueOf(parts[0]))),
                 Integer.parseInt(parts[1]),
                 Integer.parseInt(parts[2]),
                 Integer.parseInt(parts[3]));
@@ -431,4 +429,5 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         }
     }
 }
+
 

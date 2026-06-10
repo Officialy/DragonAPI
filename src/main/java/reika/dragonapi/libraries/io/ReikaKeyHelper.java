@@ -31,7 +31,7 @@ public class ReikaKeyHelper {
     }
 
     public static boolean isKeyPressed(int key) {
-        return InputConstants.isKeyDown(1, key);
+        return InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), key);
     }
 
 }

@@ -21,11 +21,17 @@ import java.util.Random;
  * This method is fired whenever blocks are ticked via updateTick() via ambient world block ticks and any of my mods' code running forced ticks.
  * The event may or may not be cancelable (check isCancelable() first), in which case the tick will not occur.
  */
-public class BlockTickEvent extends WorldPositionEvent {
+public class BlockTickEvent extends WorldPositionEvent implements net.neoforged.bus.api.ICancellableEvent {
 
     public static boolean disallowAllUpdates = false;
 
     public final BlockState block;
+    
+    @Override
+    public void setCanceled(boolean cancel) {
+        if (cancel && UpdateFlags.REQUIRE.isFlagPresent(flags)) return;
+        net.neoforged.bus.api.ICancellableEvent.super.setCanceled(cancel);
+    }
 
     private final int flags;
 
@@ -35,17 +41,14 @@ public class BlockTickEvent extends WorldPositionEvent {
         this.flags = flags;
     }
 
-    @Override
-    public boolean isCancelable() {
-        return !UpdateFlags.REQUIRE.isFlagPresent(flags);
-    }
+    
 
     public boolean isFlagPresent(UpdateFlags flag) {
         return flag.isFlagPresent(flags);
     }
 
     public static void fire(ServerLevel world, BlockPos pos, int flags) {
-        fire(world.getBlockState(pos), world, pos, world.random, flags);
+        fire(world.getBlockState(pos), world, pos, world.getRandom(), flags);
     }
 
     public static void fire(ServerLevel world, BlockPos pos, UpdateFlags flag) {
@@ -53,7 +56,7 @@ public class BlockTickEvent extends WorldPositionEvent {
     }
 
     public static void fire(BlockState b, ServerLevel world, BlockPos pos, UpdateFlags flag) {
-        fire(b, world, pos, world.random, flag);
+        fire(b, world, pos, world.getRandom(), flag);
     }
 
     public static void fire(ServerLevel world, BlockPos pos, RandomSource rand, int flags) {
@@ -69,7 +72,7 @@ public class BlockTickEvent extends WorldPositionEvent {
     }
 
     public static void fire(BlockState b, ServerLevel world, BlockPos pos, RandomSource rand, int flags) {
-        if (!disallowAllUpdates && canTickAt(b, world, pos, flags) && !NeoForge.EVENT_BUS.post(new BlockTickEvent(world, pos, b, flags))) {
+        if (!disallowAllUpdates && canTickAt(b, world, pos, flags) && !NeoForge.EVENT_BUS.post(new BlockTickEvent(world, pos, b, flags)).isCanceled()) {
             b.tick(world, pos, rand);
         }
     }

@@ -772,7 +772,7 @@ public final class ReikaArrayHelper {
 	public static BlockPos[] chunkCoordsToBlockCoords(ChunkAccess[] pos) {
 		BlockPos[] ret = new BlockPos[pos.length];
 		for (int i = 0; i < ret.length; i++) {
-			ret[i] = new BlockPos(pos[i].getPos().x << 4, 0, pos[i].getPos().z << 4);
+			ret[i] = new BlockPos(pos[i].getPos().x() << 4, 0, pos[i].getPos().z() << 4);
 		}
 		return ret;
 	}

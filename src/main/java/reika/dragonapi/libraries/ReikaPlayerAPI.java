@@ -19,7 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -42,7 +42,7 @@ public class ReikaPlayerAPI {
      * Transfers a player's entire inventory to an inventory. Args: Player, Inventory
      */
     public static void transferInventoryToChest(Player ep, ItemStack[] inv) {
-        int num = ReikaInventoryHelper.getTotalUniqueStacks(ep.getInventory().items.toArray(new ItemStack[0]));
+        int num = ReikaInventoryHelper.getTotalUniqueStacks(ReikaInventoryHelper.getWholeInventory(ep.getInventory()).toArray(new ItemStack[0]));
         if (num >= inv.length) {
         }
     }
@@ -57,7 +57,7 @@ public class ReikaPlayerAPI {
     }
 
     public static boolean isAdmin(ServerPlayer ep) {
-        return ep.getServer().getPlayerList().isOp(ep.getGameProfile());
+        return ((net.minecraft.server.level.ServerLevel)ep.level()).getServer().getPlayerList().isOp(ep.nameAndId());
     }
 
 
@@ -66,7 +66,10 @@ public class ReikaPlayerAPI {
     }
 
     public static void syncCustomData(ServerPlayer ep) {
-        ReikaPacketHelper.sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERDATSYNC.ordinal(), ep.serializeNBT(), new PacketTarget.PlayerTarget(ep));
+        net.minecraft.world.level.storage.TagValueOutput out = net.minecraft.world.level.storage.TagValueOutput.createWithoutContext(net.minecraft.util.ProblemReporter.DISCARDING);
+        ep.saveWithoutId(out);
+        net.minecraft.nbt.CompoundTag tag = (net.minecraft.nbt.CompoundTag) out.buildResult();
+        ReikaPacketHelper.sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERDATSYNC.ordinal(), tag, new PacketTarget.PlayerTarget(ep));
     }
 
     public static boolean playerCanBreakAt(ServerLevel world, BlockArray b, ServerPlayer ep) {
@@ -110,7 +113,7 @@ public class ReikaPlayerAPI {
         FakePlayer fp = getFakePlayerByNameAndUUID(world, name, uuid);
 //        if (MinecraftServer.getServer().isBlockProtected(world, x, y, z, fp))
 //            return false;
-        BlockEvent.BreakEvent evt = new BlockEvent.BreakEvent(world, new BlockPos(x, y, z), id, fp);
+        BreakBlockEvent evt = new BreakBlockEvent(world, new BlockPos(x, y, z), id, fp);
         NeoForge.EVENT_BUS.post(evt);
         return !evt.isCanceled();
     }

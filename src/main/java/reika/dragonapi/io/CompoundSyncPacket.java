@@ -61,7 +61,7 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
         this.createMaps(loc);
         changes.remove(loc);
 
-        Collection<String> c = NBT.getAllKeys();
+        Collection<String> c = NBT.keySet();
         Iterator<String> it = c.iterator();
         while (it.hasNext()) {
             String name = it.next();
@@ -144,7 +144,6 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
         return cur.equals(old);
     }
 
-    @Override
     public void write(FriendlyByteBuf out) {
         dispatch = true;
 
@@ -210,7 +209,7 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
         try {
             int num = in.readInt();
             for (int i = 0; i < num; i++) {
-                ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, in.readResourceLocation()); //todo check if it breaks or not
+                ResourceKey<Level> dim = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, net.minecraft.resources.Identifier.parse(in.readUtf())); //todo check if it breaks or not
                 int x = in.readInt();
                 int y = in.readShort();
                 int z = in.readInt();
@@ -219,8 +218,8 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
             }
 
             CompoundTag received = in.readNbt();
-            if (!received.getBoolean(ERROR_TAG)) {
-                Collection c = received.getAllKeys();
+            if (!received.getBooleanOr(ERROR_TAG, false)) {
+                Collection c = received.keySet();
                 for (String name : (Iterable<String>) c) {
                     CompoundTag local = reika.dragonapi.libraries.io.NBTCompat.getCompound(received, name);
                     WorldLocation loc = WorldLocation.fromSerialString(name);
@@ -243,7 +242,7 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
     }
 
     private void populateFromStream(WorldLocation loc, CompoundTag local) {
-        Collection c = local.getAllKeys();
+        Collection c = local.keySet();
         Iterator<String> it = c.iterator();
         while (it.hasNext()) {
             String name = it.next();
@@ -261,7 +260,7 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
     @Override
     public PacketType<? extends Packet<PacketListener>> type() {
         // TODO: This is a legacy packet - should be migrated to CustomPacketPayload
-        return new PacketType<>(PacketFlow.CLIENTBOUND, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("dragonapi", "compound_sync"));
+        return new PacketType<>(PacketFlow.CLIENTBOUND, net.minecraft.resources.Identifier.fromNamespaceAndPath("dragonapi", "compound_sync"));
     }
 
     @Override

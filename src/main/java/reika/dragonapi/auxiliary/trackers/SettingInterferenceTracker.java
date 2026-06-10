@@ -1,10 +1,10 @@
 package reika.dragonapi.auxiliary.trackers;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import reika.dragonapi.DragonAPI;
@@ -55,16 +55,7 @@ public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatc
 
         @Override
         public void drawIcon(PoseStack stack, int x, int y, int size) {
-            Tesselator t = Tesselator.getInstance();
-            BufferBuilder v5 = t.getBuilder();
-            Minecraft.getInstance().textureManager.bindForSetup(ResourceLocation.fromNamespaceAndPath(MODID, "textures/mutewarn.png"));
-            v5.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
-            v5.color(0xffffff);
-            v5.vertex(x, y + size, 0).uv(0, 1).endVertex();
-            v5.vertex(x + size, y + size, 0).uv(1, 1).endVertex();
-            v5.vertex(x + size, y, 0).uv(1, 0).endVertex();
-            v5.vertex(x, y, 0).uv(0, 0).endVertex();
-            v5.end();
+            // TODO: Port to 26.1 rendering API (Tesselator.getBuilder() + vertex().uv().endVertex() + end() all removed)
         }
 
         @Override
@@ -104,10 +95,10 @@ public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatc
         }
         if (!li.isEmpty()) {
             String s0 = "You have one or more game settings configured in a manner that is likely to cause gameplay problems in some situations; consider changing them, and please do not report any issues that would not have arisen without that setting. See the next messages for more details.";
-            PopupWriter.instance.addMessage(s0);
+            PopupWriter.instance().addMessage(s0);
             DragonAPI.LOGGER.info(s0);
             for (String s : li) {
-                PopupWriter.instance.addMessage(s);
+                PopupWriter.instance().addMessage(s);
                 DragonAPI.LOGGER.info(s);
             }
         }
@@ -127,10 +118,10 @@ public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatc
 //            Minecraft.getInstance().entityRenderer.setupOverlayRendering();
             ReikaRenderHelper.disableEntityLighting();
             ReikaRenderHelper.disableLighting();
-            RenderSystem.enableBlend();
-            RenderSystem.enableCull();
-            RenderSystem.defaultBlendFunc();
-            RenderSystem.defaultBlendFunc();
+            // RenderSystem.enableBlend();
+            // RenderSystem.enableCull();
+            // RenderSystem.defaultBlendFunc();
+            // RenderSystem.defaultBlendFunc();
             PoseStack stack = new PoseStack();
 
             int x = 2;
@@ -236,3 +227,4 @@ public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatc
         }
     }
 }
+

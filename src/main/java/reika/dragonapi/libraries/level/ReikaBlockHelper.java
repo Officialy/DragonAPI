@@ -50,7 +50,7 @@ public class ReikaBlockHelper {
 
     public static boolean isGroundType(Level world, BlockPos pos) {
         BlockState b = world.getBlockState(pos);
-        if (b == Blocks.DIRT.defaultBlockState() || b == Blocks.GRASS.defaultBlockState() ||
+        if (b == Blocks.DIRT.defaultBlockState() || b == Blocks.GRASS_BLOCK.defaultBlockState() ||
                 b == Blocks.STONE.defaultBlockState() || b == Blocks.SAND.defaultBlockState() ||
                 b == Blocks.SANDSTONE.defaultBlockState() || b == Blocks.CLAY.defaultBlockState() ||
                 b == Blocks.GRAVEL.defaultBlockState() || b == Blocks.SNOW.defaultBlockState())
@@ -61,7 +61,7 @@ public class ReikaBlockHelper {
 
     public static boolean isGroundType(WorldGenLevel world, BlockPos pos) {
         BlockState b = world.getBlockState(pos);
-        if (b == Blocks.DIRT.defaultBlockState() || b == Blocks.GRASS.defaultBlockState() ||
+        if (b == Blocks.DIRT.defaultBlockState() || b == Blocks.GRASS_BLOCK.defaultBlockState() ||
                 b == Blocks.STONE.defaultBlockState() || b == Blocks.SAND.defaultBlockState() ||
                 b == Blocks.SANDSTONE.defaultBlockState() || b == Blocks.CLAY.defaultBlockState() ||
                 b == Blocks.GRAVEL.defaultBlockState() || b == Blocks.SNOW.defaultBlockState())
@@ -170,7 +170,7 @@ public class ReikaBlockHelper {
     public static boolean isLiquid(BlockState b) {
         if (b.getBlock() == Blocks.AIR)
             return false;
-        return b.getBlock() instanceof LiquidBlock || b instanceof IFluidBlock;
+        return b.getBlock() instanceof LiquidBlock || !b.getFluidState().isEmpty();
     }
 
     public static boolean isUnbreakable(Level world, BlockPos pos, Block id, Player ep) {

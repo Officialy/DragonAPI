@@ -6,7 +6,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -37,6 +37,36 @@ import java.util.stream.Collectors;
 import static reika.dragonapi.DragonAPI.rand;
 
 public class ReikaItemHelper {
+
+    /* 1.21.5 item-NBT compatibility: ItemStack tag data moved to the CUSTOM_DATA data component.
+       These mirror the old ItemStack#getTag/getOrCreateTag/setTag so call sites port cleanly.
+       getStackTag returns null when absent (like the old getTag); the others never return null. */
+    public static net.minecraft.nbt.CompoundTag getStackTag(ItemStack is) {
+        net.minecraft.world.item.component.CustomData cd = is.get(DataComponents.CUSTOM_DATA);
+        return cd == null ? null : cd.copyTag();
+    }
+
+    public static net.minecraft.nbt.CompoundTag getOrCreateStackTag(ItemStack is) {
+        return is.getOrDefault(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+    }
+
+    public static boolean hasStackTag(ItemStack is) {
+        return is.has(DataComponents.CUSTOM_DATA);
+    }
+
+    public static void setStackTag(ItemStack is, net.minecraft.nbt.CompoundTag tag) {
+        if (tag == null || tag.isEmpty())
+            is.remove(DataComponents.CUSTOM_DATA);
+        else
+            is.set(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag));
+    }
+
+    /** Read-modify-write helper for the old live-mutable getOrCreateTag().putX(...) idiom. */
+    public static void updateStackTag(ItemStack is, java.util.function.Consumer<net.minecraft.nbt.CompoundTag> op) {
+        net.minecraft.nbt.CompoundTag tag = getOrCreateStackTag(is);
+        op.accept(tag);
+        setStackTag(is, tag);
+    }
 
     public static final Comparator<ItemStack> comparator = new ItemComparator();
     public static final Comparator<Object> itemListComparator = new ItemListComparator();
@@ -161,7 +191,7 @@ public class ReikaItemHelper {
     }
 
     public static ItemStack lookupItem(String mod, String item) {
-        Item i = BuiltInRegistries.ITEM.getValue(ResourceLocation.fromNamespaceAndPath(mod, item));
+        Item i = BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(mod, item));
         return i != null ? new ItemStack(i, 1) : null;
     }
 
@@ -269,7 +299,7 @@ public class ReikaItemHelper {
     }
 
     public static ItemStack lookupItem(String mod, String item) {
-        Item i = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath(mod, item));
+        Item i = ForgeRegistries.ITEMS.getValue(Identifier.fromNamespaceAndPath(mod, item));
         return i != null ? new ItemStack(i, 1) : null;
     }
 

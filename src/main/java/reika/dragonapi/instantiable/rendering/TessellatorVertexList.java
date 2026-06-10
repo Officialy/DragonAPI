@@ -85,13 +85,8 @@ public class TessellatorVertexList {
         }
 
         public void addToTessellator() {
-            if (hasColor) {
-                Tesselator.getInstance().getBuilder().color(colorData);
-            }
-            if (hasUV)
-                Tesselator.getInstance().getBuilder().vertex(posX, posY, posZ).uv(posU, posV);
-            else
-                Tesselator.getInstance().getBuilder().vertex(posX, posY, posZ);
+            // TODO: Port to 26.1 rendering API (Tesselator.getBuilder() immediate-mode access removed;
+            // vertices must now be emitted into a BufferBuilder obtained from Tesselator.begin(...)).
         }
 
         @Override

@@ -1,7 +1,7 @@
 package reika.dragonapi.libraries.io;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -11,12 +11,12 @@ import reika.dragonapi.interfaces.registry.SoundEnum;
 public class SingleSound implements SoundEnum {
 
     public final String name;
-    public final ResourceLocation path;
+    public final Identifier path;
 
 
     private SoundSource category;
 
-    public SingleSound(String n, ResourceLocation p) {
+    public SingleSound(String n, Identifier p) {
         name = n;
         path = p;
     }
@@ -27,7 +27,7 @@ public class SingleSound implements SoundEnum {
     }
 
     @Override
-    public ResourceLocation getPath() {
+    public Identifier getPath() {
         return path;
     }
 

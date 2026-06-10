@@ -6,7 +6,6 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.realmsclient.util.LevelType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
@@ -15,7 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
@@ -325,8 +324,8 @@ public class BiomeMapCommand {
 
         @Override
         protected int getColor(int x, int z, Integer data) {
-            var b = (Biome) BuiltInRegistries.BIOME.getValues().toArray()[data];
-            var key = BuiltInRegistries.BIOME.getResourceKey(b);
+            var b = (Biome) net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).stream().toArray()[data];
+            var key = net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getResourceKey(b);
             return key.map(biomeResourceKey -> getBiomeColor(x, z, biomeResourceKey)).orElse(0);
         }
 
@@ -362,8 +361,8 @@ public class BiomeMapCommand {
         }
 
         private void createLegendEntry(int b, int x, int y, Graphics g, BufferedImage img, int hpb) {
-            Biome biome = (Biome) BuiltInRegistries.BIOME.getValues().toArray()[b];
-            ResourceKey<Biome> key = BuiltInRegistries.BIOME.getResourceKey(biome).get();
+            Biome biome = (Biome) net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).stream().toArray()[b];
+            ResourceKey<Biome> key = net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getResourceKey(biome).get();
             g.drawString(biome.toString(), x + hpb + 4, y + hpb / 2 + 4);
             for (int i = -1; i <= hpb; i++) {
                 for (int k = -1; k <= hpb; k++) {
@@ -406,13 +405,13 @@ public class BiomeMapCommand {
 //        }
 
         //Because some BoP forests secretly identify as ocean-kin
-        if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Shield")) {
+        if (b.identifier().getPath().equalsIgnoreCase("Shield")) {
             return 0x387F4D;
-        } else if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Tropics")) {
+        } else if (b.identifier().getPath().equalsIgnoreCase("Tropics")) {
             return 0x00ff00;
-        } else if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Lush Swamp")) {
+        } else if (b.identifier().getPath().equalsIgnoreCase("Lush Swamp")) {
             return 0x009000;
-        } else if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Bayou")) {
+        } else if (b.identifier().getPath().equalsIgnoreCase("Bayou")) {
             return 0x7B7F4F; //Eew
         }/* else if (ReikaBiomeHelper.isOcean(null, b)) { //todo this will crash without a level so its commented out for now, sorry future max
             if (b == Biomes.DEEP_OCEAN)
@@ -435,21 +434,21 @@ public class BiomeMapCommand {
             return 0x9B6839;
         }
 
-       /* if (BuiltInRegistries.BIOME.getHolder(b).get().get().topBlock == Blocks.SAND) {
+       /* if (net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getHolder(b).get().get().topBlock == Blocks.SAND) {
             return 0xE2C995;
         }
-        if (BuiltInRegistries.BIOME.getHolder(b).get().get().topBlock == Blocks.STONE) {
+        if (net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getHolder(b).get().get().topBlock == Blocks.STONE) {
             return 0x808080;
         }*/
 
-        if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Coniferous Forest")) {
+        if (b.identifier().getPath().equalsIgnoreCase("Coniferous Forest")) {
             return 0x007F42;
         }
-        if (BuiltInRegistries.BIOME.getHolder(b).toString().equalsIgnoreCase("Maple Forest")) {
+        if (b.identifier().getPath().equalsIgnoreCase("Maple Forest")) {
             return 0x3A7F52;
         }
 
-        int c = BuiltInRegistries.BIOME.getHolder(b).get().value().getGrassColor(x, z);
+        int c = net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).get(b).get().value().getGrassColor(x, z);
 
         if (ReikaBiomeHelper.isSnowBiome(b)) {
             c = 0xffffff;
@@ -476,4 +475,5 @@ public class BiomeMapCommand {
     }
 
 }
+
 

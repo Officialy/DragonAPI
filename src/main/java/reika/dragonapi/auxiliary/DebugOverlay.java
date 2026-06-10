@@ -6,7 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
@@ -37,9 +37,9 @@ public class DebugOverlay {
                 float d = 3;
                 stack.scale(d, d, d);
                 var s = "Debug Mode Enabled!";
-                event.getGuiGraphics().drawString(f, s, 1, 1, 0xffffff);
+                event.getGuiGraphics().text(f, s, 1, 1, 0xffffff);
                 stack.scale(1/d, 1/d, 1/d);
-                // TODO 1.21+: setShaderTexture now expects a GpuTexture. Use GuiGraphics.blit with resource binding instead where needed. Previous code was using setShaderTexture(0, ResourceLocation.parse("textures/gui/icons.png"))
+                // TODO 1.21+: setShaderTexture now expects a GpuTexture. Use GuiGraphicsExtractor.blit with resource binding instead where needed. Previous code was using setShaderTexture(0, Identifier.parse("textures/gui/icons.png"))
             }
 
             if (DragonOptions.TABNBT.getState() && InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), DragonOptions.DEBUGKEY.getValue())) {
@@ -71,7 +71,7 @@ public class DebugOverlay {
                                 for (int i = 0; i < li.size(); i++) {
                                     String s = li.get(i);
                                     int windowWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
-                                    event.getGuiGraphics().drawString(f, s, 1+windowWidth/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
+                                    event.getGuiGraphics().text(f, s, 1+windowWidth/2*(i/24), 1+f.lineHeight*(i%24), 0xffffff);
                                     // see above note on texture binding API
                                 }
                             }
@@ -82,4 +82,6 @@ public class DebugOverlay {
         }
     }
 }
+
+
 

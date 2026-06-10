@@ -2,13 +2,21 @@ package reika.dragonapi.instantiable.gui.slot;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
+import net.neoforged.neoforge.transfer.item.ResourceHandlerSlot;
+import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 
-public class ResultSlotItemHandler extends SlotItemHandler {
+/**
+ * Output-only "result" slot: rejects placement, runs achievement hooks on extraction.
+ *
+ * <p>1.21.9: was a {@code SlotItemHandler} subclass. The whole {@code IItemHandler} family
+ * was deprecated; we now extend the new {@link ResourceHandlerSlot} and bind to a
+ * {@link ManagedItemHandler} via its {@code set} index modifier so callers don't have to
+ * supply the {@code IndexModifier} themselves.
+ */
+public class ResultSlotItemHandler extends ResourceHandlerSlot {
 
-    public ResultSlotItemHandler(IItemHandler handler, int index, int xPosition, int yPosition) {
-        super(handler, index, xPosition, yPosition);
+    public ResultSlotItemHandler(ManagedItemHandler handler, int index, int xPosition, int yPosition) {
+        super(handler, handler::set, index, xPosition, yPosition);
     }
 
     @Override
@@ -26,5 +34,4 @@ public class ResultSlotItemHandler extends SlotItemHandler {
     protected void onQuickCraft(ItemStack p_39555_, int p_39556_) {
         this.checkTakeAchievements(p_39555_);
     }
-
 }
