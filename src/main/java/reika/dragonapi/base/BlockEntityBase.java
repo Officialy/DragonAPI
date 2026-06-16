@@ -176,7 +176,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     public final boolean isPlacer(Player ep) {
         if (placer == null || placerUUID == null || placer.isEmpty())
             return false;
-        return ep.level().equals(placer) && ep.getUUID().equals(placerUUID);
+        return ep.getName().getString().equals(placer) && ep.getUUID().equals(placerUUID);
     }
 
     public final Block getTEBlock() {

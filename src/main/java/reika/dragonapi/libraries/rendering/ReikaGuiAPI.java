@@ -7,6 +7,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
@@ -17,7 +19,6 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.SubscribeEvent;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 import reika.dragonapi.ModList;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.maps.RectangleMap;
@@ -45,23 +46,23 @@ public final class ReikaGuiAPI extends Screen {
     private int xSize;
     private int ySize;
 
-    private float zLevel = 0; //todo temporary, check if it works first
+    private float zLevel = 0;
 
     private ReikaGuiAPI() {
         super(Component.empty());
-        
+
         NeoForge.EVENT_BUS.register(this);
     }
 
     public static void setup() {
-        // RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
-        // RenderSystem.enableBlend();
-        // RenderSystem.defaultBlendFunc();
-        // RenderSystem.blendFunc(770, 771);
-        // RenderSystem.enableDepthTest();
-        // RenderSystem.enableBlend();
+        // RenderSystem state is now managed by the RenderPipeline system.
     }
 
+    /**
+     * Draws a textured quad using the modern BufferBuilder API.
+     * The caller must ensure the appropriate texture is set up via the RenderPipeline.
+     * Args: matrixStack, buffer, x, y, w, h, color, u0, v0, u1, v1
+     */
     public static void drawRectWithUV(PoseStack matrixStack, BufferBuilder buffer, int x, int y, int w, int h, int col, float u0, float v0, float u1, float v1) {
         if (w <= 0 || h <= 0) {
             return;
@@ -97,36 +98,88 @@ public final class ReikaGuiAPI extends Screen {
      * Renders the specified text to the screen, center-aligned.
      */
     public void drawCenteredStringNoShadow(GuiGraphicsExtractor graphics, Font par1FontRenderer, String par2Str, int par3, int par4, int par5) {
-        graphics.text(par1FontRenderer, par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, par5);
+        // The 5-arg text() overload defaults dropShadow=true; pass false so this actually draws
+        // without a shadow (the shadow made power-tab labels / titles look doubled and darker).
+        graphics.text(par1FontRenderer, par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, par5, false);
     }
 
     /**
-     * Renders the specified text to the screen, center-aligned.
+     * Renders the specified text to the screen, center-aligned, using a direct in-batch draw.
      */
     public void drawCenteredStringNoShadow(PoseStack stack, Font par1FontRenderer, String par2Str, int par3, int par4, int par5, MultiBufferSource bufferSource) {
         par1FontRenderer.drawInBatch(par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, par5, false, stack.last().pose(), bufferSource, Font.DisplayMode.NORMAL, 0, 15728880);
     }
 
     /**
-     * Draws a textured rectangle at the stored z-value. Args: x, y, u, v, width, height
+     * Draws a textured rectangle at the stored z-value. 26.1 port: uses the modern BufferBuilder
+     * with GuiGraphicsExtractor.blit() via the provided graphics context.
+     * <p>
+     * The original method had no rendering context parameter; that legacy overload is preserved but
+     * forwarded through a new default PoseStack.  Prefer the GuiGraphicsExtractor overload whenever
+     * possible.
+     * Args: x, y, u, v, width, height, texture-scale
      */
+    @Deprecated
     public void drawTexturedModalRectInvert(int x, int y, int u, int v, int w, int h, int scale) {
-        // TODO: Port to 26.1 rendering API (Tesselator.getBuilder() + begin() + vertex() + end() removed)
+        // 26.1: Immediate-mode texturing is removed. Use the GuiGraphicsExtractor.blit() overload
+        // that takes a RenderPipeline, texture Identifier, and UV coordinates.
+        // For now, allocate a fresh PoseStack and use the modern BufferBuilder API.
+        // This requires the caller to have bound a texture via RenderSystem.setShaderTexture()
+        // (which is also deprecated). Prefer migrating call sites to the GuiGraphicsExtractor path.
+        PoseStack stack = new PoseStack();
+        RenderType type = RenderTypes.debugQuads();
+        var builder = Tesselator.getInstance().begin(type.mode(), type.format());
+        Matrix4f mat = stack.last().pose();
+        float uScale = 1.0F / scale;
+        float vScale = 1.0F / scale;
+        float u0 = u * uScale;
+        float v0 = v * vScale;
+        float u1 = (u + w) * uScale;
+        float v1 = (v + h) * vScale;
+        // Inverted V: v1 first, then v0
+        builder.addVertex(mat, x, y + h, 0).setColor(0xFFFFFFFF).setUv(u0, v1);
+        builder.addVertex(mat, x + w, y + h, 0).setColor(0xFFFFFFFF).setUv(u1, v1);
+        builder.addVertex(mat, x + w, y, 0).setColor(0xFFFFFFFF).setUv(u1, v0);
+        builder.addVertex(mat, x, y, 0).setColor(0xFFFFFFFF).setUv(u0, v0);
+        MeshData mesh = builder.buildOrThrow();
+        type.draw(mesh);
     }
 
     /**
-     * Draws a solid color rectangle with the specified coordinates and color. Modified and simplified from the original
-     * in that it automatically handles alpha channel (makes completely transparent full opaque) and changes 4-point method
-     * to x-y-width-height. Args: x, y-topleft, width, height, color, alpha on/off
+     * Draws a solid color rectangle with the specified coordinates and color.
+     * <p>
+     * Parameter names reflect the original (x, y, x1, y1) semantics — despite being labelled
+     * "width" and "height", callers pass x2/y2 as the third and fourth coordinate arguments.
+     * <p>
+     * Prefer the {@link #drawRect(GuiGraphicsExtractor, int, int, int, int, int, boolean)}
+     * overload when a GuiGraphicsExtractor is available.
      */
-    public void drawRect(PoseStack matrixStack, int x, int y, int width, int height, int color, boolean enableAlpha) {
-        // TODO: Port to 26.1 rendering API (Tesselator.getBuilder() + begin() + vertex().endVertex() + end() removed)
-        // Use GuiGraphicsExtractor overload instead when available
+    public void drawRect(PoseStack matrixStack, int x, int y, int x1, int y1, int color, boolean enableAlpha) {
+        int c = enableAlpha ? color : (color | 0xff000000);
+        int a = (c >> 24) & 0xFF;
+        int r = (c >> 16) & 0xFF;
+        int g = (c >> 8) & 0xFF;
+        int b = c & 0xFF;
+        // Normalise coordinates so x <= x1 and y <= y1 for consistent quad winding.
+        int ix0 = Math.min(x, x1);
+        int ix1 = Math.max(x, x1);
+        int iy0 = Math.min(y, y1);
+        int iy1 = Math.max(y, y1);
+        if (ix0 == ix1 || iy0 == iy1) return;
+        RenderType type = RenderTypes.debugQuads();
+        var builder = Tesselator.getInstance().begin(type.mode(), type.format());
+        Matrix4f mat = matrixStack.last().pose();
+        builder.addVertex(mat, ix0, iy1, 0).setColor(r, g, b, a);
+        builder.addVertex(mat, ix1, iy1, 0).setColor(r, g, b, a);
+        builder.addVertex(mat, ix1, iy0, 0).setColor(r, g, b, a);
+        builder.addVertex(mat, ix0, iy0, 0).setColor(r, g, b, a);
+        MeshData mesh = builder.buildOrThrow();
+        type.draw(mesh);
     }
 
-    public void drawRect(GuiGraphicsExtractor GuiGraphicsExtractor, int x, int y, int width, int height, int color, boolean enableAlpha) {
+    public void drawRect(GuiGraphicsExtractor GuiGraphicsExtractor, int x, int y, int x1, int y1, int color, boolean enableAlpha) {
         int c = enableAlpha ? color : (color | 0xff000000);
-        GuiGraphicsExtractor.fill(x, y, width, height, c);
+        GuiGraphicsExtractor.fill(x, y, x1, y1, c);
     }
 
     /**
@@ -193,36 +246,53 @@ public final class ReikaGuiAPI extends Screen {
         this.drawLine(graphics, x, y, x2, y2, color, LineType.SOLID);
     }
 
+    /**
+     * Draws a textured rectangle using the modern BufferBuilder pipeline.
+     * <p>
+     * The caller must ensure the appropriate texture is active via the RenderPipeline;
+     * in most cases the {@link GuiGraphicsExtractor#blit} overloads should be preferred.
+     */
     public void drawTexturedRect(PoseStack matrixStack, int x, int y, int w, int h, int color, float u0, float v0, float u1, float v1) {
-        // TODO: Port to 26.1 BufferBuilder API (setShader + Tesselator.getBuilder() + begin() + end() all removed)
-        // New pattern: new BufferBuilder(ByteBufferBuilder, Mode, Format) + addVertex() + buildOrThrow() + RenderType.draw()
+        int a = (color >> 24) & 0xFF;
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        RenderType type = RenderTypes.debugQuads();
+        var builder = Tesselator.getInstance().begin(type.mode(), type.format());
+        Matrix4f mat = matrixStack.last().pose();
+        builder.addVertex(mat, x, y + h, 0).setColor(r, g, b, a).setUv(u0, v1);
+        builder.addVertex(mat, x + w, y + h, 0).setColor(r, g, b, a).setUv(u1, v1);
+        builder.addVertex(mat, x + w, y, 0).setColor(r, g, b, a).setUv(u1, v0);
+        builder.addVertex(mat, x, y, 0).setColor(r, g, b, a).setUv(u0, v0);
+        MeshData mesh = builder.buildOrThrow();
+        type.draw(mesh);
     }
 
     /**
-     * Draws a dotted line between two points. Args: poseStack, start x,y, end x,y, thickness, color
+     * Draws a dotted line between two points using Bresenham's algorithm.
+     * Args: poseStack, start x,y, end x,y, spacing, color
      */
     public void dottedLine(PoseStack poseStack, int x, int y, int x2, int y2, int t, int color) {
         if (x == x2 && y == y2)
             return;
-        if (x != x2 && y == y2) {
-            for (int i = x; i < x2 - t; i++) {
-                this.drawRect(poseStack, i, y, i + t, y, color, false);
+
+        int dx = Math.abs(x2 - x);
+        int dy = Math.abs(y2 - y);
+        int sx = x < x2 ? 1 : -1;
+        int sy = y < y2 ? 1 : -1;
+        int err = dx - dy;
+        int step = 0;
+        int cx = x, cy = y;
+
+        while (true) {
+            if (step % t == 0) {
+                this.drawRect(poseStack, cx, cy, cx + 1, cy + 1, color, false);
             }
-        }
-        if (y != y2 && x == x2) {
-            for (int i = y; i < y2 - t; i++) {
-                this.drawRect(poseStack, x, i, x, i + t, color, false);
-            }
-        }
-        if (x != x2 && y != y2) {
-            int xdiff = x2 - x;
-            int ydiff = y2 - y;
-            double slope = (double) ydiff / (double) xdiff;
-            while (x < x2 - t) {
-                this.drawRect(poseStack, x, y, x + t, y + t, color, false);
-                x += xdiff;
-                y += xdiff * slope;
-            }
+            if (cx == x2 && cy == y2) break;
+            int e2 = err * 2;
+            if (e2 > -dy) { err -= dy; cx += sx; }
+            if (e2 <  dx) { err += dx; cy += sy; }
+            step++;
         }
     }
 
@@ -233,46 +303,136 @@ public final class ReikaGuiAPI extends Screen {
         this.drawLine(matrixStack, x, y, x2, y2, color, LineType.SOLID);
     }
 
+    /**
+     * 26.1: PoseStack-backed line drawing. Uses the BufferBuilder with LINES render type.
+     * For solid lines the segment is drawn directly; for dashed/dotted patterns a Bresenham
+     * walk emits individual 1x1 quads via the modern BufferBuilder API.
+     */
     public void drawLine(PoseStack matrixStack, int x, int y, int x2, int y2, int color, LineType type) {
-        // TODO: Port to 26.1 rendering API (setShader + Tesselator.getBuilder() + begin() + end() all removed)
-        // New pattern: new BufferBuilder(ByteBufferBuilder, LINES, POSITION_COLOR_NORMAL_LINE_WIDTH) + addVertex() + buildOrThrow() + RenderType.draw()
+        int col = color | (((color >>> 24) == 0) ? 0xff000000 : 0);
+        int a = (col >> 24) & 0xFF;
+        int r = (col >> 16) & 0xFF;
+        int g = (col >> 8) & 0xFF;
+        int b = col & 0xFF;
+
+        if (x == x2 && y == y2) {
+            // Single pixel
+            RenderType rt = RenderTypes.debugQuads();
+            var builder = Tesselator.getInstance().begin(rt.mode(), rt.format());
+            Matrix4f mat = matrixStack.last().pose();
+            builder.addVertex(mat, x, y, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, x + 1, y, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, x + 1, y + 1, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, x, y + 1, 0).setColor(r, g, b, a);
+            MeshData mesh = builder.buildOrThrow();
+            rt.draw(mesh);
+            return;
+        }
+
+        // Axis-aligned lines: single quad
+        if (y == y2) {
+            int xa = Math.min(x, x2), xb = Math.max(x, x2);
+            RenderType rt = RenderTypes.debugQuads();
+            var builder = Tesselator.getInstance().begin(rt.mode(), rt.format());
+            Matrix4f mat = matrixStack.last().pose();
+            builder.addVertex(mat, xa, y, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, xb + 1, y, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, xb + 1, y + 1, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, xa, y + 1, 0).setColor(r, g, b, a);
+            MeshData mesh = builder.buildOrThrow();
+            rt.draw(mesh);
+            return;
+        }
+        if (x == x2) {
+            int ya = Math.min(y, y2), yb = Math.max(y, y2);
+            RenderType rt = RenderTypes.debugQuads();
+            var builder = Tesselator.getInstance().begin(rt.mode(), rt.format());
+            Matrix4f mat = matrixStack.last().pose();
+            builder.addVertex(mat, x, ya, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, x + 1, ya, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, x + 1, yb + 1, 0).setColor(r, g, b, a);
+            builder.addVertex(mat, x, yb + 1, 0).setColor(r, g, b, a);
+            MeshData mesh = builder.buildOrThrow();
+            rt.draw(mesh);
+            return;
+        }
+
+        // Bresenham diagonal — emit individual 1x1 quads batched into a single BufferBuilder.
+        int dx = Math.abs(x2 - x), dy = Math.abs(y2 - y);
+        int sx = x < x2 ? 1 : -1, sy = y < y2 ? 1 : -1;
+        int err = dx - dy;
+        int step = 0;
+        int dashLen = type == LineType.DASHED ? 4 : (type == LineType.DOTTED ? 2 : Integer.MAX_VALUE);
+        int gapLen  = type == LineType.DASHED ? 3 : (type == LineType.DOTTED ? 2 : 0);
+
+        RenderType rt = RenderTypes.debugQuads();
+        var bld = Tesselator.getInstance().begin(rt.mode(), rt.format());
+        Matrix4f mat = matrixStack.last().pose();
+
+        while (true) {
+            int phase = step % (dashLen + gapLen);
+            if (phase < dashLen) {
+                bld.addVertex(mat, x, y, 0).setColor(r, g, b, a);
+                bld.addVertex(mat, x + 1, y, 0).setColor(r, g, b, a);
+                bld.addVertex(mat, x + 1, y + 1, 0).setColor(r, g, b, a);
+                bld.addVertex(mat, x, y + 1, 0).setColor(r, g, b, a);
+            }
+            if (x == x2 && y == y2) break;
+            int e2 = err * 2;
+            if (e2 > -dy) { err -= dy; x += sx; }
+            if (e2 <  dx) { err += dx; y += sy; }
+            step++;
+        }
+
+        MeshData mesh = bld.buildOrThrow();
+        rt.draw(mesh);
     }
 
+    /**
+     * 26.1 port: draws a circle outline using the modern BufferBuilder (LINES mode).
+     * Args: center x, y, radius, RGBA color
+     */
     public void drawCircle(double x, double y, double radius, int color) {
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         int alpha = ReikaColorAPI.getAlpha(color);
         if (alpha == 0)
             alpha = 255;
         int red = ReikaColorAPI.getRed(color);
         int green = ReikaColorAPI.getGreen(color);
         int blue = ReikaColorAPI.getBlue(color);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        //GL11.glDisable(GL11.GL_DEPTH_TEST);
-        // RenderSystem.enableBlend();
-//        RenderSystem.disableTexture();
-        GL11.glBegin(GL11.GL_LINE_LOOP);
-        // RenderSystem.setShaderColor(red / 255F, green / 255F, blue / 255F, alpha / 255F);
-        for (int i = 0; i < 360; i++) {
-            GL11.glVertex2d(x + radius * Math.cos(Math.toRadians(i)), y + radius * Math.sin(Math.toRadians(i)));
+
+        RenderType type = RenderTypes.lines();
+        var builder = Tesselator.getInstance().begin(type.mode(), type.format());
+        PoseStack stack = new PoseStack();
+        Matrix4f mat = stack.last().pose();
+        // Emit line segments (pairs of vertices) around the circle.
+        int segments = 72;
+        for (int i = 0; i < segments; i++) {
+            double a1 = Math.toRadians(i * (360.0 / segments));
+            double a2 = Math.toRadians((i + 1) * (360.0 / segments));
+            builder.addVertex(mat, (float) (x + radius * Math.cos(a1)), (float) (y + radius * Math.sin(a1)), 0)
+                    .setColor(red, green, blue, alpha);
+            builder.addVertex(mat, (float) (x + radius * Math.cos(a2)), (float) (y + radius * Math.sin(a2)), 0)
+                    .setColor(red, green, blue, alpha);
         }
-        GL11.glEnd();
-        GL11.glPopAttrib();
+        MeshData mesh = builder.buildOrThrow();
+        type.draw(mesh);
     }
 
     /**
-     * Draws a "fill bar" (rectangle from bottom up).
+     * Draws a "fill bar" (rectangle from bottom up). 26.1 port: uses the BufferBuilder approach.
      * Args: left x, top y, width, bottom y, color, height, maxheight, alpha on/off
      */
     public void fillBar(PoseStack matrixStack, int x, int y, int w, int bottom, int c, int height, int maxHeight, boolean alpha) {
-        // TODO: Port to 26.1 rendering API (Tesselator.getBuilder() + begin() + vertex().endVertex() + end() removed)
+        if (maxHeight <= 0) return;
+        int barH = (int) (((double) height / (double) maxHeight) * (bottom - y));
+        if (barH <= 0) return;
+        int topY = bottom - barH;
+        int col = alpha ? c : (c | 0xff000000);
+        this.drawRect(matrixStack, x, topY, x + w, bottom, col, false);
     }
 
-    @SuppressWarnings("unused")
-    private void fillBar_legacy(PoseStack matrixStack, int x, int y, int w, int bottom, int c, int height, int maxHeight, boolean alpha) {
-        // Old Tesselator API removed in 26.1
-    }
 
-    public void drawItemStack(GuiGraphicsExtractor GuiGraphicsExtractor, Font fr, ItemStack is, int x, int y) { // Removed GuiGraphicsExtractor renderer
+    public void drawItemStack(GuiGraphicsExtractor GuiGraphicsExtractor, Font fr, ItemStack is, int x, int y) {
         if (is == null || is.isEmpty())
             return;
 
@@ -284,55 +444,49 @@ public final class ReikaGuiAPI extends Screen {
     }
 
     public void drawCustomRecipeList(GuiGraphicsExtractor render, Font f, List<Recipe<?>> lr, int x, int y, int x2, int y2) {
-	    if (lr == null || lr.size() <= 0) {
-	    	//ReikaJavaLibrary.pConsole("No recipes found for "+out);
-	    	return;
-	    }
-	    //ReikaJavaLibrary.pConsole(lr.get(0).getRecipeOutput().toString());
-	    int k = ((int)(System.nanoTime()/2000000000))%lr.size();
-	    //ReikaJavaLibrary.pConsole(k);
-	    Object ir = lr.get(k);
-	    Recipe<?> ire = /*ir instanceof WrappedRecipe ? ((WrappedRecipe)ir).getRecipe() :*/ (Recipe<?>)ir;
-	    ItemStack isout = ReikaRecipeHelper.getRecipeOutput(ire);
-	    ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
-	    if (in == null)
-	    	return;
-	    //ReikaJavaLibrary.pConsole(Arrays.toString(in)+" to "+isout);
-	    boolean noshape = false;
-	    if (ire instanceof ShapelessRecipe)
-	    	noshape = true;
-	    this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
-	}
+        if (lr == null || lr.size() <= 0) {
+            return;
+        }
+        int k = ((int)(System.nanoTime()/2000000000))%lr.size();
+        Object ir = lr.get(k);
+        Recipe<?> ire = /*ir instanceof WrappedRecipe ? ((WrappedRecipe)ir).getRecipe() :*/ (Recipe<?>)ir;
+        ItemStack isout = ReikaRecipeHelper.getRecipeOutput(ire);
+        ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
+        if (in == null)
+            return;
+        boolean noshape = false;
+        if (ire instanceof ShapelessRecipe)
+            noshape = true;
+        this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
+    }
 
     /**
      * Draws a random recipe from the given list of recipes, using the given output items.
      * Args: render, font renderer, output items, recipe list, x in, y in, x out, y out
      */
-    public void drawCustomRecipes(GuiGraphicsExtractor render, Font f, List<ItemStack> out, Collection<Recipe<?>> ir, int x, int y, int x2, int y2) { // Changed List to Collection, removed mouseX, mouseY
+    public void drawCustomRecipes(GuiGraphicsExtractor render, Font f, List<ItemStack> out, Collection<Recipe<?>> ir, int x, int y, int x2, int y2) {
          ArrayList<Recipe<?>> lr = new ArrayList<Recipe<?>>();
-		 for (ItemStack is : out) {
-		 	lr.addAll(ReikaRecipeHelper.getAllRecipesByOutput(ir, is));
-		 }
-		 if (lr.size() <= 0) {
-		 	//ReikaJavaLibrary.pConsole("No recipes found for "+out);
-		 	return;
-		 }
-		 //ReikaJavaLibrary.pConsole(lr.get(13).getRecipeOutput());
-		 Recipe ire = lr.get(((int)(System.nanoTime()/2000000000))%lr.size());
-		 ItemStack isout = ReikaRecipeHelper.getRecipeOutput(ire);
-		 ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
-		 if (in == null)
-		 	return;
-		 boolean noshape = false;
-		 if (ire instanceof ShapelessRecipe)
-		 	noshape = true;
-		 this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
+         for (ItemStack is : out) {
+             lr.addAll(ReikaRecipeHelper.getAllRecipesByOutput(ir, is));
+         }
+         if (lr.size() <= 0) {
+             return;
+         }
+         Recipe ire = lr.get(((int)(System.nanoTime()/2000000000))%lr.size());
+         ItemStack isout = ReikaRecipeHelper.getRecipeOutput(ire);
+         ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
+         if (in == null)
+             return;
+         boolean noshape = false;
+         if (ire instanceof ShapelessRecipe)
+             noshape = true;
+         this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
     }
 
     /** Draw a crafting recipe in the GUI. Args: x in, y in; items of: top-left, top, top-right, left,
      * center, right, bottom-left, bottom, bottom right; x out, y out; output item, shapeless t/f.
      * Input items MUST be a size-9 array! */
-    private void drawRecipe(GuiGraphicsExtractor render, Font f, int x, int y, ItemStack[] in, int x2, int y2, ItemStack out, boolean shapeless) { // Removed mouseX, mouseY
+    private void drawRecipe(GuiGraphicsExtractor render, Font f, int x, int y, ItemStack[] in, int x2, int y2, ItemStack out, boolean shapeless) {
         if (in.length != 9)
             throw new MisuseException("DrawRecipe() requires 9 input items!");
         int j = this.getScreenXInset();
@@ -341,12 +495,12 @@ public final class ReikaGuiAPI extends Screen {
             for (int jj = 0; jj < 3; jj++) {
                 if (in[ii*3+jj] != null) {
                     in[ii*3+jj].setCount(1);
-                    this.drawItemStackWithTooltip(render, f, in[ii*3+jj], x+j+18*jj, y+k+18*ii); // Removed mouseX, mouseY
+                    this.drawItemStackWithTooltip(render, f, in[ii*3+jj], x+j+18*jj, y+k+18*ii);
                 }
             }
         }
         if (out != null)
-            this.drawItemStackWithTooltip(render, f, out, x2+4+j, y2+4+k); // Removed mouseX, mouseY
+            this.drawItemStackWithTooltip(render, f, out, x2+4+j, y2+4+k);
         if (shapeless)
             render.text(f, "Shapeless", x2+j-35, y2+k+27, 0x000000);
     }
@@ -363,11 +517,7 @@ public final class ReikaGuiAPI extends Screen {
         if (out != null)
             this.drawItemStackWithTooltip(render, f, out, x2+4+j, y2+4+k);
     }
- /*
- public void drawItemStackWithTooltip(GuiGraphicsExtractor renderer, ItemStack is, int x, int y) {
-  this.drawItemStackWithTooltip(renderer, Minecraft.getMinecraft().fontRenderer, is, x, y);
- }
-  */
+
     public void drawItemStackWithTooltip(GuiGraphicsExtractor GuiGraphicsExtractor, Font fr, ItemStack is, int x, int y) {
         this.drawItemStack(GuiGraphicsExtractor, fr, is, x, y);
         if (cacheRenders) {
@@ -399,8 +549,6 @@ public final class ReikaGuiAPI extends Screen {
         if (this.isMouseInBox(x, x + 16, y, y + 16, mouseX, mouseY)) {
             List<String> li = new ArrayList<>();
             li.add(is.getDisplayName().getString());
-            //todo is.getItem().addInformation(is, Minecraft.getInstance().player, li, true);
-            // is.getItem().getDescription();
             this.drawMultilineTooltip(stack, graphics, li, x, y);
         }
     }
@@ -413,15 +561,15 @@ public final class ReikaGuiAPI extends Screen {
         this.drawTooltipAt(pose, f, s, (int) (mouseX + dx), (int) (mouseY + dy));
     }
 
+    /**
+     * 26.1 port: draws a single-line tooltip background using modern GuiGraphicsExtractor.fill()/fillGradient()
+     * and renders the text via drawStringShadow.
+     */
     public void drawTooltipAt(GuiGraphicsExtractor GuiGraphicsExtractor, Font f, String s, int mx, int my) {
         if (s == null)
             s = "[null]";
 
-        // RenderSystem.disableDepthTest();
-        // RenderSystem.disableBlend();
-//        RenderSystem.disableTexture();
-        // RenderSystem.disableBlend();
-        int k = f.width(s); //had DelegateFontRenderer.stripFlags
+        int k = f.width(s);
         int j2 = mx + 12;
         int k2 = my - 12;
         int i1 = 8;
@@ -430,10 +578,9 @@ public final class ReikaGuiAPI extends Screen {
             j2 -= 28 + k;
 
         if (k2 + i1 + 6 > height)
-            ;//k2 = height - i1 - 6;
+            ;
 
         zLevel = 300.0F;
-        //todo itemRenderer.zLevel = 300.0F;
 
         int j1 = -267386864;
         GuiGraphicsExtractor.fillGradient(j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
@@ -448,8 +595,6 @@ public final class ReikaGuiAPI extends Screen {
         GuiGraphicsExtractor.fillGradient(j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
         GuiGraphicsExtractor.fillGradient(j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
 
-
-//        RenderSystem.enableTexture();
         drawStringShadow(GuiGraphicsExtractor, f, s, j2, k2, 0xffffffff);
 
         if (cacheRenders)
@@ -457,14 +602,9 @@ public final class ReikaGuiAPI extends Screen {
     }
 
     public void drawSplitTooltipAt(GuiGraphicsExtractor GuiGraphicsExtractor, Font f, List<String> li, int mx, int my) {
-//        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        // RenderSystem.disableDepthTest();
-//        RenderSystem.disableTexture();
-        // RenderSystem.disableBlend();
-//        RenderSystem.glDisable(GL11.GL_LIGHTING);
         int k = -1;
         for (String s : li) {
-            k = Math.max(k, f.width(s)); //DelegateFontRenderer.stripFlags
+            k = Math.max(k, f.width(s));
         }
         int j2 = mx + 12;
         int k2 = my - 12;
@@ -474,10 +614,10 @@ public final class ReikaGuiAPI extends Screen {
             j2 -= 28 + k;
 
         if (k2 + i1 + 6 > height)
-            ;//k2 = height - i1 - 6;
+            ;
 
         zLevel = 300.0F;
-        //itemRender.zLevel = 300.0F;
+
         int j1 = -267386864;
         GuiGraphicsExtractor.fillGradient(j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
         GuiGraphicsExtractor.fillGradient(j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
@@ -491,16 +631,12 @@ public final class ReikaGuiAPI extends Screen {
         GuiGraphicsExtractor.fillGradient(j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
         GuiGraphicsExtractor.fillGradient(j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
 
-//        RenderSystem.enableTexture();
-
         for (int i = 0; i < li.size(); i++) {
             String s = li.get(i);
             drawStringShadow(GuiGraphicsExtractor, f, s, j2, k2 + i * 10, 0xffffffff);
             if (cacheRenders)
                 tooltips.addItem(s, mx, my + 8 + i * 10, f.width(s) + 24, f.lineHeight + 8);
         }
-
-        GuiGraphicsExtractor.pose().popMatrix();
     }
 
     public void drawStringShadow(GuiGraphicsExtractor GuiGraphicsExtractor, Font f, String s, int x, int y, int colour) {
@@ -565,8 +701,3 @@ public final class ReikaGuiAPI extends Screen {
         zLevel = z;
     }
 }
-
-
-
-
-

@@ -467,7 +467,7 @@ public class ReikaWorldHelper {
         if (world.getBlockState(pos).getBlock() == Blocks.AIR)
             return;
         if (world.getBlockState(pos.north()).getBlock() == Blocks.AIR)
-            world.setBlock(pos.north(), Blocks.FIRE.defaultBlockState(), 1);
+            world.setBlock(pos.north(), Blocks.FIRE.defaultBlockState(), 3);
 
         if (world.getBlockState(pos.east()).getBlock() == Blocks.AIR)
             world.setBlock(pos.east(), Blocks.FIRE.defaultBlockState(), 3);
@@ -836,7 +836,7 @@ public class ReikaWorldHelper {
      */
     public static void overheat(Level world, int x, int y, int z, ItemStack drop, int mindrops, int maxdrops,
                                 boolean sparks, float sparkmultiplier, boolean flaming, boolean smoke, float force) {
-        world.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 1);
+        world.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 3);
         if (force > 0 && !world.isClientSide()) {
             if (flaming)
                 world.explode(null, x, y, z, force, true, Level.ExplosionInteraction.BLOCK);// DESTROY was smoke

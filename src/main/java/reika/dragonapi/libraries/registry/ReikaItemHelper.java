@@ -94,6 +94,13 @@ public class ReikaItemHelper {
             return ((ItemFilter) b).matches(a);
         } else if (b instanceof ItemMatch) {
             return ((ItemMatch) b).match(a);
+        } else if (b instanceof net.minecraft.world.level.ItemLike il) {
+            // Covers Item, Block, and NeoForge DeferredItem/DeferredBlock (all ItemLike).
+            return a.getItem() == il.asItem();
+        } else if (b instanceof java.util.function.Supplier<?> sup) {
+            // DeferredHolder and other lazy registry references.
+            Object v = sup.get();
+            return v != null && matchStacks(a, v);
         }
         //else if (b instanceof FlexibleIngredient) {
         //    return ((FlexibleIngredient)b).match(a);

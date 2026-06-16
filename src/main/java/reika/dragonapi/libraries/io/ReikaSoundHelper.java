@@ -1,6 +1,7 @@
 package reika.dragonapi.libraries.io;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
@@ -109,12 +110,11 @@ public class ReikaSoundHelper {
             }
             plays.addValue(s, new SoundPlay(time, x, y, z));
         }
-//        sendSound(s, world, x, y, z, vol, pitch, atten);
-//        if (FMLEnvironment.getDist().isClient()) {
+        if (world.isClientSide()) {
             playClientSound(s, x, y, z, vol, pitch, atten);
-//        } else {
-//            sendSound(s, world, x, y, z, vol, pitch, atten);
-//        }
+        } else {
+            sendSound(s, world, x, y, z, vol, pitch, atten);
+        }
     }
 
     private static void sendSound(SoundEnum s, Level world, double x, double y, double z, float vol, float pitch, boolean atten) {
@@ -128,19 +128,18 @@ public class ReikaSoundHelper {
 
 
     public static SoundInstance playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch, boolean att) {
-//        DragonAPI.LOGGER.info("Playing sound "+s+" at "+x+", "+y+", "+z);
         float v = vol * s.getModulatedVolume();
         if (v <= 0)
             return null;
-        EnumSound es = new EnumSound(s, x, y, z, v, pitch, att);
-        try {
-//            DragonAPI.LOGGER.info("soundmanager is about to play "+ es + " now");
-            Minecraft.getInstance().getSoundManager().play(es);
-        } catch (ConcurrentModificationException e2) {
-            e2.printStackTrace();
+        // Use playLocalSound which creates a PositionedSoundInstance internally.
+        // PositionedSoundInstance is in the same package as AbstractSoundInstance and
+        // can access its package-private fields, guaranteeing correct 3D positional audio.
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level != null) {
+            level.playLocalSound(x, y, z, s.getSoundEvent(), s.getCategory(), v, pitch, att);
+            return new EnumSound(s, x, y, z, v, pitch, att);
         }
-        return es;
-        
+        return null;
     }
 
     public static SoundInstance playClientSound(SoundEnum s, Entity e, float vol, float pitch, boolean att) {
@@ -148,7 +147,10 @@ public class ReikaSoundHelper {
     }
 
     public static void playClientSound(SoundEvent snd, double x, double y, double z, float vol, float pitch, boolean atten) {
-        Minecraft.getInstance().level.playLocalSound(x, y, z, snd, SoundSource.AMBIENT, vol, pitch, atten);
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level != null) {
+            level.playLocalSound(x, y, z, snd, SoundSource.AMBIENT, vol, pitch, atten);
+        }
     }
 
 
@@ -157,17 +159,18 @@ public class ReikaSoundHelper {
     }
 
     public static void broadcastSound(SoundEnum s, float vol, float pitch) {
-        if (FMLEnvironment.getDist() == Dist.CLIENT)
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             throw new MisuseException("You cannot call this from the client!");
-            Iterable<ServerLevel> worlds = Minecraft.getInstance().level.getServer().getAllLevels();
-            for (ServerLevel world : worlds) {
-                if (!world.isClientSide()) { 
-                    for (Player ep : world.players()) {
-                        // Send packet to client to play sound
-                        ReikaPacketHelper.sendSoundPacket(s, world, ep.getX(), ep.getY(), ep.getZ(), vol, pitch, true);
-                    }
+        }
+        Iterable<ServerLevel> worlds = Minecraft.getInstance().level.getServer().getAllLevels();
+        for (ServerLevel world : worlds) {
+            if (!world.isClientSide()) {
+                for (Player ep : world.players()) {
+                    // Send packet to client to play sound
+                    ReikaPacketHelper.sendSoundPacket(s, world, ep.getX(), ep.getY(), ep.getZ(), vol, pitch, true);
                 }
             }
+        }
     }
 
     public static void playSoundAtEntity(Level world, Entity e, SoundEvent snd) {
