@@ -325,13 +325,11 @@ public class ReikaItemHelper {
             return true;
         if (a == null || b == null)
             return false;
-        if (a.getItem() == null || b.getItem() == null)
+        if (a.isEmpty() && b.isEmpty())
+            return true;
+        if (a.isEmpty() || b.isEmpty())
             return false;
-        if (a.getItem() != b.getItem())
-            return false;
-        if (a.getItem() == b.getItem())
-            return false;
-        return false;
+        return a.getItem() == b.getItem();
     }
 
     public static boolean isFireworkIngredient(Item id) {
