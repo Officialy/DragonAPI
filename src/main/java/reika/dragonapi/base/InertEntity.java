@@ -15,15 +15,22 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 public abstract class InertEntity extends Entity {
 
     public InertEntity(Level par1World) {
-        super(EntityType.ARROW, par1World); //TODO Add a new entity type for inert entity
+        super(EntityTypes.ARROW, par1World); //TODO Add a new entity type for inert entity
 
         //noClip = true;
+    }
+
+    /** Preferred ctor: pass the entity's own registered type so it serializes/syncs/renders as
+     *  itself rather than as an arrow. */
+    public InertEntity(EntityType<? extends Entity> type, Level par1World) {
+        super(type, par1World);
     }
 
     /**
