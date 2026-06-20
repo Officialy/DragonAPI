@@ -65,7 +65,7 @@ public final class ReikaChatHelper {
         }
     }*/
     private static void clearChatGui() {
-        Minecraft.getInstance().gui.getChat().clearMessages(true);
+        Minecraft.getInstance().gui.hud.getChat().clearMessages(true);
     }
 
     /**

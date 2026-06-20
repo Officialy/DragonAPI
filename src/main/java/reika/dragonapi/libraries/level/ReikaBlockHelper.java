@@ -37,7 +37,7 @@ public class ReikaBlockHelper {
         addSilkTouchDrop(Blocks.CARROTS, Items.CARROT);
         addSilkTouchDrop(Blocks.POTATOES, Items.POTATO);
         addSilkTouchDrop(Blocks.NETHER_WART, Items.NETHER_WART);
-        addSilkTouchDrop(Blocks.BLUE_BED, Items.BLUE_BED);
+        addSilkTouchDrop(Blocks.BED.blue(), Items.BED.blue());
         addSilkTouchDrop(Blocks.BREWING_STAND, Items.BREWING_STAND);
         addSilkTouchDrop(Blocks.CAULDRON, Items.CAULDRON);
         addSilkTouchDrop(Blocks.FLOWER_POT, Items.FLOWER_POT);

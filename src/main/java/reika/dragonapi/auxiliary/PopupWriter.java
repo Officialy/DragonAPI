@@ -58,14 +58,14 @@ public class PopupWriter extends Screen {
     }
 
     public static void open() {
-        Minecraft.getInstance().setScreen(PopupWriter.instance());
+        Minecraft.getInstance().gui.setScreen(PopupWriter.instance());
     }
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
         if (Minecraft.getInstance().hasControlDown() && !PopupWriter.instance().ungrabbed) {
             //ReikaJavaLibrary.pConsole("Press");
-            Minecraft.getInstance().setScreen(this);
+            Minecraft.getInstance().gui.setScreen(this);
             Minecraft.getInstance().mouseHandler.releaseMouse();
             PopupWriter.instance().ungrabbed = true;
             return true;
@@ -125,7 +125,6 @@ public class PopupWriter extends Screen {
     public static void drawOverlay(RenderGuiLayerEvent.Post event) {
         if (!list.isEmpty() && event.getName().equals(VanillaGuiLayers.TITLE)) {
             GuiGraphicsExtractor gui = event.getGuiGraphics();
-            PoseStack matrixStack = new PoseStack();
             Warning s = list.get(0);
             Font fr = Minecraft.getInstance().font;
 
@@ -142,9 +141,9 @@ public class PopupWriter extends Screen {
             int dy = y;
 
             // Draw rectangles
-            ReikaGuiAPI.instance.drawRect(matrixStack, x, y, x + w, y + h, 0xff4a4a4a, false);
-            ReikaGuiAPI.instance.drawRectFrame(matrixStack, x, y, w, h, 0xb0b0b0);
-            ReikaGuiAPI.instance.drawRectFrame(matrixStack, x + 2, y + 2, w - 4, h - 4, 0xcfcfcf);
+            ReikaGuiAPI.instance.drawRect(gui, x, y, x + w, y + h, 0xff4a4a4a, false);
+            ReikaGuiAPI.instance.drawRectFrame(gui, x, y, w, h, 0xb0b0b0);
+            ReikaGuiAPI.instance.drawRectFrame(gui, x + 2, y + 2, w - 4, h - 4, 0xcfcfcf);
 
             // Draw wrapped text
             int textY = y + 4;
@@ -158,7 +157,7 @@ public class PopupWriter extends Screen {
             // a coloured-rect + glyph fallback that still gives the close button a visible hit
             // region (buttonX/Y/Size below feed the click handler).
             // Warning icon: amber square with "!" glyph.
-            ReikaGuiAPI.instance.drawRect(matrixStack, dx, dy, dx + sz, dy + sz, 0xffd29b1f, false);
+            ReikaGuiAPI.instance.drawRect(gui, dx, dy, dx + sz, dy + sz, 0xffd29b1f, false);
             gui.text(fr, "!", dx + (sz / 2) - 2, dy + (sz / 2) - 4, 0xff202020, false);
 
             // Close button — grey square with "X" glyph.
@@ -170,8 +169,8 @@ public class PopupWriter extends Screen {
             buttonY = dy;
             buttonSize = sz;
 
-            ReikaGuiAPI.instance.drawRect(matrixStack, dx, dy, dx + sz, dy + sz, 0xff707070, false);
-            ReikaGuiAPI.instance.drawRectFrame(matrixStack, dx, dy, sz, sz, 0xffcfcfcf);
+            ReikaGuiAPI.instance.drawRect(gui, dx, dy, dx + sz, dy + sz, 0xff707070, false);
+            ReikaGuiAPI.instance.drawRectFrame(gui, dx, dy, sz, sz, 0xffcfcfcf);
             gui.text(fr, "x", dx + 4, dy + 4, 0xffffffff, false);
         }
     }
@@ -195,7 +194,7 @@ public class PopupWriter extends Screen {
 //        if (!PopupWriter.instance.list.isEmpty() || PopupWriter.instance.ungrabbed) {
 //            if (Screen.hasControlDown() && !PopupWriter.instance.ungrabbed) {
 //                //ReikaJavaLibrary.pConsole("Press");
-//                Minecraft.getInstance().setScreen(this);
+//                Minecraft.getInstance().gui.setScreen(this);
 //                Minecraft.getInstance().mouseHandler.releaseMouse();
 //                PopupWriter.instance.ungrabbed = true;
 //            } else if (PopupWriter.instance.ungrabbed) {

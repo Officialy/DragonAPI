@@ -29,10 +29,6 @@ public class ReikaRecipeHelper {
    private static final HashMap<Recipe<?>, RecipeCache> recipeCache = new HashMap();
    private static final HashMap<Recipe<?>, RecipeCache> recipeCacheClient = new HashMap();
 
-   private static Field shapedOreHeight;
-   private static Field shapedOreWidth;
-   private static Field shapedOreInput;
-
    private static Class ic2ShapedClass;
    private static Class ic2ShapelessClass;
    private static Field shapedIc2Input;
@@ -94,46 +90,15 @@ public class ReikaRecipeHelper {
 
    }
 
-   static {
-       try {
-           shapedOreHeight = ShapedRecipe.class.getDeclaredField("height");
-           shapedOreWidth = ShapedRecipe.class.getDeclaredField("width");
-           shapedOreInput = ShapedRecipe.class.getDeclaredField("input");
-
-           shapedOreHeight.setAccessible(true);
-           shapedOreWidth.setAccessible(true);
-           shapedOreInput.setAccessible(true);
-       } catch (Exception e) {
-           e.printStackTrace();
-       }
-   }
-
-   public static void overwriteShapedOreRecipeInput(ShapedRecipe s, Object[] in, int height, int width) {
-       try {
-           shapedOreInput.set(s, in);
-           shapedOreHeight.set(s, height);
-           shapedOreWidth.set(s, width);
-       } catch (Exception e) {
-           e.printStackTrace();
-       }
-   }
-
+   // 26.2: ShapedRecipe's height/width/input fields moved into a private ShapedRecipePattern, so the
+   // old reflection is gone — the public getWidth()/getHeight() accessors replace it. Recipes are also
+   // immutable now, so the never-called overwriteShapedOreRecipeInput mutator is dropped.
    public static int getOreRecipeHeight(ShapedRecipe s) {
-       try {
-           return shapedOreHeight.getInt(s);
-       } catch (Exception e) {
-           e.printStackTrace();
-           return 0;
-       }
+       return s.getHeight();
    }
 
    public static int getOreRecipeWidth(ShapedRecipe s) {
-       try {
-           return shapedOreWidth.getInt(s);
-       } catch (Exception e) {
-           e.printStackTrace();
-           return 0;
-       }
+       return s.getWidth();
    }
 
 	/** Finds recipes by product. NOT PERFORMANT! */

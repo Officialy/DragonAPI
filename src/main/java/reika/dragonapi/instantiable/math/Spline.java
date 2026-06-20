@@ -10,14 +10,10 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable.math;
 
-import com.mojang.blaze3d.platform.SourceFactor;
-import com.mojang.blaze3d.platform.DestFactor;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import org.lwjgl.opengl.GL11;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
 import reika.dragonapi.libraries.rendering.ReikaColorAPI;
@@ -56,47 +52,29 @@ public class Spline {
     }
 
 
-    public void render(double x, double y, double z, int color, boolean glow, boolean closed, int fineness, float lineWidthFactor, SourceFactor srcFactor, DestFactor dstFactor) {
-        var tesselator = Tesselator.getInstance();
-
-//        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        // NOTE 1.21.5: RenderSystem.depthMask/enableBlend/blendFunc/lineWidth were removed; blend & depth
-        // state is now defined by the RenderPipeline. State left to the (still-TODO) mesh draw above.
-        var li = this.get(fineness, closed);
-//        GL11.glDisable(GL11.GL_TEXTURE_2D);
-//        RenderSystem.disableTexture();
-        float w = 0xB21;//GL11.glGetFloat(GL11.GL_LINE_WIDTH); //todo line width
-        var renderer = tesselator.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR);
-        int a = ReikaColorAPI.getAlpha(color);
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-        this.renderPoints(renderer, li, x, y, z, closed, r, g, b, a);
-        var mesh = renderer.buildOrThrow();
-        /* TODO: draw mesh */ mesh.close();
-
+    // 26.2: Tesselator/RenderSystem blend state are gone; line geometry is submitted through the
+    // feature pipeline. Blend/line-width are RenderPipeline properties now, so the old SourceFactor/
+    // DestFactor/lineWidth args are dropped. The glow pass re-submits the strip at quarter alpha.
+    public void render(SubmitNodeCollector collector, PoseStack stack, double x, double y, double z, int color, boolean glow, boolean closed, int fineness) {
+        final List<DecimalPosition> li = this.get(fineness, closed);
+        final int a = ReikaColorAPI.getAlpha(color);
+        final int r = (color >> 16) & 0xFF;
+        final int g = (color >> 8) & 0xFF;
+        final int b = color & 0xFF;
+        collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> this.renderPoints(buffer, pose, li, x, y, z, closed, r, g, b, a));
         if (glow) {
-            var renderer2 = tesselator.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR);
-            // NOTE 1.21.5: RenderSystem.lineWidth removed (line width is a pipeline property now).
-            this.renderPoints(renderer2, li, x, y, z, closed, r, g, b, a / 4);
-            var mesh2 = renderer2.buildOrThrow();
-            /* TODO: draw mesh2 */ mesh2.close();
-
-            var renderer3 = tesselator.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR);
-            this.renderPoints(renderer3, li, x, y, z, closed, r, g, b, a / 4);
-            var mesh3 = renderer3.buildOrThrow();
-            /* TODO: draw mesh3 */ mesh3.close();
+            collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> this.renderPoints(buffer, pose, li, x, y, z, closed, r, g, b, a / 4));
+            collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> this.renderPoints(buffer, pose, li, x, y, z, closed, r, g, b, a / 4));
         }
-//        GL11.glPopAttrib();
     }
 
-    private void renderPoints(BufferBuilder renderer, List<DecimalPosition> li, double x, double y, double z, boolean closed, int r, int g, int b, int a) {
+    private void renderPoints(VertexConsumer renderer, PoseStack.Pose pose, List<DecimalPosition> li, double x, double y, double z, boolean closed, int r, int g, int b, int a) {
         for (DecimalPosition d : li) {
-            renderer.addVertex((float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
+            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
         }
         if (closed) {
             DecimalPosition d = li.get(0);
-            renderer.addVertex((float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
+            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
         }
     }
 

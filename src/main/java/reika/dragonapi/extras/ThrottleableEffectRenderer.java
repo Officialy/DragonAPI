@@ -8,7 +8,7 @@ import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.AABB;
 import reika.dragonapi.DragonAPI;
@@ -127,7 +127,7 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
         }
     }
 
-    public void renderParticles(PoseStack stack, Particle e, MultiBufferSource.BufferSource buffer, float ptick) {
+    public void renderParticles(PoseStack stack, Particle e, SubmitNodeCollector collector, float ptick) {
         if (renderParticles) {
             if (renderThroughWalls())
                 // RenderSystem.disableDepthTest();

@@ -10,8 +10,7 @@
 package reika.dragonapi.interfaces;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.entity.player.Player;
 import reika.dragonapi.auxiliary.trackers.PlayerSpecificRenderer;
 
@@ -21,7 +20,7 @@ public interface PlayerRenderObj {
     /**
      * Render starts centered on eye position
      */
-    void extractRenderState(PoseStack stack, Player ep, float ptick, PlayerSpecificRenderer.PlayerRotationData data);
+    void extractRenderState(PoseStack stack, Player ep, float ptick, PlayerSpecificRenderer.PlayerRotationData data, SubmitNodeCollector collector);
 
     /**
      * Lower numbers render first. Use high numbers (>> 0) for transparency

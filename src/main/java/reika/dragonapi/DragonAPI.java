@@ -139,11 +139,11 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     public static void openURL(String url) {
-        Minecraft.getInstance().setScreen(new ConfirmLinkScreen((p_170143_) -> {
+        Minecraft.getInstance().gui.setScreen(new ConfirmLinkScreen((p_170143_) -> {
             if (p_170143_) {
                 Util.getPlatform().openUri(url);
             }
-            Minecraft.getInstance().setScreen(null);
+            Minecraft.getInstance().gui.setScreen(null);
         }, url, true));
     }
 

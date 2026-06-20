@@ -15,7 +15,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.neoforged.neoforge.client.event.ScreenEvent;
@@ -122,7 +122,7 @@ public final class PlayerSpecificRenderer {
        return s;
    }
 
-   private void renderAdditionalObjects(PoseStack stack, Player ep, float ptick) {
+   private void renderAdditionalObjects(PoseStack stack, Player ep, float ptick, SubmitNodeCollector collector) {
        if (ep.getUUID() == DragonAPI.Reika_UUID) {
 //     todo       ReikaShader.instance.prepareRender(ep);
        }
@@ -130,9 +130,9 @@ public final class PlayerSpecificRenderer {
            return;
        Collection<PlayerRenderObj> c = renders.get(ep.getUUID());
        if (c != null) {
-           
+
            for (PlayerRenderObj r : c) {
-               r.extractRenderState(stack, ep, ptick, new PlayerRotationData(ep, ptick));
+               r.extractRenderState(stack, ep, ptick, new PlayerRotationData(ep, ptick), collector);
            }
        }
    }
@@ -308,7 +308,7 @@ public final class PlayerSpecificRenderer {
            model = m;
        }
 
-       public void extractRenderState(PoseStack stack, Player ep, float tick, PlayerRotationData dat) {
+       public void extractRenderState(PoseStack stack, Player ep, float tick, PlayerRotationData dat, SubmitNodeCollector collector) {
            if (ep != null) {
                stack.pushPose();
                stack.translate(0, 1.6, 0);
@@ -317,11 +317,13 @@ public final class PlayerSpecificRenderer {
                    stack.mulPose(new Quaternionf(Axis.XP.rotationDegrees(22.5f)));
                    stack.translate(-0.02, 0.1, -0.05);
                }
-               // TODO: This is probably not right, but it's the best I can do for now
-               MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
-               VertexConsumer consumer = buffer.getBuffer(model.renderType(model.getTexture()));
-               model.renderBodyParts(stack, consumer, 15728880, OverlayTexture.NO_OVERLAY, ep, tick);
+               // 26.2: MultiBufferSource/renderBuffers() are gone — submit the body parts through the
+               // feature pipeline. Snapshot the transform so the deferred draw uses it after we pop.
+               PoseStack snap = new PoseStack();
+               snap.last().set(stack.last());
                stack.popPose();
+               collector.submitCustomGeometry(snap, model.renderType(model.getTexture()), (pose, consumer) ->
+                       model.renderBodyParts(snap, consumer, 15728880, OverlayTexture.NO_OVERLAY, ep, tick));
            }
        }
 

@@ -46,7 +46,7 @@ public class DebugOverlay {
                 //if (APIProxyClient.key_nbt.isPressed()) {
                 var ep = mc.player;
                 var f = mc.font;
-                if (mc.screen == null) {
+                if (mc.gui.screen() == null) {
                     float reach = 4;
                     var hit = ReikaPlayerAPI.getLookedAtBlockClient(4, false);
                     if (hit != null) {

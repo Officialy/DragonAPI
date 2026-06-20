@@ -1,6 +1,5 @@
 package reika.dragonapi.instantiable.rendering;
 
-import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import reika.dragonapi.libraries.mathsci.ReikaVectorHelper;

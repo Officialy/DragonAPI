@@ -1,9 +1,8 @@
 package reika.dragonapi.instantiable.data;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -123,61 +122,37 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
     }
 
     @Override
-//    @SideOnly(Dist.CLIENT)
-    public void render(Map<F, Integer> colorMap) {
-//        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-//        RenderSystem.disableTexture();
-//        GL11.glDisable(GL11.GL_LIGHTING);
-        // RenderSystem.disableCull();
+    public void render(SubmitNodeCollector collector, PoseStack stack, Map<F, Integer> colorMap) {
         double ang = renderOrigin;
-        var tess = new Tesselator();
-        
-        int i = 0;
         for (F o : data.keySet()) {
-            double angw = 360D*this.getFraction(o);
-
-            var v5 = tess.begin(innerRadius == 0 ? VertexFormat.Mode.TRIANGLE_FAN : VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION);
-            int c = this.getColorForElement(o, colorMap);
-            v5.setColor(c);
-
-            //ReikaJavaLibrary.pConsole(o+" > "+this.getFraction(o)+" = "+angw);
-
-            this.renderSection(v5, ang, ang+angw);
-
-            var mesh = v5.buildOrThrow(); /* TODO 1.21 draw mesh */ mesh.close();
-
+            double angw = 360D * this.getFraction(o);
+            final int c = this.getColorForElement(o, colorMap);
+            final double a1 = ang;
+            final double a2 = ang + angw;
+            collector.submitCustomGeometry(stack, RenderTypes.debugQuads(), (pose, buffer) -> this.renderSection(buffer, pose, c, a1, a2));
             ang += angw;
         }
 
         if (drawSeparationLines && data.size() > 1) {
-            var v5 = tess.begin(VertexFormat.Mode.LINES, com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION);
-            v5.setColor(0x000000);
-            for (F o : data.keySet()) {
-                double angw = 360D*this.getFraction(o);
-                if (innerRadius == 0) {
-                    v5.addVertex((float)(centerX), (float)(centerY), (float)(0));
-                    double d2 = Math.toRadians(ang);
-                    double r2 = this.getOuterRadiusAt(d2);
-                    double dx = centerX+r2*Math.cos(d2);
-                    double dy = centerY+r2*Math.sin(d2);
-                    v5.addVertex((float)(dx), (float)(dy), (float)(0));
+            collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> {
+                double a = renderOrigin;
+                for (F o : data.keySet()) {
+                    double angw = 360D * this.getFraction(o);
+                    double d2 = Math.toRadians(a);
+                    if (innerRadius == 0) {
+                        buffer.addVertex(pose, (float) centerX, (float) centerY, 0).setColor(0xff000000);
+                        double r2 = this.getOuterRadiusAt(d2);
+                        buffer.addVertex(pose, (float) (centerX + r2 * Math.cos(d2)), (float) (centerY + r2 * Math.sin(d2)), 0).setColor(0xff000000);
+                    } else {
+                        double r1 = this.getInnerRadiusAt(d2);
+                        double r2 = this.getOuterRadiusAt(d2);
+                        buffer.addVertex(pose, (float) (centerX + r1 * Math.cos(d2)), (float) (centerY + r1 * Math.sin(d2)), 0).setColor(0xff000000);
+                        buffer.addVertex(pose, (float) (centerX + r2 * Math.cos(d2)), (float) (centerY + r2 * Math.sin(d2)), 0).setColor(0xff000000);
+                    }
+                    a += angw;
                 }
-                else {
-                    double d2 = Math.toRadians(ang);
-                    double r1 = this.getInnerRadiusAt(d2);
-                    double r2 = this.getOuterRadiusAt(d2);
-                    double dx1 = centerX+r1*Math.cos(d2);
-                    double dy1 = centerY+r1*Math.sin(d2);
-                    double dx2 = centerX+r2*Math.cos(d2);
-                    double dy2 = centerY+r2*Math.sin(d2);
-                    v5.addVertex((float)(dx1), (float)(dy1), (float)(0));
-                    v5.addVertex((float)(dx2), (float)(dy2), (float)(0));
-                }
-                ang += angw;
-            }
-            var mesh = v5.buildOrThrow(); /* TODO 1.21 draw mesh */ mesh.close();
+            });
         }
-//        GL11.glPopAttrib();
     }
 
     public void save(CompoundTag NBT, ReikaNBTHelper.NBTIO<F> converter) {

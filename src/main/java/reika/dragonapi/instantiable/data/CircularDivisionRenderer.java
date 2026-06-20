@@ -1,9 +1,9 @@
 package reika.dragonapi.instantiable.data;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import reika.dragonapi.libraries.rendering.ReikaColorAPI;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.*;
 
@@ -55,12 +55,12 @@ public abstract class CircularDivisionRenderer<F> {
     }
 
 
-    public final void render() {
-        this.render(null);
+    public final void render(SubmitNodeCollector collector, PoseStack stack) {
+        this.render(collector, stack, null);
     }
 
 
-    public abstract void render(Map<F, Integer> colorMap);
+    public abstract void render(SubmitNodeCollector collector, PoseStack stack, Map<F, Integer> colorMap);
 
     public final void resetColors() {
         this.entryColors.clear();
@@ -104,32 +104,36 @@ public abstract class CircularDivisionRenderer<F> {
         return c;
     }
 
-    protected final void renderSection(BufferBuilder renderer, double ang1, double ang2) {
+    // 26.2: emitted as QUADS (RenderTypes.debugQuads) since TRIANGLE_FAN/STRIP immediate-mode is gone.
+    // Re-triangulate per 0.25° arc step into a degenerate quad; colour is set per-vertex.
+    protected final void renderSection(VertexConsumer renderer, PoseStack.Pose pose, int color, double ang1, double ang2) {
         if (innerRadius == 0) {
-            renderer.addVertex((float)centerX, (float)centerY, 0);
-            for (double d = ang1; d <= ang2; d += 0.25) {
-                double d2 = Math.toRadians(d);
-                double r2 = this.getOuterRadiusAt(d2);
-                double dx = centerX + r2 * Math.cos(d2);
-                double dy = centerY + r2 * Math.sin(d2);
-                renderer.addVertex((float)dx, (float)dy, 0);
+            double prev = ang1;
+            for (double d = ang1 + 0.25; d <= ang2 + 1e-9; d += 0.25) {
+                double pa = Math.toRadians(prev);
+                double da = Math.toRadians(d);
+                double rp = this.getOuterRadiusAt(pa);
+                double rd = this.getOuterRadiusAt(da);
+                renderer.addVertex(pose, (float) centerX, (float) centerY, 0).setColor(color);
+                renderer.addVertex(pose, (float) (centerX + rp * Math.cos(pa)), (float) (centerY + rp * Math.sin(pa)), 0).setColor(color);
+                renderer.addVertex(pose, (float) (centerX + rd * Math.cos(da)), (float) (centerY + rd * Math.sin(da)), 0).setColor(color);
+                renderer.addVertex(pose, (float) centerX, (float) centerY, 0).setColor(color);
+                prev = d;
             }
-            double d2 = Math.toRadians(ang2);
-            double r2 = this.getOuterRadiusAt(d2);
-            double dx = centerX + r2 * Math.cos(d2);
-            double dy = centerY + r2 * Math.sin(d2);
-            renderer.addVertex((float)dx, (float)dy, 0);
         } else {
-            for (double d = ang1; d <= ang2; d += 0.25) {
-                double d2 = Math.toRadians(d);
-                double r1 = this.getInnerRadiusAt(d2);
-                double r2 = this.getOuterRadiusAt(d2);
-                double dx1 = centerX + r1 * Math.cos(d2);
-                double dy1 = centerY + r1 * Math.sin(d2);
-                double dx2 = centerX + r2 * Math.cos(d2);
-                double dy2 = centerY + r2 * Math.sin(d2);
-                renderer.addVertex((float)dx1, (float)dy1, 0);
-                renderer.addVertex((float)dx2, (float)dy2, 0);
+            double prev = ang1;
+            for (double d = ang1 + 0.25; d <= ang2 + 1e-9; d += 0.25) {
+                double pa = Math.toRadians(prev);
+                double da = Math.toRadians(d);
+                double ip = this.getInnerRadiusAt(pa);
+                double op = this.getOuterRadiusAt(pa);
+                double id = this.getInnerRadiusAt(da);
+                double od = this.getOuterRadiusAt(da);
+                renderer.addVertex(pose, (float) (centerX + ip * Math.cos(pa)), (float) (centerY + ip * Math.sin(pa)), 0).setColor(color);
+                renderer.addVertex(pose, (float) (centerX + op * Math.cos(pa)), (float) (centerY + op * Math.sin(pa)), 0).setColor(color);
+                renderer.addVertex(pose, (float) (centerX + od * Math.cos(da)), (float) (centerY + od * Math.sin(da)), 0).setColor(color);
+                renderer.addVertex(pose, (float) (centerX + id * Math.cos(da)), (float) (centerY + id * Math.sin(da)), 0).setColor(color);
+                prev = d;
             }
         }
     }

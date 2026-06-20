@@ -1,11 +1,8 @@
 package reika.dragonapi.instantiable.rendering;
 
-import com.mojang.blaze3d.platform.SourceFactor;
-import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;

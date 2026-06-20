@@ -1,47 +1,39 @@
 package reika.dragonapi.libraries.rendering;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.TerrainParticle;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.util.LightCoordsUtil;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.interfaces.TileModel;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
 import reika.dragonapi.libraries.mathsci.ReikaPhysicsHelper;
 
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
 
+// 26.2: Tesselator and MultiBufferSource were removed. World geometry is now submitted through the
+// feature pipeline via SubmitNodeCollector#submitCustomGeometry, which hands the lambda a
+// PoseStack.Pose (snapshot of the transform) and the RenderType's VertexConsumer. The draw helpers
+// therefore take a SubmitNodeCollector obtained from the caller's render context (BER submit, level
+// render event, etc.).
 public class ReikaRenderHelper {
 
-    static RenderType type;
     private static boolean entityLighting;
     private static boolean generalLighting;
     private static float ptick = -1;
@@ -49,53 +41,25 @@ public class ReikaRenderHelper {
 
     private static int frame = -1;
 
-    private static void draw(RenderType type, BufferBuilder buffer) {
-        MeshData mesh = buffer.build();
-        if (mesh != null) {
-            type.draw(mesh);
-        }
+    /**
+     * Renders a flat circle in the world. Args: collector, radius, center x,y,z, RGBA, angle step
+     */
+    public static void renderCircle(SubmitNodeCollector collector, double r, double x, double y, double z, int rgba, int step) {
+        renderCircle(collector, new PoseStack(), r, x, y, z, rgba, step);
     }
 
-    /**
-     * Converts a biome to a color multiplier (for use in things like leaf textures).
-     * Args: Level, x, z, material (grass, water, etc), bit
-     * public static float biomeToColorMultiplier(Level world, int x, int y, int z, Material mat, int bit) {
-     * int[] color = ReikaBiomeHelper.biomeToRGB(world, x, y, z, mat);
-     * float mult = ReikaColorAPI.RGBtoColorMultiplier(color, bit);
-     * return mult;
-     * }
-     */
-
-    /**
-     * Renders a flat circle in the world. Args: radius, center x,y,z, RGBA, angle step
-     */
-    /**
-     * Renders a flat circle in the world. Args: radius, center x,y,z, RGBA, angle step
-     */
-    public static void renderCircle(double r, double x, double y, double z, int rgba, int step) {
-        renderCircle(new PoseStack(), r, x, y, z, rgba, step);
-    }
-
-    public static void renderCircle(PoseStack stack, double r, double x, double y, double z, int rgba, int step) {
-        //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        RenderType type = net.minecraft.client.renderer.rendertype.RenderTypes.lines();
-        // In 1.21, Tesselator.getInstance().begin() returns a BufferBuilder.
-        // We need to ensure we are using the correct mode and format.
-        // debugLineStrip uses Mode.LINE_STRIP and POSITION_COLOR.
-        BufferBuilder renderer = Tesselator.getInstance().begin(type.mode(), type.format());
-        
-        int red = (rgba >> 16) & 0xFF;
-        int green = (rgba >> 8) & 0xFF;
-        int blue = rgba & 0xFF;
-        int alpha = (rgba >> 24) & 0xFF;
-        Matrix4f matrix = stack.last().pose();
-        for (int i = 0; i < 360; i += step) {
-            double a = Math.toRadians(i);
-            renderer.addVertex(matrix, (float)(x + r * Math.cos(a)), (float)y, (float)(z + r * Math.sin(a)))
-                    .setColor(red, green, blue, alpha);
-        }
-        draw(type, renderer);
-        //GL11.glDisable(GL12.GL_RESCALE_NORMAL);
+    public static void renderCircle(SubmitNodeCollector collector, PoseStack stack, double r, double x, double y, double z, int rgba, int step) {
+        final int red = (rgba >> 16) & 0xFF;
+        final int green = (rgba >> 8) & 0xFF;
+        final int blue = rgba & 0xFF;
+        final int alpha = (rgba >> 24) & 0xFF;
+        collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> {
+            for (int i = 0; i < 360; i += step) {
+                double a = Math.toRadians(i);
+                buffer.addVertex(pose, (float) (x + r * Math.cos(a)), (float) y, (float) (z + r * Math.sin(a)))
+                        .setColor(red, green, blue, alpha);
+            }
+        });
     }
 
     public static void spawnDropParticles(ClientLevel world, BlockPos pos, Block b) {
@@ -117,41 +81,30 @@ public class ReikaRenderHelper {
     }
 
     /**
-     * Renders a vertical-plane circle in the world. Args: radius, center x,y,z, RGBA, phi, angle step
+     * Renders a vertical-plane circle in the world. Args: collector, radius, center x,y,z, RGBA, phi, angle step
      */
-    public static void renderVCircle(double r, double x, double y, double z, int rgba, double phi, int step) {
-        renderVCircle(new PoseStack(), r, x, y, z, rgba, phi, step);
+    public static void renderVCircle(SubmitNodeCollector collector, double r, double x, double y, double z, int rgba, double phi, int step) {
+        renderVCircle(collector, new PoseStack(), r, x, y, z, rgba, phi, step);
     }
 
-    public static void renderVCircle(PoseStack stack, double r, double x, double y, double z, int rgba, double phi, int step) {
-        //GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        RenderType type = net.minecraft.client.renderer.rendertype.RenderTypes.lines();
-        BufferBuilder renderer = Tesselator.getInstance().begin(type.mode(), type.format());
-
-        int red = (rgba >> 16) & 0xFF;
-        int green = (rgba >> 8) & 0xFF;
-        int blue = rgba & 0xFF;
-        int alpha = (rgba >> 24) & 0xFF;
-        Matrix4f matrix = stack.last().pose();
-        
-        for (int i = 0; i < 360; i += step) {
-            int sign = 1;
-            double h = r * Math.cos(ReikaPhysicsHelper.degToRad(i));
-            if (i >= 180)
-                sign = -1;
-            float vx = (float)(x - Math.sin(Math.toRadians(phi)) * (sign) * (Math.sqrt(r * r - h * h)));
-            float vy = (float)(y + r * Math.cos(Math.toRadians(i)));
-            float vz = (float)(z + r * Math.sin(Math.toRadians(i)) * Math.cos(Math.toRadians(phi)));
-            renderer.addVertex(matrix, vx, vy, vz).setColor(red, green, blue, alpha);
-        }
-
-        draw(type, renderer);
-        //GL11.glDisable(GL12.GL_RESCALE_NORMAL);
+    public static void renderVCircle(SubmitNodeCollector collector, PoseStack stack, double r, double x, double y, double z, int rgba, double phi, int step) {
+        final int red = (rgba >> 16) & 0xFF;
+        final int green = (rgba >> 8) & 0xFF;
+        final int blue = rgba & 0xFF;
+        final int alpha = (rgba >> 24) & 0xFF;
+        collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> {
+            for (int i = 0; i < 360; i += step) {
+                int sign = 1;
+                double h = r * Math.cos(ReikaPhysicsHelper.degToRad(i));
+                if (i >= 180)
+                    sign = -1;
+                float vx = (float) (x - Math.sin(Math.toRadians(phi)) * (sign) * (Math.sqrt(r * r - h * h)));
+                float vy = (float) (y + r * Math.cos(Math.toRadians(i)));
+                float vz = (float) (z + r * Math.sin(Math.toRadians(i)) * Math.cos(Math.toRadians(phi)));
+                buffer.addVertex(pose, vx, vy, vz).setColor(red, green, blue, alpha);
+            }
+        });
     }
-
-//    public static void rerenderAllChunks() {
-//        Minecraft.getInstance().gameRenderer.loadRenderers();
-//    }
 
     public static void rerenderAllChunksLazily() {
         Level world = Minecraft.getInstance().level;
@@ -165,26 +118,20 @@ public class ReikaRenderHelper {
     }
 
     /**
-     * Renders a line between two points in the world. Args: Start xyz, End xyz, rgb
+     * Renders a line between two points in the world. Args: collector, stack, Start xyz, End xyz, rgb
      */
-    public static void renderLine(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int[] color) {
-        RenderType renderType = net.minecraft.client.renderer.rendertype.RenderTypes.lines();
-        BufferBuilder renderer = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
-        
-        renderer.addVertex(stack.last().pose(), (float) x1, (float) y1, (float) z1)
-                .setColor(color[0], color[1], color[2], color[3])
-                .setNormal(stack.last(), 1, 1, 1);
-        renderer.addVertex(stack.last().pose(), (float) x2, (float) y2, (float) z2)
-                .setColor(color[0], color[1], color[2], color[3])
-                .setNormal(stack.last(), 1, 1, 1);
-        
-        draw(renderType, renderer);
-        
+    public static void renderLine(SubmitNodeCollector collector, PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int[] color) {
+        collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> {
+            buffer.addVertex(pose, (float) x1, (float) y1, (float) z1)
+                    .setColor(color[0], color[1], color[2], color[3])
+                    .setNormal(pose, 1, 1, 1);
+            buffer.addVertex(pose, (float) x2, (float) y2, (float) z2)
+                    .setColor(color[0], color[1], color[2], color[3])
+                    .setNormal(pose, 1, 1, 1);
+        });
     }
 
-    public static void renderTube(PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int c1, int c2, double r1, double r2, int sides) {
-        Tesselator tessellator = Tesselator.getInstance();
-
+    public static void renderTube(SubmitNodeCollector collector, PoseStack stack, double x1, double y1, double z1, double x2, double y2, double z2, int c1, int c2, double r1, double r2, int sides) {
         double dx = x2 - x1;
         double dy = y2 - y1;
         double dz = z2 - z1;
@@ -192,51 +139,33 @@ public class ReikaRenderHelper {
         stack.pushPose();
         stack.translate(x1, y1, z1);
 
-        //ReikaJavaLibrary.pConsole(x1+","+y1+","+z1+"  >  "+x2+","+y2+","+z2);
-
         double f7 = Math.sqrt(dx * dx + dz * dz);
-        double f8 = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        final double f8 = Math.sqrt(dx * dx + dy * dy + dz * dz);
         double ang1 = -Math.atan2(dz, dx) * 180 / Math.PI - 90;
         double ang2 = -Math.atan2(f7, dy) * 180 / Math.PI - 90;
         stack.mulPose(Axis.YP.rotationDegrees((float) ang1));
         stack.mulPose(Axis.XP.rotationDegrees((float) ang2));
 
-        RenderType renderType = net.minecraft.client.renderer.rendertype.RenderTypes.leash();
-        BufferBuilder renderer = tessellator.begin(renderType.mode(), renderType.format());
-        Matrix4f matrix = stack.last().pose();
-        
-        for (int i = 0; i <= sides; i++) {
-            double f11a = r1 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
-            double f12a = r1 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
-            double f11b = r2 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
-            double f12b = r2 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
-            double f13 = i % sides / (double) sides;
-            renderer.addVertex(matrix, (float)f11a, (float)f12a, 0F)
-                    .setColor(c1 & 0xff, (c1 >> 8) & 0xff, (c1 >> 16) & 0xff, (c1 >> 24) & 0xff)
-                    .setLight(LightCoordsUtil.FULL_BRIGHT);
-            renderer.addVertex(matrix, (float)f11b, (float)f12b, (float)f8)
-                    .setColor(c2 & 0xff, (c2 >> 8) & 0xff, (c2 >> 16) & 0xff, (c2 >> 24) & 0xff)
-                    .setLight(LightCoordsUtil.FULL_BRIGHT);
-        }
-        draw(renderType, renderer);
-
+        // Snapshot the transformed pose; the submitted geometry is drawn after we pop the stack.
+        PoseStack snap = new PoseStack();
+        snap.last().set(stack.last());
         stack.popPose();
-    }
 
-	/*
-	public static void updateAllWorldRenderers() {
-		try {
-			Field f = RenderGlobal.class.getDeclaredField("worldRenderers");
-			f.setAccessible(true);
-			WorldRenderer[] w = (WorldRenderer[])f.get(Minecraft.getInstance().renderGlobal);
-			for (int i = 0; i < w.length; i++) {
-				w[i].markDirty();
-			}
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-	}*/
+        collector.submitCustomGeometry(snap, RenderTypes.leash(), (pose, buffer) -> {
+            for (int i = 0; i <= sides; i++) {
+                double f11a = r1 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
+                double f12a = r1 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
+                double f11b = r2 * Math.sin(i % sides * Math.PI * 2 / sides) * 0.75;
+                double f12b = r2 * Math.cos(i % sides * Math.PI * 2 / sides) * 0.75;
+                buffer.addVertex(pose, (float) f11a, (float) f12a, 0F)
+                        .setColor(c1 & 0xff, (c1 >> 8) & 0xff, (c1 >> 16) & 0xff, (c1 >> 24) & 0xff)
+                        .setLight(LightCoordsUtil.FULL_BRIGHT);
+                buffer.addVertex(pose, (float) f11b, (float) f12b, (float) f8)
+                        .setColor(c2 & 0xff, (c2 >> 8) & 0xff, (c2 >> 16) & 0xff, (c2 >> 24) & 0xff)
+                        .setLight(LightCoordsUtil.FULL_BRIGHT);
+            }
+        });
+    }
 
     public static void disableLighting() {
 //       todo Minecraft.getInstance().entityentityRenderer.disableLightmap(1);
@@ -278,16 +207,15 @@ public class ReikaRenderHelper {
     }
 
     /**
-     * Renders a rectangle in-world. Args: r,g,b,a, Start x,y,z, End x,y,z
+     * Renders a rectangle in-world. Args: collector, r,g,b,a, Start x,y,z, End x,y,z
      */
-    public static void renderRectangle(int r, int g, int b, int a, double x1, double y1, double z1, double x2, double y2, double z2) {
-        RenderType type = net.minecraft.client.renderer.rendertype.RenderTypes.debugQuads();
-        var renderer = Tesselator.getInstance().begin(type.mode(), type.format());
-        renderer.addVertex((float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
-        renderer.addVertex((float)x2, (float)y1, (float)z2).setColor(r, g, b, a);
-        renderer.addVertex((float)x2, (float)y2, (float)z2).setColor(r, g, b, a);
-        renderer.addVertex((float)x1, (float)y2, (float)z1).setColor(r, g, b, a);
-        draw(type, renderer);
+    public static void renderRectangle(SubmitNodeCollector collector, int r, int g, int b, int a, double x1, double y1, double z1, double x2, double y2, double z2) {
+        collector.submitCustomGeometry(new PoseStack(), RenderTypes.debugQuads(), (pose, buffer) -> {
+            buffer.addVertex(pose, (float) x1, (float) y1, (float) z1).setColor(r, g, b, a);
+            buffer.addVertex(pose, (float) x2, (float) y1, (float) z2).setColor(r, g, b, a);
+            buffer.addVertex(pose, (float) x2, (float) y2, (float) z2).setColor(r, g, b, a);
+            buffer.addVertex(pose, (float) x1, (float) y2, (float) z1).setColor(r, g, b, a);
+        });
     }
 
     public static int getRealFOV() {
@@ -298,33 +226,17 @@ public class ReikaRenderHelper {
         return (int) ang;
     }
 
-    public static void renderEnchantedModel(BlockEntity tile, TileModel model, ArrayList li, float rotation, PoseStack stack, MultiBufferSource source) {
-        // int x = tile.getBlockPos().getX();
-        // int y = tile.getBlockPos().getY();
-        // int z = tile.getBlockPos().getZ();
+    public static void renderEnchantedModel(BlockEntity tile, TileModel model, ArrayList li, float rotation, PoseStack stack, SubmitNodeCollector collector) {
         float f9 = (System.nanoTime() / 100000000) % 64 / 64F;
-        
-        // ReikaTextureHelper.bindEnchantmentTexture(); // Handled by net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent()
-
-        // source.getBuffer(type); // Not needed if we get specific buffer later
 
         stack.pushPose();
         stack.translate(f9, f9, f9);
-        
-        // GL11.glDepthFunc(GL11.GL_LEQUAL); // RenderSystem.depthFunc(GL11.GL_LEQUAL);
-        // But usually we don't mess with depth func in mod code unless necessary.
-        // net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent() handles its own state.
 
         stack.translate(0, 2, 2);
         stack.scale(1.0F, -1.0F, -1.0F);
         stack.translate(0.5F, 0.5F, 0.5F);
-        
-        stack.mulPose(Axis.YP.rotationDegrees(rotation));
-        
-        // GL11.glDepthMask(false); // RenderSystem.depthMask(false);
-        // Again, RenderType handles this.
 
-        // GL11.glDisable(GL11.GL_LIGHTING); // No-op
+        stack.mulPose(Axis.YP.rotationDegrees(rotation));
 
         double d = 1.0125;
         int p = 2;
@@ -332,31 +244,19 @@ public class ReikaRenderHelper {
         stack.scale((float) d, (float) d, (float) d);
         stack.translate(0, -p, 0);
 
-        VertexConsumer vertexconsumer = source.getBuffer(net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent());
-        // We need to pass the packed overlay and light. 
-        // For enchantment glint, usually light is ignored or full bright?
-        // Let's use the tile's light if possible, or full bright.
-        int light = LightCoordsUtil.FULL_BRIGHT; 
-        int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
-        
-        // TileModel.renderAll needs to be updated to accept light/overlay if it doesn't already
-        // Assuming it takes (PoseStack, VertexConsumer, int light, BlockEntity, ArrayList)
-        model.renderAll(stack, vertexconsumer, light, tile, li);
+        // Snapshot the transformed pose so the deferred submit draws with it after we pop.
+        final PoseStack snap = new PoseStack();
+        snap.last().set(stack.last());
 
         stack.translate(0, p, 0);
         stack.scale((float) (1D / d), (float) (1D / d), (float) (1D / d));
         stack.translate(0, -p, 0);
-
-        // GL11.glLoadIdentity(); // This would clear the matrix, which is bad for PoseStack!
-        // stack.popPose() handles restoring the state.
-
-        // GL11.glDepthMask(true);
-        // GL11.glEnable(GL11.GL_LIGHTING);
-        // GL11.glPopMatrix();
-        // GL11.glDepthFunc(GL11.GL_LEQUAL);
-
         stack.popPose();
-        // GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F); // RenderSystem.setShaderColor(1,1,1,1);
+
+        final int light = LightCoordsUtil.FULL_BRIGHT;
+        collector.submitCustomGeometry(snap, RenderTypes.glintTranslucent(), (pose, buffer) -> {
+            model.renderAll(snap, buffer, light, tile, li);
+        });
     }
 
     public static long getRenderFrame() {
@@ -380,11 +280,7 @@ public class ReikaRenderHelper {
     }
 
     private static Matrix4f getMatrix(int id) {
-        // FloatBuffer buf = BufferUtils.createFloatBuffer(16);
-        // GL11.glGetFloat(id); //id, buf   //TODO this might be broken as its GL11 stuff
-        // buf.rewind();
         Matrix4f mat = new Matrix4f();
-        // mat.set(buf);
         return mat; // Return identity for now to prevent crashes
     }
 
@@ -414,5 +310,3 @@ public class ReikaRenderHelper {
     }
 
 }
-
-

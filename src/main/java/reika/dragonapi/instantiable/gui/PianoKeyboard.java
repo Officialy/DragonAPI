@@ -20,12 +20,12 @@ import net.minecraft.resources.Identifier;
 // Removed IForgeGuiGraphics and ScreenUtils - no longer exist in NeoForge
 
 import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gui.Gui;
 import reika.dragonapi.libraries.rendering.ReikaGuiAPI;
 
 
-public class PianoKeyboard extends Gui {
+// 26.2: was mis-ported as `extends Gui` (the HUD) purely for a super(Minecraft) call it never used.
+// Gui's ctor is now (Minecraft, Hud, GuiRenderState); this keyboard widget needs none of that.
+public class PianoKeyboard {
 
     public final int guiX;
     public final int guiY;
@@ -49,7 +49,6 @@ public class PianoKeyboard extends Gui {
     };
 
     public PianoKeyboard(int x, int y, MusicGui gui) {
-        super(Minecraft.getInstance());
         guiX = x;
         guiY = y;
         guiInstance = gui;
