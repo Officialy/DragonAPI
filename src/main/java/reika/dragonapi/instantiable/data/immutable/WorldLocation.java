@@ -32,15 +32,17 @@ import java.util.Objects;
 
 public class WorldLocation implements Location, Comparable<WorldLocation> {
 
-    public final BlockPos pos = BlockPos.ZERO;
+    public final BlockPos pos;
 
     private boolean isRemote = false;
 
     private Level clientWorld;
 
-    private final ResourceKey<Level> dimension = Minecraft.getInstance().level.dimension();
+    private final ResourceKey<Level> dimension;
 
-    public WorldLocation(Level level, BlockPos pos) {
+    public WorldLocation(Level level, BlockPos position) {
+        this.pos = position.immutable();
+        this.dimension = level.dimension();
         if (level.isClientSide()) {
             isRemote = true;
             clientWorld = level;
@@ -76,9 +78,8 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public WorldLocation(ResourceKey<Level> world, double x, double y, double z) {
-        this(
-                ServerLifecycleHooks.getCurrentServer().getLevel(world),
-                new BlockPos(Mth.floor(x), Mth.floor(y), Mth.floor(z)));
+        this.pos = BlockPos.containing(x, y, z);
+        this.dimension = world;
     }
 
     public static int coordHash(BlockPos pos) {
@@ -209,7 +210,12 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
             this.initClientWorld();
             return clientWorld;
         }
-        assert Minecraft.getInstance().level != null;
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            Level level = server.getLevel(dimension);
+            if (level != null)
+                return level;
+        }
         return Minecraft.getInstance().level;
     }
 
@@ -297,7 +303,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     private boolean equals(ResourceKey<Level> dim, BlockPos pos) {
-        return dim == dimension && this.pos == pos;
+        return dim == dimension && this.pos.equals(pos);
     }
 
     public boolean equals(Level world, BlockPos pos) {

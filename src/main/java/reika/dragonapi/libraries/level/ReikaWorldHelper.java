@@ -973,6 +973,20 @@ public class ReikaWorldHelper {
         return b != null;
     }
 
+    /** 1.7.10 coord API bridged for multiblocks not yet on BlockPos everywhere. */
+    public static Block getBlock(BlockGetter world, int x, int y, int z) {
+        return world.getBlockState(new BlockPos(x, y, z)).getBlock();
+    }
+
+    /** MULTIBLOCK-PORT: returns 0 until multiblock blocks expose variant in BlockState. */
+    public static int getBlockMetadata(BlockGetter world, int x, int y, int z) {
+        return 0;
+    }
+
+    /** MULTIBLOCK-PORT: metadata writes become blockstate updates when multiblocks land on DeferredRegister. */
+    public static void setBlockMetadataWithNotify(Level world, int x, int y, int z, int meta, int flags) {
+    }
+
     /**
      * Returns true if a block can see an point. Args: World, block x,y,z, Point x,y,z, Max Range
      */
