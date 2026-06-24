@@ -11,6 +11,7 @@ package reika.dragonapi.base;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -31,6 +32,12 @@ public abstract class InertEntity extends Entity {
      *  itself rather than as an arrow. */
     public InertEntity(EntityType<? extends Entity> type, Level par1World) {
         super(type, par1World);
+    }
+
+    /** Inert particle entities take no damage. */
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        return false;
     }
 
     /**
