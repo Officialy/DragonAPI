@@ -18,9 +18,18 @@ public class RegistrationException extends DragonAPIException {
     }
 
     public RegistrationException(DragonAPIMod mod, String msg, Throwable e) {
-        message.append(mod.getTechnicalName()).append(" has a registration error:\n");
+        this(mod.getTechnicalName(), mod.getModAuthorName(), msg, e);
+    }
+
+    // String-based overloads for mods that do not extend DragonAPIMod (e.g. the NeoForge ReactorCraft main class).
+    public RegistrationException(String modName, String msg) {
+        this(modName, "Reika", msg, null);
+    }
+
+    public RegistrationException(String modName, String authorName, String msg, Throwable e) {
+        message.append(modName).append(" has a registration error:\n");
         message.append(msg).append("\n");
-        message.append("Contact ").append(mod.getModAuthorName()).append(" immediately!\n");
+        message.append("Contact ").append(authorName).append(" immediately!\n");
         message.append("Include the following information:");
         if (e != null)
             this.initCause(e);
