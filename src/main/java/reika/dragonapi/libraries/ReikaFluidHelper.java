@@ -74,5 +74,10 @@ public class ReikaFluidHelper {
         return fluidState.isEmpty() ? null : fluidState.getType();
     }
 
+    /** The fluid contained in a fluid-container item (bucket, tank, etc.), or {@link net.neoforged.neoforge.fluids.FluidStack#EMPTY}. */
+    public static net.neoforged.neoforge.fluids.FluidStack getFluidForItem(net.minecraft.world.item.ItemStack is) {
+        return net.neoforged.neoforge.fluids.FluidUtil.getFluidContained(is).orElse(net.neoforged.neoforge.fluids.FluidStack.EMPTY);
+    }
+
 }
 

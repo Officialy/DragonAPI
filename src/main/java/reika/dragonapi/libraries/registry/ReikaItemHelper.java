@@ -500,4 +500,24 @@ public class ReikaItemHelper {
         return new BlockKey(Block.byItem(is.getItem()));
     }
 
+    /**
+     * 26.2 port of the legacy OreDictionary membership check. Maps a legacy ore name to the modern
+     * common-tag convention (e.g. "gemFluorite" -> c:gems/fluorite) and tests the stack's tags.
+     */
+    public static boolean isInOreTag(ItemStack is, String ore) {
+        if (is.isEmpty() || ore == null || ore.isEmpty())
+            return false;
+        int i = 0;
+        while (i < ore.length() && Character.isLowerCase(ore.charAt(i)))
+            i++;
+        String category = ore.substring(0, i);
+        String material = ore.substring(i).toLowerCase(java.util.Locale.ROOT);
+        if (category.isEmpty() || material.isEmpty())
+            return false;
+        net.minecraft.tags.TagKey<Item> tag = net.minecraft.tags.TagKey.create(
+                net.minecraft.core.registries.Registries.ITEM,
+                Identifier.fromNamespaceAndPath("c", category + "s/" + material));
+        return is.is(tag);
+    }
+
 }
