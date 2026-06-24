@@ -9,9 +9,13 @@
  ******************************************************************************/
 package reika.dragonapi.libraries.mathsci;
 
+import java.util.ArrayList;
+
 import net.minecraft.ChatFormatting;
 
-public enum Isotopes {
+import reika.dragonapi.libraries.java.ReikaJavaLibrary;
+
+public enum Isotopes implements ChemicalElement {
 
     C14(5730, ReikaTimeHelper.YEAR, "Carbon-14", ElementGroup.NONMETAL),
     U235(704e6, ReikaTimeHelper.YEAR, "Uranium-235", ElementGroup.LANTHACTINIDE),
@@ -75,6 +79,22 @@ public enum Isotopes {
         group = g;
     }
 
+    private DecayData decay;
+
+    @Override
+    public int getAtomicWeight() {
+        return Integer.parseInt(name.substring(name.indexOf('-') + 1));
+    }
+
+    @Override
+    public String getChemicalSymbol() {
+        return this.name().replaceAll("[0-9]", "");
+    }
+
+    public DecayData getDecay() {
+        return decay;
+    }
+
     public static Isotopes getIsotope(int i) {
         return isoList[i];
     }
@@ -124,5 +144,64 @@ public enum Isotopes {
         ElementGroup(String n) {
             displayName = n;
         }
+    }
+
+    public static class DecayData {
+
+        public final ChemicalElement isotope;
+        public final double amount;
+
+        private DecayData(ChemicalElement iso, double amt) {
+            isotope = iso;
+            amount = amt;
+        }
+
+    }
+
+    static {
+        for (Isotopes s : isoList) {
+            s.decay = computeDecayData(s);
+        }
+    }
+
+    private static ChemicalElement lead(int weight) {
+        return new ChemicalElement() {
+            @Override
+            public int getAtomicWeight() {
+                return weight;
+            }
+
+            @Override
+            public String getChemicalSymbol() {
+                return "Pb";
+            }
+        };
+    }
+
+    private static DecayData computeDecayData(Isotopes s) {
+        ArrayList<ChemicalElement> li = new ArrayList(ReikaJavaLibrary.makeListFromArray(isoList));
+        li.add(lead(204));
+        li.add(lead(206));
+        li.add(lead(207));
+        li.add(lead(208));
+        int w = s.getAtomicWeight();
+        for (ChemicalElement s2 : li) {
+            if (s2.getAtomicWeight() == w + 1) {
+                return new DecayData(s2, 1);
+            }
+        }
+        for (ChemicalElement s2 : li) {
+            if (s2.getAtomicWeight() == w + 2) {
+                return new DecayData(s2, 0.5);
+            }
+        }
+        ChemicalElement use = null;
+        for (ChemicalElement s2 : li) {
+            if ((s2 instanceof Isotopes && s2 == s) || s2.getAtomicWeight() > w - 3)
+                continue;
+            if (use == null || s2.getAtomicWeight() > use.getAtomicWeight())
+                use = s2;
+        }
+        return use == null ? null : new DecayData(use, w / (double)use.getAtomicWeight());
     }
 }
