@@ -1,5 +1,7 @@
 package reika.dragonapi.libraries.level;
 
+import java.util.ArrayList;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -64,6 +66,7 @@ import reika.dragonapi.libraries.ReikaFluidHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.io.ReikaSoundHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
+import reika.dragonapi.instantiable.data.immutable.BlockKey;
 import reika.dragonapi.libraries.mathsci.ReikaVectorHelper;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
@@ -1120,6 +1123,15 @@ public class ReikaWorldHelper {
                 e.printStackTrace();
             }
         }
+    }
+
+    /** Returns the {@link BlockKey} of every block the line from (x1,y1,z1) to (x2,y2,z2) passes through. */
+    public static ArrayList<BlockKey> getBlocksAlongVector(Level world, double x1, double y1, double z1, double x2, double y2, double z2) {
+        ArrayList<BlockKey> li = new ArrayList<>();
+        for (BlockPos pos : ReikaVectorHelper.getCoordsAlongVector((int)x1, (int)y1, (int)z1, (int)x2, (int)y2, (int)z2)) {
+            li.add(new BlockKey(world.getBlockState(pos)));
+        }
+        return li;
     }
 }
 
