@@ -200,14 +200,20 @@ public class ReikaVectorHelper {
 
     public static HashSet<BlockPos> getCoordsAlongVector(int x1, int y1, int z1, int x2, int y2, int z2) {
         HashSet<BlockPos> set = new HashSet<>();
-        int dd = (int) ReikaMathLibrary.py3d(x2 - x1, y2 - y1, z2 - z1); //todo check if this works
-        for (int d = 0; d <= dd; d += 0.25) {
-            int f = d / dd;
-            int dx = x1 + f * (x2 - x1);
-            int dy = y1 + f * (y2 - y1);
-            int dz = z1 + f * (z2 - z1);
-            BlockPos c = new BlockPos(dx, dy, dz);
-            set.add(c);
+        double dd = ReikaMathLibrary.py3d(x2 - x1, y2 - y1, z2 - z1);
+        // Bug fix: counter + step were both int, so `d += 0.25` truncated to +0 — the loop never
+        // advanced and re-added the same BlockPos forever (infinite loop; froze the server during a
+        // reactor meltdown via RadiationEffects.contaminateArea). Step in doubles and round each point.
+        if (dd <= 0) {
+            set.add(new BlockPos(x1, y1, z1));
+            return set;
+        }
+        for (double d = 0; d <= dd; d += 0.25) {
+            double f = d / dd;
+            int dx = (int) Math.round(x1 + f * (x2 - x1));
+            int dy = (int) Math.round(y1 + f * (y2 - y1));
+            int dz = (int) Math.round(z1 + f * (z2 - z1));
+            set.add(new BlockPos(dx, dy, dz));
         }
         return set;
     }
