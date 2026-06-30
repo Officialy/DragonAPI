@@ -77,13 +77,24 @@ public final class TileEntityCache<V> {
 	}
 
 	public void readFromNBT(CompoundTag tag) {
+		this.readFromNBT(tag, null);
+	}
+
+	/**
+	 * @param world the level to resolve the cached block entities against. Pass the OWNING tile's level
+	 *              (e.g. the client level when reading a sync packet client-side) — otherwise
+	 *              {@link WorldLocation#getWorld()} resolves NBT-read locations to the integrated SERVER
+	 *              level, and a cross-thread {@code getBlockEntity} from the client returns null, leaving
+	 *              the cache empty (the CPU control-rod grid then shows no cells).
+	 */
+	public void readFromNBT(CompoundTag tag, net.minecraft.world.level.Level world) {
 		data.clear();
 		ListTag li = tag.getList("locs").orElse(new ListTag());
 		for (Tag o : li) {
 			if (!(o instanceof CompoundTag entry))
 				continue;
 			WorldLocation loc = WorldLocation.readTag(entry);
-			BlockEntity te = loc.getBlockEntity(loc.getWorld());
+			BlockEntity te = loc.getBlockEntity(world != null ? world : loc.getWorld());
 			try {
 				@SuppressWarnings("unchecked")
 				V v = (V) te;
