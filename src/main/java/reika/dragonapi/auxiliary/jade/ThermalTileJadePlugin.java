@@ -43,15 +43,17 @@ public class ThermalTileJadePlugin implements IWailaPlugin {
 
     @Override
     public void register(IWailaCommonRegistration registration) {
-        registration.registerBlockDataProvider(TemperatureProvider.INSTANCE, Block.class);
+        registration.registerBlockDataProvider(ServerData.INSTANCE, Block.class);
     }
 
     @Override
     public void registerClient(IWailaClientRegistration registration) {
-        registration.registerBlockComponent(TemperatureProvider.INSTANCE, Block.class);
+        registration.registerBlockComponent(Component_.INSTANCE, Block.class);
     }
 
-    private enum TemperatureProvider implements IBlockComponentProvider, IServerDataProvider<BlockAccessor> {
+    // Jade 1.21.6+ forbids a single provider from implementing both IComponentProvider and
+    // IServerDataProvider — they must be separate classes (server-side data vs client-side tooltip).
+    private enum ServerData implements IServerDataProvider<BlockAccessor> {
         INSTANCE;
 
         @Override
@@ -59,6 +61,15 @@ public class ThermalTileJadePlugin implements IWailaPlugin {
             if (accessor.getBlockEntity() instanceof ThermalTile t)
                 data.putInt(TAG, t.getTemperature());
         }
+
+        @Override
+        public Identifier getUid() {
+            return UID;
+        }
+    }
+
+    private enum Component_ implements IBlockComponentProvider {
+        INSTANCE;
 
         @Override
         public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
