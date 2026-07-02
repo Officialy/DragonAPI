@@ -9,6 +9,7 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable;
 
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
 import net.minecraft.nbt.CompoundTag;
 
@@ -87,8 +88,8 @@ public final class StepTimer {
 	}
 
 	protected void readSyncTag(CompoundTag NBT, String id) {
-        cap = reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, id + "cap", cap);
-        value = reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, id + "tick", value);
+        cap = NBTCompat.getInt(NBT, id + "cap", cap);
+        value = NBTCompat.getInt(NBT, id + "tick", value);
 	}
 
 }

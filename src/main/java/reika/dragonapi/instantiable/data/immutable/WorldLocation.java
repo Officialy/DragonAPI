@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -25,6 +26,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import reika.dragonapi.interfaces.Location;
 import reika.dragonapi.libraries.ReikaAABBHelper;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
@@ -185,7 +187,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public void dropItem(ItemStack is, double vscale) {
         Level world = this.getWorld();
         if (world != null && !world.isClientSide()) {
-            world.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), is)); // .dropItem(this.getWorld(),
+            world.addFreshEntity(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), is)); // .dropItem(this.getWorld(),
                                                          // pos.getX()+rand.nextDouble(),
                                                          // pos.getY()+rand.nextDouble(),
                                                          // pos.getZ()+rand.nextDouble(), is,
@@ -239,10 +241,10 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public static WorldLocation readTag(CompoundTag data) {
-        int x = reika.dragonapi.libraries.io.NBTCompat.getInt(data, "x", 0);
-        int y = reika.dragonapi.libraries.io.NBTCompat.getInt(data, "y", 0);
-        int z = reika.dragonapi.libraries.io.NBTCompat.getInt(data, "z", 0);
-        String dim = reika.dragonapi.libraries.io.NBTCompat.getString(data, "dim", "minecraft:overworld");
+        int x = NBTCompat.getInt(data, "x", 0);
+        int y = NBTCompat.getInt(data, "y", 0);
+        int z = NBTCompat.getInt(data, "z", 0);
+        String dim = NBTCompat.getString(data, "dim", "minecraft:overworld");
         return new WorldLocation(
                 ResourceKey.create(Registries.DIMENSION, Identifier.tryParse(dim)),
                 x,
@@ -252,7 +254,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
 
     public static WorldLocation load(String tag, CompoundTag NBT) {
         if (!NBT.contains(tag)) return null;
-        CompoundTag data = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, tag);
+        CompoundTag data = NBTCompat.getCompound(NBT, tag);
         if (data != null) {
             return readTag(data);
         }

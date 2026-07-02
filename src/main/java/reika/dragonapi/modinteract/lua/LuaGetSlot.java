@@ -9,8 +9,10 @@
  ******************************************************************************/
 package reika.dragonapi.modinteract.lua;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 
@@ -31,7 +33,7 @@ public class LuaGetSlot extends LuaMethod {
 		o[0] = is.getItem().toString();
 		o[1] = is.getCount();
 		o[2] = is.getDisplayName();
-		net.minecraft.world.item.component.CustomData cd = is.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+		CustomData cd = is.get(DataComponents.CUSTOM_DATA);
 		o[3] = cd != null ? cd.copyTag().toString() : null;
 		return o;
 	}

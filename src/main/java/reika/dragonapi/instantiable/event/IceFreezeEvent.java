@@ -2,10 +2,11 @@ package reika.dragonapi.instantiable.event;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.ICancellableEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 
-public class IceFreezeEvent extends WorldPositionEvent implements net.neoforged.bus.api.ICancellableEvent {
+public class IceFreezeEvent extends WorldPositionEvent implements ICancellableEvent {
 
 	public final boolean needsEdge;
 

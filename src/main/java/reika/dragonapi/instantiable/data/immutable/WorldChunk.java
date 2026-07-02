@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 public final class WorldChunk {
 
@@ -68,9 +69,9 @@ public final class WorldChunk {
 
     public static WorldChunk readFromTag(CompoundTag tag) {
         return new WorldChunk(
-            reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "dimension", 0),
-            reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "xCoord", 0),
-            reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "zCoord", 0)
+            NBTCompat.getInt(tag, "dimension", 0),
+            NBTCompat.getInt(tag, "xCoord", 0),
+            NBTCompat.getInt(tag, "zCoord", 0)
         );
     }
 

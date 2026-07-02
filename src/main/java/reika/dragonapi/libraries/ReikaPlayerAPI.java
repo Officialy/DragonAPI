@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -13,6 +14,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -27,6 +29,7 @@ import reika.dragonapi.instantiable.data.blockstruct.BlockArray;
 import reika.dragonapi.instantiable.data.maps.PlayerMap;
 import reika.dragonapi.instantiable.event.GetPlayerLookEvent;
 import reika.dragonapi.instantiable.io.PacketTarget;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
 import java.util.*;
@@ -57,7 +60,7 @@ public class ReikaPlayerAPI {
     }
 
     public static boolean isAdmin(ServerPlayer ep) {
-        return ((net.minecraft.server.level.ServerLevel)ep.level()).getServer().getPlayerList().isOp(ep.nameAndId());
+        return ((ServerLevel)ep.level()).getServer().getPlayerList().isOp(ep.nameAndId());
     }
 
 
@@ -66,9 +69,9 @@ public class ReikaPlayerAPI {
     }
 
     public static void syncCustomData(ServerPlayer ep) {
-        net.minecraft.world.level.storage.TagValueOutput out = net.minecraft.world.level.storage.TagValueOutput.createWithoutContext(net.minecraft.util.ProblemReporter.DISCARDING);
+        TagValueOutput out = TagValueOutput.createWithoutContext(ProblemReporter.DISCARDING);
         ep.saveWithoutId(out);
-        net.minecraft.nbt.CompoundTag tag = (net.minecraft.nbt.CompoundTag) out.buildResult();
+        CompoundTag tag = (CompoundTag) out.buildResult();
         ReikaPacketHelper.sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERDATSYNC.ordinal(), tag, new PacketTarget.PlayerTarget(ep));
     }
 
@@ -179,7 +182,7 @@ public class ReikaPlayerAPI {
     }
 
     public static CompoundTag getDeathPersistentNBT(Player ep) {
-        CompoundTag nbt = reika.dragonapi.libraries.io.NBTCompat.getCompound(ep.getPersistentData(), Player.PERSISTED_NBT_TAG);
+        CompoundTag nbt = NBTCompat.getCompound(ep.getPersistentData(), Player.PERSISTED_NBT_TAG);
         ep.getPersistentData().put(Player.PERSISTED_NBT_TAG, nbt);
         return nbt;
     }

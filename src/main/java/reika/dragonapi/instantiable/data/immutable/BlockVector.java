@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 public final class BlockVector {
 
@@ -36,10 +37,10 @@ public final class BlockVector {
     }
 
     public static BlockVector load(CompoundTag tag) {
-        int x = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "x", 0);
-        int y = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "y", 0);
-        int z = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "z", 0);
-        int di = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "dir", 0);
+        int x = NBTCompat.getInt(tag, "x", 0);
+        int y = NBTCompat.getInt(tag, "y", 0);
+        int z = NBTCompat.getInt(tag, "z", 0);
+        int di = NBTCompat.getInt(tag, "dir", 0);
         Direction dir = Direction.values()[Math.max(0, Math.min(Direction.values().length - 1, di))];
         return new BlockVector(x, y, z, dir);
     }

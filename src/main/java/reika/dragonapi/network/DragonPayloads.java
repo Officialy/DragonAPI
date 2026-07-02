@@ -1,8 +1,10 @@
 package reika.dragonapi.network;
 
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -109,7 +111,7 @@ public final class DragonPayloads {
                     var soundOptional = BuiltInRegistries.SOUND_EVENT.get(payload.soundId);
                     if (soundOptional != null && soundOptional.isPresent()) {
                         Vec3 pos = new Vec3(payload.x, payload.y, payload.z);
-                        net.minecraft.client.Minecraft.getInstance().level.playLocalSound(pos.x, pos.y, pos.z, soundOptional.get().value(), payload.source, payload.volume, payload.pitch, false);
+                        Minecraft.getInstance().level.playLocalSound(pos.x, pos.y, pos.z, soundOptional.get().value(), payload.source, payload.volume, payload.pitch, false);
                     }
                 }
             });
@@ -145,7 +147,7 @@ public final class DragonPayloads {
                     if (type != null && type.isPresent()) {
                         Vec3 pos = new Vec3(payload.x, payload.y, payload.z);
                         Vec3 vel = new Vec3(payload.vx, payload.vy, payload.vz);
-                        net.minecraft.client.Minecraft.getInstance().level.addParticle((net.minecraft.core.particles.ParticleOptions)type.get().value(), pos.x, pos.y, pos.z, vel.x, vel.y, vel.z);
+                        Minecraft.getInstance().level.addParticle((ParticleOptions)type.get().value(), pos.x, pos.y, pos.z, vel.x, vel.y, vel.z);
                     }
                 }
             });

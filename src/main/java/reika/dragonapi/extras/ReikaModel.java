@@ -79,7 +79,7 @@ public class ReikaModel extends ModifiedPlayerModel {
 	}
 
 	@Override
-	public void setupAnim(net.minecraft.client.renderer.entity.state.AvatarRenderState state) {
+	public void setupAnim(AvatarRenderState state) {
 		super.setupAnim(state);
 		this.setPartAngles(state);
 	}
@@ -142,7 +142,7 @@ public class ReikaModel extends ModifiedPlayerModel {
 //	}
 
 	@Override
-	protected void setPartAngles(net.minecraft.client.renderer.entity.state.AvatarRenderState ep) {
+	protected void setPartAngles(AvatarRenderState ep) {
 		float pitch = -ep.xRot;
 		float yawHead = -ep.yRot%360;
 		float yaw = -ep.bodyRot%360+180;

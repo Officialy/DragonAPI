@@ -10,6 +10,7 @@
 package reika.dragonapi.instantiable.data.maps;
 
 import reika.dragonapi.instantiable.data.collections.ThreadSafeSet;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.ReikaNBTHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -284,7 +285,7 @@ public final class MultiMap<K, V> {
         this.clear();
         for (Object o : li.copy()) { //listtag todo listtag
             CompoundTag entry = (CompoundTag) o;
-            K key = (K) ReikaNBTHelper.getValue(reika.dragonapi.libraries.io.NBTCompat.getCompound(entry, "key"), converterK);
+            K key = (K) ReikaNBTHelper.getValue(NBTCompat.getCompound(entry, "key"), converterK);
             Collection<V> val = this.createCollection();
             ReikaNBTHelper.readCollectionFromNBT(val, entry, "values", converterV);
             this.put(key, val);

@@ -20,6 +20,7 @@ import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
+import reika.dragonapi.libraries.mathsci.ReikaMusicHelper;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -70,12 +71,12 @@ public final class ReikaJavaLibrary {
             pConsole(sg);
     }
 
-    public static void pConsole(String obj, net.neoforged.api.distmarker.Dist s) {
+    public static void pConsole(String obj, Dist s) {
         if (FMLEnvironment.getDist() == s)
             pConsole(obj);
     }
 
-    public static void pConsole(String obj, net.neoforged.api.distmarker.Dist s, boolean con) {
+    public static void pConsole(String obj, Dist s, boolean con) {
         if (con)
             pConsole(obj, s);
     }
@@ -697,17 +698,17 @@ public final class ReikaJavaLibrary {
         return li;
     }
 
-    public static void cycleList(List<reika.dragonapi.libraries.mathsci.ReikaMusicHelper.Note> li, int n) {
+    public static void cycleList(List<ReikaMusicHelper.Note> li, int n) {
         if (li.isEmpty())
             return;
         boolean neg = n < 0;
         n = Math.abs(n);
         for (int i = 0; i < n; i++) {
             if (neg) {
-                reika.dragonapi.libraries.mathsci.ReikaMusicHelper.Note o = li.remove(0);
+                ReikaMusicHelper.Note o = li.remove(0);
                 li.add(o);
             } else {
-                reika.dragonapi.libraries.mathsci.ReikaMusicHelper.Note o = li.remove(li.size() - 1);
+                ReikaMusicHelper.Note o = li.remove(li.size() - 1);
                 li.add(0, o);
             }
         }

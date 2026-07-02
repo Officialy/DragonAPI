@@ -6,14 +6,19 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -32,6 +37,8 @@ import reika.dragonapi.libraries.ReikaNBTHelper;
 import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static reika.dragonapi.DragonAPI.rand;
@@ -41,29 +48,29 @@ public class ReikaItemHelper {
     /* 1.21.5 item-NBT compatibility: ItemStack tag data moved to the CUSTOM_DATA data component.
        These mirror the old ItemStack#getTag/getOrCreateTag/setTag so call sites port cleanly.
        getStackTag returns null when absent (like the old getTag); the others never return null. */
-    public static net.minecraft.nbt.CompoundTag getStackTag(ItemStack is) {
-        net.minecraft.world.item.component.CustomData cd = is.get(DataComponents.CUSTOM_DATA);
+    public static CompoundTag getStackTag(ItemStack is) {
+        CustomData cd = is.get(DataComponents.CUSTOM_DATA);
         return cd == null ? null : cd.copyTag();
     }
 
-    public static net.minecraft.nbt.CompoundTag getOrCreateStackTag(ItemStack is) {
-        return is.getOrDefault(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+    public static CompoundTag getOrCreateStackTag(ItemStack is) {
+        return is.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
     }
 
     public static boolean hasStackTag(ItemStack is) {
         return is.has(DataComponents.CUSTOM_DATA);
     }
 
-    public static void setStackTag(ItemStack is, net.minecraft.nbt.CompoundTag tag) {
+    public static void setStackTag(ItemStack is, CompoundTag tag) {
         if (tag == null || tag.isEmpty())
             is.remove(DataComponents.CUSTOM_DATA);
         else
-            is.set(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag));
+            is.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
 
     /** Read-modify-write helper for the old live-mutable getOrCreateTag().putX(...) idiom. */
-    public static void updateStackTag(ItemStack is, java.util.function.Consumer<net.minecraft.nbt.CompoundTag> op) {
-        net.minecraft.nbt.CompoundTag tag = getOrCreateStackTag(is);
+    public static void updateStackTag(ItemStack is, Consumer<CompoundTag> op) {
+        CompoundTag tag = getOrCreateStackTag(is);
         op.accept(tag);
         setStackTag(is, tag);
     }
@@ -94,10 +101,10 @@ public class ReikaItemHelper {
             return ((ItemFilter) b).matches(a);
         } else if (b instanceof ItemMatch) {
             return ((ItemMatch) b).match(a);
-        } else if (b instanceof net.minecraft.world.level.ItemLike il) {
+        } else if (b instanceof ItemLike il) {
             // Covers Item, Block, and NeoForge DeferredItem/DeferredBlock (all ItemLike).
             return a.getItem() == il.asItem();
-        } else if (b instanceof java.util.function.Supplier<?> sup) {
+        } else if (b instanceof Supplier<?> sup) {
             // DeferredHolder and other lazy registry references.
             Object v = sup.get();
             return v != null && matchStacks(a, v);
@@ -511,11 +518,11 @@ public class ReikaItemHelper {
         while (i < ore.length() && Character.isLowerCase(ore.charAt(i)))
             i++;
         String category = ore.substring(0, i);
-        String material = ore.substring(i).toLowerCase(java.util.Locale.ROOT);
+        String material = ore.substring(i).toLowerCase(Locale.ROOT);
         if (category.isEmpty() || material.isEmpty())
             return false;
-        net.minecraft.tags.TagKey<Item> tag = net.minecraft.tags.TagKey.create(
-                net.minecraft.core.registries.Registries.ITEM,
+        TagKey<Item> tag = TagKey.create(
+                Registries.ITEM,
                 Identifier.fromNamespaceAndPath("c", category + "s/" + material));
         return is.is(tag);
     }

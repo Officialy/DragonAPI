@@ -585,7 +585,7 @@ public class ReikaFileReader {
 			get = ReikaJavaLibrary.flipBits(get);
 			get = (byte) (~get);
 			li.set(i, get);
-			li.add(i + 1, (byte) reika.dragonapi.DragonAPI.rand.nextInt(255));
+			li.add(i + 1, (byte) DragonAPI.rand.nextInt(255));
 		}
 	}
 

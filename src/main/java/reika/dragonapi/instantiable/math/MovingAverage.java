@@ -10,6 +10,7 @@
 package reika.dragonapi.instantiable.math;
 
 import net.minecraft.nbt.Tag;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaArrayHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
@@ -24,7 +25,7 @@ public class MovingAverage {
     }
 
     public static MovingAverage load(CompoundTag tag) {
-        int size = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "size", 0);
+        int size = NBTCompat.getInt(tag, "size", 0);
         MovingAverage mv = new MovingAverage(size);
         ListTag li = tag.getListOrEmpty("data");
         for (int i = 0; i < li.size(); i++) {

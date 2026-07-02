@@ -11,6 +11,7 @@ import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketType;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -23,6 +24,7 @@ import reika.dragonapi.DragonOptions;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.interfaces.DataSync;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 import java.io.IOException;
 import java.util.*;
@@ -209,7 +211,7 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
         try {
             int num = in.readInt();
             for (int i = 0; i < num; i++) {
-                ResourceKey<Level> dim = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, net.minecraft.resources.Identifier.parse(in.readUtf())); //todo check if it breaks or not
+                ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, Identifier.parse(in.readUtf())); //todo check if it breaks or not
                 int x = in.readInt();
                 int y = in.readShort();
                 int z = in.readInt();
@@ -221,7 +223,7 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
             if (!received.getBooleanOr(ERROR_TAG, false)) {
                 Collection c = received.keySet();
                 for (String name : (Iterable<String>) c) {
-                    CompoundTag local = reika.dragonapi.libraries.io.NBTCompat.getCompound(received, name);
+                    CompoundTag local = NBTCompat.getCompound(received, name);
                     WorldLocation loc = WorldLocation.fromSerialString(name);
                     //try {
                     this.populateFromStream(loc, local);
@@ -260,7 +262,7 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
     @Override
     public PacketType<? extends Packet<PacketListener>> type() {
         // TODO: This is a legacy packet - should be migrated to CustomPacketPayload
-        return new PacketType<>(PacketFlow.CLIENTBOUND, net.minecraft.resources.Identifier.fromNamespaceAndPath("dragonapi", "compound_sync"));
+        return new PacketType<>(PacketFlow.CLIENTBOUND, Identifier.fromNamespaceAndPath("dragonapi", "compound_sync"));
     }
 
     @Override

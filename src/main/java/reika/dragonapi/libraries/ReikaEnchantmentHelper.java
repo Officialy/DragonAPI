@@ -9,12 +9,14 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.util.*;
 
@@ -76,7 +78,7 @@ public class ReikaEnchantmentHelper {
         if (key == null) return null;
         HolderLookup.Provider provider = null;
         try {
-            MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             if (server != null) provider = server.registryAccess();
         } catch (Throwable ignored) {}
         if (provider == null) {
@@ -101,7 +103,7 @@ public class ReikaEnchantmentHelper {
     }
 
     public static int getEnchantmentLevel(ResourceKey<Enchantment> key, Entity entity) {
-        if (entity instanceof net.minecraft.world.entity.LivingEntity le) {
+        if (entity instanceof LivingEntity le) {
             // Probe main hand for now; callers that need slot-specific lookups should call directly.
             return getEnchantmentLevel(key, le.getMainHandItem());
         }

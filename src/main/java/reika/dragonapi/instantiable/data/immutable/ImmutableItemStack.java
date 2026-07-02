@@ -38,7 +38,7 @@ public final class ImmutableItemStack {
         if (!stack.isEmpty() && !stack.getComponentsPatch().isEmpty()) {
             // Use VanillaRegistries to get a HolderLookup.Provider for serialization
             var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, VanillaRegistries.createLookup());
-            output.store("item", net.minecraft.world.item.ItemStack.CODEC, stack);
+            output.store("item", ItemStack.CODEC, stack);
             hash += output.buildResult().hashCode();
         }
         return hash;

@@ -2,6 +2,7 @@ package reika.dragonapi.instantiable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 import java.util.HashMap;
 
@@ -83,7 +84,7 @@ public abstract class ItemFilter {
 
         @Override
         public void load(CompoundTag tag) {
-            category = getCategory(reika.dragonapi.libraries.io.NBTCompat.getString(tag, "id", ""));
+            category = getCategory(NBTCompat.getString(tag, "id", ""));
         }
 
         @Override

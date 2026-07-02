@@ -1,6 +1,7 @@
 package reika.dragonapi.instantiable;
 
 import net.minecraft.nbt.CompoundTag;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 public class ProgressBar {
 
@@ -73,8 +74,8 @@ public class ProgressBar {
     }
 
     public void load(CompoundTag tag) {
-        duration = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "duration", duration);
-        tick = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "tick", tick);
+        duration = NBTCompat.getInt(tag, "duration", duration);
+        tick = NBTCompat.getInt(tag, "tick", tick);
     }
 
     public interface DurationCallback {

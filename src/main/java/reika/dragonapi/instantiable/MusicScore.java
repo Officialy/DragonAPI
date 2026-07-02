@@ -10,6 +10,7 @@
 package reika.dragonapi.instantiable;
 
 import net.minecraft.nbt.Tag;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 import reika.dragonapi.libraries.mathsci.ReikaMusicHelper.MusicKey;
 import net.minecraft.nbt.CompoundTag;
@@ -40,12 +41,12 @@ public class MusicScore {
     }
 
     public static MusicScore load(CompoundTag tag) {
-        MusicScore mus = new MusicScore(reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "numchan", 0));
+        MusicScore mus = new MusicScore(NBTCompat.getInt(tag, "numchan", 0));
 
         for (int i = 0; i < mus.channelCount; i++) {
             if (tag.contains("Ch_" + i)) {
                 mus.music[i] = new ScoreTrack(i);
-                CompoundTag nbt = reika.dragonapi.libraries.io.NBTCompat.getCompound(tag, "Ch_" + i);
+                CompoundTag nbt = NBTCompat.getCompound(tag, "Ch_" + i);
                 for (Object o : nbt.keySet()) {
                     String s = (String) o;
                     int time = Integer.parseInt(s);
@@ -60,12 +61,12 @@ public class MusicScore {
             }
         }
 
-        mus.length = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "len", 0);
-        mus.firstNoteTime = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "first", 0);
-        mus.noteCount = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "count", 0);
-        int low = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "lowest", -1);
+        mus.length = NBTCompat.getInt(tag, "len", 0);
+        mus.firstNoteTime = NBTCompat.getInt(tag, "first", 0);
+        mus.noteCount = NBTCompat.getInt(tag, "count", 0);
+        int low = NBTCompat.getInt(tag, "lowest", -1);
         mus.lowest = low == -1 ? null : MusicKey.getByIndex(low);
-        int high = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "highest", -1);
+        int high = NBTCompat.getInt(tag, "highest", -1);
         mus.highest = high == -1 ? null : MusicKey.getByIndex(high);
 
         return mus;
@@ -500,11 +501,11 @@ public class MusicScore {
         }
 
         public static Note load(CompoundTag nbt) {
-            int key = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "key", 0);
-            int voice = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "voice", 0);
-            int volume = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "volume", 0);
-            int length = reika.dragonapi.libraries.io.NBTCompat.getInt(nbt, "length", 0);
-            boolean perc = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "percussion", false);
+            int key = NBTCompat.getInt(nbt, "key", 0);
+            int voice = NBTCompat.getInt(nbt, "voice", 0);
+            int volume = NBTCompat.getInt(nbt, "volume", 0);
+            int length = NBTCompat.getInt(nbt, "length", 0);
+            boolean perc = NBTCompat.getBoolean(nbt, "percussion", false);
             return new Note(MusicKey.getByIndex(key), voice, volume, length, perc);
         }
 

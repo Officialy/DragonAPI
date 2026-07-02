@@ -9,6 +9,7 @@
  ******************************************************************************/
 package reika.dragonapi.libraries;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.nbt.*;
 import net.minecraft.resources.Identifier;
@@ -24,6 +25,7 @@ import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.KeyedItemStack;
 import reika.dragonapi.instantiable.io.LuaBlock;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaStringParser;
 
 import java.util.*;
@@ -72,7 +74,7 @@ public final class ReikaNBTHelper {
 
         for (int i = 0; i < ListTag.size(); i++) {
             CompoundTag CompoundTag = ListTag.getCompoundOrEmpty(i);
-            byte byte0 = (byte) reika.dragonapi.libraries.io.NBTCompat.getInt(CompoundTag, "Slot", 0);
+            byte byte0 = (byte) NBTCompat.getInt(CompoundTag, "Slot", 0);
 
             if (byte0 >= 0 && byte0 < inv.length) {
                 var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, CompoundTag);
@@ -82,8 +84,8 @@ public final class ReikaNBTHelper {
         return inv;
     }
 
-    private static volatile net.minecraft.core.HolderLookup.Provider CACHED_REGISTRY_ACCESS;
-    private static net.minecraft.core.HolderLookup.Provider cachedRegistryAccess() {
+    private static volatile HolderLookup.Provider CACHED_REGISTRY_ACCESS;
+    private static HolderLookup.Provider cachedRegistryAccess() {
         var local = CACHED_REGISTRY_ACCESS;
         if (local == null) {
             synchronized (ReikaNBTHelper.class) {
@@ -100,13 +102,13 @@ public final class ReikaNBTHelper {
     @Deprecated //Use FluidStack CODEC with TagValueInput; TODO: Remove
     public static FluidStack getFluidFromNBT(CompoundTag nbt) {
         var input = TagValueInput.create(ProblemReporter.DISCARDING, cachedRegistryAccess(), nbt);
-        return input.read("fluid", net.neoforged.neoforge.fluids.FluidStack.CODEC).orElse(net.neoforged.neoforge.fluids.FluidStack.EMPTY);
+        return input.read("fluid", FluidStack.CODEC).orElse(FluidStack.EMPTY);
     }
 
     @Deprecated //Use FluidStack CODEC with TagValueOutput; TODO: Remove
     public static void writeFluidToNBT(CompoundTag nbt, FluidStack f) {
         var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, cachedRegistryAccess());
-        output.store("fluid", net.neoforged.neoforge.fluids.FluidStack.CODEC, f);
+        output.store("fluid", FluidStack.CODEC, f);
         nbt.merge(output.buildResult());
     }
 
@@ -469,7 +471,7 @@ public final class ReikaNBTHelper {
 
         @Override
         public Enum createFromNBT(Tag nbt) {
-            int idx = ((net.minecraft.nbt.IntTag) nbt).intValue();
+            int idx = ((IntTag) nbt).intValue();
             return idx >= 0 && idx < enumData.size() ? enumData.get(idx) : null;
         }
 
@@ -599,7 +601,7 @@ public final class ReikaNBTHelper {
 
         @Override
         public Enum createFromNBT(Tag nbt) {
-            return objects[((net.minecraft.nbt.IntTag) nbt).intValue()];
+            return objects[((IntTag) nbt).intValue()];
         }
 
         @Override

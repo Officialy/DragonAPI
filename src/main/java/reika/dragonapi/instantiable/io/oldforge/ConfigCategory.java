@@ -367,7 +367,7 @@ public class ConfigCategory implements Map<String, Property> {
     }
 
     @Override //Immutable copy, changes will NOT be reflected in this category
-    public Set<java.util.Map.Entry<String, Property>> entrySet() {
+    public Set<Map.Entry<String, Property>> entrySet() {
         return ImmutableSet.copyOf(properties.entrySet());
     }
 

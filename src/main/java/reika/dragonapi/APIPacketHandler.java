@@ -1,31 +1,30 @@
 package reika.dragonapi;
 
+import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import org.slf4j.LoggerFactory;
 import reika.dragonapi.auxiliary.ModularLogger;
 import reika.dragonapi.auxiliary.PacketTypes;
 import reika.dragonapi.auxiliary.PopupWriter;
@@ -208,8 +207,8 @@ public class APIPacketHandler implements PacketHandler {
                     // fluid renders, etc.
                     if (packet instanceof ReikaPacketHelper.DataPacket dp) {
                         byte[] body = dp.getBytes();
-                        net.minecraft.network.FriendlyByteBuf bbuf =
-                                new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.wrappedBuffer(body));
+                        FriendlyByteBuf bbuf =
+                                new FriendlyByteBuf(Unpooled.wrappedBuffer(body));
                         try {
                             BlockPos pos = bbuf.readBlockPos();
                             bbuf.readVarInt(); // typeId — unused for now, kept for forward compat
@@ -444,12 +443,12 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case ENTITYVERIFYFAIL:
                     Entity e = world.getEntity(data[0]);
-                    if (e != null && world instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                    if (e != null && world instanceof ServerLevel serverLevel) {
                         e.kill(serverLevel);
                         DragonAPI.LOGGER.info("Removing client-only entity " + e);
                     } else if (e != null) {
                         // Client-side: use remove instead
-                        e.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+                        e.remove(Entity.RemovalReason.DISCARDED);
                         DragonAPI.LOGGER.info("Removing client-only entity " + e);
                     }
                     break;

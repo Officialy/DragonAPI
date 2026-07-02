@@ -1,6 +1,7 @@
 package reika.dragonapi.instantiable.data.immutable;
 
 import reika.dragonapi.interfaces.BlockCheck;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -328,12 +329,12 @@ public final class BlockBox {
     }
 
     public static BlockBox load(CompoundTag tag) {
-        int minx = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "minx", 0);
-        int miny = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "miny", 0);
-        int minz = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "minz", 0);
-        int maxx = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "maxx", 0);
-        int maxy = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "maxy", 0);
-        int maxz = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "maxz", 0);
+        int minx = NBTCompat.getInt(tag, "minx", 0);
+        int miny = NBTCompat.getInt(tag, "miny", 0);
+        int minz = NBTCompat.getInt(tag, "minz", 0);
+        int maxx = NBTCompat.getInt(tag, "maxx", 0);
+        int maxy = NBTCompat.getInt(tag, "maxy", 0);
+        int maxz = NBTCompat.getInt(tag, "maxz", 0);
         return new BlockBox(minx, miny, minz, maxx, maxy, maxz);
     }
 

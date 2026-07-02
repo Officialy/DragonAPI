@@ -21,7 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
-public abstract class ModifiedPlayerModel extends HumanoidModel<net.minecraft.client.renderer.entity.state.AvatarRenderState> {
+public abstract class ModifiedPlayerModel extends HumanoidModel<AvatarRenderState> {
 
 	public ModifiedPlayerModel(ModelPart root) {
 		super(root);

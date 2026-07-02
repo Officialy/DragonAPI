@@ -1,6 +1,7 @@
 package reika.dragonapi.instantiable.io;
 
 import com.google.common.base.Charsets;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -310,7 +311,7 @@ public abstract class LuaBlock {
             if (writeSize)
                 this.putData("stack_size", String.valueOf(is.getCount()));
             this.putData("display_name", is.getDisplayName().getString());
-            LuaBlock nbt = is.has(net.minecraft.core.component.DataComponents.CUSTOM_DATA) ? new NBTLuaBlock("nbt", this, tree, is.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag(), true) : null;
+            LuaBlock nbt = is.has(DataComponents.CUSTOM_DATA) ? new NBTLuaBlock("nbt", this, tree, is.get(DataComponents.CUSTOM_DATA).copyTag(), true) : null;
         }
     }
 

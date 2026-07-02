@@ -1,25 +1,23 @@
 package reika.dragonapi.libraries.rendering;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.TerrainParticle;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import reika.dragonapi.DragonAPI;
+import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.interfaces.TileModel;
 import reika.dragonapi.libraries.java.ReikaRandomHelper;
 import reika.dragonapi.libraries.mathsci.ReikaPhysicsHelper;
@@ -57,7 +55,8 @@ public class ReikaRenderHelper {
             for (int i = 0; i < 360; i += step) {
                 double a = Math.toRadians(i);
                 buffer.addVertex(pose, (float) (x + r * Math.cos(a)), (float) y, (float) (z + r * Math.sin(a)))
-                        .setColor(red, green, blue, alpha);
+                        .setColor(red, green, blue, alpha)
+                        .setLineWidth(10.0F);
             }
         });
     }
@@ -101,7 +100,7 @@ public class ReikaRenderHelper {
                 float vx = (float) (x - Math.sin(Math.toRadians(phi)) * (sign) * (Math.sqrt(r * r - h * h)));
                 float vy = (float) (y + r * Math.cos(Math.toRadians(i)));
                 float vz = (float) (z + r * Math.sin(Math.toRadians(i)) * Math.cos(Math.toRadians(phi)));
-                buffer.addVertex(pose, vx, vy, vz).setColor(red, green, blue, alpha);
+                buffer.addVertex(pose, vx, vy, vz).setNormal(pose, 1, 1, 1).setColor(red, green, blue, alpha).setLineWidth(10.0F);
             }
         });
     }
@@ -124,10 +123,12 @@ public class ReikaRenderHelper {
         collector.submitCustomGeometry(stack, RenderTypes.lines(), (pose, buffer) -> {
             buffer.addVertex(pose, (float) x1, (float) y1, (float) z1)
                     .setColor(color[0], color[1], color[2], color[3])
-                    .setNormal(pose, 1, 1, 1);
+                    .setNormal(pose, 1, 1, 1)
+                    .setLineWidth(10.0F);
             buffer.addVertex(pose, (float) x2, (float) y2, (float) z2)
                     .setColor(color[0], color[1], color[2], color[3])
-                    .setNormal(pose, 1, 1, 1);
+                    .setNormal(pose, 1, 1, 1)
+                    .setLineWidth(10.0F);
         });
     }
 

@@ -27,6 +27,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import reika.dragonapi.interfaces.Location;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
 import java.util.Random;
@@ -75,20 +76,20 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
     public static DecimalPosition load(String tag, CompoundTag NBT) {
         if (!NBT.contains(tag))
             return null;
-        CompoundTag data = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, tag);
+        CompoundTag data = NBTCompat.getCompound(NBT, tag);
         if (data != null) {
-            double x = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "x", 0);
-            double y = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "y", 0);
-            double z = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "z", 0);
+            double x = NBTCompat.getDouble(data, "x", 0);
+            double y = NBTCompat.getDouble(data, "y", 0);
+            double z = NBTCompat.getDouble(data, "z", 0);
             return new DecimalPosition(x, y, z);
         }
         return null;
     }
 
     public static DecimalPosition readTag(CompoundTag data) {
-        double x = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "x", 0);
-        double y = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "y", 0);
-        double z = reika.dragonapi.libraries.io.NBTCompat.getDouble(data, "z", 0);
+        double x = NBTCompat.getDouble(data, "x", 0);
+        double y = NBTCompat.getDouble(data, "y", 0);
+        double z = NBTCompat.getDouble(data, "z", 0);
         return new DecimalPosition(x, y, z);
     }
 

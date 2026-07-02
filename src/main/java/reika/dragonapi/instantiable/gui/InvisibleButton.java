@@ -23,7 +23,7 @@ public class InvisibleButton extends Button {
     }
 
     @Override
-    protected void extractContents(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         
     }
 }

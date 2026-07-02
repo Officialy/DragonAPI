@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.bus.api.Event;
 // IEventListener no longer exists in NeoForge 1.21.10 - using Object instead
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.event.BlockTickEvent;
 import reika.dragonapi.instantiable.event.EntityAboutToRayTraceEvent;
@@ -33,7 +34,7 @@ public class EventProfiler {
         addShortcut(LivingDamageEvent.Pre.class);
         addShortcut(ItemEntityPickupEvent.Pre.class);
         addShortcut(ItemTooltipEvent.class);
-        addShortcut(net.neoforged.neoforge.event.tick.EntityTickEvent.Pre.class);
+        addShortcut(EntityTickEvent.Pre.class);
 
         //CLIENT
         addShortcut(RenderGuiLayerEvent.Post.class);

@@ -11,10 +11,12 @@ package reika.dragonapi.base;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceKey;
@@ -27,6 +29,10 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -48,6 +54,7 @@ import reika.dragonapi.interfaces.DataSync;
 import reika.dragonapi.io.CompoundSyncPacket;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.java.ReikaReflectionHelper;
@@ -258,7 +265,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     private void sendPacketToAll(ClientboundBlockEntityDataPacket p) {
         if (!level.isClientSide()) {
-            List<ServerPlayer> li = ReikaPlayerAPI.getPlayersWithin(level, new net.minecraft.world.phys.AABB(-1000000, -1000000, -1000000, 1000000, 1000000, 1000000));
+            List<ServerPlayer> li = ReikaPlayerAPI.getPlayersWithin(level, new AABB(-1000000, -1000000, -1000000, 1000000, 1000000, 1000000));
             for (ServerPlayer serverPlayer : li) {
                 serverPlayer.connection.send(p);
             }
@@ -287,17 +294,17 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     @Override
-    public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider provider) {
+    public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         CompoundTag tag = super.getUpdateTag(provider);
         this.saveAdditional(tag);
         return tag;
     }
 
     @Override
-    public void handleUpdateTag(net.minecraft.world.level.storage.ValueInput input) {
+    public void handleUpdateTag(ValueInput input) {
         try {
-            if (input instanceof net.minecraft.world.level.storage.TagValueInput) {
-                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueInput.class.getDeclaredField("input");
+            if (input instanceof TagValueInput) {
+                Field f = TagValueInput.class.getDeclaredField("input");
                 f.setAccessible(true);
                 CompoundTag tag = (CompoundTag) f.get(input);
                 if (tag != null) {
@@ -426,10 +433,10 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     @Override
-    public void onDataPacket(Connection net, net.minecraft.world.level.storage.ValueInput input) {
+    public void onDataPacket(Connection net, ValueInput input) {
         try {
-            if (input instanceof net.minecraft.world.level.storage.TagValueInput) {
-                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueInput.class.getDeclaredField("input");
+            if (input instanceof TagValueInput) {
+                Field f = TagValueInput.class.getDeclaredField("input");
                 f.setAccessible(true);
                 CompoundTag tag = (CompoundTag) f.get(input);
                 if (tag != null) {
@@ -536,8 +543,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     private void sendPacketToAllAround(SyncPacket p, int radius) {
         if (!level.isClientSide()) {
-            net.minecraft.network.protocol.common.custom.CustomPacketPayload payload = reika.dragonapi.libraries.io.ReikaPacketHelper.toPayload(DragonAPI.MODID, (reika.dragonapi.libraries.io.ReikaPacketHelper.PacketObj) p, DragonAPI.packetChannel);
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayersNear((ServerLevel) level, null, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), radius, payload);
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(DragonAPI.MODID, (ReikaPacketHelper.PacketObj) p, DragonAPI.packetChannel);
+            PacketDistributor.sendToPlayersNear((ServerLevel) level, null, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), radius, payload);
         }
     }
 
@@ -555,8 +562,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     protected void readSyncTag(CompoundTag tag) {
-        lastRedstone = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "lastredstone", false);
-        redstoneInput = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "thisredstone", false);
+        lastRedstone = NBTCompat.getBoolean(tag, "lastredstone", false);
+        redstoneInput = NBTCompat.getBoolean(tag, "thisredstone", false);
     }
 
     /**
@@ -595,22 +602,22 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     public void load(CompoundTag tag) {
         this.readSyncTag(tag);
 
-        placer = reika.dragonapi.libraries.io.NBTCompat.getString(tag, "place", "");
+        placer = NBTCompat.getString(tag, "place", "");
         if (tag.contains("placeUUID"))
-            placerUUID = UUID.fromString(reika.dragonapi.libraries.io.NBTCompat.getString(tag, "placeUUID", "00000000-0000-0000-0000-000000000000"));
+            placerUUID = UUID.fromString(NBTCompat.getString(tag, "placeUUID", "00000000-0000-0000-0000-000000000000"));
 
-        unharvestable = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "no_drops", false);
-        unmineable = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "no_mine", false);
+        unharvestable = NBTCompat.getBoolean(tag, "no_drops", false);
+        unmineable = NBTCompat.getBoolean(tag, "no_mine", false);
 
-        tileAge = reika.dragonapi.libraries.io.NBTCompat.getLong(tag, "age_ticks", 0);
+        tileAge = NBTCompat.getLong(tag, "age_ticks", 0);
     }
 
     @Override
-    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+    protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
         try {
-            if (input instanceof net.minecraft.world.level.storage.TagValueInput) {
-                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueInput.class.getDeclaredField("input");
+            if (input instanceof TagValueInput) {
+                Field f = TagValueInput.class.getDeclaredField("input");
                 f.setAccessible(true);
                 CompoundTag tag = (CompoundTag) f.get(input);
                 if (tag != null) {
@@ -639,11 +646,11 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     @Override
-    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+    protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
         try {
-            if (output instanceof net.minecraft.world.level.storage.TagValueOutput) {
-                java.lang.reflect.Field f = net.minecraft.world.level.storage.TagValueOutput.class.getDeclaredField("output");
+            if (output instanceof TagValueOutput) {
+                Field f = TagValueOutput.class.getDeclaredField("output");
                 f.setAccessible(true);
                 CompoundTag tag = (CompoundTag) f.get(output);
                 if (tag != null) {

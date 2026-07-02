@@ -1,12 +1,18 @@
 package reika.dragonapi.instantiable;
 
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
 import java.util.HashMap;
@@ -39,17 +45,17 @@ public class HybridTank extends FluidTank {
         return nameSwaps.get(oldName);
     }
 
-    public final net.neoforged.neoforge.fluids.capability.templates.FluidTank readFromNBT(net.minecraft.core.HolderLookup.Provider provider, CompoundTag NBT) {
+    public final FluidTank readFromNBT(HolderLookup.Provider provider, CompoundTag NBT) {
         try {
             if (NBT.contains(name)) {
-                CompoundTag tankData = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, name);
-                String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
+                CompoundTag tankData = NBTCompat.getCompound(NBT, name);
+                String fluidName = NBTCompat.getString(tankData, "FluidName", "");
                 String repl = getFluidNameSwap(fluidName);
                 if (repl != null && BuiltInRegistries.FLUID.getValue(Identifier.parse(repl)) != null && !fluidName.equals(repl)) {
                     tankData.putString("FluidName", repl);
                     DragonAPI.LOGGER.info("Tank " + this + " has replaced its FluidName of '" + fluidName + "' with '" + repl + "', as the fluid has changed names.");
                 }
-                net.neoforged.neoforge.fluids.FluidStack fluid = net.neoforged.neoforge.fluids.FluidStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, tankData).result().orElse(net.neoforged.neoforge.fluids.FluidStack.EMPTY);
+                FluidStack fluid = FluidStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(NbtOps.INSTANCE) : NbtOps.INSTANCE, tankData).result().orElse(FluidStack.EMPTY);
                 this.setFluid(fluid);
             }
         } catch (IllegalArgumentException e) { //"Empty String not allowed!" caused by fluid save failure
@@ -59,14 +65,14 @@ public class HybridTank extends FluidTank {
         return this;
     }
 
-    public final CompoundTag writeToNBT(net.minecraft.core.HolderLookup.Provider provider, CompoundTag NBT) {
+    public final CompoundTag writeToNBT(HolderLookup.Provider provider, CompoundTag NBT) {
         CompoundTag tankData = new CompoundTag();
-                net.minecraft.nbt.Tag serialized = net.neoforged.neoforge.fluids.FluidStack.OPTIONAL_CODEC.encodeStart(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, this.getFluid()).getOrThrow();
+                Tag serialized = FluidStack.OPTIONAL_CODEC.encodeStart(provider != null ? provider.createSerializationContext(NbtOps.INSTANCE) : NbtOps.INSTANCE, this.getFluid()).getOrThrow();
         if (serialized instanceof CompoundTag c) {
             tankData.merge(c);
         }
 
-        String fluidName = reika.dragonapi.libraries.io.NBTCompat.getString(tankData, "FluidName", "");
+        String fluidName = NBTCompat.getString(tankData, "FluidName", "");
         String repl = getFluidNameSwap(fluidName);
         if (repl != null && BuiltInRegistries.FLUID.getValue(Identifier.parse(repl)) != null && !fluidName.equals(repl)) {
             tankData.putString("FluidName", repl);
@@ -80,7 +86,7 @@ public class HybridTank extends FluidTank {
 
     /** Convenience overloads for the many BlockEntity call sites that don't have a HolderLookup.Provider
      *  handy; the provider-aware versions already tolerate a null provider (plain NbtOps). */
-    public final net.neoforged.neoforge.fluids.capability.templates.FluidTank readFromNBT(CompoundTag NBT) {
+    public final FluidTank readFromNBT(CompoundTag NBT) {
         return this.readFromNBT(null, NBT);
     }
 
@@ -192,45 +198,45 @@ public class HybridTank extends FluidTank {
 
     public void setNBT(CompoundTag nbt) {
         if (!this.isEmpty())
-            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(nbt));
+            this.getFluid().set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
     }
 
     public void setNBTInt(String key, int val) {
         if (!this.isEmpty()) {
-            net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
-            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putInt(key, val)));
+            CustomData data = this.getFluid().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+            this.getFluid().set(DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putInt(key, val)));
         }
     }
 
     public void setNBTString(String key, String s) {
         if (!this.isEmpty()) {
-            net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
-            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putString(key, s)));
+            CustomData data = this.getFluid().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+            this.getFluid().set(DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putString(key, s)));
         }
     }
 
     public void setNBTBoolean(String key, boolean b) {
         if (!this.isEmpty()) {
-            net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
-            this.getFluid().set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putBoolean(key, b)));
+            CustomData data = this.getFluid().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+            this.getFluid().set(DataComponents.CUSTOM_DATA, data.update(nbt -> nbt.putBoolean(key, b)));
         }
     }
 
     public int getNBTInt(String key) {
         if (this.isEmpty()) return 0;
-        net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+        CustomData data = this.getFluid().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         return data.copyTag().getIntOr(key, 0);
     }
 
     public String getNBTString(String key) {
         if (this.isEmpty()) return "";
-        net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+        CustomData data = this.getFluid().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         return data.copyTag().getStringOr(key, "");
     }
 
     public boolean getNBTBoolean(String key) {
         if (this.isEmpty()) return false;
-        net.minecraft.world.item.component.CustomData data = this.getFluid().getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
+        CustomData data = this.getFluid().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         return data.copyTag().getBooleanOr(key, false);
     }
 }

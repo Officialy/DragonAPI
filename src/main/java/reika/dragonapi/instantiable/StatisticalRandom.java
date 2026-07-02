@@ -13,6 +13,7 @@ import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.WeightedRandom;
 import reika.dragonapi.instantiable.data.maps.CountMap;
 import reika.dragonapi.libraries.ReikaNBTHelper;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import net.minecraft.nbt.CompoundTag;
 
@@ -86,7 +87,7 @@ public class StatisticalRandom<K> {
     public void load(CompoundTag tag) {
         data.clear();
         HashSet<K> set = new HashSet();
-        data.load(reika.dragonapi.libraries.io.NBTCompat.getCompound(tag, "data"), converter);
+        data.load(NBTCompat.getCompound(tag, "data"), converter);
         ReikaNBTHelper.readCollectionFromNBT(set, tag, "set", converter);
         options.addAll(set);
     }

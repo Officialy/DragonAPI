@@ -1,5 +1,8 @@
 package reika.dragonapi.instantiable;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.RegistrationException;
@@ -72,7 +75,7 @@ public class ItemMatch {
     }
 
     public ItemMatch addItem(KeyedItemStack ks) {
-        ks = ks.setSimpleHash(true).setIgnoreNBT(!ks.getItemStack().has(net.minecraft.core.component.DataComponents.CUSTOM_DATA)).lock();
+        ks = ks.setSimpleHash(true).setIgnoreNBT(!ks.getItemStack().has(DataComponents.CUSTOM_DATA)).lock();
         items.add(ks);
         //if (FMLEnvironment.getDist() == Dist.CLIENT)
         ItemStack is2 = ks.getItemStack();
@@ -142,7 +145,7 @@ public class ItemMatch {
         li = new ListTag();
         for (ItemStack is : displayList) {
             CompoundTag tag = new CompoundTag();
-            tag.putString("id", net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(is.getItem()).toString());
+            tag.putString("id", BuiltInRegistries.ITEM.getKey(is.getItem()).toString());
             tag.putInt("count", is.getCount());
             li.add(tag);
         }
@@ -162,7 +165,7 @@ public class ItemMatch {
         li = NBT.getListOrEmpty("display");
         for (Object o : li) {
             CompoundTag tag = (CompoundTag) o;
-            ItemStack is = net.minecraft.world.item.ItemStack.OPTIONAL_CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, tag).result().orElse(net.minecraft.world.item.ItemStack.EMPTY);
+            ItemStack is = ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, tag).result().orElse(ItemStack.EMPTY);
             dis.add(is);
         }
 

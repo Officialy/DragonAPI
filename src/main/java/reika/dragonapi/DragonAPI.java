@@ -105,7 +105,7 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     protected static Dist getSide() {
-        return net.neoforged.fml.loading.FMLEnvironment.getDist();
+        return FMLEnvironment.getDist();
     }
 
     private static GameProfile loadSessionProfile() {

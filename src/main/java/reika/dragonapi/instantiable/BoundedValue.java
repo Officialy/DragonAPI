@@ -11,6 +11,7 @@ package reika.dragonapi.instantiable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 import java.math.BigDecimal;
 
@@ -52,12 +53,12 @@ public class BoundedValue<N extends Number> {
 
     public static BoundedValue load(CompoundTag tag) {
         try {
-            double min = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "min", 0);
-            double max = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "max", 0);
-            double val = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "val", 0);
-            double step = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "step", 0);
-            boolean dec = reika.dragonapi.libraries.io.NBTCompat.getBoolean(tag, "decimal", false);
-            String type = reika.dragonapi.libraries.io.NBTCompat.getString(tag, "type", Double.class.getName());
+            double min = NBTCompat.getDouble(tag, "min", 0);
+            double max = NBTCompat.getDouble(tag, "max", 0);
+            double val = NBTCompat.getDouble(tag, "val", 0);
+            double step = NBTCompat.getDouble(tag, "step", 0);
+            boolean dec = NBTCompat.getBoolean(tag, "decimal", false);
+            String type = NBTCompat.getString(tag, "type", Double.class.getName());
             return new BoundedValue(min, max, val, step, dec, Class.forName(type));
         } catch (Exception e) {
             return null;

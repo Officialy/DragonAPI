@@ -13,6 +13,8 @@ package reika.dragonapi.instantiable.gui;
 import java.util.ArrayList;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
@@ -100,7 +102,7 @@ public class PianoKeyboard {
 
     public void mouseClicked(double x, double y, int button) {
         // 1.21.5: AbstractWidget#mouseClicked now takes a MouseButtonEvent + double-click flag.
-        net.minecraft.client.input.MouseButtonEvent event = new net.minecraft.client.input.MouseButtonEvent(x, y, new net.minecraft.client.input.MouseButtonInfo(button, 0));
+        MouseButtonEvent event = new MouseButtonEvent(x, y, new MouseButtonInfo(button, 0));
         for (PianoKey key : keyList) {
             if (key.mouseClicked(event, false)) {
                 guiInstance.onKeyPressed(key);
@@ -136,7 +138,7 @@ public class PianoKeyboard {
         }
 
         @Override
-        protected void extractContents(net.minecraft.client.gui.GuiGraphicsExtractor GuiGraphicsExtractor, int x, int y, float p_93679_) {
+        protected void extractContents(GuiGraphicsExtractor GuiGraphicsExtractor, int x, int y, float p_93679_) {
             int c = guiInstance.getColorForChannel(guiInstance.getActiveChannel());
             int rgb = (c & 0xffffff) | (alpha << 24);
             if (alpha > 0) {
@@ -165,7 +167,7 @@ public class PianoKeyboard {
         }
 
         @Override
-        public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
             double x = event.x();
             double y = event.y();
             int button = event.button();

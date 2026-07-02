@@ -3,6 +3,7 @@ package reika.dragonapi.instantiable.rendering;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
@@ -14,16 +15,16 @@ import reika.dragonapi.auxiliary.trackers.PlayerSpecificRenderer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GlowLayer extends RenderLayer<net.minecraft.client.renderer.entity.state.AvatarRenderState, PlayerModel> {
+public class GlowLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 
     private static final Map<String, RenderType> RENDER_TYPES = new HashMap<>();
 
-    public GlowLayer(RenderLayerParent<net.minecraft.client.renderer.entity.state.AvatarRenderState, PlayerModel> pRenderer) {
+    public GlowLayer(RenderLayerParent<AvatarRenderState, PlayerModel> pRenderer) {
         super(pRenderer);
     }
 
     @Override
-    public void submit(PoseStack pMatrixStack, SubmitNodeCollector pBuffer, int pPackedLight, net.minecraft.client.renderer.entity.state.AvatarRenderState pLivingEntity, float pNetHeadYaw, float pHeadPitch) {
+    public void submit(PoseStack pMatrixStack, SubmitNodeCollector pBuffer, int pPackedLight, AvatarRenderState pLivingEntity, float pNetHeadYaw, float pHeadPitch) {
         // TODO 1.21+: Port to SubmitNodeCollector
     }
 

@@ -3,8 +3,10 @@ package reika.dragonapi.instantiable.io;
 import com.google.common.base.Strings;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLPaths;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.exception.InvalidConfigException;
@@ -145,7 +147,7 @@ public class ControlledConfig {
 		int h2 = Long.toHexString(diskSize).hashCode();
 		return h1 ^ h2;
 		 */
-        return FMLEnvironment.getDist() == net.neoforged.api.distmarker.Dist.CLIENT ? getClientUserHash() : 0;
+        return FMLEnvironment.getDist() == Dist.CLIENT ? getClientUserHash() : 0;
     }
 
     private static int getClientUserHash() {
@@ -155,7 +157,7 @@ public class ControlledConfig {
         } catch (NoSuchMethodError ignored) {
 
         }
-        com.mojang.authlib.GameProfile p = Minecraft.getInstance().getUser().getProfileId() != null ? Minecraft.getInstance().player.getGameProfile() : null;
+        GameProfile p = Minecraft.getInstance().getUser().getProfileId() != null ? Minecraft.getInstance().player.getGameProfile() : null;
         String id = p != null ? p.id().toString() : Minecraft.getInstance().getUser().getName();
         return id.hashCode();
     }
@@ -277,7 +279,7 @@ public class ControlledConfig {
     public void loadSubfolderedConfigFile() { //pre init used to be here
         String name = ReikaStringParser.stripSpaces(configMod.getDisplayName());
         String author = ReikaStringParser.stripSpaces(configMod.getModAuthorName());
-        String file = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get()+"/"+"config"+"/"+author+"/"+name+".cfg";
+        String file = FMLPaths.GAMEDIR.get()+"/"+"config"+"/"+author+"/"+name+".cfg";
         this.loadConfigFile(new File(file));
     }
 

@@ -2,9 +2,13 @@ package reika.dragonapi.libraries;
 
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.ItemLike;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
@@ -342,14 +346,14 @@ public class ReikaRecipeHelper {
            h = r.getHeight();
            for (int i = 0; i < getRecipeIngredients(r).size(); i++) {
                Ingredient is = getRecipeIngredients(r).get(i);
-               isin[i] = getRecipeItemStack(is.items().map(_h -> new net.minecraft.world.item.ItemStack(_h)).toArray(net.minecraft.world.item.ItemStack[]::new)[i], client);
+               isin[i] = getRecipeItemStack(is.items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)[i], client);
            }
 
        } else if (ire instanceof ShapelessRecipe) {
            ShapelessRecipe sr = (ShapelessRecipe) ire;
            //DragonAPI.LOGGER.info(ire);
            for (int i = 0; i < getRecipeIngredients(sr).size(); i++) {
-               ItemStack is = getRecipeIngredients(sr).get(i).items().map(_h -> new net.minecraft.world.item.ItemStack(_h)).toArray(net.minecraft.world.item.ItemStack[]::new)[i]; //todo check array i
+               ItemStack is = getRecipeIngredients(sr).get(i).items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)[i]; //todo check array i
                isin[i] = getRecipeItemStack(is, client);
            }
            w = getRecipeIngredients(sr).size() >= 3 ? 3 : getRecipeIngredients(sr).size();
@@ -619,7 +623,7 @@ public class ReikaRecipeHelper {
    public static ArrayList<ItemStack> getAllItemsInRecipe(Recipe<?> ire) {
        ArrayList<ItemStack> li = new ArrayList<>();
        for (int i = 0; i < getRecipeIngredients(ire).size(); i++) {
-           li.add(getRecipeIngredients(ire).get(i).items().map(_h -> new net.minecraft.world.item.ItemStack(_h)).findFirst().orElse(net.minecraft.world.item.ItemStack.EMPTY)); //todo 0 could be i? idfk lmao
+           li.add(getRecipeIngredients(ire).get(i).items().map(_h -> new ItemStack(_h)).findFirst().orElse(ItemStack.EMPTY)); //todo 0 could be i? idfk lmao
        }
        return li;
    }
@@ -658,8 +662,8 @@ public class ReikaRecipeHelper {
    }*/
 
    public static Recipe<?> getShapelessRecipeFor(ItemStack out, ItemStack... in) {
-       NonNullList<Ingredient> ingredients = NonNullList.of(Ingredient.of(ReikaJavaLibrary.makeListFrom(in).stream().map(net.minecraft.world.item.ItemStack::getItem)));
-       return new ShapelessRecipe(new net.minecraft.world.item.crafting.Recipe.CommonInfo(true), new net.minecraft.world.item.crafting.CraftingRecipe.CraftingBookInfo(net.minecraft.world.item.crafting.CraftingBookCategory.MISC, ""), net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(out.copy()), ingredients); //todo nulls
+       NonNullList<Ingredient> ingredients = NonNullList.of(Ingredient.of(ReikaJavaLibrary.makeListFrom(in).stream().map(ItemStack::getItem)));
+       return new ShapelessRecipe(new Recipe.CommonInfo(true), new CraftingRecipe.CraftingBookInfo(CraftingBookCategory.MISC, ""), ItemStackTemplate.fromNonEmptyStack(out.copy()), ingredients); //todo nulls
    }
 
    /*todo   public static boolean matchArrayToRecipe(ItemStack[] in, Recipe<?> ir) {
@@ -849,7 +853,7 @@ public class ReikaRecipeHelper {
            for (int i = 0; i < in.size(); i++) {
                ingredients.set(i, parseIngredient(in.get(i)));
            }
-           return new ShapelessRecipe(new net.minecraft.world.item.crafting.Recipe.CommonInfo(true), new net.minecraft.world.item.crafting.CraftingRecipe.CraftingBookInfo(((ShapelessRecipe) ire).category(), ""), net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire)), ingredients);
+           return new ShapelessRecipe(new Recipe.CommonInfo(true), new CraftingRecipe.CraftingBookInfo(((ShapelessRecipe) ire).category(), ""), ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire)), ingredients);
        }
        return ire;
    }
@@ -867,10 +871,10 @@ public class ReikaRecipeHelper {
                return new ShapedRecipe(new net.minecraft.world.item.crafting.Recipe.CommonInfo(true), new net.minecraft.world.item.crafting.CraftingRecipe.CraftingBookInfo(((ShapedRecipe) ire).category(), ""), new net.minecraft.world.item.crafting.ShapedRecipePattern(getOreRecipeWidth(so), getOreRecipeHeight(so), decoded.stream().map(i -> i.isEmpty() ? java.util.Optional.<net.minecraft.world.item.crafting.Ingredient>empty() : java.util.Optional.of(i)).toList(), java.util.Optional.empty()), net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire))); //todo nulls and 1\'s
            } else */if (ire instanceof ShapelessRecipe) {
                ShapelessRecipe sr = (ShapelessRecipe) ire;
-               return new ShapelessRecipe(new net.minecraft.world.item.crafting.Recipe.CommonInfo(true), new net.minecraft.world.item.crafting.CraftingRecipe.CraftingBookInfo(((ShapelessRecipe) ire).category(), ""), net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire)), getRecipeIngredients(sr));
+               return new ShapelessRecipe(new Recipe.CommonInfo(true), new CraftingRecipe.CraftingBookInfo(((ShapelessRecipe) ire).category(), ""), ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire)), getRecipeIngredients(sr));
            } else if (ire instanceof ShapelessRecipe) {
                ShapelessRecipe sr = (ShapelessRecipe) ire;
-               java.util.List<net.minecraft.world.item.crafting.Ingredient> in = getRecipeIngredients(sr);
+               List<Ingredient> in = getRecipeIngredients(sr);
                NonNullList<Ingredient> ingredients = NonNullList.create();
 
                ingredients.addAll(getRecipeIngredients(sr));
@@ -878,7 +882,7 @@ public class ReikaRecipeHelper {
                for (int i = 0; i < in.size(); i++) {
                    ingredients.set(i, parseIngredient(in.get(i)));
                }
-               return new ShapelessRecipe(new net.minecraft.world.item.crafting.Recipe.CommonInfo(true), new net.minecraft.world.item.crafting.CraftingRecipe.CraftingBookInfo(((ShapelessRecipe) ire).category(), ""), net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire)), ingredients);
+               return new ShapelessRecipe(new Recipe.CommonInfo(true), new CraftingRecipe.CraftingBookInfo(((ShapelessRecipe) ire).category(), ""), ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire)), ingredients);
               }
        } catch (Exception e) {
            DragonAPI.LOGGER.error("Could not copy recipe " + toString(ire));
@@ -910,7 +914,7 @@ public class ReikaRecipeHelper {
        return false;
    }
 
-   private static boolean matchIngredientCollections(java.util.List<net.minecraft.world.item.crafting.Ingredient> input, java.util.List<net.minecraft.world.item.crafting.Ingredient> input2) {
+   private static boolean matchIngredientCollections(List<Ingredient> input, List<Ingredient> input2) {
        if (input.size() != input2.size())
            return false;
        for (int i = 0; i < input.size(); i++) {
@@ -923,7 +927,7 @@ public class ReikaRecipeHelper {
            if (o1.getClass() != o2.getClass())
                return false;
            if (o1 instanceof Ingredient) {
-               if (!ReikaItemHelper.matchStacks(Arrays.stream(((net.minecraft.world.item.crafting.Ingredient)o1).items().map(_h -> new net.minecraft.world.item.ItemStack(_h)).toArray(net.minecraft.world.item.ItemStack[]::new)).toList().get(i), Arrays.stream(((net.minecraft.world.item.crafting.Ingredient)o2).items().map(_h -> new net.minecraft.world.item.ItemStack(_h)).toArray(net.minecraft.world.item.ItemStack[]::new)).toList().get(i)))
+               if (!ReikaItemHelper.matchStacks(Arrays.stream(((Ingredient)o1).items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)).toList().get(i), Arrays.stream(((Ingredient)o2).items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)).toList().get(i)))
                    return false;
            } else { //if (o1 instanceof Collection || o1 instanceof String)
                if (!o1.equals(o2))
@@ -935,11 +939,11 @@ public class ReikaRecipeHelper {
 
     public static ItemStack getRecipeOutput(Recipe<?> recipe) {
         if (recipe == null) return ItemStack.EMPTY;
-        java.util.List<net.minecraft.world.item.crafting.display.RecipeDisplay> displays = recipe.display();
+        List<RecipeDisplay> displays = recipe.display();
         if (displays != null && !displays.isEmpty()) {
-            net.minecraft.world.item.crafting.display.SlotDisplay resultSlot = displays.get(0).result();
+            SlotDisplay resultSlot = displays.get(0).result();
             if (resultSlot != null) {
-                return resultSlot.resolveForFirstStack(net.minecraft.util.context.ContextMap.EMPTY);
+                return resultSlot.resolveForFirstStack(ContextMap.EMPTY);
             }
         }
         return ItemStack.EMPTY;
@@ -949,8 +953,8 @@ public class ReikaRecipeHelper {
     public static List<Ingredient> getRecipeIngredients(Recipe<?> recipe) {
         if (recipe instanceof ShapedRecipe) {
             return ((ShapedRecipe)recipe).getIngredients().stream()
-                .filter(java.util.Optional::isPresent)
-                .map(java.util.Optional::get)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .toList();
         }
         return recipe.placementInfo().ingredients();

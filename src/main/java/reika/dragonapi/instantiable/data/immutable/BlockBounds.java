@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.AABB;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaStringParser;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
@@ -154,13 +155,13 @@ public class BlockBounds {
     }
 
     public static BlockBounds load(String id, CompoundTag nbt) {
-        CompoundTag tag = reika.dragonapi.libraries.io.NBTCompat.getCompound(nbt, id);
-        double nx = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "nx", 0);
-        double ny = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "ny", 0);
-        double nz = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "nz", 0);
-        double px = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "px", 1);
-        double py = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "py", 1);
-        double pz = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "pz", 1);
+        CompoundTag tag = NBTCompat.getCompound(nbt, id);
+        double nx = NBTCompat.getDouble(tag, "nx", 0);
+        double ny = NBTCompat.getDouble(tag, "ny", 0);
+        double nz = NBTCompat.getDouble(tag, "nz", 0);
+        double px = NBTCompat.getDouble(tag, "px", 1);
+        double py = NBTCompat.getDouble(tag, "py", 1);
+        double pz = NBTCompat.getDouble(tag, "pz", 1);
         return new BlockBounds(nx, ny, nz, px, py, pz);
     }
 

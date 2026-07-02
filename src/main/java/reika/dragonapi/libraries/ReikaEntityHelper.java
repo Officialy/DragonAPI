@@ -1,12 +1,15 @@
 package reika.dragonapi.libraries;
 
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.animal.*;
 import net.minecraft.world.entity.animal.sheep.Sheep;
@@ -221,17 +224,17 @@ public class ReikaEntityHelper {
         return n.contains("tconstruct") && n.contains("blueslime");
     }
 
-    public static boolean isEntityWearingFullSuitOf(LivingEntity e, net.minecraft.world.item.equipment.ArmorMaterial type) {
+    public static boolean isEntityWearingFullSuitOf(LivingEntity e, ArmorMaterial type) {
         // ArmorItem.getMaterial() removed - armor materials are now stored in data components
         // TODO: Implement proper armor material checking using data components
         return isEntityWearingFullSuitOf(e, (ItemStack is) -> {
             // Check if item has armor attributes as a proxy for being armor
-            var attrs = is.get(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS);
+            var attrs = is.get(DataComponents.ATTRIBUTE_MODIFIERS);
             if (attrs != null) {
                 // Check if it has armor-related attributes
                 return attrs.modifiers().stream().anyMatch(mod -> 
-                    mod.attribute() == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR ||
-                    mod.attribute() == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS
+                    mod.attribute() == Attributes.ARMOR ||
+                    mod.attribute() == Attributes.ARMOR_TOUGHNESS
                 );
             }
             return false;
@@ -251,7 +254,7 @@ public class ReikaEntityHelper {
 
     public static boolean burnsInSun(LivingEntity e) {
         // MobType.UNDEAD removed - use EntityTypeTags.UNDEAD instead
-        return e.getType().builtInRegistryHolder().is(net.minecraft.tags.EntityTypeTags.UNDEAD);
+        return e.getType().builtInRegistryHolder().is(EntityTypeTags.UNDEAD);
     }
 
     public static int damageArmor(LivingEntity e, int amt) {

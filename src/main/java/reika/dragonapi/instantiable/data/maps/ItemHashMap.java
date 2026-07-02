@@ -15,6 +15,7 @@ package reika.dragonapi.instantiable.data.maps;
 // import net.minecraft.inventory.IInventory; → deprecated, use IItemHandler
 // import net.minecraft.item.Item; → net.minecraft.world.item.Item
 // import net.minecraft.item.ItemStack; → net.minecraft.world.item.ItemStack
+import net.minecraft.core.component.DataComponentPatch;
 import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.exception.MisuseException;
@@ -260,7 +261,7 @@ public final class ItemHashMap<V> {
 
 	private static final class ComponentItemKey extends ItemKey {
 
-		private final net.minecraft.core.component.DataComponentPatch components;
+		private final DataComponentPatch components;
 
 		private ComponentItemKey(ItemStack is) {
 			super(is);

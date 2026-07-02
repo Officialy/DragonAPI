@@ -11,6 +11,7 @@ package reika.dragonapi.instantiable.data;
 
 
 import net.minecraft.nbt.CompoundTag;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 public class RunningAverage {
 
@@ -27,9 +28,9 @@ public class RunningAverage {
     }
 
     public void load(String key, CompoundTag nbt) {
-        CompoundTag tag = reika.dragonapi.libraries.io.NBTCompat.getCompound(nbt, key);
-        numberDataPoints = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "npoints", 0);
-        currentAverage = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "avg", 0);
+        CompoundTag tag = NBTCompat.getCompound(nbt, key);
+        numberDataPoints = NBTCompat.getInt(tag, "npoints", 0);
+        currentAverage = NBTCompat.getDouble(tag, "avg", 0);
     }
 
     public void saveAdditional(String key, CompoundTag nbt) {

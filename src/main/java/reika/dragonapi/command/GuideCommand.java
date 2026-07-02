@@ -3,6 +3,7 @@ package reika.dragonapi.command;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
@@ -18,7 +19,7 @@ public class GuideCommand {
         // registries are long-since bound.
         dispatcher.register(Commands.literal("guide").executes((context) -> {
             ItemStack is = new ItemStack(Items.ENCHANTED_BOOK);
-            is.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Reika's Mods Guide"));
+            is.set(DataComponents.CUSTOM_NAME, Component.literal("Reika's Mods Guide"));
             context.getSource().getPlayerOrException().getInventory().add(is);
             return 1;
         }));

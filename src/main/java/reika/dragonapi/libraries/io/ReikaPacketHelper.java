@@ -16,10 +16,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -43,6 +45,7 @@ import reika.dragonapi.libraries.java.ReikaReflectionHelper;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -52,7 +55,7 @@ public class ReikaPacketHelper {
     private static final HashBiMap<Short, PacketHandler> handlers = HashBiMap.create();
     private static final Map<String, CustomNetworkBridge> bridges = new HashMap<>();
     /** One-shot guard so we only WARN about the first unknown handler id per JVM (see DataPacket.decode). */
-    static final java.util.concurrent.atomic.AtomicBoolean firstMissingHandlerWarning = new java.util.concurrent.atomic.AtomicBoolean(false);
+    static final AtomicBoolean firstMissingHandlerWarning = new AtomicBoolean(false);
 
     private static short handlerID = 0;
 
@@ -1444,7 +1447,7 @@ public class ReikaPacketHelper {
     }
 
     public static void sendEntitySyncPacket(String ch, Entity e, double range) {
-        var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, e.level().registryAccess());
+        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, e.level().registryAccess());
         e.save(output);
         CompoundTag nbt = output.buildResult();
         nbt.putInt("dispatchID", e.getId());
@@ -1843,7 +1846,7 @@ public class ReikaPacketHelper {
 
     public static void syncBlockEntity(BlockEntity tile) {
         if (tile != null && tile.getLevel() != null) {
-            var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, tile.getLevel().registryAccess());
+            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, tile.getLevel().registryAccess());
             tile.saveWithoutMetadata(output);
             CompoundTag NBT = output.buildResult();
             List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).inflate(4, 4, 4)); //todo inflate or expandtowards

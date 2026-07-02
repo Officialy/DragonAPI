@@ -108,7 +108,7 @@ public class ReikaJVMParser {
     }
 
     public static String getLauncher() {
-        return FMLEnvironment.getDist() == net.neoforged.api.distmarker.Dist.CLIENT ? getLauncherClient() : "Server";
+        return FMLEnvironment.getDist() == Dist.CLIENT ? getLauncherClient() : "Server";
     }
 
 //

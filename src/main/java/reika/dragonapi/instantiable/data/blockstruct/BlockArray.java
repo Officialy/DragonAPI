@@ -17,6 +17,7 @@ import reika.dragonapi.instantiable.data.immutable.BlockBox;
 import reika.dragonapi.instantiable.data.immutable.BlockKey;
 import reika.dragonapi.interfaces.block.SemiTransparent;
 import reika.dragonapi.libraries.ReikaDirectionHelper;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaArrayHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
@@ -1051,19 +1052,19 @@ public class BlockArray implements Iterable<BlockPos> {
         if (tag == null || tag.size() == 0)
             return;
         for (int i = 0; i < tag.size(); i++) {
-            CompoundTag coord = reika.dragonapi.libraries.io.NBTCompat.getListCompound(tag, i);
-            int x = reika.dragonapi.libraries.io.NBTCompat.getInt(coord, "x", 0);
-            int y = reika.dragonapi.libraries.io.NBTCompat.getInt(coord, "y", 0);
-            int z = reika.dragonapi.libraries.io.NBTCompat.getInt(coord, "z", 0);
+            CompoundTag coord = NBTCompat.getListCompound(tag, i);
+            int x = NBTCompat.getInt(coord, "x", 0);
+            int y = NBTCompat.getInt(coord, "y", 0);
+            int z = NBTCompat.getInt(coord, "z", 0);
             this.addBlockCoordinate(new BlockPos(x, y, z));
         }
-        CompoundTag limit = reika.dragonapi.libraries.io.NBTCompat.getCompound(NBT, label + "_lim");
-        minX = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "minx", minX);
-        minY = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "miny", minY);
-        minZ = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "minz", minZ);
-        maxX = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "maxx", maxX);
-        maxY = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "maxy", maxY);
-        maxZ = reika.dragonapi.libraries.io.NBTCompat.getInt(limit, "maxz", maxZ);
+        CompoundTag limit = NBTCompat.getCompound(NBT, label + "_lim");
+        minX = NBTCompat.getInt(limit, "minx", minX);
+        minY = NBTCompat.getInt(limit, "miny", minY);
+        minZ = NBTCompat.getInt(limit, "minz", minZ);
+        maxX = NBTCompat.getInt(limit, "maxx", maxX);
+        maxY = NBTCompat.getInt(limit, "maxy", maxY);
+        maxZ = NBTCompat.getInt(limit, "maxz", maxZ);
     }
 
     public void shaveToCube() {

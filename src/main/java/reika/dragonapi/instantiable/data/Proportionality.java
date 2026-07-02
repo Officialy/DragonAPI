@@ -8,6 +8,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
 import reika.dragonapi.libraries.ReikaNBTHelper;
+import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
 import java.util.Collection;
@@ -170,14 +171,14 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
     }
 
     public void load(CompoundTag NBT, ReikaNBTHelper.NBTIO<F> converter) {
-        totalValue = reika.dragonapi.libraries.io.NBTCompat.getDouble(NBT, "total", 0);
-        this.drawSeparationLines = reika.dragonapi.libraries.io.NBTCompat.getBoolean(NBT, "lines", false);
+        totalValue = NBTCompat.getDouble(NBT, "total", 0);
+        this.drawSeparationLines = NBTCompat.getBoolean(NBT, "lines", false);
         data.clear();
         ListTag li = NBT.getListOrEmpty("data");
         for (Object o : li) {
             CompoundTag tag = (CompoundTag)o;
             F obj = converter.createFromNBT(tag.get("key"));
-            double val = reika.dragonapi.libraries.io.NBTCompat.getDouble(tag, "value", 0);
+            double val = NBTCompat.getDouble(tag, "value", 0);
             data.put(obj, val);
         }
     }

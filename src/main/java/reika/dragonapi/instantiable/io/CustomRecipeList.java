@@ -11,8 +11,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
@@ -161,8 +163,8 @@ public class CustomRecipeList {
             base = base + "*" + is.getCount();
         }
         lb.putData("item", base);
-        if (is.has(net.minecraft.core.component.DataComponents.CUSTOM_DATA)) {
-            new LuaBlock.NBTLuaBlock("item_nbt", lb, lb.tree, is.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag(), false);
+        if (is.has(DataComponents.CUSTOM_DATA)) {
+            new LuaBlock.NBTLuaBlock("item_nbt", lb, lb.tree, is.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag(), false);
         }
     }
 
@@ -236,7 +238,7 @@ public class CustomRecipeList {
         ret = ReikaItemHelper.getSizedItemStack(ret, amt);
 
         if (ret != null && nbt != null) {
-            ret.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(ReikaNBTHelper.constructNBT(nbt)));
+            ret.set(DataComponents.CUSTOM_DATA, CustomData.of(ReikaNBTHelper.constructNBT(nbt)));
         }
 
         if (ret == null && !tolerateNull) {
@@ -327,7 +329,7 @@ public class CustomRecipeList {
             return "[null]";
         else if (is.getItem() == null)
             return "[null-item stack]";
-        return is.getCount() + "x" + BuiltInRegistries.ITEM.getKey(is.getItem()) + "{" + is.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag() + "}" + "[" + BuiltInRegistries.ITEM.getKey(is.getItem()).getNamespace() + "]";
+        return is.getCount() + "x" + BuiltInRegistries.ITEM.getKey(is.getItem()) + "{" + is.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag() + "}" + "[" + BuiltInRegistries.ITEM.getKey(is.getItem()).getNamespace() + "]";
     }
 
     private static class ExampleLuaBlock extends LuaBlock {

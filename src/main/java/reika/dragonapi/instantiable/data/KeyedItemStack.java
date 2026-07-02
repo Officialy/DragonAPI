@@ -10,12 +10,15 @@
 package reika.dragonapi.instantiable.data;
 
 
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.NbtOps;
 import reika.dragonapi.exception.MisuseException;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 
 public final class KeyedItemStack implements Comparable<KeyedItemStack> {
@@ -48,11 +51,11 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         return load(nbt, null);
     }
 
-    public static KeyedItemStack load(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider provider) {
-        boolean ignore = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "ignorenbt", false);
-        boolean sized = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "sized", false);
-        boolean simple = reika.dragonapi.libraries.io.NBTCompat.getBoolean(nbt, "simplehash", false);
-        return new KeyedItemStack(net.minecraft.world.item.ItemStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, nbt).result().orElse(net.minecraft.world.item.ItemStack.EMPTY)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple);
+    public static KeyedItemStack load(CompoundTag nbt, HolderLookup.Provider provider) {
+        boolean ignore = NBTCompat.getBoolean(nbt, "ignorenbt", false);
+        boolean sized = NBTCompat.getBoolean(nbt, "sized", false);
+        boolean simple = NBTCompat.getBoolean(nbt, "simplehash", false);
+        return new KeyedItemStack(ItemStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(NbtOps.INSTANCE) : NbtOps.INSTANCE, nbt).result().orElse(ItemStack.EMPTY)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple);
     }
 
     public KeyedItemStack setSized(boolean size) {
@@ -158,8 +161,8 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         saveAdditional(nbt, null);
     }
 
-    public void saveAdditional(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider provider) {
-        nbt.merge((net.minecraft.nbt.CompoundTag)net.minecraft.world.item.ItemStack.OPTIONAL_CODEC.encodeStart(provider != null ? provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE) : net.minecraft.nbt.NbtOps.INSTANCE, item).getOrThrow());
+    public void saveAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
+        nbt.merge((CompoundTag) ItemStack.OPTIONAL_CODEC.encodeStart(provider != null ? provider.createSerializationContext(NbtOps.INSTANCE) : NbtOps.INSTANCE, item).getOrThrow());
         nbt.putBoolean("sized", enabledCriteria[Criteria.SIZE.ordinal()]);
         nbt.putBoolean("ignorenbt", !enabledCriteria[Criteria.NBT.ordinal()]);
         nbt.putBoolean("ignoremeta", !enabledCriteria[Criteria.METADATA.ordinal()]);

@@ -20,7 +20,7 @@ import reika.dragonapi.libraries.rendering.ReikaGuiAPI;
 
 public class ColorButton extends Button {
     @Override
-    protected void extractContents(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         if (isSelected) {
             graphics.fill(getX(), getY(), getX()+width, getY()+height, 0xff777777);
             graphics.fill(getX(), getY(), getX()+width-1, getY()+height-1, 0xff333333);

@@ -324,8 +324,8 @@ public class BiomeMapCommand {
 
         @Override
         protected int getColor(int x, int z, Integer data) {
-            var b = (Biome) net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).stream().toArray()[data];
-            var key = net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getResourceKey(b);
+            var b = (Biome) Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).stream().toArray()[data];
+            var key = Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).getResourceKey(b);
             return key.map(biomeResourceKey -> getBiomeColor(x, z, biomeResourceKey)).orElse(0);
         }
 
@@ -361,8 +361,8 @@ public class BiomeMapCommand {
         }
 
         private void createLegendEntry(int b, int x, int y, Graphics g, BufferedImage img, int hpb) {
-            Biome biome = (Biome) net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).stream().toArray()[b];
-            ResourceKey<Biome> key = net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getResourceKey(biome).get();
+            Biome biome = (Biome) Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).stream().toArray()[b];
+            ResourceKey<Biome> key = Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).getResourceKey(biome).get();
             g.drawString(biome.toString(), x + hpb + 4, y + hpb / 2 + 4);
             for (int i = -1; i <= hpb; i++) {
                 for (int k = -1; k <= hpb; k++) {
@@ -448,7 +448,7 @@ public class BiomeMapCommand {
             return 0x3A7F52;
         }
 
-        int c = net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).get(b).get().value().getGrassColor(x, z);
+        int c = Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).get(b).get().value().getGrassColor(x, z);
 
         if (ReikaBiomeHelper.isSnowBiome(b)) {
             c = 0xffffff;

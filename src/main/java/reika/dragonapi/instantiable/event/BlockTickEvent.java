@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FireBlock;
 import net.minecraft.world.level.block.GrassBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.bus.api.ICancellableEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
@@ -21,7 +22,7 @@ import java.util.Random;
  * This method is fired whenever blocks are ticked via updateTick() via ambient world block ticks and any of my mods' code running forced ticks.
  * The event may or may not be cancelable (check isCancelable() first), in which case the tick will not occur.
  */
-public class BlockTickEvent extends WorldPositionEvent implements net.neoforged.bus.api.ICancellableEvent {
+public class BlockTickEvent extends WorldPositionEvent implements ICancellableEvent {
 
     public static boolean disallowAllUpdates = false;
 
@@ -30,7 +31,7 @@ public class BlockTickEvent extends WorldPositionEvent implements net.neoforged.
     @Override
     public void setCanceled(boolean cancel) {
         if (cancel && UpdateFlags.REQUIRE.isFlagPresent(flags)) return;
-        net.neoforged.bus.api.ICancellableEvent.super.setCanceled(cancel);
+        ICancellableEvent.super.setCanceled(cancel);
     }
 
     private final int flags;

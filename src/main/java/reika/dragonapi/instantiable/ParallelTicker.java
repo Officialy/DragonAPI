@@ -10,6 +10,7 @@
 package reika.dragonapi.instantiable;
 
 import net.minecraft.nbt.CompoundTag;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 import java.util.HashMap;
 
@@ -120,8 +121,8 @@ public class ParallelTicker {
     public void load(CompoundTag NBT, String id) {
         for (String ticker : tickers.keySet()) {
             String s = id + ticker;
-            this.setCap(ticker, reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, s + "cap", this.getCapOf(ticker)));
-            this.setTickOf(ticker, reika.dragonapi.libraries.io.NBTCompat.getInt(NBT, s + "tick", this.getTickOf(ticker)));
+            this.setCap(ticker, NBTCompat.getInt(NBT, s + "cap", this.getCapOf(ticker)));
+            this.setTickOf(ticker, NBTCompat.getInt(NBT, s + "tick", this.getTickOf(ticker)));
         }
     }
 

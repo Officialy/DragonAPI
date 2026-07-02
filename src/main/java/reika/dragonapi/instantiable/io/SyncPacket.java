@@ -1,5 +1,7 @@
 package reika.dragonapi.instantiable.io;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -10,6 +12,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 // Legacy import removed; now bridged via payloads
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
+import reika.dragonapi.auxiliary.PacketTypes;
 import reika.dragonapi.interfaces.DataSync;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
@@ -57,14 +60,14 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
      * pipeline / handler are registered during mod init.
      */
     private void bindToDragonAPIPipeline() {
-        var pipe = ReikaPacketHelper.getPipeline(reika.dragonapi.DragonAPI.packetChannel);
+        var pipe = ReikaPacketHelper.getPipeline(DragonAPI.packetChannel);
         if (pipe != null) {
             // 26.1 fix: use the dedicated BE-NBT-sync type, not the legacy SYNC type which is for
             // per-field reflection sync ({@link reika.dragonapi.libraries.io.ReikaPacketHelper#sendSyncPacket})
             // and has a totally different wire format (UTF-name + 3×int vs our BlockPos + typeId + NBT).
             // Previously this co-opted SYNC and the handler silently misread our packets, so every
             // periodic BlockEntityBase sync after tick 20 was a no-op on the client.
-            this.init(reika.dragonapi.auxiliary.PacketTypes.BE_NBT_SYNC, pipe);
+            this.init(PacketTypes.BE_NBT_SYNC, pipe);
         }
         // If pipe is null we're being constructed before DragonAPI's mod-init handler-register
         // fired (e.g. very early static init). PacketObj#init logs the configuration bug itself
@@ -149,7 +152,7 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
         // shape), but at minimum the bytes are now well-formed.
         super.encode(buf);
         dispatch = true;
-        io.netty.buffer.ByteBuf body = io.netty.buffer.Unpooled.buffer();
+        ByteBuf body = Unpooled.buffer();
         FriendlyByteBuf bodyBuf = new FriendlyByteBuf(body);
         try {
             bodyBuf.writeBlockPos(pos);

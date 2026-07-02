@@ -1,11 +1,13 @@
 package reika.dragonapi.libraries;
 
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidUtil;
 import reika.dragonapi.instantiable.HybridTank;
 
 import java.util.HashMap;
@@ -74,9 +76,9 @@ public class ReikaFluidHelper {
         return fluidState.isEmpty() ? null : fluidState.getType();
     }
 
-    /** The fluid contained in a fluid-container item (bucket, tank, etc.), or {@link net.neoforged.neoforge.fluids.FluidStack#EMPTY}. */
-    public static net.neoforged.neoforge.fluids.FluidStack getFluidForItem(net.minecraft.world.item.ItemStack is) {
-        return net.neoforged.neoforge.fluids.FluidUtil.getFluidContained(is).orElse(net.neoforged.neoforge.fluids.FluidStack.EMPTY);
+    /** The fluid contained in a fluid-container item (bucket, tank, etc.), or {@link FluidStack#EMPTY}. */
+    public static FluidStack getFluidForItem(ItemStack is) {
+        return FluidUtil.getFluidContained(is).orElse(FluidStack.EMPTY);
     }
 
 }

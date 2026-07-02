@@ -1,6 +1,7 @@
 package reika.dragonapi.instantiable.io;
 
 import net.minecraft.resources.Identifier;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.DragonAPI;
@@ -101,7 +102,7 @@ public class SoundLoader {
 
         private SoundResource(SoundEnum s) {
             sound = s;
-            reference = FMLEnvironment.getDist() == net.neoforged.api.distmarker.Dist.CLIENT ? getReference(s) : null;
+            reference = FMLEnvironment.getDist() == Dist.CLIENT ? getReference(s) : null;
         }
 
         private static Identifier getReference(SoundEnum s) {

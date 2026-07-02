@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import reika.dragonapi.interfaces.blockentity.BreakAction;
 import reika.dragonapi.interfaces.blockentity.ConditionBreakDropsInventory;
@@ -48,7 +49,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
     }*/
 
     @Override
-    public void neighborChanged(BlockState pState, Level world, BlockPos pos, Block pBlock, net.minecraft.world.level.redstone.Orientation pFromPos, boolean pIsMoving) {
+    public void neighborChanged(BlockState pState, Level world, BlockPos pos, Block pBlock, Orientation pFromPos, boolean pIsMoving) {
         BlockEntityBase te = (BlockEntityBase)world.getBlockEntity(pos);
         if (te != null)
             te.onBlockUpdate();
@@ -100,7 +101,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
     }*/
 
     @Override
-    public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, net.minecraft.world.item.ItemStack toolStack, boolean willHarvest, FluidState fluid) {
+    public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, ItemStack toolStack, boolean willHarvest, FluidState fluid) {
         BlockEntity te = level.getBlockEntity(pos);
         boolean drops = te instanceof Container;
         if (te instanceof ConditionBreakDropsInventory) {

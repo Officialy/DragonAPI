@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import reika.dragonapi.ModList;
 import reika.dragonapi.instantiable.data.immutable.BlockKey;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
@@ -123,7 +124,7 @@ public class RayTracer {
                 blockRay.add(BlockPos.containing(vec0)); //todo test
             }
 
-            HitResult mov = world.clip(new ClipContext(vec, vec0, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, net.minecraft.world.phys.shapes.CollisionContext.empty()));
+            HitResult mov = world.clip(new ClipContext(vec, vec0, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, CollisionContext.empty()));
             if (mov != null) {
                 if (mov.getType() == HitResult.Type.BLOCK) {
                     int bx = (int) mov.getLocation().x();

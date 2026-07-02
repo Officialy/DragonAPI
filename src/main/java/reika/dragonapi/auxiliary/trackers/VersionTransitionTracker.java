@@ -88,13 +88,13 @@ public class VersionTransitionTracker {
     }
 
     private String parseModVersion(IModInfo mc) {
-        DragonAPIMod m = reika.dragonapi.base.DragonAPIMod.getByName(mc.getDisplayName().toUpperCase());
+        DragonAPIMod m = DragonAPIMod.getByName(mc.getDisplayName().toUpperCase());
         String ret = m != null ? m.getModVersion().toString() : String.valueOf(mc.getVersion());
         return Strings.isNullOrEmpty(ret) ? "[NONE]" : ret;
     }
 
     private String getDisplayName(IModInfo mc) {
-        DragonAPIMod m = reika.dragonapi.base.DragonAPIMod.getByName(mc.getDisplayName().toUpperCase());
+        DragonAPIMod m = DragonAPIMod.getByName(mc.getDisplayName().toUpperCase());
         return m != null ? m.getDisplayName() : mc.getDisplayName();
     }
 
@@ -104,7 +104,7 @@ public class VersionTransitionTracker {
 
     public boolean updated(IModInfo mod) {
         if (DragonOptions.VERSIONCHANGEWARN.getValue() == 1) {
-            DragonAPIMod modo = reika.dragonapi.base.DragonAPIMod.getByName(mod.getDisplayName().toUpperCase());
+            DragonAPIMod modo = DragonAPIMod.getByName(mod.getDisplayName().toUpperCase());
             if (modo != null) {
                 if (!modo.isReikasMod())
                     return false;

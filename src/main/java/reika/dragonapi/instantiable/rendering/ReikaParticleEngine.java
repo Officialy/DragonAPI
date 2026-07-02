@@ -7,6 +7,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
+import net.minecraft.client.particle.ParticleResources;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -31,7 +33,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
     public static final int MAX_PARTICLES = ThrottleableEffectRenderer.getRegisteredInstance().limit;
 
-    public static final TextureMode blockTex = new VanillaTextureMode(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS);
+    public static final TextureMode blockTex = new VanillaTextureMode(TextureAtlas.LOCATION_BLOCKS);
 //    public static final TextureMode itemTex = new VanillaTextureMode(TextureMap.locationItemsTexture);
     public static final TextureMode particleTex = new VanillaTextureMode(Identifier.parse("textures/particle/particles.png"));
 
@@ -52,7 +54,7 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
     protected ReikaParticleEngine() {
         // 1.21.5: ParticleEngine(ClientLevel, ParticleResources); TextureManager is no longer accepted.
-        super(Minecraft.getInstance().level, new net.minecraft.client.particle.ParticleResources());
+        super(Minecraft.getInstance().level, new ParticleResources());
     }
 
     public final void register() {

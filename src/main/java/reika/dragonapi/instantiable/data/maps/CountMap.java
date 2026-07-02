@@ -14,6 +14,7 @@ import reika.dragonapi.instantiable.data.WeightedRandom;
 import reika.dragonapi.libraries.ReikaNBTHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import reika.dragonapi.libraries.io.NBTCompat;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -133,14 +134,14 @@ public class CountMap<V> {
     }
 
     public void load(CompoundTag tag, ReikaNBTHelper.NBTIO<V> converter) {
-        total = reika.dragonapi.libraries.io.NBTCompat.getInt(tag, "total", 0);
+        total = NBTCompat.getInt(tag, "total", 0);
 
         data.clear();
         ListTag li = tag.getListOrEmpty("data");
         for (int i = 0; i < li.size(); i++) {
             CompoundTag dat = li.getCompoundOrEmpty(i);
             V key = converter.createFromNBT(dat.get("key"));
-            int amt = reika.dragonapi.libraries.io.NBTCompat.getInt(dat, "value", 0);
+            int amt = NBTCompat.getInt(dat, "value", 0);
             data.put(key, amt);
         }
     }

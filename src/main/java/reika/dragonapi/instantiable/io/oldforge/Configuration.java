@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableSet;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLPaths;
 import reika.dragonapi.DragonAPI;
 
 
@@ -85,7 +86,7 @@ public class Configuration {
     {
         this.file = file;
         this.definedConfigVersion = configVersion;
-        String basePath = ((net.neoforged.fml.loading.FMLPaths.GAMEDIR.get().toFile())).getAbsolutePath().replace(File.separatorChar, '/').replace("/.", "");
+        String basePath = ((FMLPaths.GAMEDIR.get().toFile())).getAbsolutePath().replace(File.separatorChar, '/').replace("/.", "");
         String path = file.getAbsolutePath().replace(File.separatorChar, '/').replace("/./", "/").replace(basePath, "");
         if (PARENT != null)
         {
