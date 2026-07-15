@@ -33,6 +33,19 @@ public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements B
         return new BlockEntityRenderState();
     }
 
+    /**
+     * Frustum-culling box for the renderer. Delegates to {@link BlockEntityBase#getRenderBoundingBox()}
+     * (widened by default, overridable per machine) so BER geometry that extends beyond the origin
+     * block is not culled the moment that block leaves the view frustum. Without this the renderer
+     * uses the vanilla single-block default and multi-block / overhanging models vanish on-screen.
+     */
+    @Override
+    public net.minecraft.world.phys.AABB getRenderBoundingBox(TE be) {
+        if (be instanceof BlockEntityBase teb)
+            return teb.getRenderBoundingBox();
+        return BlockEntityRenderer.super.getRenderBoundingBox(be);
+    }
+
     @Override
     public void submit(BlockEntityRenderState blockEntityRenderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState cameraRenderState) {
         // This method needs to be implemented by subclasses

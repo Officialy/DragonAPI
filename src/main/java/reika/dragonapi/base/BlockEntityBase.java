@@ -710,13 +710,18 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         level.setBlock(getBlockPos(), Blocks.AIR.defaultBlockState(), 1);
     }
 
-    /*
-        @Override
+    /**
+     * The frustum-culling box for this block entity's renderer. Defaults to the block inflated by one
+     * on every side, so a machine model that spills a little past its own block (gears, engine
+     * flywheels, pipe connection stubs, turret barrels, …) is not culled the instant its origin block
+     * leaves the view frustum. Machines that draw much further — beams, domes, multiblocks — override
+     * this with a larger box (or {@link AABB#INFINITE}). The renderer base ({@code BlockEntityRenderBase})
+     * feeds this to Minecraft's {@code getRenderBoundingBox}.
+     */
+    public AABB getRenderBoundingBox() {
+        return new AABB(getBlockPos()).inflate(1);
+    }
 
-        public AABB getRenderBoundingBox() {
-            return ReikaAABBHelper.getBlockAABB(getBlockPos());
-        }
-    */
     public final BlockEntity getBlockEntity(BlockPos pos) {
         return level.getBlockEntity(pos);
     }
