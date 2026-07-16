@@ -14,8 +14,11 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
+
+import reika.dragonapi.DragonAPI;
 
 /**
  * {@link RenderPipeline}s for the DragonAPI shader system.
@@ -39,9 +42,11 @@ public final class DragonShaderPipelines {
      * the {@code Globals} block (it reads {@code ScreenSize} for the aspect correction).</p>
      */
     public static final RenderPipeline REIKA_STENCIL = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET)
-            .withLocation("pipeline/dragonapi_reika_stencil")
-            .withVertexShader("minecraft:core/screenquad")
-            .withFragmentShader("dragonapi:post/reika_stencil")
+            .withLocation(Identifier.fromNamespaceAndPath(DragonAPI.MODID, "pipeline/reika_stencil"))
+            // The String overloads take a bare path and assume the minecraft namespace, so ours has
+            // to be an explicit Identifier or it ends up as "minecraft:dragonapi:post/...".
+            .withVertexShader("core/screenquad")
+            .withFragmentShader(Identifier.fromNamespaceAndPath(DragonAPI.MODID, "post/reika_stencil"))
             .withBindGroupLayout(BindGroupLayout.builder()
                     .withUniform("FocusPoints", UniformType.UNIFORM_BUFFER)
                     .build())

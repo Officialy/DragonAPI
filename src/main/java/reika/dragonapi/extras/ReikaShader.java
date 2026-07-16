@@ -9,6 +9,7 @@
  ******************************************************************************/
 package reika.dragonapi.extras;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -56,7 +57,10 @@ public final class ReikaShader {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player ep = event.getEntity();
-        if (!ep.level().isClientSide() || !ReikaPlayerAPI.isReika(ep))
+        // Only other players' trails are drawn, as in 1.7.10: a focus point sitting on your own
+        // camera has no meaningful screen position, and its radius (which grows as the point nears
+        // the viewer) would swallow the whole screen.
+        if (!ep.level().isClientSide() || ep == Minecraft.getInstance().player || !ReikaPlayerAPI.isReika(ep))
             return;
         updatePosition(ep);
         postFoci();
