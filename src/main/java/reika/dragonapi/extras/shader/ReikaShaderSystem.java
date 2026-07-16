@@ -145,11 +145,25 @@ public final class ReikaShaderSystem {
                 return;
             }
         }
-        // The shader reads a fixed-size array; past that, extra points are simply dropped rather
-        // than fighting over slots, since the nearest ones dominate the screen anyway.
-        if (POINTS.size() >= MAX_FOCUS_POINTS)
+        if (POINTS.size() < MAX_FOCUS_POINTS) {
+            POINTS.add(new Focus(position, size, strength, now));
             return;
-        POINTS.add(new Focus(position, size, strength, now));
+        }
+
+        // The shader reads a fixed-size array, so a full set has to give something up to take a new
+        // point. Dropping the new one instead would wedge the set: a caller that keeps re-posting its
+        // live points keeps them all alive, so nothing would ever expire to make room and the effect
+        // would stay stuck on whichever points happened to arrive first. Evicting the faintest keeps
+        // the strongest MAX_FOCUS_POINTS, which is what actually shows on screen.
+        Focus weakest = POINTS.get(0);
+        for (Focus f : POINTS) {
+            if (f.size < weakest.size)
+                weakest = f;
+        }
+        if (size > weakest.size) {
+            POINTS.remove(weakest);
+            POINTS.add(new Focus(position, size, strength, now));
+        }
     }
 
     /** Runs once the level is fully drawn, so the chain warps the finished scene. */
