@@ -77,6 +77,11 @@ public class DragonAPI extends DragonAPIMod {
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::clientSetup);
+
+        // Guarded: RegisterRenderPipelinesEvent is a client-only event class, so even referencing
+        // the listener would classload it on a dedicated server.
+        if (FMLEnvironment.getDist().isClient())
+            reika.dragonapi.extras.shader.DragonShaderPipelines.register(modEventBus);
 //        modEventBus.addListener(ReikaParticleTypes::registerParticleFactories);
 //        modEventBus.addListener(this::serverStarting);
 //        modEventBus.addListener(this::serverStarted);
