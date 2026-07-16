@@ -1,7 +1,7 @@
 package reika.dragonapi.instantiable.io;
 
 import com.google.common.base.Strings;
-import com.mojang.authlib.GameProfile;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
@@ -157,8 +157,11 @@ public class ControlledConfig {
         } catch (NoSuchMethodError ignored) {
 
         }
-        GameProfile p = Minecraft.getInstance().getUser().getProfileId() != null ? Minecraft.getInstance().player.getGameProfile() : null;
-        String id = p != null ? p.id().toString() : Minecraft.getInstance().getUser().getName();
+        // Read the id straight off the session rather than off the player: this runs during setup,
+        // long before a player exists, and going via Minecraft.getInstance().player NPEs there. The
+        // session's profile id is the same id the player's GameProfile would have carried.
+        UUID profileId = Minecraft.getInstance().getUser().getProfileId();
+        String id = profileId != null ? profileId.toString() : Minecraft.getInstance().getUser().getName();
         return id.hashCode();
     }
 
