@@ -44,6 +44,11 @@ public final class ConnectedQuads {
 
 	/** Bake a single full face of the unit cube (optionally inflated outward) with the given sprite. */
 	public static BakedQuad bakeFaceQuad(ModelBaker baker, Direction face, Material.Baked mat, float inflate) {
+		return bakeFaceQuad(baker, face, mat, inflate, false);
+	}
+
+	/** As above; {@code tint} bakes the quad with tintindex 0 so a registered BlockTintSource applies. */
+	public static BakedQuad bakeFaceQuad(ModelBaker baker, Direction face, Material.Baked mat, float inflate, boolean tint) {
 		Vector3f from = new Vector3f(0, 0, 0);
 		Vector3f to = new Vector3f(16, 16, 16);
 		switch (face) {
@@ -54,22 +59,30 @@ public final class ConnectedQuads {
 			case EAST -> to.x += inflate;
 			case WEST -> from.x -= inflate;
 		}
-		CuboidFace cf = new CuboidFace(face, CuboidFace.NO_TINT, "", null, Quadrant.R0);
+		CuboidFace cf = new CuboidFace(face, tint ? 0 : CuboidFace.NO_TINT, "", null, Quadrant.R0);
 		return FaceBakery.bakeQuad(baker, from, to, cf, mat, face, BlockModelRotation.IDENTITY, null, true, 0);
 	}
 
 	/** A one-face model part (quad culled against its face) with the given sprite. */
 	public static BlockStateModelPart facePart(ModelBaker baker, Direction face, Material.Baked mat, float inflate) {
+		return facePart(baker, face, mat, inflate, false);
+	}
+
+	public static BlockStateModelPart facePart(ModelBaker baker, Direction face, Material.Baked mat, float inflate, boolean tint) {
 		QuadCollection.Builder b = new QuadCollection.Builder();
-		b.addCulledFace(face, bakeFaceQuad(baker, face, mat, inflate));
+		b.addCulledFace(face, bakeFaceQuad(baker, face, mat, inflate, tint));
 		return new SimpleModelWrapper(b.build(), true, mat);
 	}
 
 	/** A full-cube model part (all six faces culled) with the given sprite. */
 	public static BlockStateModelPart cubePart(ModelBaker baker, Material.Baked mat) {
+		return cubePart(baker, mat, false);
+	}
+
+	public static BlockStateModelPart cubePart(ModelBaker baker, Material.Baked mat, boolean tint) {
 		QuadCollection.Builder b = new QuadCollection.Builder();
 		for (Direction d : Direction.values())
-			b.addCulledFace(d, bakeFaceQuad(baker, d, mat, 0));
+			b.addCulledFace(d, bakeFaceQuad(baker, d, mat, 0, tint));
 		return new SimpleModelWrapper(b.build(), true, mat);
 	}
 

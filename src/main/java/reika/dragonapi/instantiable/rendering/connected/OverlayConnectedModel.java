@@ -94,18 +94,21 @@ public class OverlayConnectedModel implements DynamicBlockStateModel {
 		return flags;
 	}
 
-	public record Unbaked(Identifier base, Identifier overlays, boolean sections) implements CustomUnbakedBlockStateModel {
+	public record Unbaked(Identifier base, Identifier overlays, boolean sections, boolean tint) implements CustomUnbakedBlockStateModel {
 
 		public static final MapCodec<Unbaked> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
 				Identifier.CODEC.fieldOf("base").forGetter(Unbaked::base),
 				Identifier.CODEC.fieldOf("overlays").forGetter(Unbaked::overlays),
-				Codec.BOOL.optionalFieldOf("sections", false).forGetter(Unbaked::sections)
+				Codec.BOOL.optionalFieldOf("sections", false).forGetter(Unbaked::sections),
+				// Bake every quad (base + overlays) with tintindex 0 so a registered BlockTintSource
+				// colours the whole block — used by GeoStrata's rainbow opal connected rocks.
+				Codec.BOOL.optionalFieldOf("tint", false).forGetter(Unbaked::tint)
 		).apply(i, Unbaked::new));
 
 		@Override
 		public net.minecraft.client.renderer.block.dispatch.BlockStateModel bake(ModelBaker baker) {
 			Material.Baked baseMat = baker.materials().get(new Material(base), () -> "dragonapi:connected_overlay/" + base);
-			BlockStateModelPart basePart = ConnectedQuads.cubePart(baker, baseMat);
+			BlockStateModelPart basePart = ConnectedQuads.cubePart(baker, baseMat, tint);
 
 			BlockStateModelPart[][] edges = new BlockStateModelPart[6][10];
 			BlockStateModelPart[][] secs = sections ? new BlockStateModelPart[6][10] : null;
@@ -117,9 +120,9 @@ public class OverlayConnectedModel implements DynamicBlockStateModel {
 						new Material(Identifier.fromNamespaceAndPath(overlays.getNamespace(), overlays.getPath() + "/" + k + "_sec")),
 						() -> "dragonapi:connected_overlay/" + overlays) : null;
 				for (Direction d : Direction.values()) {
-					edges[d.ordinal()][k] = ConnectedQuads.facePart(baker, d, em, OVERLAY_OFFSET);
+					edges[d.ordinal()][k] = ConnectedQuads.facePart(baker, d, em, OVERLAY_OFFSET, tint);
 					if (secs != null)
-						secs[d.ordinal()][k] = ConnectedQuads.facePart(baker, d, sm, OVERLAY_OFFSET);
+						secs[d.ordinal()][k] = ConnectedQuads.facePart(baker, d, sm, OVERLAY_OFFSET, tint);
 				}
 			}
 			return new OverlayConnectedModel(basePart, edges, secs, baseMat);
