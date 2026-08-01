@@ -123,11 +123,7 @@ public class ReikaVectorHelper {
     }
 
     public static Vec3 scaleVector(Vec3 vec, double len) {
-        Vec3 ret = vec.normalize();
-//        ret.xCoord *= len;
-//        ret.yCoord *= len;
-//        ret.zCoord *= len;
-        return ret;
+        return vec.normalize().scale(len);
     }
 
 /*   todo public static Vec3 multiplyVectorByMatrix(Vec3 vector, Matrix4f matrix) {

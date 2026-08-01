@@ -116,8 +116,8 @@ public class RayTracer {
             Vec3 vec0 = ReikaVectorHelper.scaleVector(ray, d);
             Vec3 vec = ReikaVectorHelper.scaleVector(ray, d-0.25);
 
-            vec0.add(vec1);
-            vec.add(vec1);
+            vec0 = vec0.add(vec1);
+            vec = vec.add(vec1);
 
             if (cacheBlockRay) {
                 blockRay.add(BlockPos.containing(vec));
@@ -126,10 +126,11 @@ public class RayTracer {
 
             HitResult mov = world.clip(new ClipContext(vec, vec0, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, CollisionContext.empty()));
             if (mov != null) {
-                if (mov.getType() == HitResult.Type.BLOCK) {
-                    int bx = (int) mov.getLocation().x();
-                    int by = (int) mov.getLocation().y();
-                    int bz = (int) mov.getLocation().z();
+                if (mov instanceof BlockHitResult blockHit) {
+                    BlockPos hitPos = blockHit.getBlockPos();
+                    int bx = hitPos.getX();
+                    int by = hitPos.getY();
+                    int bz = hitPos.getZ();
                     if (this.isNonTerminal(bx, by, bz)) {
                         if (this.isDisallowedBlock(world, bx, by, bz)) {
                             //ReikaJavaLibrary.pConsole(mov+":"+world.getBlock(bx, by, bz), Dist.DEDICATED_SERVER);

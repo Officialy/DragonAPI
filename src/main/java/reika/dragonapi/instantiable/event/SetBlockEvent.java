@@ -51,7 +51,8 @@ public abstract class SetBlockEvent extends WorldPositionEvent {
         public Pre(LevelChunk ch, int x, int y, int z, Block b) {
             super(ch, x, y, z);
 
-            currentBlock = ch.getBlockState(new BlockPos(x, y, z)).getBlock(); //USE CHUNK, NOT WORLD
+            BlockPos pos = new BlockPos(ch.getPos().getMinBlockX() + x, y, ch.getPos().getMinBlockZ() + z);
+            currentBlock = ch.getBlockState(pos).getBlock(); // USE CHUNK, NOT WORLD
 
             newBlock = b != null ? b : currentBlock; //is a call to setMeta //todo figure out what this did and possibly remove since meta bad
         }

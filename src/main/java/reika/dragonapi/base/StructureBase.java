@@ -2,10 +2,6 @@ package reika.dragonapi.base;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
-
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import reika.dragonapi.instantiable.data.blockstruct.FilledBlockArray;
 import reika.dragonapi.interfaces.registry.TileEnum;
 
@@ -19,7 +15,7 @@ public abstract class StructureBase {
 
 	private boolean isDisplayCall;
 
-	@OnlyIn(Dist.CLIENT)
+
 	public final synchronized FilledBlockArray getStructureForDisplay() {
 		isDisplayCall = true;
 		this.initDisplayData();

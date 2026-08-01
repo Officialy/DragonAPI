@@ -23,6 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker;
 import reika.dragonapi.auxiliary.trackers.PlayerChunkTracker;
+import reika.dragonapi.auxiliary.ChunkManager;
 import reika.dragonapi.auxiliary.trackers.RemoteAssetLoader;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.base.DragonAPIMod;
@@ -76,6 +77,7 @@ public class DragonAPI extends DragonAPIMod {
         instance = this;
 
         modEventBus.addListener(this::commonSetup);
+        ChunkManager.register(modEventBus);
         modEventBus.addListener(this::clientSetup);
 
         // Guarded: RegisterRenderPipelinesEvent is a client-only event class, so even referencing
@@ -90,6 +92,7 @@ public class DragonAPI extends DragonAPIMod {
 
         Tests.ITEMS.register(modEventBus);
         ReikaParticleTypes.REGISTRY.register(modEventBus);
+        reika.dragonapi.libraries.BlockStateProviderTypes.REGISTRY.register(modEventBus);
 
         this.finishTiming();
     }

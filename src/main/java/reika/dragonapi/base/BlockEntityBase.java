@@ -233,9 +233,10 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
             // markAndNotifyBlock call was pure overhead. Drop it. Net effect: BE-internal NBT
             // changes still reach clients via the per-BE data packet, but no spurious chunk
             // re-meshes and no cascading updateShape calls per sync.
-            CompoundTag var1 = new CompoundTag();
-            if (fullNBT)
-                this.saveAdditional(var1);
+            // Full synchronization must traverse the modern ValueOutput override chain. Calling
+            // saveAdditional(CompoundTag) here selected BlockEntityBase's compatibility overload
+            // directly and silently omitted subclass data such as inventories and tanks.
+            CompoundTag var1 = fullNBT ? this.saveWithoutMetadata(level.registryAccess()) : new CompoundTag();
             this.writeSyncTag(var1);
             if (fullNBT)
                 var1.putBoolean("fullData", true);
@@ -286,9 +287,10 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
-        CompoundTag nbt = new CompoundTag();
+        CompoundTag nbt = level != null
+                ? this.saveWithoutMetadata(level.registryAccess())
+                : new CompoundTag();
         this.writeSyncTag(nbt);
-        this.saveAdditional(nbt);
         nbt.putBoolean("fullData", true);
         return ClientboundBlockEntityDataPacket.create(this, (blockEntity, provider) -> nbt);
     }

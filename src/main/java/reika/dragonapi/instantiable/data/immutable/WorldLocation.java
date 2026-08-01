@@ -52,7 +52,10 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     private WorldLocation(WorldLocation loc) {
-        this(loc.getWorld(), loc.pos.getX(), loc.pos.getY(), loc.pos.getZ());
+        pos = loc.pos;
+        dimension = loc.dimension;
+        isRemote = loc.isRemote;
+        clientWorld = loc.clientWorld;
     }
 
     public WorldLocation(BlockEntity te) {
@@ -232,9 +235,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public void writeToTag(CompoundTag data) {
-        data.putString(
-                "dim",
-                getWorld().dimension().identifier().toString()); // .getRegistryName().toString());
+        data.putString("dim", dimension.identifier().toString());
         data.putInt("x", pos.getX());
         data.putInt("y", pos.getY());
         data.putInt("z", pos.getZ());
@@ -263,7 +264,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
 
     public CompoundTag writeToTag() {
         CompoundTag data = new CompoundTag();
-        data.putString("dim", dimension.identifier().getNamespace());
+        data.putString("dim", dimension.identifier().toString());
         data.putInt("x", pos.getX());
         data.putInt("y", pos.getY());
         data.putInt("z", pos.getZ());
@@ -281,19 +282,13 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
                 + pos.getY()
                 + ", "
                 + pos.getZ()
-                + " in DIM"
-                + getChunk().dimensionID;
+                + " in "
+                + dimension.identifier();
     }
 
     @Override
     public int hashCode() {
-        return coordHash(
-                new BlockPos(
-                        pos.getX(),
-                        pos.getY(),
-                        pos
-                                .getZ())); // pos.getX() + (pos.getZ() << 8) + (pos.getY() << 16) +
-                                           // (dimensionID << 24);
+        return Objects.hash(dimension, pos);
     }
 
     @Override
@@ -305,7 +300,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     private boolean equals(ResourceKey<Level> dim, BlockPos pos) {
-        return dim == dimension && this.pos.equals(pos);
+        return dimension.equals(dim) && this.pos.equals(pos);
     }
 
     public boolean equals(Level world, BlockPos pos) {
@@ -409,18 +404,29 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public String toSerialString() {
-        return String.format("%d:" + dimension.identifier())
-                + String.format("%d:%d:%d", pos.getX(), pos.getY(), pos.getZ());
+        return dimension.identifier() + ";" + pos.getX() + ";" + pos.getY() + ";" + pos.getZ();
     }
 
-    public static WorldLocation fromSerialString(String s) {
-        String[] parts = s.split(":");
-        return new WorldLocation(
-                ResourceKey.create(
-                        Registries.DIMENSION, Identifier.tryParse(String.valueOf(parts[0]))),
-                Integer.parseInt(parts[1]),
-                Integer.parseInt(parts[2]),
-                Integer.parseInt(parts[3]));
+    public static WorldLocation fromSerialString(String value) {
+        String[] parts = value.split(";");
+        if (parts.length == 4) {
+            ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION, Identifier.parse(parts[0]));
+            return new WorldLocation(dimension, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+        }
+
+        // V33a used numeric dimension:x:y:z strings. Also accept namespace:path:x:y:z from
+        // early 26.2 worktrees so no in-progress save data is stranded.
+        parts = value.split(":");
+        if (parts.length == 4) {
+            ResourceKey<Level> dimension = WorldChunk.dimensionKeyFromLegacyId(Integer.parseInt(parts[0]));
+            return new WorldLocation(dimension, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+        }
+        if (parts.length == 5) {
+            Identifier id = Identifier.parse(parts[0] + ":" + parts[1]);
+            ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION, id);
+            return new WorldLocation(dimension, Integer.parseInt(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
+        }
+        throw new IllegalArgumentException("Invalid world-location string: " + value);
     }
 
     public static final class DoubleWorldLocation extends WorldLocation {
@@ -437,5 +443,3 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         }
     }
 }
-
-

@@ -3,5 +3,6 @@
   "dragonapi.checkram": "Memory Usage Info: \n",
   "dragonapi.checkram1": "Used Memory: ",
   "dragonapi.checkram2": "Allocated Memory: ",
-  "dragonapi.uuidcommand": "UUID is: "
+  "dragonapi.uuidcommand": "UUID is: ",
+  "config.jade.plugin_dragonapi.temperature": "Temperature"
 }

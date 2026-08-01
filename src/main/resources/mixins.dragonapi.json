@@ -4,7 +4,8 @@
     "package": "reika.dragonapi.mixin",
     "compatibilityLevel": "JAVA_21",
     "mixins": [
-        "MixinChunkMap"
+        "MixinChunkMap",
+        "MixinLevelChunk"
     ],
     "injectors": {
         "defaultRequire": 1
