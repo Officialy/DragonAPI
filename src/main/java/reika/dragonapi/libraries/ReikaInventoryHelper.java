@@ -365,42 +365,35 @@ public class ReikaInventoryHelper {
     /**
      * Returns true if succeeded; adds if you can fit the whole stack
      */
-    public static boolean addToIInv(ItemStack is, Container ii, boolean overrideValid, int firstSlot, int maxSlot) {
-//        if (InterfaceCache.DSU.instanceOf(ii))
-//            return addToDSU((IDeepStorageUnit)ii, is, false);
-        is = is.copy();
-        if (!hasSpaceFor(is, ii, overrideValid, firstSlot, maxSlot)) {
+    public static boolean addToIInv(ItemStack stack, Container inventory, boolean overrideValid, int firstSlot, int maxSlot) {
+        ItemStack remaining = stack.copy();
+        int end = Math.min(maxSlot, inventory.getContainerSize());
+        if (!hasSpaceFor(remaining, inventory, overrideValid, firstSlot, end))
             return false;
-        }
-        int max = Math.min(ii.getContainerSize(), is.getCount());
-        for (int i = firstSlot; i < maxSlot; i++) {
-            if (overrideValid || ii.canPlaceItem(i, is)) {
-                if (!isArmorItem(is)) {
-                    if (i >= (ii).getContainerSize())
-                        continue;
-                }
-                ItemStack in = ii.getItem(i);
-                if (in == null) {
-                    int added = Math.min(is.getCount(), max);
-                    int currentCount = is.getCount();
-                    is.setCount(currentCount -= added);
-                    ii.setItem(i, ReikaItemHelper.getSizedItemStack(is, added));
-                    return true;
-                } else {
-                    if (ReikaItemHelper.areStacksCombinable(is, in, max)) {
-                        int space = max - in.getCount();
-                        int added = Math.min(is.getCount(), space);
-                        int currentCount = is.getCount();
-                        is.setCount(currentCount -= added);
-                        int iicount = ii.getItem(i).getCount();
-                        ii.getItem(i).setCount(iicount += added);
-                        if (is.getCount() <= 0)
-                            return true;
-                    }
+        boolean changed = false;
+        for (int slot = Math.max(0, firstSlot); slot < end && !remaining.isEmpty(); slot++) {
+            if (!overrideValid && !inventory.canPlaceItem(slot, remaining))
+                continue;
+            ItemStack present = inventory.getItem(slot);
+            int slotLimit = Math.min(inventory.getMaxStackSize(), remaining.getMaxStackSize());
+            if (present.isEmpty()) {
+                int inserted = Math.min(remaining.getCount(), slotLimit);
+                inventory.setItem(slot, remaining.copyWithCount(inserted));
+                remaining.shrink(inserted);
+                changed = true;
+            }
+            else if (ItemStack.isSameItemSameComponents(remaining, present)) {
+                int inserted = Math.min(remaining.getCount(), Math.max(0, slotLimit - present.getCount()));
+                if (inserted > 0) {
+                    present.grow(inserted);
+                    remaining.shrink(inserted);
+                    changed = true;
                 }
             }
         }
-        return is.getCount() == 0;
+        if (changed)
+            inventory.setChanged();
+        return remaining.isEmpty();
     }
 
     private static int addToInventoryWithLeftover(Item id, int size, ItemStack[] inventory) {

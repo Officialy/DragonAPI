@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 import reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker;
 import reika.dragonapi.auxiliary.trackers.PlayerChunkTracker;
 import reika.dragonapi.auxiliary.ChunkManager;
+import reika.dragonapi.auxiliary.ProgressiveRecursiveBreaker;
 import reika.dragonapi.auxiliary.trackers.RemoteAssetLoader;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.base.DragonAPIMod;
@@ -172,6 +173,7 @@ public class DragonAPI extends DragonAPIMod {
         Tests.runTests();
 
         TickRegistry.instance.registerTickHandler(PlayerChunkTracker.instance);
+        TickRegistry.instance.registerTickHandler(ProgressiveRecursiveBreaker.instance);
         ReikaPacketHelper.registerPacketHandler(instance, packetChannel, new APIPacketHandler());
 
         PatreonController.instance.registerMod("Reika", PatreonController.reikaURL);
