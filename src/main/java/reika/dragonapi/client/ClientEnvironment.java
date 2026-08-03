@@ -56,7 +56,8 @@ public final class ClientEnvironment {
         return id != null ? id.toString() : Minecraft.getInstance().getUser().getName();
     }
 
-    /** True once the game instance exists; false during datagen, where there is none. */
+    /** True once the game instance exists; false during client datagen, where there is none. Like
+     *  everything here this is client-only — it cannot answer "am I on a server", it throws there. */
     public static boolean hasGameInstance() {
         return Minecraft.getInstance() != null;
     }
