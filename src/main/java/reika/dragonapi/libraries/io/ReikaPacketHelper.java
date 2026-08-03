@@ -4,7 +4,6 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -618,8 +617,16 @@ public class ReikaPacketHelper {
     }
 
 
+    /**
+     * Client-to-server with no position. The level is fetched through the client-only holder: reading
+     * {@code Minecraft.level} here would put a ClientLevel descriptor in this method, and verifying
+     * it on a dedicated server -- which loads this class during mod construction -- fails the load.
+     */
     public static void sendPacketToServer(String ch, int id, int... data) {
-        sendDataPacket(ch, id, Minecraft.getInstance().level, 0, 0, 0, PacketTarget.server, ReikaJavaLibrary.makeIntListFromArray(data));
+        if (!FMLEnvironment.getDist().isClient())
+            return;
+        sendDataPacket(ch, id, reika.dragonapi.client.ClientEnvironment.level(), 0, 0, 0,
+                PacketTarget.server, ReikaJavaLibrary.makeIntListFromArray(data));
     }
 
 

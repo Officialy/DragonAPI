@@ -1,8 +1,5 @@
 package reika.dragonapi.libraries.io;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -122,37 +119,25 @@ public class ReikaSoundHelper {
     }
 
 
-    public static SoundInstance playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch) {
-        return playClientSound(s, x, y, z, vol, pitch, true);
+    // These return void and name no client type: ReikaSoundHelper is reached from mod construction
+    // on a dedicated server, so a client type in any of its signatures stops the class loading.
+    public static void playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch) {
+        playClientSound(s, x, y, z, vol, pitch, true);
     }
 
-
-    public static SoundInstance playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch, boolean att) {
-        float v = vol * s.getModulatedVolume();
-        if (v <= 0)
-            return null;
-        // Use playLocalSound which creates a PositionedSoundInstance internally.
-        // PositionedSoundInstance is in the same package as AbstractSoundInstance and
-        // can access its package-private fields, guaranteeing correct 3D positional audio.
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level != null) {
-            level.playLocalSound(x, y, z, s.getSoundEvent(), s.getCategory(), v, pitch, att);
-            return new EnumSound(s, x, y, z, v, pitch, att);
-        }
-        return null;
+    public static void playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch, boolean att) {
+        if (FMLEnvironment.getDist().isClient())
+            reika.dragonapi.client.ClientSounds.play(s, x, y, z, vol, pitch, att);
     }
 
-    public static SoundInstance playClientSound(SoundEnum s, Entity e, float vol, float pitch, boolean att) {
-        return playClientSound(s, e.getX(), e.getY(), e.getZ(), vol, pitch, att);
+    public static void playClientSound(SoundEnum s, Entity e, float vol, float pitch, boolean att) {
+        playClientSound(s, e.getX(), e.getY(), e.getZ(), vol, pitch, att);
     }
 
     public static void playClientSound(SoundEvent snd, double x, double y, double z, float vol, float pitch, boolean atten) {
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level != null) {
-            level.playLocalSound(x, y, z, snd, SoundSource.AMBIENT, vol, pitch, atten);
-        }
+        if (FMLEnvironment.getDist().isClient())
+            reika.dragonapi.client.ClientSounds.play(snd, x, y, z, vol, pitch, atten);
     }
-
 
     public static void playNormalClientSound(Level world, double x, double y, double z, SoundEvent name, float vol, float pitch, boolean flag) {
         world.playLocalSound(x, y, z, name, SoundSource.AMBIENT, vol, pitch, flag);
@@ -162,7 +147,10 @@ public class ReikaSoundHelper {
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
             throw new MisuseException("You cannot call this from the client!");
         }
-        Iterable<ServerLevel> worlds = Minecraft.getInstance().level.getServer().getAllLevels();
+        net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null)
+            return;
+        Iterable<ServerLevel> worlds = server.getAllLevels();
         for (ServerLevel world : worlds) {
             if (!world.isClientSide()) {
                 for (Player ep : world.players()) {

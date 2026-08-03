@@ -1,5 +1,6 @@
 package reika.dragonapi.libraries;
 
+import net.neoforged.fml.loading.FMLEnvironment;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -177,8 +178,11 @@ public class ReikaPlayerAPI {
     }
 
     public static BlockHitResult getLookedAtBlockClient(double reach, boolean liq) {
-        Player ep = Minecraft.getInstance().player;
-        return getLookedAtBlock(ep, reach, liq);
+        // Via the client-only holder: naming Minecraft.player here puts a LocalPlayer descriptor in
+        // this method, and the dedicated server verifies this class during mod construction.
+        if (!FMLEnvironment.getDist().isClient())
+            return null;
+        return getLookedAtBlock(reika.dragonapi.client.ClientEnvironment.player(), reach, liq);
     }
 
     public static CompoundTag getDeathPersistentNBT(Player ep) {

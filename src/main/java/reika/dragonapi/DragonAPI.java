@@ -3,8 +3,6 @@ package reika.dragonapi;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.util.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.commands.CommandSourceStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -109,16 +107,21 @@ public class DragonAPI extends DragonAPIMod {
         return MODID;
     }
 
+    /** On a dedicated server there is no client game directory; fall back to the run directory. */
     public static File getMinecraftDirectory() {
-        return Minecraft.getInstance().gameDirectory;
+        return FMLEnvironment.getDist().isClient()
+                ? reika.dragonapi.client.ClientEnvironment.gameDirectory()
+                : new File(".");
     }
 
     protected static Dist getSide() {
         return FMLEnvironment.getDist();
     }
 
+    /** There is no launching player on a dedicated server. */
     private static GameProfile loadSessionProfile() {
-        return Minecraft.getInstance().getGameProfile();
+        return FMLEnvironment.getDist().isClient()
+                ? reika.dragonapi.client.ClientEnvironment.sessionProfile() : null;
     }
 
     public static boolean isOnActualServer() {
@@ -126,7 +129,7 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     public static boolean isSinglePlayerFromClient() {
-        return Minecraft.getInstance().isLocalServer();
+        return FMLEnvironment.getDist().isClient() && reika.dragonapi.client.ClientEnvironment.isLocalServer();
     }
 
     public static boolean isSinglePlayer() {
@@ -147,13 +150,14 @@ public class DragonAPI extends DragonAPIMod {
         return (int) (t % (Integer.MAX_VALUE + 1));
     }
 
+    /**
+     * Opens a link through the client's confirmation screen. The body lives in
+     * {@code reika.dragonapi.client.ClientLinkPrompt} because naming ConfirmLinkScreen here made
+     * this class unloadable on a dedicated server, which broke mod construction for the whole stack.
+     */
     public static void openURL(String url) {
-        Minecraft.getInstance().gui.setScreen(new ConfirmLinkScreen((p_170143_) -> {
-            if (p_170143_) {
-                Util.getPlatform().openUri(url);
-            }
-            Minecraft.getInstance().gui.setScreen(null);
-        }, url, true));
+        if (FMLEnvironment.getDist().isClient())
+            reika.dragonapi.client.ClientLinkPrompt.openURL(url);
     }
 
     public static void debugPrint(Object o) {

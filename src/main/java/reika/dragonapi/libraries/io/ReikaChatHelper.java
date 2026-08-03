@@ -132,8 +132,11 @@ public final class ReikaChatHelper {
      */
 
     private static void writeChatString(String sg) {
-        if (Minecraft.getInstance().player != null)
-            sendChatToPlayer(Minecraft.getInstance().player, sg);
+        if (!FMLEnvironment.getDist().isClient())
+            return;
+        Player local = reika.dragonapi.client.ClientEnvironment.player();
+        if (local != null)
+            sendChatToPlayer(local, sg);
     }
 
     /**

@@ -1,5 +1,6 @@
 package reika.dragonapi.libraries.io;
 
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
@@ -52,7 +53,7 @@ public class PacketPipeline {
     }
 
     private Player getClientPlayer() {
-        return Minecraft.getInstance().player;
+        return FMLEnvironment.getDist().isClient() ? reika.dragonapi.client.ClientEnvironment.player() : null;
     }
 
 	public void replyToPacket(PacketObj p) {
