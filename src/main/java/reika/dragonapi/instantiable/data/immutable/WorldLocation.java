@@ -1,6 +1,8 @@
 package reika.dragonapi.instantiable.data.immutable;
 
-import net.minecraft.client.Minecraft;
+import net.neoforged.fml.loading.FMLEnvironment;
+import reika.dragonapi.client.ClientEnvironment;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
@@ -221,11 +223,17 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
             if (level != null)
                 return level;
         }
-        return Minecraft.getInstance().level;
+        return clientLevel();
     }
 
     private void initClientWorld() {
-        if (clientWorld == null) clientWorld = Minecraft.getInstance().level;
+        if (clientWorld == null) clientWorld = clientLevel();
+    }
+
+    /** Naming ClientLevel here would make the dedicated server fail to load WorldLocation itself,
+     *  which is on nearly every gameplay path; go through the client holder instead. */
+    private static Level clientLevel() {
+        return FMLEnvironment.getDist().isClient() ? ClientEnvironment.level() : null;
     }
 
     public void saveAdditional(String tag, CompoundTag NBT) {

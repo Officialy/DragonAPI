@@ -3,9 +3,6 @@ package reika.dragonapi.io;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.Resource;
@@ -13,6 +10,8 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.sounds.SoundSource;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import reika.dragonapi.client.ClientSounds;
 import net.neoforged.api.distmarker.OnlyIn;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.io.DirectResource;
@@ -64,8 +63,11 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
     }
 
     public void initToSoundRegistry() {
-        SoundManager sh = Minecraft.getInstance().getSoundManager();
-        if (sh == null) {
+        // A dedicated server reloads resources too, and this listener is registered on both dists;
+        // touching the sound manager there resolves client classes that do not exist.
+        if (!FMLEnvironment.getDist().isClient())
+            return;
+        if (!ClientSounds.hasSoundManager()) {
             DragonAPI.LOGGER.error("Attempted to initialize sound entries before the sound handler was created!");
         }
 //        SoundRegistry srg = sh.sndRegistry;

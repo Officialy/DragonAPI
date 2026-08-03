@@ -1,8 +1,9 @@
 package reika.dragonapi.instantiable.io;
 
+import reika.dragonapi.client.ClientEnvironment;
+
 import com.google.common.base.Strings;
 import java.util.UUID;
-import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -152,7 +153,7 @@ public class ControlledConfig {
 
     private static int getClientUserHash() {
         try {
-        if(Minecraft.getInstance() == null) //Likely doing datagen
+        if (!ClientEnvironment.hasGameInstance()) //Likely doing datagen
             return 0;
         } catch (NoSuchMethodError ignored) {
 
@@ -160,8 +161,7 @@ public class ControlledConfig {
         // Read the id straight off the session rather than off the player: this runs during setup,
         // long before a player exists, and going via Minecraft.getInstance().player NPEs there. The
         // session's profile id is the same id the player's GameProfile would have carried.
-        UUID profileId = Minecraft.getInstance().getUser().getProfileId();
-        String id = profileId != null ? profileId.toString() : Minecraft.getInstance().getUser().getName();
+        String id = ClientEnvironment.profileIdentifier();
         return id.hashCode();
     }
 

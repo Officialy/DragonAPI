@@ -9,8 +9,9 @@
  ******************************************************************************/
 package reika.dragonapi.libraries.io;
 
+import reika.dragonapi.client.ClientEnvironment;
+
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -65,7 +66,7 @@ public final class ReikaChatHelper {
         }
     }*/
     private static void clearChatGui() {
-        Minecraft.getInstance().gui.hud.getChat().clearMessages(true);
+        ClientEnvironment.clearChat();
     }
 
     /**

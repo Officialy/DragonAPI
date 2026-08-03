@@ -35,4 +35,10 @@ public final class ClientSounds {
         if (level != null)
             level.playLocalSound(x, y, z, snd, SoundSource.AMBIENT, vol, pitch, attenuate);
     }
+
+    /** True once the sound engine exists. Kept here so DirectResourceManager -- which the dedicated
+     *  server registers as a reload listener -- never names SoundManager itself. */
+    public static boolean hasSoundManager() {
+        return Minecraft.getInstance().getSoundManager() != null;
+    }
 }

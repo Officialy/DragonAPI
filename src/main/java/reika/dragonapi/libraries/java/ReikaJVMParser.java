@@ -1,6 +1,7 @@
 package reika.dragonapi.libraries.java;
 
-import net.minecraft.client.Minecraft;
+import reika.dragonapi.client.ClientEnvironment;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -114,9 +115,7 @@ public class ReikaJVMParser {
 //
     public static String getLauncherClient() {
         try {
-            Field f = Minecraft.class.getDeclaredField("launchedVersion");
-            f.setAccessible(true);
-            return (String)f.get(Minecraft.getInstance());
+            return ClientEnvironment.launchedVersion();
         }
         catch (Exception e) {
             e.printStackTrace();

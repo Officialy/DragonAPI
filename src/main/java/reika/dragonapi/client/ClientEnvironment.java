@@ -36,4 +36,37 @@ public final class ClientEnvironment {
     public static net.minecraft.world.level.Level level() {
         return Minecraft.getInstance().level;
     }
+
+    /** The launcher's version string, read reflectively as it has no accessor. */
+    public static String launchedVersion() {
+        try {
+            java.lang.reflect.Field f = Minecraft.class.getDeclaredField("launchedVersion");
+            f.setAccessible(true);
+            return (String)f.get(Minecraft.getInstance());
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return e.toString();
+        }
+    }
+
+    /** A stable per-user key for client-side config: the session UUID, falling back to the name. */
+    public static String profileIdentifier() {
+        java.util.UUID id = Minecraft.getInstance().getUser().getProfileId();
+        return id != null ? id.toString() : Minecraft.getInstance().getUser().getName();
+    }
+
+    /** True once the game instance exists; false during datagen, where there is none. */
+    public static boolean hasGameInstance() {
+        return Minecraft.getInstance() != null;
+    }
+
+    public static void clearChat() {
+        Minecraft.getInstance().gui.hud.getChat().clearMessages(true);
+    }
+
+    /** Opens a resource from the *client* resource manager (assets), not the server's data packs. */
+    public static java.io.InputStream resourceStream(net.minecraft.resources.Identifier id) throws java.io.IOException {
+        return Minecraft.getInstance().getResourceManager().getResource(id).get().open();
+    }
 }
