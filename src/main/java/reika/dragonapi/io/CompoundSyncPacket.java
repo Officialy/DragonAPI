@@ -1,6 +1,6 @@
 package reika.dragonapi.io;
 
-import net.minecraft.client.Minecraft;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -267,7 +267,11 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
 
     @Override
     public void handle(PacketListener inh) { //Ignore default handling
-        Level world = Minecraft.getInstance().level;
+        // Through the holder: this packet class is loaded on the server in order to *send*, so it
+        // must not name ClientLevel. Every block entity that syncs would otherwise fail on a server.
+        if (!FMLEnvironment.getDist().isClient())
+            return;
+        Level world = reika.dragonapi.client.ClientEnvironment.level();
         for (WorldLocation loc : data.keySet()) {
             if (loc.getDimension() == world.dimension()) {
                 if (world.getBlockState(new BlockPos(loc.pos.getX(), loc.pos.getY(), loc.pos.getZ())) != null) {

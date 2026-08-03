@@ -1,5 +1,6 @@
 package reika.dragonapi.libraries;
 
+import net.neoforged.fml.loading.FMLEnvironment;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.client.Minecraft;
@@ -83,8 +84,9 @@ public class ReikaEnchantmentHelper {
         } catch (Throwable ignored) {}
         if (provider == null) {
             try {
-                if (Minecraft.getInstance() != null && Minecraft.getInstance().level != null)
-                    provider = Minecraft.getInstance().level.registryAccess();
+                if (FMLEnvironment.getDist().isClient()
+                        && reika.dragonapi.client.ClientEnvironment.level() != null)
+                    provider = reika.dragonapi.client.ClientEnvironment.level().registryAccess();
             } catch (Throwable ignored) {}
         }
         if (provider == null) return null;

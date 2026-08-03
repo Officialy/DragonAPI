@@ -1,6 +1,5 @@
 package reika.dragonapi.base;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import reika.dragonapi.instantiable.data.blockstruct.FilledBlockArray;
 import reika.dragonapi.interfaces.registry.TileEnum;
@@ -19,7 +18,8 @@ public abstract class StructureBase {
 	public final synchronized FilledBlockArray getStructureForDisplay() {
 		isDisplayCall = true;
 		this.initDisplayData();
-		FilledBlockArray ret = this.getArray(Minecraft.getInstance().level, 0, 0, 0);
+		// Display-only preview; the structure classes themselves are server-side multiblock data.
+		FilledBlockArray ret = this.getArray(reika.dragonapi.client.ClientEnvironment.level(), 0, 0, 0);
 		isDisplayCall = false;
 		this.finishDisplayCall();
 		return ret;
