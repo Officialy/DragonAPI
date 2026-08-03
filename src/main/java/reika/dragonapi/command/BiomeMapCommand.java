@@ -7,7 +7,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
@@ -240,9 +239,9 @@ public class BiomeMapCommand {
                 map.addGrid();
                 String path = map.createImage();
                 long dur = System.currentTimeMillis() - map.startTime;
-                ReikaChatHelper.sendChatToPlayer(Minecraft.getInstance().player, ChatFormatting.GREEN + "File created in " + dur + " ms: " + path);
+                ReikaChatHelper.writeString(ChatFormatting.GREEN + "File created in " + dur + " ms: " + path);
             } catch (IOException e) {
-                ReikaChatHelper.sendChatToPlayer(Minecraft.getInstance().player, ChatFormatting.RED + "Failed to create file: " + e);
+                ReikaChatHelper.writeString(ChatFormatting.RED + "Failed to create file: " + e);
                 e.printStackTrace();
             }
         }
@@ -324,8 +323,12 @@ public class BiomeMapCommand {
 
         @Override
         protected int getColor(int x, int z, Integer data) {
-            var b = (Biome) Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).stream().toArray()[data];
-            var key = Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).getResourceKey(b);
+            // The biome map is a client-side debug render; go through the holder so this class
+            // stays loadable where commands are registered.
+            var registry = reika.dragonapi.client.ClientEnvironment.level().registryAccess()
+                    .lookupOrThrow(Registries.BIOME);
+            var b = (Biome) registry.stream().toArray()[data];
+            var key = registry.getResourceKey(b);
             return key.map(biomeResourceKey -> getBiomeColor(x, z, biomeResourceKey)).orElse(0);
         }
 
@@ -361,8 +364,8 @@ public class BiomeMapCommand {
         }
 
         private void createLegendEntry(int b, int x, int y, Graphics g, BufferedImage img, int hpb) {
-            Biome biome = (Biome) Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).stream().toArray()[b];
-            ResourceKey<Biome> key = Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).getResourceKey(biome).get();
+            Biome biome = (Biome) reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME).stream().toArray()[b];
+            ResourceKey<Biome> key = reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME).getResourceKey(biome).get();
             g.drawString(biome.toString(), x + hpb + 4, y + hpb / 2 + 4);
             for (int i = -1; i <= hpb; i++) {
                 for (int k = -1; k <= hpb; k++) {
@@ -380,7 +383,7 @@ public class BiomeMapCommand {
             return 0x000000; //should never happen
 
         if (b instanceof CustomMapColorBiome)
-            return ((CustomMapColorBiome) b).getMapColor(Minecraft.getInstance().level, x, z);
+            return ((CustomMapColorBiome) b).getMapColor(reika.dragonapi.client.ClientEnvironment.level(), x, z);
 
         /*boolean mutate = b instanceof BiomeGenMutated;
         if (mutate) {
@@ -434,10 +437,10 @@ public class BiomeMapCommand {
             return 0x9B6839;
         }
 
-       /* if (net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getHolder(b).get().get().topBlock == Blocks.SAND) {
+       /* if (net.minecraft.client.reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getHolder(b).get().get().topBlock == Blocks.SAND) {
             return 0xE2C995;
         }
-        if (net.minecraft.client.Minecraft.getInstance().level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getHolder(b).get().get().topBlock == Blocks.STONE) {
+        if (net.minecraft.client.reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).getHolder(b).get().get().topBlock == Blocks.STONE) {
             return 0x808080;
         }*/
 
@@ -448,7 +451,7 @@ public class BiomeMapCommand {
             return 0x3A7F52;
         }
 
-        int c = Minecraft.getInstance().level.registryAccess().lookupOrThrow(Registries.BIOME).get(b).get().value().getGrassColor(x, z);
+        int c = reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME).get(b).get().value().getGrassColor(x, z);
 
         if (ReikaBiomeHelper.isSnowBiome(b)) {
             c = 0xffffff;

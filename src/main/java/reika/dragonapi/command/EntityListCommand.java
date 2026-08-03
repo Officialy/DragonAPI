@@ -1,8 +1,8 @@
 package reika.dragonapi.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 
@@ -64,7 +64,11 @@ public class EntityListCommand {
 
 
     public static void dumpClientside() {
-        ArrayList<String> data = getData(Minecraft.getInstance().player, Dist.CLIENT);
+        // Via the client holder: naming Minecraft.player here puts a LocalPlayer descriptor in this
+        // command class, which the dedicated server loads when it registers commands.
+        if (!FMLEnvironment.getDist().isClient())
+            return;
+        ArrayList<String> data = getData(reika.dragonapi.client.ClientEnvironment.player(), Dist.CLIENT);
         for (String s : data) {
             ReikaChatHelper.writeString(s);
         }
