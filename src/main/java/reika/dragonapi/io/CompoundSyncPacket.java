@@ -48,6 +48,18 @@ public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
 
     }
 
+    /**
+     * Diffs {@code NBT} against the last tag sent for this tile and queues only what changed.
+     *
+     * <p><b>Key removal is not synced.</b> Only keys <em>present in {@code NBT}</em> are examined, so
+     * a key that was sent last time and is absent now is never compared, never queued as a change,
+     * and never cleared on the client -- the client merges what it receives and keeps the old value
+     * forever. A {@code writeSyncTag} that writes a key only when its value is "interesting" will
+     * therefore leave stale data on screen; write the key unconditionally instead, using a codec that
+     * can represent the empty state (e.g. {@code ItemStack.OPTIONAL_CODEC} rather than
+     * {@code ItemStack.CODEC}). This is what stranded the last crafted recipe in the casting table's
+     * result slot after the grid was emptied.
+     */
     public void setData(BlockEntity te, boolean force, CompoundTag NBT) {
         if (dispatch) {
             if (DragonOptions.LOGSYNCCME.getState()) {
