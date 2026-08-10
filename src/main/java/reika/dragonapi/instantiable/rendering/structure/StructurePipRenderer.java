@@ -23,6 +23,7 @@ import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -145,7 +146,19 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 			}
 		}
 
-		submitBlockEntities(state, pose, collector, mc);
+		CameraRenderState camera = new CameraRenderState();
+		submitBlockEntities(state, pose, collector, mc, camera);
+		submitEntities(state, pose, collector, mc, camera);
+	}
+
+	/** V33a's entity loop, for structures partly defined by entities rather than blocks. */
+	private static void submitEntities(StructureRenderState state, PoseStack pose,
+			SubmitNodeCollector collector, Minecraft mc, CameraRenderState camera) {
+		if (state.entities().isEmpty())
+			return;
+		EntityRenderDispatcher dispatcher = mc.getEntityRenderDispatcher();
+		for (StructureRenderState.PlacedEntity placed : state.entities())
+			dispatcher.submit(placed.state(), camera, placed.x(), placed.y(), placed.z(), pose, collector);
 	}
 
 	/**
@@ -153,11 +166,10 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 	 * GUI's extract phase; all that is left here is to put each one at its block and submit it.
 	 */
 	private static void submitBlockEntities(StructureRenderState state, PoseStack pose,
-			SubmitNodeCollector collector, Minecraft mc) {
+			SubmitNodeCollector collector, Minecraft mc, CameraRenderState camera) {
 		if (state.blockEntities().isEmpty())
 			return;
 		BlockEntityRenderDispatcher dispatcher = mc.getBlockEntityRenderDispatcher();
-		CameraRenderState camera = new CameraRenderState();
 		for (BlockEntityRenderState beState : state.blockEntities()) {
 			BlockPos pos = beState.blockPos;
 			pose.pushPose();

@@ -17,8 +17,12 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -73,6 +77,7 @@ public final class StructureRenderer {
 	 */
 	private final Map<BlockPos, BlockEntity> blockEntities = new HashMap<>();
 	private final Set<BlockPos> blockEntitiesWithout = new HashSet<>();
+	private final Map<BlockPos, Entity> entities = new HashMap<>();
 
 	private List<Entry> resolved;
 
@@ -167,6 +172,22 @@ public final class StructureRenderer {
 		blockEntityHooks.put(block, hook);
 	}
 
+	/**
+	 * V33a {@code addEntityRender}: some structures are defined partly by entities standing in them
+	 * rather than by blocks -- upstream's dimension portal is eight ender crystals on a bedrock ring,
+	 * and without them the page shows a ring and nothing else.
+	 *
+	 * <p>The position is in the same space as the blocks, which is the template's own coordinates.
+	 * Upstream stores these relative to the structure's midpoint instead, because its arrays are
+	 * centred on the origin and its block loop is not; keeping both in one space avoids that split.
+	 *
+	 * <p>The entity is ticked once per frame, as upstream ticks it, which is what animates it. It is
+	 * never added to a level.
+	 */
+	public void addEntityRender(BlockPos pos, Entity entity) {
+		entities.put(pos, entity);
+	}
+
 	private List<Entry> blocks() {
 		if (resolved != null)
 			return resolved;
@@ -248,6 +269,7 @@ public final class StructureRenderer {
 		// the middle index. Rotating about that keeps the preview from drifting as it spins.
 		graphics.submitPictureInPictureRenderState(new StructureRenderState(
 				List.copyOf(out), hasAlpha, this.extractBlockEntities(blocks, partialTick),
+				this.extractEntities(partialTick),
 				sizeX / 2F, minY + sizeY / 2F, sizeZ / 2F,
 				(float)rx, (float)ry, (float)rz,
 				x0, y0, x1, y1,
@@ -298,6 +320,34 @@ public final class StructureRenderer {
 			tileRendering = false;
 		}
 		return List.copyOf(states);
+	}
+
+	/**
+	 * V33a's entity loop. Each entity is ticked once per frame -- upstream's {@code onUpdate()} --
+	 * and then rendered half a block in from its corner and three eighths up, which is where upstream
+	 * puts them.
+	 */
+	private List<StructureRenderState.PlacedEntity> extractEntities(float partialTick) {
+		if (entities.isEmpty())
+			return List.of();
+		EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+		List<StructureRenderState.PlacedEntity> out = new ArrayList<>(entities.size());
+		for (Map.Entry<BlockPos, Entity> at : entities.entrySet()) {
+			Entity entity = at.getValue();
+			entity.tick();
+			EntityRenderer<? super Entity, ?> renderer = dispatcher.getRenderer(entity);
+			if (renderer == null)
+				continue;
+			EntityRenderState state = renderer.createRenderState(entity, partialTick);
+			// No floor here to catch a shadow, and no world to take a light level from.
+			state.shadowPieces.clear();
+			state.outlineColor = 0;
+			state.lightCoords = LightCoordsUtil.FULL_BRIGHT;
+			BlockPos pos = at.getKey();
+			out.add(new StructureRenderState.PlacedEntity(state,
+					pos.getX() + 0.5, pos.getY() + 0.875, pos.getZ() + 0.5));
+		}
+		return List.copyOf(out);
 	}
 
 	/** The stand-in for one position, or null if that block has no block entity. */

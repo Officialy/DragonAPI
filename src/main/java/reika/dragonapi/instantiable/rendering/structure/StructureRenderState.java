@@ -4,6 +4,7 @@ import java.util.List;
 
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,6 +25,7 @@ import org.jspecify.annotations.Nullable;
  * @param blocks        every block to draw, in no particular order; the depth buffer resolves overlap
  * @param hasAlpha      whether any entry is {@link Block#alpha}, so the renderer can skip a pass
  * @param blockEntities already-extracted renderer states, each carrying the position it belongs at
+ * @param entities      already-extracted entity states, for structures partly defined by entities
  * @param midX       the structure centre, subtracted before rotating so it spins about itself
  * @param rotX       V33a's {@code rx}/{@code ry}/{@code rz}, in degrees, applied X then Y then Z
  * @param scale      pixels per block; V33a's discrete size tier multiplied by its {@code s = 12}
@@ -32,6 +34,7 @@ public record StructureRenderState(
 		List<StructureRenderState.Block> blocks,
 		boolean hasAlpha,
 		List<BlockEntityRenderState> blockEntities,
+		List<StructureRenderState.PlacedEntity> entities,
 		float midX,
 		float midY,
 		float midZ,
@@ -55,10 +58,17 @@ public record StructureRenderState(
 	 */
 	public record Block(BlockPos pos, BlockState state, boolean alpha) {}
 
+	/**
+	 * An entity standing in the structure, already extracted, with the point it is drawn at. V33a's
+	 * dimension portal is the case this exists for: eight ender crystals on a bedrock ring.
+	 */
+	public record PlacedEntity(EntityRenderState state, double x, double y, double z) {}
+
 	public StructureRenderState(
 			List<StructureRenderState.Block> blocks,
 			boolean hasAlpha,
 			List<BlockEntityRenderState> blockEntities,
+			List<StructureRenderState.PlacedEntity> entities,
 			float midX,
 			float midY,
 			float midZ,
@@ -71,8 +81,8 @@ public record StructureRenderState(
 			int y1,
 			float scale,
 			@Nullable ScreenRectangle scissorArea) {
-		this(blocks, hasAlpha, blockEntities, midX, midY, midZ, rotX, rotY, rotZ, x0, y0, x1, y1,
-				scale, scissorArea,
+		this(blocks, hasAlpha, blockEntities, entities, midX, midY, midZ, rotX, rotY, rotZ,
+				x0, y0, x1, y1, scale, scissorArea,
 				PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
 	}
 }
