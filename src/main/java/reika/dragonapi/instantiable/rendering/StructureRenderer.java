@@ -1,3 +1,9 @@
+// PORTED. The working 26.2 implementation lives in
+// reika.dragonapi.instantiable.rendering.structure.StructureRenderer, which keeps this class's state
+// (rotation, slice, display overrides) but hands the drawing to a picture-in-picture element --
+// GuiGraphicsExtractor.pose() is a Matrix3x2fStack in 26.2, so the GL matrix stack this file was
+// built around no longer exists in GUI space. Kept commented as the 1.7.10 reference for the hooks
+// and the fake-world RenderAccess, neither of which is ported yet.
 //package reika.dragonapi.instantiable.rendering;
 //
 //import com.mojang.blaze3d.shaders.BlendMode;
