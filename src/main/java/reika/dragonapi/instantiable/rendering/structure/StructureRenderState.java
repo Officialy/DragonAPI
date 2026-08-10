@@ -3,6 +3,7 @@ package reika.dragonapi.instantiable.rendering.structure;
 import java.util.List;
 
 import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -20,8 +21,9 @@ import org.jspecify.annotations.Nullable;
  * {@link com.mojang.blaze3d.vertex.PoseStack} and then blits that texture into the GUI layer. That
  * is what this record feeds.
  *
- * @param blocks     every block to draw, in no particular order; the depth buffer resolves overlap
- * @param hasAlpha   whether any entry is {@link Block#alpha}, so the renderer can skip a second pass
+ * @param blocks        every block to draw, in no particular order; the depth buffer resolves overlap
+ * @param hasAlpha      whether any entry is {@link Block#alpha}, so the renderer can skip a pass
+ * @param blockEntities already-extracted renderer states, each carrying the position it belongs at
  * @param midX       the structure centre, subtracted before rotating so it spins about itself
  * @param rotX       V33a's {@code rx}/{@code ry}/{@code rz}, in degrees, applied X then Y then Z
  * @param scale      pixels per block; V33a's discrete size tier multiplied by its {@code s = 12}
@@ -29,6 +31,7 @@ import org.jspecify.annotations.Nullable;
 public record StructureRenderState(
 		List<StructureRenderState.Block> blocks,
 		boolean hasAlpha,
+		List<BlockEntityRenderState> blockEntities,
 		float midX,
 		float midY,
 		float midZ,
@@ -55,6 +58,7 @@ public record StructureRenderState(
 	public StructureRenderState(
 			List<StructureRenderState.Block> blocks,
 			boolean hasAlpha,
+			List<BlockEntityRenderState> blockEntities,
 			float midX,
 			float midY,
 			float midZ,
@@ -67,7 +71,8 @@ public record StructureRenderState(
 			int y1,
 			float scale,
 			@Nullable ScreenRectangle scissorArea) {
-		this(blocks, hasAlpha, midX, midY, midZ, rotX, rotY, rotZ, x0, y0, x1, y1, scale, scissorArea,
+		this(blocks, hasAlpha, blockEntities, midX, midY, midZ, rotX, rotY, rotZ, x0, y0, x1, y1,
+				scale, scissorArea,
 				PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
 	}
 }

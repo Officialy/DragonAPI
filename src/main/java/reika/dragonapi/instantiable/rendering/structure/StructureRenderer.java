@@ -3,17 +3,29 @@ package reika.dragonapi.instantiable.rendering.structure;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * V33a {@code Reika.DragonAPI.Instantiable.Rendering.StructureRenderer}: the rotatable multiblock
@@ -51,7 +63,16 @@ public final class StructureRenderer {
 	private final int minY;
 
 	private final Map<BlockPos, BlockState> overrides = new HashMap<>();
-	private final Map<Block, BlockState> blockHooks = new HashMap<>();
+	private final Map<Block, Supplier<BlockState>> blockHooks = new HashMap<>();
+	private final Map<Block, Consumer<BlockEntity>> blockEntityHooks = new HashMap<>();
+
+	/**
+	 * One block entity per position that needs one, built once and reused. They are never placed and
+	 * never ticked -- upstream does not tick them either, so anything animated off a tick counter
+	 * stands still while anything animated off wall-clock time moves.
+	 */
+	private final Map<BlockPos, BlockEntity> blockEntities = new HashMap<>();
+	private final Set<BlockPos> blockEntitiesWithout = new HashSet<>();
 
 	private List<Entry> resolved;
 
@@ -126,10 +147,24 @@ public final class StructureRenderer {
 		resolved = null;
 	}
 
-	/** V33a {@code addBlockHook}: draw something else everywhere a given block appears. */
-	public void addBlockHook(Block block, BlockState state) {
+	/**
+	 * V33a {@code addBlockHook}: draw something else everywhere a given block appears. The
+	 * replacement is a supplier because upstream's hooks are not constant -- the casting structure's
+	 * runes cycle through the sixteen elements on a timer, which is a hook that returns a different
+	 * block every four seconds.
+	 */
+	public void addBlockHook(Block block, Supplier<BlockState> state) {
 		blockHooks.put(block, state);
 		resolved = null;
+	}
+
+	/**
+	 * Runs against the block entity standing in for a given block every frame, before its renderer
+	 * extracts. This is where a preview sets up display-only state -- an element to show, an animation
+	 * phase -- on an instance that was never placed in a world and so has none of its own.
+	 */
+	public void addBlockEntityHook(Block block, Consumer<BlockEntity> hook) {
+		blockEntityHooks.put(block, hook);
 	}
 
 	private List<Entry> blocks() {
@@ -142,13 +177,20 @@ public final class StructureRenderer {
 		List<Entry> out = new ArrayList<>(source.size());
 		for (Entry e : source) {
 			BlockState state = overrides.get(e.pos());
-			if (state == null)
-				state = blockHooks.get(e.state().getBlock());
+			if (state == null) {
+				Supplier<BlockState> hook = blockHooks.get(e.state().getBlock());
+				if (hook != null)
+					state = hook.get();
+			}
 			out.add(state == null ? e
 					: new Entry(e.pos(), state, new ItemStack(state.getBlock()), e.alpha()));
 		}
-		resolved = List.copyOf(out);
-		return resolved;
+		out = List.copyOf(out);
+		// A supplier hook can return something different next frame, so the resolved list is only
+		// cacheable when every hook is a fixed override.
+		if (blockHooks.isEmpty())
+			resolved = out;
+		return out;
 	}
 
 	/**
@@ -182,10 +224,13 @@ public final class StructureRenderer {
 	}
 
 	/**
-	 * Submits the 3D view. The rectangle is the viewport the preview is drawn into; it is clipped to
-	 * it, so it should be the page's window rather than the whole screen.
+	 * Submits the 3D view. The rectangle is the viewport the preview is drawn into and it is clipped
+	 * to it; V33a sets no scissor and centres on the screen, so callers generally want the screen.
+	 *
+	 * <p>Block entity render states are extracted here rather than in the picture-in-picture renderer
+	 * because this is the GUI's extract phase, which is where vanilla extracts them too.
 	 */
-	public void draw3D(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1) {
+	public void draw3D(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, float partialTick) {
 		List<Entry> blocks = this.blocks();
 		if (blocks.isEmpty())
 			return;
@@ -202,13 +247,108 @@ public final class StructureRenderer {
 		// A block at position p occupies [p, p+1], so the structure's centre sits half a block past
 		// the middle index. Rotating about that keeps the preview from drifting as it spins.
 		graphics.submitPictureInPictureRenderState(new StructureRenderState(
-				List.copyOf(out), hasAlpha,
+				List.copyOf(out), hasAlpha, this.extractBlockEntities(blocks, partialTick),
 				sizeX / 2F, minY + sizeY / 2F, sizeZ / 2F,
 				(float)rx, (float)ry, (float)rz,
 				x0, y0, x1, y1,
 				(float)(this.sizeTier() * BLOCK_PIXELS),
 				graphics.peekScissorStack()));
 	}
+
+	/**
+	 * V33a's TESR pass: every position whose block has a block entity with a renderer gets that
+	 * renderer run over a stand-in instance, so a pylon in the guide glows and spins as it does in
+	 * the world instead of standing there as a bare model.
+	 *
+	 * <p>The stand-ins are given the client level, as upstream gives them {@code theWorld}. That is a
+	 * real level at a position the structure does not actually occupy, so anything a renderer reads
+	 * from it is meaningless -- {@link #isRenderingTiles()} is set across the extract for renderers
+	 * that need to know to skip those reads, which is exactly what upstream's flag of the same name is
+	 * for. The light level is one such read, and is overwritten with full brightness afterwards
+	 * because otherwise the preview samples whatever solid block happens to be at those coordinates.
+	 */
+	private List<BlockEntityRenderState> extractBlockEntities(List<Entry> blocks, float partialTick) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.level == null)
+			return List.of();
+		BlockEntityRenderDispatcher dispatcher = mc.getBlockEntityRenderDispatcher();
+		List<BlockEntityRenderState> states = new ArrayList<>();
+		tileRendering = true;
+		renderRotationX = rx;
+		renderRotationY = ry;
+		renderRotationZ = rz;
+		try {
+			for (Entry e : blocks) {
+				BlockEntity be = this.blockEntity(e, mc);
+				if (be == null)
+					continue;
+				BlockEntityRenderer<BlockEntity, BlockEntityRenderState> renderer = dispatcher.getRenderer(be);
+				if (renderer == null)
+					continue;
+				Consumer<BlockEntity> hook = blockEntityHooks.get(e.state().getBlock());
+				if (hook != null)
+					hook.accept(be);
+				BlockEntityRenderState state = renderer.createRenderState();
+				renderer.extractRenderState(be, state, partialTick, Vec3.ZERO, null);
+				state.lightCoords = LightCoordsUtil.FULL_BRIGHT;
+				states.add(state);
+			}
+		}
+		finally {
+			tileRendering = false;
+		}
+		return List.copyOf(states);
+	}
+
+	/** The stand-in for one position, or null if that block has no block entity. */
+	private BlockEntity blockEntity(Entry e, Minecraft mc) {
+		BlockPos pos = e.pos();
+		if (blockEntitiesWithout.contains(pos))
+			return null;
+		BlockEntity be = blockEntities.get(pos);
+		// A supplier hook can swap the block under a position between frames, which invalidates any
+		// instance built for what used to be there.
+		if (be != null && be.getBlockState().getBlock() == e.state().getBlock())
+			return be;
+		if (!(e.state().getBlock() instanceof EntityBlock entityBlock)) {
+			blockEntitiesWithout.add(pos);
+			return null;
+		}
+		be = entityBlock.newBlockEntity(pos, e.state());
+		if (be == null) {
+			blockEntitiesWithout.add(pos);
+			return null;
+		}
+		be.setLevel(mc.level);
+		blockEntities.put(pos, be);
+		return be;
+	}
+
+	/**
+	 * V33a's static flag, for renderers that have to behave differently inside a structure preview
+	 * than in the world -- typically to skip reading the level, since the stand-in block entity's
+	 * position is not where the structure actually is.
+	 */
+	public static boolean isRenderingTiles() {
+		return tileRendering;
+	}
+
+	public static double getRenderRX() {
+		return renderRotationX;
+	}
+
+	public static double getRenderRY() {
+		return renderRotationY;
+	}
+
+	public static double getRenderRZ() {
+		return renderRotationZ;
+	}
+
+	private static boolean tileRendering;
+	private static double renderRotationX;
+	private static double renderRotationY;
+	private static double renderRotationZ;
 
 	/**
 	 * V33a {@code drawSlice}: the flat, one-layer-at-a-time view, drawn as item icons on a grid whose

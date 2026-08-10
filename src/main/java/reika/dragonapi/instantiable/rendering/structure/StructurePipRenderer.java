@@ -21,7 +21,10 @@ import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.block.BlockStateModelSet;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
@@ -128,18 +131,39 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 		BlockColors colors = mc.getBlockColors();
 
 		submitPass(state, pose, collector, models, colors, false);
-		if (!state.hasAlpha())
-			return;
 
-		// The solid pass has to reach the framebuffer before the additive one blends against it.
-		mc.gameRenderer.featureRenderDispatcher().renderAllFeatures((SubmitNodeStorage)collector);
-		RenderSystem.pushPipelineModifier(ADDITIVE);
-		try {
-			submitPass(state, pose, collector, models, colors, true);
+		if (state.hasAlpha()) {
+			// The solid pass has to reach the framebuffer before the additive one blends against it.
 			mc.gameRenderer.featureRenderDispatcher().renderAllFeatures((SubmitNodeStorage)collector);
+			RenderSystem.pushPipelineModifier(ADDITIVE);
+			try {
+				submitPass(state, pose, collector, models, colors, true);
+				mc.gameRenderer.featureRenderDispatcher().renderAllFeatures((SubmitNodeStorage)collector);
+			}
+			finally {
+				RenderSystem.popPipelineModifier();
+			}
 		}
-		finally {
-			RenderSystem.popPipelineModifier();
+
+		submitBlockEntities(state, pose, collector, mc);
+	}
+
+	/**
+	 * V33a's TESR pass. The states were extracted in {@code StructureRenderer.draw3D}, during the
+	 * GUI's extract phase; all that is left here is to put each one at its block and submit it.
+	 */
+	private static void submitBlockEntities(StructureRenderState state, PoseStack pose,
+			SubmitNodeCollector collector, Minecraft mc) {
+		if (state.blockEntities().isEmpty())
+			return;
+		BlockEntityRenderDispatcher dispatcher = mc.getBlockEntityRenderDispatcher();
+		CameraRenderState camera = new CameraRenderState();
+		for (BlockEntityRenderState beState : state.blockEntities()) {
+			BlockPos pos = beState.blockPos;
+			pose.pushPose();
+			pose.translate(pos.getX(), pos.getY(), pos.getZ());
+			dispatcher.submit(beState, pose, collector, camera);
+			pose.popPose();
 		}
 	}
 
