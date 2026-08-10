@@ -70,11 +70,11 @@ public class Spline {
 
     private void renderPoints(VertexConsumer renderer, PoseStack.Pose pose, List<DecimalPosition> li, double x, double y, double z, boolean closed, int r, int g, int b, int a) {
         for (DecimalPosition d : li) {
-            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
+            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a).setLineWidth(1.0F);
         }
         if (closed) {
             DecimalPosition d = li.get(0);
-            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a);
+            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a).setLineWidth(1.0F);
         }
     }
 

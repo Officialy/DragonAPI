@@ -141,14 +141,14 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
                     double angw = 360D * this.getFraction(o);
                     double d2 = Math.toRadians(a);
                     if (innerRadius == 0) {
-                        buffer.addVertex(pose, (float) centerX, (float) centerY, 0).setColor(0xff000000);
+                        buffer.addVertex(pose, (float) centerX, (float) centerY, 0).setColor(0xff000000).setLineWidth(2.0F);
                         double r2 = this.getOuterRadiusAt(d2);
-                        buffer.addVertex(pose, (float) (centerX + r2 * Math.cos(d2)), (float) (centerY + r2 * Math.sin(d2)), 0).setColor(0xff000000);
+                        buffer.addVertex(pose, (float) (centerX + r2 * Math.cos(d2)), (float) (centerY + r2 * Math.sin(d2)), 0).setColor(0xff000000).setLineWidth(2.0F);
                     } else {
                         double r1 = this.getInnerRadiusAt(d2);
                         double r2 = this.getOuterRadiusAt(d2);
-                        buffer.addVertex(pose, (float) (centerX + r1 * Math.cos(d2)), (float) (centerY + r1 * Math.sin(d2)), 0).setColor(0xff000000);
-                        buffer.addVertex(pose, (float) (centerX + r2 * Math.cos(d2)), (float) (centerY + r2 * Math.sin(d2)), 0).setColor(0xff000000);
+                        buffer.addVertex(pose, (float) (centerX + r1 * Math.cos(d2)), (float) (centerY + r1 * Math.sin(d2)), 0).setColor(0xff000000).setLineWidth(2.0F);
+                        buffer.addVertex(pose, (float) (centerX + r2 * Math.cos(d2)), (float) (centerY + r2 * Math.sin(d2)), 0).setColor(0xff000000).setLineWidth(2.0F);
                     }
                     a += angw;
                 }
