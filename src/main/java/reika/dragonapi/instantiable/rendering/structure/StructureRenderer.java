@@ -272,6 +272,7 @@ public final class StructureRenderer {
 				this.extractEntities(partialTick),
 				sizeX / 2F, minY + sizeY / 2F, sizeZ / 2F,
 				(float)rx, (float)ry, (float)rz,
+				0, 0,
 				x0, y0, x1, y1,
 				(float)(this.sizeTier() * BLOCK_PIXELS),
 				graphics.peekScissorStack()));
@@ -381,6 +382,15 @@ public final class StructureRenderer {
 	 */
 	public static boolean isRenderingTiles() {
 		return tileRendering;
+	}
+
+	/**
+	 * For callers that run a block-entity renderer over a stand-in instance without going through a
+	 * whole structure -- the guide book's single-machine render is one. Always pair with a
+	 * {@code finally}.
+	 */
+	public static void setRenderingTiles(boolean rendering) {
+		tileRendering = rendering;
 	}
 
 	public static double getRenderRX() {

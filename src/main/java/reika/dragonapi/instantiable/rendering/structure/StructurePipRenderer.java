@@ -122,6 +122,10 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 		Minecraft mc = Minecraft.getInstance();
 		mc.gameRenderer.lighting().setupFor(Lighting.Entry.ITEMS_3D);
 
+		// Outside the rotation, so this slides the model across the viewport instead of moving what it
+		// spins about. The pose is already scaled by pixels-per-block, hence the division.
+		if (state.offsetX() != 0 || state.offsetY() != 0)
+			pose.translate(state.offsetX() / state.scale(), state.offsetY() / state.scale(), 0);
 		pose.scale(1, -1, -1);
 		pose.mulPose(Axis.XP.rotationDegrees(state.rotX()));
 		pose.mulPose(Axis.YP.rotationDegrees(state.rotY()));

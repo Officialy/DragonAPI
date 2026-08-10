@@ -28,7 +28,9 @@ import org.jspecify.annotations.Nullable;
  * @param entities      already-extracted entity states, for structures partly defined by entities
  * @param midX       the structure centre, subtracted before rotating so it spins about itself
  * @param rotX       V33a's {@code rx}/{@code ry}/{@code rz}, in degrees, applied X then Y then Z
- * @param scale      pixels per block; V33a's discrete size tier multiplied by its {@code s = 12}
+ * @param offsetX    where the model sits relative to the viewport centre, in GUI pixels; applied
+ *                   outside the rotation, so it moves the model on screen rather than its pivot
+ * @param scale      pixels per block; for a structure, V33a's size tier multiplied by its {@code s = 12}
  */
 public record StructureRenderState(
 		List<StructureRenderState.Block> blocks,
@@ -41,6 +43,8 @@ public record StructureRenderState(
 		float rotX,
 		float rotY,
 		float rotZ,
+		float offsetX,
+		float offsetY,
 		int x0,
 		int y0,
 		int x1,
@@ -75,6 +79,8 @@ public record StructureRenderState(
 			float rotX,
 			float rotY,
 			float rotZ,
+			float offsetX,
+			float offsetY,
 			int x0,
 			int y0,
 			int x1,
@@ -82,7 +88,7 @@ public record StructureRenderState(
 			float scale,
 			@Nullable ScreenRectangle scissorArea) {
 		this(blocks, hasAlpha, blockEntities, entities, midX, midY, midZ, rotX, rotY, rotZ,
-				x0, y0, x1, y1, scale, scissorArea,
+				offsetX, offsetY, x0, y0, x1, y1, scale, scissorArea,
 				PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
 	}
 }
