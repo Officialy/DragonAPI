@@ -2,6 +2,7 @@ package reika.dragonapi.instantiable.rendering.structure;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
@@ -45,15 +46,16 @@ import reika.dragonapi.DragonAPI;
  *
  * <p>The base class already translates to the centre of the viewport and applies
  * {@code scale(s, s, -s)}, where {@code s} is the GUI scale multiplied by
- * {@link StructureRenderState#scale()}. That leaves model +X pointing right, model +Y pointing
- * <em>down</em> (the GUI's orthographic projection has an inverted Y) and model +Z pointing at the
- * viewer, so this class turns the scene the rest of the way with a 180 degree roll about X.
+ * {@link StructureRenderState#scale()}. That leaves model +X pointing right and model +Y pointing
+ * <em>down</em>, because the GUI's orthographic projection has an inverted Y. The extra
+ * {@code scale(1, -1, -1)} below finishes the orientation; it is the same step every vanilla
+ * picture-in-picture renderer takes (see {@code GuiEntityRenderer} and NeoForge's own stencil
+ * sample), and it is paired with the projection's reversed near/far to come out the right way round.
+ * Do not reason about it in isolation.
  *
- * <p>V33a used {@code glScaled(-d*s, -d*s, -d*s)} instead. That is a point inversion rather than a
- * rotation: it mirrors the structure and inverts face winding, which upstream then had to live with
- * (its {@code glFrontFace(GL_CW)} compensation is commented out in the original). The roll used here
- * produces the image upstream was drawing towards, without the mirror, and keeps winding correct so
- * face culling and the depth buffer behave.
+ * <p>V33a used {@code glScaled(-d*s, -d*s, -d*s)} instead, which additionally mirrors the structure
+ * in X. That mirror is not reproduced: most ChromatiCraft multiblocks are symmetric about X, and a
+ * view you can spin freely makes the difference invisible on the ones that are not.
  */
 @EventBusSubscriber(modid = DragonAPI.MODID, value = Dist.CLIENT)
 public final class StructurePipRenderer extends PictureInPictureRenderer<StructureRenderState> {
@@ -75,10 +77,18 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 
 	@SubscribeEvent
 	public static void registerPipelines(RegisterPipelineModifiersEvent event) {
-		event.register(ADDITIVE, (pipeline, name) -> pipeline.toBuilder()
-				.withLocation(name)
-				.withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
-				.build());
+		event.register(ADDITIVE, (pipeline, name) -> {
+			// Swap the blend function and nothing else. The single-argument ColorTargetState
+			// constructor also fixes the format to RGBA8_UNORM and the write mask to WRITE_ALL, which
+			// would silently change whatever the sheet's own pipeline declared -- and the result is
+			// cached per pipeline, so it would not correct itself later.
+			ColorTargetState existing = pipeline.getColorTargetState();
+			ColorTargetState additive = existing == null
+					? new ColorTargetState(BlendFunction.LIGHTNING)
+					: new ColorTargetState(Optional.of(BlendFunction.LIGHTNING), existing.format(),
+							existing.writeMask());
+			return pipeline.toBuilder().withLocation(name).withColorTargetState(additive).build();
+		});
 	}
 
 	private final List<BlockStateModelPart> scratch = new ArrayList<>();
