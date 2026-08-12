@@ -102,7 +102,7 @@ public class TickRegistry {
     public void serverTickPre(ServerTickEvent.Pre evt) {
         for (TickHandler h : serverTickers) {
             if (h.canFire(Phase.START)) {
-                h.tick(TickType.SERVER, Phase.START);
+                h.tick(TickType.SERVER, Phase.START, evt.getServer());
             }
         }
     }
@@ -111,7 +111,7 @@ public class TickRegistry {
     public void serverTickPost(ServerTickEvent.Post evt) {
         for (TickHandler h : serverTickers) {
             if (h.canFire(Phase.END)) {
-                h.tick(TickType.SERVER, Phase.END);
+                h.tick(TickType.SERVER, Phase.END, evt.getServer());
             }
         }
     }
@@ -188,4 +188,3 @@ public class TickRegistry {
     }
 
 }
-

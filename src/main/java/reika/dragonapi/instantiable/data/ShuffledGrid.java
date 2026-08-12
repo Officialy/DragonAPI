@@ -15,11 +15,20 @@ public class ShuffledGrid {
 	private final boolean[][] data;
 
 	public ShuffledGrid(int size, int dev, int sep) {
+		if (size <= 0)
+			throw new IllegalArgumentException("Grid size must be positive: "+size);
+		if (dev < 0)
+			throw new IllegalArgumentException("Grid deviation cannot be negative: "+dev);
+		if (sep <= 0)
+			throw new IllegalArgumentException("Grid separation must be positive: "+sep);
 		gridSize = size;
 		maxDeviation = dev;
 		averageSeparation = sep;
 
-		if (sep >= dev / 2) {
+		// Adjacent rows can overlap only when both may move toward one another far enough
+		// to consume their separation. The legacy comparison was reversed and warned for
+		// practically every healthy grid (including the 55 separation / 20 deviation warp grid).
+		if ((long)dev * 2 >= sep) {
 			DragonAPI.LOGGER.info("Warning, shuffled grid may have row overlap!");
 			Thread.dumpStack();
 		}

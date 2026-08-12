@@ -73,10 +73,15 @@ public class RandomTagSingleStateProvider extends BlockStateProvider {
 
     @Override
     public @NotNull BlockState getState(net.minecraft.world.level.WorldGenLevel level, @NotNull RandomSource random, @NotNull BlockPos pos) {
-        // Ensure the states list is initialized before use.
+        // TreeFeature calls a trunk provider once for every log. Consuming its RandomSource here
+        // chose a different species for every Y coordinate. A "single state" provider instead
+        // keys the choice to the world and trunk column, so one straight tree has one wood while
+        // separate trees still vary and the result remains deterministic across chunk retries.
         initializeStates();
-
-        // Return a random state from our cached list.
-        return this.states.get(random.nextInt(this.states.size()));
+        long seed = level.getSeed();
+        seed ^= (long)pos.getX() * 341873128712L;
+        seed ^= (long)pos.getZ() * 132897987541L;
+        seed ^= seed >>> 29;
+        return this.states.get(Math.floorMod(seed, this.states.size()));
     }
 }

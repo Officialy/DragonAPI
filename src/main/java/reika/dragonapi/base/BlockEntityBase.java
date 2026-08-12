@@ -554,7 +554,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     }
 
-    protected final boolean shouldSendSyncPackets() {
+    /** Override for tiles migrated entirely to vanilla/custom-payload synchronization. */
+    protected boolean shouldSendSyncPackets() {
         return !level.isClientSide();
     }
 
@@ -820,7 +821,6 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
 }
-
 
 
 
