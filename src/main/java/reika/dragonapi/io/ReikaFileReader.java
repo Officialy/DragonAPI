@@ -689,8 +689,10 @@ public class ReikaFileReader {
 			try {
 				MessageDigest messageDigest = MessageDigest.getInstance(tag);
 				messageDigest.update(bytes);
-				//return new String(messageDigest.digest(), StandardCharsets.UTF_8);
-				return null;// javax.xml.bind.DatatypeConverter.printHexBinary(messageDigest.digest());
+				// 1.7.10 used javax.xml.bind.DatatypeConverter.printHexBinary, which left the JDK in 11.
+				// HexFormat.withUpperCase() is its exact replacement; the case matters because callers
+				// such as ChromatiCraft's structure password take String.hashCode() of this value.
+				return HexFormat.of().withUpperCase().formatHex(messageDigest.digest());
 			} catch (NoSuchAlgorithmException e) {
 				return null; //never happens
 			}
