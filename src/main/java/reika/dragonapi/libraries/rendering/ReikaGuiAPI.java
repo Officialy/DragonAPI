@@ -73,10 +73,22 @@ public final class ReikaGuiAPI extends Screen {
     /**
      * Renders the specified text to the screen, center-aligned.
      */
+
+    /**
+     * 1.7.10 {@code FontRenderer.drawString} treated a colour with a clear alpha byte as fully
+     * opaque ({@code if ((color & 0xFC000000) == 0) color |= 0xFF000000}). 26.2
+     * {@link GuiGraphicsExtractor#text} instead DISCARDS the draw when the alpha byte is 0, so
+     * every transcribed {@code 0x000000} / {@code 4210752} colour silently rendered nothing.
+     * Restore the legacy rule for callers that still pass 1.7.10-style colours.
+     */
+    public static int opaque(int colour) {
+        return (colour & 0xFC000000) == 0 ? colour | 0xFF000000 : colour;
+    }
+
     public void drawCenteredStringNoShadow(GuiGraphicsExtractor graphics, Font par1FontRenderer, String par2Str, int par3, int par4, int par5) {
         // The 5-arg text() overload defaults dropShadow=true; pass false so this actually draws
         // without a shadow (the shadow made power-tab labels / titles look doubled and darker).
-        graphics.text(par1FontRenderer, par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, par5, false);
+        graphics.text(par1FontRenderer, par2Str, par3 - par1FontRenderer.width(par2Str) / 2, par4, opaque(par5), false);
     }
 
     /**
@@ -240,7 +252,7 @@ public final class ReikaGuiAPI extends Screen {
         if (out != null)
             this.drawItemStackWithTooltip(render, f, out, x2+4+j, y2+4+k);
         if (shapeless)
-            render.text(f, "Shapeless", x2+j-35, y2+k+27, 0x000000);
+            render.text(f, "Shapeless", x2+j-35, y2+k+27, 0xFF000000);
     }
 
     /** Draw a smelting recipe in the GUI. Args: output item, x in, y in, x out, y out */
@@ -386,7 +398,7 @@ public final class ReikaGuiAPI extends Screen {
     }
 
     public void drawString(GuiGraphicsExtractor GuiGraphicsExtractor, Font f, String s, int x, int y, int colour, boolean shadow) {
-        GuiGraphicsExtractor.text(f, s, x, y, colour, shadow);
+        GuiGraphicsExtractor.text(f, s, x, y, opaque(colour), shadow);
     }
 
     public Map<String, Rectangle> getTooltips() {
