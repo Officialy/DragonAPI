@@ -4,6 +4,7 @@
     "package": "reika.dragonapi.mixin",
     "compatibilityLevel": "JAVA_21",
     "mixins": [
+		"MixinBiome",
         "MixinChunkMap",
         "MixinLevelChunk"
     ],

@@ -7,6 +7,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import reika.dragonapi.instantiable.event.base.WorldPositionEvent;
 
 public class IceFreezeEvent extends WorldPositionEvent implements ICancellableEvent {
+	private static final ThreadLocal<Boolean> NATURAL_CHECK =
+			ThreadLocal.withInitial(() -> Boolean.FALSE);
 
 	public final boolean needsEdge;
 
@@ -16,7 +18,18 @@ public class IceFreezeEvent extends WorldPositionEvent implements ICancellableEv
 	}
 
 	public final boolean wouldFreezeNaturally() {
-		return false;//todo world.canBlockFreeze(xCoord, yCoord, zCoord, needsEdge);
+		BlockPos pos = new BlockPos(xCoord, yCoord, zCoord);
+		NATURAL_CHECK.set(Boolean.TRUE);
+		try {
+			return world.getBiome(pos).value().shouldFreeze(world, pos, needsEdge);
+		}
+		finally {
+			NATURAL_CHECK.remove();
+		}
+	}
+
+	public static boolean isNaturalCheckInProgress() {
+		return NATURAL_CHECK.get();
 	}
 
 	public static boolean fire(Level world, int x, BlockPos pos, boolean edge) {
@@ -30,11 +43,14 @@ public class IceFreezeEvent extends WorldPositionEvent implements ICancellableEv
 	}
 
 	public static boolean fire_IgnoreVanilla(Level world, BlockPos pos) {
-		IceFreezeEvent evt = new IceFreezeEvent(world, pos, false);
+		return fire_IgnoreVanilla(world, pos, false);
+	}
+
+	public static boolean fire_IgnoreVanilla(Level world, BlockPos pos, boolean edge) {
+		IceFreezeEvent evt = new IceFreezeEvent(world, pos, edge);
 		NeoForge.EVENT_BUS.post(evt);
 		return !evt.isCanceled();
 	}
 
     
 }
-
