@@ -26,6 +26,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class PacketPipeline {
 
@@ -63,7 +64,10 @@ public class PacketPipeline {
 
     public void sendToAllOnServer(PacketObj p) {
         CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-        PacketDistributor.sendToAllPlayers(payload);
+        if (ServerLifecycleHooks.getCurrentServer() != null) {
+            for (ServerPlayer player : ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers())
+                this.sendIfSupported(player, payload);
+        }
     }
 
     public Packet<?> getMinecraftPacket(PacketObj p) {
@@ -77,7 +81,7 @@ public class PacketPipeline {
         if (ReikaPlayerAPI.isFake(player))
             throw new MisuseException("You cannot send a packet to a fake player!");
         CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-        PacketDistributor.sendToPlayer(player, payload);
+        this.sendIfSupported(player, payload);
     }
 
     public void sendToAllAround(PacketObj p, BlockEntity te, double range) {
@@ -87,7 +91,8 @@ public class PacketPipeline {
     public void sendToAllAround(PacketObj p, Level world, double x, double y, double z, double range) {
         if (world instanceof ServerLevel serverLevel) {
             CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, x, y, z, range, payload);
+            this.sendToPlayers(serverLevel, payload,
+                    player -> player.distanceToSqr(x, y, z) <= range * range);
         }
     }
 
@@ -95,28 +100,31 @@ public class PacketPipeline {
         ServerLevel serverLevel = ServerLifecycleHooks.getCurrentServer().getLevel(world);
         if (serverLevel != null) {
             CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, x, y, z, range, payload);
+            this.sendToPlayers(serverLevel, payload,
+                    player -> player.distanceToSqr(x, y, z) <= range * range);
         }
     }
 
     public void sendToAllAround(PacketObj p, Entity e, double range) {
         if (e.level() instanceof ServerLevel serverLevel) {
             CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, e.getX(), e.getY(), e.getZ(), range, payload);
+            this.sendToPlayers(serverLevel, payload,
+                    player -> player.distanceToSqr(e.getX(), e.getY(), e.getZ()) <= range * range);
         }
     }
 
     public void sendToAllAround(PacketObj p, WorldLocation loc, double range) {
         if (loc.getWorld() instanceof ServerLevel serverLevel) {
             CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-            PacketDistributor.sendToPlayersNear(serverLevel, (ServerPlayer)null, loc.pos.getX(), loc.pos.getY(), loc.pos.getZ(), range, payload);
+            this.sendToPlayers(serverLevel, payload, player -> player.distanceToSqr(
+                    loc.pos.getX(), loc.pos.getY(), loc.pos.getZ()) <= range * range);
         }
     }
 
     public void sendToDimension(PacketObj p, Level world) {
         if (world instanceof ServerLevel serverLevel) {
             CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-            PacketDistributor.sendToPlayersInDimension(serverLevel, payload);
+            this.sendToPlayers(serverLevel, payload, player -> true);
         }
     }
 
@@ -124,8 +132,21 @@ public class PacketPipeline {
         ServerLevel serverLevel = ServerLifecycleHooks.getCurrentServer().getLevel(dimensionId);
         if (serverLevel != null) {
             CustomPacketPayload payload = ReikaPacketHelper.toPayload(modId, p, packetChannel);
-            PacketDistributor.sendToPlayersInDimension(serverLevel, payload);
+            this.sendToPlayers(serverLevel, payload, player -> true);
         }
+    }
+
+    private void sendToPlayers(ServerLevel level, CustomPacketPayload payload,
+            Predicate<ServerPlayer> filter) {
+        for (ServerPlayer player : level.players()) {
+            if (filter.test(player)) this.sendIfSupported(player, payload);
+        }
+    }
+
+    private void sendIfSupported(ServerPlayer player, CustomPacketPayload payload) {
+        // NeoForge rejects custom payloads which the remote connection did not negotiate. This
+        // matters for vanilla-compatible/optional channels and for headless GameTest players.
+        if (player.connection.hasChannel(payload)) PacketDistributor.sendToPlayer(player, payload);
     }
 
     public void sendToServer(PacketObj p) {

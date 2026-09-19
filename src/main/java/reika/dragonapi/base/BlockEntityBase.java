@@ -297,27 +297,12 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
-        CompoundTag tag = super.getUpdateTag(provider);
-        this.saveAdditional(tag);
-        return tag;
+        return this.saveWithoutMetadata(provider);
     }
 
     @Override
     public void handleUpdateTag(ValueInput input) {
-        try {
-            if (input instanceof TagValueInput) {
-                Field f = TagValueInput.class.getDeclaredField("input");
-                f.setAccessible(true);
-                CompoundTag tag = (CompoundTag) f.get(input);
-                if (tag != null) {
-                    this.load(tag);
-                }
-            } else {
-                DragonAPI.LOGGER.error("BlockEntityBase handleUpdateTag called with non-TagValueInput: " + input.getClass());
-            }
-        } catch (Exception e) {
-            DragonAPI.LOGGER.error("Failed to extract CompoundTag from TagValueInput in handleUpdateTag", e);
-        }
+        this.loadAdditional(input);
     }
 
     private boolean shouldFullSync() {
@@ -546,7 +531,14 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     private void sendPacketToAllAround(SyncPacket p, int radius) {
         if (!level.isClientSide()) {
             CustomPacketPayload payload = ReikaPacketHelper.toPayload(DragonAPI.MODID, (ReikaPacketHelper.PacketObj) p, DragonAPI.packetChannel);
-            PacketDistributor.sendToPlayersNear((ServerLevel) level, null, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), radius, payload);
+            ServerLevel serverLevel = (ServerLevel)level;
+            double radiusSq = radius * (double)radius;
+            for (ServerPlayer player : serverLevel.players()) {
+                if (player.distanceToSqr(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()) <= radiusSq
+                        && player.connection.hasChannel(payload)) {
+                    PacketDistributor.sendToPlayer(player, payload);
+                }
+            }
         }
     }
 
@@ -821,6 +813,4 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
 }
-
-
 

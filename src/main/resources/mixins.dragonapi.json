@@ -4,9 +4,13 @@
     "package": "reika.dragonapi.mixin",
     "compatibilityLevel": "JAVA_21",
     "mixins": [
+        "MixinGameTestRunner",
+        "MixinGameTestServer",
 		"MixinBiome",
         "MixinChunkMap",
-        "MixinLevelChunk"
+        "MixinLevelChunk",
+        "MixinPlayerList",
+        "MultipleTestTrackerAccessor"
     ],
     "injectors": {
         "defaultRequire": 1

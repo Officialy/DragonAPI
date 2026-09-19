@@ -57,6 +57,7 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Random;
+import java.util.Set;
 
 public class APIPacketHandler implements PacketHandler {
 
@@ -331,10 +332,13 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case PLAYERDATSYNC:
                 case PLAYERDATSYNC_CLIENT:
-                    // Player NBT sync - use ValueInput API directly
-                    try (var scopedCollector = new ProblemReporter.ScopedCollector(ep.problemPath(), LoggerFactory.getLogger(DragonAPI.class))) {
-                        ep.load(TagValueInput.create(scopedCollector, world.registryAccess(), NBT));
-                    }
+                    // This packet is DragonAPI custom/persistent player data only. Never
+                    // feed it to Player.load: doing so also applies saved position and
+                    // rotation and causes visible camera snapping during frequent syncs.
+                    CompoundTag persistent = ep.getPersistentData();
+                    for (String persistentKey : Set.copyOf(persistent.keySet()))
+                        persistent.remove(persistentKey);
+                    persistent.merge(NBT);
                     break;/*=
 			case PLAYERATTRSYNC:
 				for (Object o : NBT.func_150296_c()) { //Double tags

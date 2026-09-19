@@ -7,7 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -15,7 +14,6 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -70,9 +68,11 @@ public class ReikaPlayerAPI {
     }
 
     public static void syncCustomData(ServerPlayer ep) {
-        TagValueOutput out = TagValueOutput.createWithoutContext(ProblemReporter.DISCARDING);
-        ep.saveWithoutId(out);
-        CompoundTag tag = (CompoundTag) out.buildResult();
+        // DragonAPI's 1.7.10 "custom data" was EntityPlayer.getEntityData(), not the
+        // player's complete save record. Loading a complete modern player tag on the
+        // client also reloads Pos/Rotation/Motion; rapid Chroma buffer updates then
+        // continually snap the local camera back to the server's previous rotation.
+        CompoundTag tag = ep.getPersistentData().copy();
         ReikaPacketHelper.sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERDATSYNC.ordinal(), tag, new PacketTarget.PlayerTarget(ep));
     }
 
@@ -192,4 +192,3 @@ public class ReikaPlayerAPI {
     }
 
 }
-
