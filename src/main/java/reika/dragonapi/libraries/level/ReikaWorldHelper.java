@@ -252,6 +252,26 @@ public class ReikaWorldHelper {
         return (BlockProperties.isSoft(b.getBlock()));
     }
 
+    /**
+     * Minecraft 1.7.10 {@code World.getTopSolidOrLiquidBlock}: one above the highest block that blocks
+     * movement and is neither leaves nor foliage. Water and lava do not block movement, so over water
+     * this is the sea bed, not the surface; leaves are looked through, so under a canopy this is the
+     * ground. No 26.2 heightmap is that (OCEAN_FLOOR counts leaves, the motion-blocking ones count
+     * fluids), so the column is scanned down from the world surface. Returns {@code getMinY() - 1} for a
+     * column with nothing in it, where upstream returned -1.
+     */
+    public static int getTopSolidOrLiquidBlock(net.minecraft.world.level.LevelReader world, int x, int z) {
+        int top = world.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, x, z);
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, top, z);
+        for (int y = top; y >= world.getMinY(); y--) {
+            pos.setY(y);
+            BlockState state = world.getBlockState(pos);
+            if (state.blocksMotion() && !state.is(net.minecraft.tags.BlockTags.LEAVES))
+                return y + 1;
+        }
+        return world.getMinY() - 1;
+    }
+
     public static boolean softBlocks(Block id) {
         if (id == Blocks.AIR)//todo || id.defaultBlockState().getMaterial() == Material.AIR)
             return true;
