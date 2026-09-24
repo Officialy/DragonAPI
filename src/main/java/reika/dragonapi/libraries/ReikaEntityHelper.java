@@ -66,6 +66,47 @@ public class ReikaEntityHelper {
 
     private static final HashMap<Class<?>, Boolean> hostilityMap = new HashMap<>();
 
+    /** Knocks one entity away from another. Args: Attacker, target, power */
+    public static void knockbackEntity(Entity a, Entity b, double power) {
+        knockbackEntityFromPos(a.getX(), a.getY(), a.getZ(), b, power);
+    }
+
+    /** Knocks one entity away from another. Args: Attacker, target, power, ypowerscale */
+    public static void knockbackEntity(Entity a, Entity b, double power, double yscale) {
+        knockbackEntityFromPos(a.getX(), a.getY(), a.getZ(), b, power, 0, yscale);
+    }
+
+    public static void knockbackEntityFromPos(double x, double y, double z, Entity ent, double power) {
+        knockbackEntityFromPos(x, y, z, ent, power, 0);
+    }
+
+    /** Knocks an entity away from a position. Args: x, y, z, entity, power, distance scale exponent */
+    public static void knockbackEntityFromPos(double x, double y, double z, Entity ent, double power, double distanceScale) {
+        knockbackEntityFromPos(x, y, z, ent, power, distanceScale, 1);
+    }
+
+    /**
+     * Knocks an entity away from a position. Args: x, y, z, entity, power, distance scale exponent, y scalar.
+     * As in 1.7.10 the y scalar is accepted but unused.
+     */
+    public static void knockbackEntityFromPos(double x, double y, double z, Entity ent, double power, double distanceScale, double yscale) {
+        double dx = x - ent.getX();
+        double dz = z - ent.getZ();
+        double dd = Math.sqrt(dx * dx + dz * dz);
+        // 1.7.10 divided by dd unguarded; an entity exactly above the point got NaN motion, which 26.2
+        // would carry into its position. Such an entity is only lifted.
+        boolean centred = dd < 1.0E-6;
+        if (distanceScale > 0 && !centred) {
+            power /= Math.pow(dd, distanceScale);
+        }
+        double mx = centred ? 0 : -dx / dd / 2 * power;
+        double mz = centred ? 0 : -dz / dd / 2 * power;
+        double my = ent.onGround() || ent.getY() > y ? 0.4 * power : 0;
+        ent.setDeltaMovement(ent.getDeltaMovement().add(mx, my, mz));
+        // velocityChanged: players only take the motion from a server velocity packet.
+        ent.hurtMarked = true;
+    }
+
     /**
      * Adds a small velocity in a random direction (akin to items' speeds when dropped)
      */

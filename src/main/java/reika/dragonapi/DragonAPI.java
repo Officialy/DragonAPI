@@ -178,6 +178,7 @@ public class DragonAPI extends DragonAPIMod {
 
         TickRegistry.instance.registerTickHandler(PlayerChunkTracker.instance);
         TickRegistry.instance.registerTickHandler(ProgressiveRecursiveBreaker.instance);
+        TickRegistry.instance.registerTickHandler(reika.dragonapi.auxiliary.trackers.TickScheduler.instance);
         ReikaPacketHelper.registerPacketHandler(instance, packetChannel, new APIPacketHandler());
 
         PatreonController.instance.registerMod("Reika", PatreonController.reikaURL);
