@@ -7,6 +7,10 @@
         "MixinGameTestRunner",
         "MixinGameTestServer",
 		"MixinBiome",
+        "MixinEnvironmentAttributeSystem",
+        "MixinFireBlock",
+        "MixinGrassBlock",
+        "MixinLavaFluid",
         "MixinChunkMap",
         "MixinLevelChunk",
         "MixinPlayerList",
@@ -17,6 +21,8 @@
     },
     "client": [
         "CameraAccessor",
-        "MixinBiomeColors"
+        "MixinBiomeColors",
+        "MixinClientLevel",
+        "MixinFluidRenderer"
     ]
 }
