@@ -34,10 +34,20 @@ public abstract class NoiseGeneratorBase {
         return this.calculateValues(x * inputFactor, y * inputFactor, z * inputFactor);
     }
 
+    /**
+     * V33a samples all three displacement fields at the undisplaced position. The first port displaced
+     * x first and then sampled the y and z fields at the already-moved point, which skews every
+     * displaced generator.
+     */
     private double calculateValues(double x, double y, double z) {
-        x += this.getXDisplacement(x, y, z);
-        y += this.getYDisplacement(x, y, z);
-        z += this.getZDisplacement(x, y, z);
+        if (this.displaceCalculation()) {
+            double x0 = x;
+            double y0 = y;
+            double z0 = z;
+            x += this.getXDisplacement(x0, y0, z0);
+            y += this.getYDisplacement(x0, y0, z0);
+            z += this.getZDisplacement(x0, y0, z0);
+        }
 
         double val = this.calcValue(x, y, z, 1, 1);
 
@@ -52,6 +62,11 @@ public abstract class NoiseGeneratorBase {
         }
 
         return val;
+    }
+
+    /** V33a hook: whether {@link #getValue} applies the displacement fields before sampling. */
+    protected boolean displaceCalculation() {
+        return true;
     }
 
     protected abstract double calcValue(double x, double y, double z, double freq, double amp);

@@ -239,8 +239,19 @@ public final class Coordinate implements Location, Comparable<Coordinate> {
 		return xCoord + ", " + yCoord + ", " + zCoord;
 	}
 
+	/**
+	 * V33a's hash. Seeded patterns (the Ender Forest colour cells, the Rainbow Forest's Voronoi tree
+	 * colours via {@link DecimalPosition#hashCode}) feed this straight into {@code new Random(...)},
+	 * so any other formula changes what generates where.
+	 */
 	public static int coordHash(int x, int y, int z) {
-		return x + (y << 8) + (z << 16);
+		//return xCoord + (zCoord << 8) + (yCoord << 16);
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + x;
+		result = prime * result + y;
+		result = prime * result + z;
+		return result;
 	}
 
 	@Override

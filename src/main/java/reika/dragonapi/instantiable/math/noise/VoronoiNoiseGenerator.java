@@ -43,7 +43,6 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
     private static final int SEED_NOISE_GEN = 31337;
 
     private static final double SQRT_3 = Math.sqrt(3);
-    private final ArrayList<Root> candidateList = new ArrayList<>();
     public boolean calculateDistance = false;
     public double randomFactor = 1;
 
@@ -63,19 +62,29 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
         return 1D - this.IntValueNoise3D(x, y, z, rseed) / 1073741824D;
     }
 
+    /**
+     * V33a {@code displaceCalculation() == false}: a Voronoi value is never displaced inside
+     * {@link #getValue}. The displacement fields are applied only by {@link #getClosestRoot}, to the
+     * raw (unscaled) coordinates, which is the one place upstream used them.
+     */
     @Override
-    protected double calcValue(double x, double y, double z, double f, double a) {
-        if (f != 1 && f > 0) {
-            x *= f;
-            y *= f;
-            z *= f;
-        }
+    protected boolean displaceCalculation() {
+        return false;
+    }
 
+    /**
+     * The 5x5x5 neighbourhood of seed points around an already-scaled position, nearest first.
+     *
+     * <p>V33a kept these in a per-call {@code Candidates} object; the first 26.x port moved them into
+     * one shared field, which let parallel worldgen threads overwrite each other's candidates between
+     * the sort and the read. The list is local again.
+     */
+    private ArrayList<Root> candidates(double x, double y, double z) {
         int xInt = Mth.floor(x);
         int yInt = Mth.floor(y);
         int zInt = Mth.floor(z);
 
-        candidateList.clear();
+        ArrayList<Root> candidateList = new ArrayList<>(125);
 
         // Inside each unit cube, there is a seed point at a random position.  Go
         // through each of the nearby cubes until we find a cube with a seed point
@@ -102,7 +111,18 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
         }
 
         Collections.sort(candidateList);
-        Root candidate = candidateList.get(0);
+        return candidateList;
+    }
+
+    @Override
+    protected double calcValue(double x, double y, double z, double f, double a) {
+        if (f != 1 && f > 0) {
+            x *= f;
+            y *= f;
+            z *= f;
+        }
+
+        Root candidate = this.candidates(x, y, z).get(0);
 
         double value = 0;
         if (calculateDistance) {
@@ -114,9 +134,18 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
         return value + this.ValueNoise3D(Mth.floor(candidate.position.xCoord), Mth.floor(candidate.position.yCoord), Mth.floor(candidate.position.zCoord), 0);
     }
 
+    /**
+     * V33a: the displacement fields are sampled at the raw input position and added before the input
+     * frequency is applied, then the nearest seed point is scaled back to block space.
+     */
     public DecimalPosition getClosestRoot(double x, double y, double z) {
-        this.getValue(x, y, z);
-        DecimalPosition raw = candidateList.get(0).position;
+        double x0 = x;
+        double y0 = y;
+        double z0 = z;
+        x += this.getXDisplacement(x0, y0, z0);
+        y += this.getYDisplacement(x0, y0, z0);
+        z += this.getZDisplacement(x0, y0, z0);
+        DecimalPosition raw = this.candidates(x * inputFactor, y * inputFactor, z * inputFactor).get(0).position;
         return new DecimalPosition(raw.xCoord / inputFactor, raw.yCoord / inputFactor, raw.zCoord / inputFactor);
     }
 
@@ -210,7 +239,7 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
         //x = closest.xCoord;
         //z = closest.zCoord;
 
-        this.getValue(x, 0, z);
+        java.util.List<Root> candidateList = this.candidates(x * inputFactor, 0, z * inputFactor);
 
         x += this.getXDisplacement(x, 0, z);
         z += this.getZDisplacement(x, 0, z);

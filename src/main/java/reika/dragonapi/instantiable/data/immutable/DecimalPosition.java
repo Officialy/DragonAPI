@@ -189,7 +189,9 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
 
     @Override
     public int hashCode() {
-        return 1; //BlockPos.coordHash((int) (xCoord * 1000), (int) (yCoord * 1000), (int) (zCoord * 1000));//(int)(xCoord + (zCoord * 256) + (yCoord * 65536));
+        // V33a. The first port returned a constant, which collapsed every hash-seeded choice made from
+        // a position (Rainbow Forest tree colours, Arctic Spire tilts) to a single value.
+        return Coordinate.coordHash((int) (xCoord * 1000), (int) (yCoord * 1000), (int) (zCoord * 1000));
     }
 
     @Override

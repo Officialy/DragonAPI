@@ -39,6 +39,14 @@ public enum ReikaDyeHelper {
         return color;
     }
 
+    /**
+     * V33a {@code getJavaColor}. Dye-coloured blocks (dye leaves, saplings, flowers, vines) tint with
+     * {@code getJavaColor().brighter()}, AWT's brightening, so this has to be an AWT colour.
+     */
+    public java.awt.Color getJavaColor() {
+        return new java.awt.Color(color);
+    }
+
     public DyeColor getDye() {
         return dye;
     }
