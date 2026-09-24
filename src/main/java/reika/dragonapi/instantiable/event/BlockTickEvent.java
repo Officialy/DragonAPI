@@ -74,7 +74,13 @@ public class BlockTickEvent extends WorldPositionEvent implements ICancellableEv
 
     public static void fire(BlockState b, ServerLevel world, BlockPos pos, RandomSource rand, int flags) {
         if (!disallowAllUpdates && canTickAt(b, world, pos, flags) && !NeoForge.EVENT_BUS.post(new BlockTickEvent(world, pos, b, flags)).isCanceled()) {
-            b.tick(world, pos, rand);
+            // 1.7.10 had one updateTick serving both random and scheduled ticks; 26.2 split them, and
+            // growth (crops, saplings, grass) lives only in randomTick. Forced ticks from accelerators
+            // (Fertility Seeds, water vents, block tickers) must reach that, or they grow nothing.
+            if (b.isRandomlyTicking())
+                b.randomTick(world, pos, rand);
+            else
+                b.tick(world, pos, rand);
         }
     }
 

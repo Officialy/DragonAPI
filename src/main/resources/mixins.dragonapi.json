@@ -8,6 +8,7 @@
         "MixinGameTestServer",
 		"MixinBiome",
         "MixinEnvironmentAttributeSystem",
+        "MixinBlockStateBase",
         "MixinFireBlock",
         "MixinGrassBlock",
         "MixinLavaFluid",
