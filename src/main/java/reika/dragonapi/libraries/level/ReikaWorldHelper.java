@@ -1153,5 +1153,22 @@ public class ReikaWorldHelper {
         }
         return li;
     }
+
+    /** Returns true if the chunk containing this block has been generated, whether or not it is currently loaded. */
+    public static boolean isChunkGenerated(net.minecraft.server.level.ServerLevel world, int x, int z) {
+        return isChunkGeneratedChunkCoords(world, x >> 4, z >> 4);
+    }
+
+    /**
+     * Returns true if the chunk here has been generated, whether or not it is currently loaded. 1.7.10 asked the
+     * Anvil loader whether the chunk existed on disk; 26.2 keeps partly generated chunks too, so a chunk counts
+     * once it is loaded as a full chunk or saved at full status.
+     */
+    public static boolean isChunkGeneratedChunkCoords(net.minecraft.server.level.ServerLevel world, int x, int z) {
+        if (world.getChunkSource().getChunkNow(x, z) != null)
+            return true;
+        return ((reika.dragonapi.mixin.ChunkMapAccessor)world.getChunkSource().chunkMap)
+                .dragonapi$isExistingChunkFull(new net.minecraft.world.level.ChunkPos(x, z));
+    }
 }
 

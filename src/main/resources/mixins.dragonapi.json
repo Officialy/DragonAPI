@@ -13,6 +13,7 @@
         "MixinGrassBlock",
         "MixinLavaFluid",
         "MixinChunkMap",
+        "ChunkMapAccessor",
         "MixinLevelChunk",
         "MixinPlayerList",
         "MultipleTestTrackerAccessor"
@@ -24,6 +25,7 @@
         "CameraAccessor",
         "MixinBiomeColors",
         "MixinClientLevel",
-        "MixinFluidRenderer"
+        "MixinFluidRenderer",
+        "MixinItemInHandRenderer"
     ]
 }
