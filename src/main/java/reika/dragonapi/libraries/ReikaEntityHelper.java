@@ -21,6 +21,8 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.entity.monster.cubemob.MagmaCube;
+import net.minecraft.world.entity.monster.cubemob.AbstractCubeMob;
+import net.minecraft.world.entity.monster.zombie.ZombifiedPiglin;
 import net.minecraft.world.entity.monster.cubemob.Slime;
 import net.minecraft.world.entity.monster.piglin.Piglin;
 import net.minecraft.world.entity.monster.skeleton.Skeleton;
@@ -415,7 +417,8 @@ public class ReikaEntityHelper {
         if (e instanceof WitherSkeleton) {
             is = new ItemStack(Items.WITHER_SKELETON_SKULL, 1);
         }
-        if (e instanceof Zombie || e instanceof ZombieVillager) {
+        // 1.7.10: only a plain zombie drops a zombie head, never a zombie villager or pig zombie.
+        if (e instanceof Zombie && !(e instanceof ZombieVillager || e instanceof ZombifiedPiglin)) {
             is = new ItemStack(Items.ZOMBIE_HEAD, 1);
         }
         if (e instanceof Player)
@@ -425,6 +428,32 @@ public class ReikaEntityHelper {
         if (is == null)
             return;
         ReikaItemHelper.dropItem(e.level(), e.getX(), e.getY() + 0.2, e.getZ(), is);
+    }
+
+    /**
+     * The class whose members count as "the same kind" of mob as this one (area attacks spread to these). 1.7.10's
+     * EntitySlime and EntityFlying categories are AbstractCubeMob (slimes and magma cubes) and the ghast.
+     */
+    public static Class<? extends LivingEntity> getEntityCategoryClass(LivingEntity e) {
+        if (e instanceof Player)
+            return Player.class;
+        else if (e instanceof EnderMan || e instanceof ZombifiedPiglin)
+            return e.getClass();
+        else if (e instanceof AbstractCubeMob)
+            return AbstractCubeMob.class;
+        else if (e instanceof Monster)
+            return Monster.class;
+        else if (e instanceof Animal)
+            return Animal.class;
+        else if (e instanceof Ghast)
+            return Ghast.class;
+        else
+            return e.getClass();
+    }
+
+    /** Makes a creeper charged, as a lightning strike would but without the strike's fire and damage. */
+    public static void chargeCreeper(Creeper e) {
+        e.getEntityData().set(reika.dragonapi.mixin.CreeperAccessor.dragonapi$getPoweredData(), true);
     }
 
     private static boolean canDamageArmorOf(LivingEntity target) {

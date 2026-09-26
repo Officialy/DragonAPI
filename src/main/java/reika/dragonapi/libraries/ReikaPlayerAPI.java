@@ -156,6 +156,16 @@ public class ReikaPlayerAPI {
         return null;
     }
 
+    /**
+     * Puts the stack in the player's inventory, dropping at their feet whatever does not fit. (1.7.10 also played
+     * the pickup animation for an item entity that was never spawned, which no client could show.)
+     */
+    public static void addOrDropItem(net.minecraft.world.item.ItemStack is, Player ep) {
+        net.minecraft.world.item.ItemStack copy = is.copy();
+        if (!ep.getInventory().add(copy) && !copy.isEmpty())
+            reika.dragonapi.libraries.registry.ReikaItemHelper.dropItem(ep, copy);
+    }
+
     public static boolean isFake(Player ep) {
         if (ep instanceof FakePlayer)
             return true;

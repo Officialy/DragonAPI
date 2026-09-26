@@ -16,7 +16,12 @@
         "ChunkMapAccessor",
         "MixinLevelChunk",
         "MixinPlayerList",
-        "MultipleTestTrackerAccessor"
+        "MultipleTestTrackerAccessor",
+        "MixinLivingEntityAggro",
+        "MixinHurtByTargetGoal",
+        "MixinZombifiedPiglin",
+        "MixinEnderMan",
+        "CreeperAccessor"
     ],
     "injectors": {
         "defaultRequire": 1
