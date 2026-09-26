@@ -64,8 +64,25 @@ public class ScrollingButtonList {
         return currentScroll;
     }
 
+    /** V33a: scrolls back to the top, keeping the buttons. */
     public void reset() {
-        allButtons = 0;
         currentScroll = 0;
+    }
+
+    public void clear() {
+        this.reset();
+        allButtons = 0;
+        maxScroll = 0;
+    }
+
+    /** The visible {column, row} of a button, or null when it is scrolled out of view. */
+    public int[] getPositionOf(int idx) {
+        if (idx < 0 || idx >= allButtons)
+            return null;
+        int row = idx / maxCols - currentScroll;
+        if (row < 0 || row >= maxRows)
+            return null;
+        int col = idx % maxCols;
+        return new int[] {col, row};
     }
 }
