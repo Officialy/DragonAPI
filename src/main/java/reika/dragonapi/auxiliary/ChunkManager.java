@@ -10,6 +10,7 @@ import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -22,6 +23,7 @@ import net.neoforged.neoforge.common.world.chunk.TicketSet;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.interfaces.blockentity.ChunkLoadingTile;
+import reika.dragonapi.interfaces.entity.ChunkLoadingEntity;
 
 /**
  * NeoForge 26.2 implementation of DragonAPI's block-entity chunk-ticket manager.
@@ -57,6 +59,7 @@ public final class ChunkManager {
 			});
 
 	private final Map<WorldLocation, Set<ChunkPos>> liveTickets = new HashMap<>();
+	private final Map<java.util.UUID, Set<ChunkPos>> entityTickets = new HashMap<>();
 
 	private ChunkManager() {}
 
@@ -108,6 +111,36 @@ public final class ChunkManager {
 			for (ChunkPos chunk : chunks)
 				CONTROLLER.forceChunk(level, owner.pos, chunk.x(), chunk.z(), false, false);
 		}
+	}
+
+	/**
+	 * V33a {@code loadChunks(ChunkLoadingEntity)}: tickets owned by the entity itself. They persist with the world, and
+	 * the entity re-requests (idempotently) when it next ticks; its {@link ChunkLoadingEntity#onDestroy} releases them.
+	 */
+	public synchronized <E extends Entity & ChunkLoadingEntity> void loadChunks(E entity) {
+		if (!(entity.level() instanceof ServerLevel level))
+			return;
+		Set<ChunkPos> requested = Set.copyOf(entity.getChunksToLoad());
+		Set<ChunkPos> previous = entityTickets.getOrDefault(entity.getUUID(), Set.of());
+		for (ChunkPos chunk : previous) {
+			if (!requested.contains(chunk))
+				CONTROLLER.forceChunk(level, entity, chunk.x(), chunk.z(), false, false);
+		}
+		for (ChunkPos chunk : requested) {
+			if (!previous.contains(chunk))
+				CONTROLLER.forceChunk(level, entity, chunk.x(), chunk.z(), true, false);
+		}
+		entityTickets.put(entity.getUUID(), requested);
+	}
+
+	public synchronized <E extends Entity & ChunkLoadingEntity> void unloadChunks(E entity) {
+		if (!(entity.level() instanceof ServerLevel level))
+			return;
+		Set<ChunkPos> chunks = entityTickets.remove(entity.getUUID());
+		if (chunks == null)
+			chunks = Set.copyOf(entity.getChunksToLoad());
+		for (ChunkPos chunk : chunks)
+			CONTROLLER.forceChunk(level, entity, chunk.x(), chunk.z(), false, false);
 	}
 
 	public synchronized boolean isLoaded(BlockEntity blockEntity) {
