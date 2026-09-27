@@ -397,12 +397,9 @@ public class ReikaItemHelper {
                     int j = par5Random.nextInt(21) + 10;
                     if (j > itemstack.getCount())
                         j = itemstack.getCount();
-                    //itemstack.getCount() -= j;
-                    int count = itemstack.getCount() - 1;
-                    itemstack.setCount(count);
-                    ItemEntity ei = new ItemEntity(ep.level(), ep.getX() + f, ep.getY() + 0.25 + f1, ep.getZ() + f2, new ItemStack(itemstack.getItem(), j));
-                    if (itemstack.has(DataComponents.CUSTOM_DATA))
-                        ei.getItem().set(DataComponents.CUSTOM_DATA, itemstack.get(DataComponents.CUSTOM_DATA));
+                    // V33a copied the whole stack (damage + NBT); copy before shrinking, as an emptied stack copies to EMPTY.
+                    ItemEntity ei = new ItemEntity(ep.level(), ep.getX() + f, ep.getY() + 0.25 + f1, ep.getZ() + f2, itemstack.copyWithCount(j));
+                    itemstack.shrink(j);
                     float f3 = 0.05F;
                     ei.setDeltaMovement((float) par5Random.nextGaussian() * f3, (float) par5Random.nextGaussian() * f3 + 0.2F, (float) par5Random.nextGaussian() * f3);
                     ei.setPickUpDelay(10);
@@ -426,16 +423,19 @@ public class ReikaItemHelper {
                 float f1 = par5Random.nextFloat() * 0.8F + 0.1F;
                 float f2 = par5Random.nextFloat() * 0.8F + 0.1F;
                 do {
-                    if (itemstack.getCount() <= 0)
+                    if (itemstack.getCount() <= 0) {
+                        // A container whose getItem hands out a copy still holds the stack, which 26.2's
+                        // preRemoveSideEffects would then drop a second time.
+                        if (!ii.getItem(i).isEmpty())
+                            ii.setItem(i, ItemStack.EMPTY);
                         continue label0;
+                    }
                     int j = par5Random.nextInt(21) + 10;
                     if (j > itemstack.getCount())
                         j = itemstack.getCount();
-                    int count = itemstack.getCount();
-                    itemstack.setCount(count - j);
-                    ItemEntity ei = new ItemEntity(world, pos.getX() + f, pos.getY() + f1, pos.getZ() + f2, new ItemStack(itemstack.getItem(), j));
-                    if (itemstack.has(DataComponents.CUSTOM_DATA))
-                        ei.getItem().set(DataComponents.CUSTOM_DATA, itemstack.get(DataComponents.CUSTOM_DATA));
+                    // V33a copied the whole stack (damage + NBT); copy before shrinking, as an emptied stack copies to EMPTY.
+                    ItemEntity ei = new ItemEntity(world, pos.getX() + f, pos.getY() + f1, pos.getZ() + f2, itemstack.copyWithCount(j));
+                    itemstack.shrink(j);
                     float f3 = 0.05F;
                     ei.setDeltaMovement((float) par5Random.nextGaussian() * f3, (float) par5Random.nextGaussian() * f3 + 0.2F, (float) par5Random.nextGaussian() * f3);
                     ei.setPickUpDelay(10);
