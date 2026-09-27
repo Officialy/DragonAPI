@@ -18,12 +18,23 @@ public class ClassNameCache {
     private final HashSet<String> cache = new HashSet();
 
     public void add(String s) {
-        while (s.charAt(s.length() - 1) == '*')
+        if (s == null || s.isBlank())
+            throw new IllegalArgumentException("Class name cannot be empty");
+        s = s.trim();
+        if (s.endsWith(".*"))
             s = s.substring(0, s.length() - 2);
+        else if (s.endsWith("*"))
+            s = s.substring(0, s.length() - 1);
+        while (s.endsWith("."))
+            s = s.substring(0, s.length() - 1);
+        if (s.isEmpty())
+            throw new IllegalArgumentException("Wildcard must include a class or package prefix");
         cache.add(s);
     }
 
     public boolean contains(Class c) {
+        if (c == null)
+            return false;
         String s = c.getName();
         while (!s.isEmpty()) {
             if (cache.contains(s))

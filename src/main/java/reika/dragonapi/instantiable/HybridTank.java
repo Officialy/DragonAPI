@@ -9,24 +9,34 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
 import java.util.HashMap;
+import java.util.function.Predicate;
 
 /**
- * A tank class that can handle direct operations as well as standard Forge Liquid operations.
+ * A tank class that handles direct machine operations. Automation reaches it through
+ * {@link reika.dragonapi.instantiable.storage.HybridTankResourceHandler}, which journals these
+ * tanks for NeoForge transactions; this class itself is plain storage.
+ *
+ * <p>The direct {@code fill}/{@code drain} methods keep the 1.7.10 Forge {@code FluidTank}
+ * contract ({@code doFill}/{@code doDrain} booleans) that Reika's machine code was written
+ * against. Their bodies are NeoForge's former {@code FluidTank} logic, so component-aware
+ * matching and {@link #onContentsChanged()} timing are unchanged.
  */
-public class HybridTank extends FluidTank {
+public class HybridTank {
 
     private static final HashMap<String, String> nameSwaps = new HashMap<>();
     protected final String name;
+    protected Predicate<FluidStack> validator = fs -> true;
+    protected FluidStack fluid = FluidStack.EMPTY;
+    protected int capacity;
 
     public HybridTank(String name, int capacity) {
-        super(capacity);
+        this.capacity = capacity;
         this.name = name;
     }
 
@@ -45,7 +55,109 @@ public class HybridTank extends FluidTank {
         return nameSwaps.get(oldName);
     }
 
-    public final FluidTank readFromNBT(HolderLookup.Provider provider, CompoundTag NBT) {
+    public HybridTank setCapacity(int capacity) {
+        this.capacity = capacity;
+        return this;
+    }
+
+    public HybridTank setValidator(Predicate<FluidStack> validator) {
+        if (validator != null) {
+            this.validator = validator;
+        }
+        return this;
+    }
+
+    public boolean isFluidValid(FluidStack stack) {
+        return validator.test(stack);
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    /** The live stored stack. Mutating it bypasses {@link #onContentsChanged()} and any open
+     *  transaction journal; prefer the tank's own operations. */
+    public FluidStack getFluid() {
+        return fluid;
+    }
+
+    public int getFluidAmount() {
+        return fluid.getAmount();
+    }
+
+    public void setFluid(FluidStack stack) {
+        this.fluid = stack;
+    }
+
+    public int getSpace() {
+        return Math.max(0, capacity - fluid.getAmount());
+    }
+
+    /** Called after a {@code doFill}/{@code doDrain} operation actually changed the contents. */
+    protected void onContentsChanged() {}
+
+    /**
+     * Fills this tank directly.
+     *
+     * @return the amount accepted (or that would be accepted, if {@code doFill} is false)
+     */
+    public int fill(FluidStack resource, boolean doFill) {
+        if (resource.isEmpty() || !this.isFluidValid(resource)) {
+            return 0;
+        }
+        if (!doFill) {
+            if (fluid.isEmpty()) {
+                return Math.min(capacity, resource.getAmount());
+            }
+            if (!FluidStack.isSameFluidSameComponents(fluid, resource)) {
+                return 0;
+            }
+            return Math.min(capacity - fluid.getAmount(), resource.getAmount());
+        }
+        if (fluid.isEmpty()) {
+            fluid = resource.copyWithAmount(Math.min(capacity, resource.getAmount()));
+            this.onContentsChanged();
+            return fluid.getAmount();
+        }
+        if (!FluidStack.isSameFluidSameComponents(fluid, resource)) {
+            return 0;
+        }
+        int filled = capacity - fluid.getAmount();
+
+        if (resource.getAmount() < filled) {
+            fluid.grow(resource.getAmount());
+            filled = resource.getAmount();
+        } else {
+            fluid.setAmount(capacity);
+        }
+        if (filled > 0)
+            this.onContentsChanged();
+        return filled;
+    }
+
+    /** Drains the given fluid (type and components must match) directly. */
+    public FluidStack drain(FluidStack resource, boolean doDrain) {
+        if (resource.isEmpty() || !FluidStack.isSameFluidSameComponents(resource, fluid)) {
+            return FluidStack.EMPTY;
+        }
+        return this.drain(resource.getAmount(), doDrain);
+    }
+
+    /** Drains up to {@code maxDrain} of whatever this tank holds, directly. */
+    public FluidStack drain(int maxDrain, boolean doDrain) {
+        int drained = maxDrain;
+        if (fluid.getAmount() < drained) {
+            drained = fluid.getAmount();
+        }
+        FluidStack stack = fluid.copyWithAmount(drained);
+        if (doDrain && drained > 0) {
+            fluid.shrink(drained);
+            this.onContentsChanged();
+        }
+        return stack;
+    }
+
+    public final HybridTank readFromNBT(HolderLookup.Provider provider, CompoundTag NBT) {
         try {
             if (NBT.contains(name)) {
                 CompoundTag tankData = NBTCompat.getCompound(NBT, name);
@@ -86,7 +198,7 @@ public class HybridTank extends FluidTank {
 
     /** Convenience overloads for the many BlockEntity call sites that don't have a HolderLookup.Provider
      *  handy; the provider-aware versions already tolerate a null provider (plain NbtOps). */
-    public final FluidTank readFromNBT(CompoundTag NBT) {
+    public final HybridTank readFromNBT(CompoundTag NBT) {
         return this.readFromNBT(null, NBT);
     }
 
@@ -120,7 +232,7 @@ public class HybridTank extends FluidTank {
             DragonAPI.LOGGER.error("Cannot remove <= 0!");
             ReikaJavaLibrary.dumpStack();
         } else {
-            this.drain(amt, FluidAction.EXECUTE);
+            this.drain(amt, true);
         }
     }
 
@@ -134,23 +246,23 @@ public class HybridTank extends FluidTank {
         }
         if (this.getFluid().isEmpty()) {
 //            DragonAPI.LOGGER.info("Adding liquid to tank "+this+" of type "+type+" and amount "+amt);
-            this.fill(new FluidStack(type, amt), FluidAction.EXECUTE);
+            this.fill(new FluidStack(type, amt), true);
         } else if (type.equals(this.getFluid().getFluid())) {
 //            DragonAPI.LOGGER.info("Adding liquid to tank "+this+" of type "+type+" and amount "+amt);
-            this.fill(new FluidStack(this.getFluid().getFluid(), amt), FluidAction.EXECUTE);
+            this.fill(new FluidStack(this.getFluid().getFluid(), amt), true);
         } else {
             DragonAPI.LOGGER.info("Cannot add liquid of type "+type+" to tank "+this+" of type "+this.getFluid().getFluid());
         }
     }
 
     public void empty() {
-        this.drain(this.getFluidLevel(), FluidAction.EXECUTE);
+        this.drain(this.getFluidLevel(), true);
     }
 
     public void setFluidType(Fluid type) {
         int amt = this.getFluidLevel();
-        this.drain(amt, FluidAction.EXECUTE);
-        this.fill(new FluidStack(type, amt), FluidAction.EXECUTE);
+        this.drain(amt, true);
+        this.fill(new FluidStack(type, amt), true);
     }
 
     public void setContents(int amt, Fluid f) {

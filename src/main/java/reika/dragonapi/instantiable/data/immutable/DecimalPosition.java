@@ -113,12 +113,16 @@ public final class DecimalPosition implements Location, Comparable<DecimalPositi
         return new DecimalPosition(c.getX() + rand.nextDouble(), c.getY() + rand.nextDouble(), c.getZ() + rand.nextDouble());
     }
 
-    public static DecimalPosition average(DecimalPosition... pos) {
+	public static DecimalPosition average(DecimalPosition... pos) {
+		if (pos == null || pos.length == 0)
+			throw new IllegalArgumentException("Cannot average zero positions");
         double sx = 0;
         double sy = 0;
         double sz = 0;
         int n = pos.length;
-        for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++) {
+			if (pos[i] == null)
+				throw new IllegalArgumentException("Cannot average a null position");
             sx += pos[i].xCoord;
             sy += pos[i].yCoord;
             sz += pos[i].zCoord;

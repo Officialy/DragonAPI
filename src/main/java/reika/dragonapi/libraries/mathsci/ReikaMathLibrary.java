@@ -400,7 +400,9 @@ public final class ReikaMathLibrary {
         return arr;
     }
 
-    public static int multiMin(int... vals) {
+	public static int multiMin(int... vals) {
+		if (vals == null || vals.length == 0)
+			throw new IllegalArgumentException("multiMin requires at least one value");
         int min = vals[0];
         for (int i = 1; i < vals.length; i++) {
             min = Math.min(min, vals[i]);
@@ -408,7 +410,9 @@ public final class ReikaMathLibrary {
         return min;
     }
 
-    public static int multiMax(int... vals) {
+	public static int multiMax(int... vals) {
+		if (vals == null || vals.length == 0)
+			throw new IllegalArgumentException("multiMax requires at least one value");
         int max = vals[0];
         for (int i = 1; i < vals.length; i++) {
             max = Math.max(max, vals[i]);
@@ -594,7 +598,9 @@ public final class ReikaMathLibrary {
         return (y2 - y1) * Math.pow(Math.pow(x2 - x1, power) - Math.pow(x - x1, power), 1D / power) / (x2 - x1);
     }
 
-    public static long cantorCombine(long... vals) {
+	public static long cantorCombine(long... vals) {
+		if (vals == null || vals.length < 2)
+			throw new IllegalArgumentException("cantorCombine requires at least two values");
         long ret = cantorCombine(vals[0], vals[1]);
         for (int i = 2; i < vals.length; i++) {
             ret = cantorCombine(ret, vals[i]);

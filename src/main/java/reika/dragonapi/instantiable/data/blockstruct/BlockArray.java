@@ -27,6 +27,8 @@ import java.util.*;
 
 public class BlockArray implements Iterable<BlockPos> {
 
+    private record SearchNode(BlockPos position, int depth) {}
+
     protected static final Random rand = new Random();
     private static final int DEPTH_LIMIT = getMaxDepth();
     private static final Comparator<BlockPos> heightComparator = new HeightComparator(false);
@@ -331,41 +333,44 @@ public class BlockArray implements Iterable<BlockPos> {
      * Args: Level, start pos.getX(), start pos.getY(), start pos.getZ(), id to follow
      */
     public void recursiveAdd(BlockGetter world, BlockPos pos, Block id) {
-        this.recursiveAdd(world, pos, pos, id, 0, new HashMap());
+        Objects.requireNonNull(world, "Block getter cannot be null");
+        Objects.requireNonNull(pos, "Starting position cannot be null");
+        Objects.requireNonNull(id, "Target block cannot be null");
+        ArrayDeque<SearchNode> pending = new ArrayDeque<>();
+        HashSet<BlockPos> visited = new HashSet<>();
+        BlockPos origin = pos.immutable();
+        pending.addLast(new SearchNode(origin, 0));
+        visited.add(origin);
+        while (!pending.isEmpty() && !overflow) {
+            SearchNode node = pending.removeFirst();
+            BlockPos current = node.position();
+            if (node.depth() > maxDepth)
+                continue;
+            if (taxiCabDistance && current.distManhattan(origin) > maxDepth)
+                continue;
+            if (!bounds.isBlockInside(current) || world.getBlockState(current).getBlock() != id)
+                continue;
+            this.addBlockCoordinate(current);
+
+            if (extraSpread) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        for (int dz = -1; dz <= 1; dz++) {
+                            if (dx != 0 || dy != 0 || dz != 0)
+                                enqueueSearchNode(pending, visited, current.offset(dx, dy, dz), node.depth() + 1);
+                        }
+                    }
+                }
+            } else {
+                for (Direction direction : Direction.values())
+                    enqueueSearchNode(pending, visited, current.relative(direction), node.depth() + 1);
+            }
+        }
     }
 
-    private void recursiveAdd(BlockGetter world, BlockPos pos0, BlockPos pos2, Block id, int depth, HashMap<BlockPos, Integer> map) {
-        if (overflow)
-            return;
-        if (depth > maxDepth)
-            return;
-        if (taxiCabDistance && Math.abs(pos2.getX() - pos0.getX()) + Math.abs(pos2.getY() - pos0.getY()) + Math.abs(pos2.getZ() - pos0.getZ()) > maxDepth)
-            return;
-        if (world.getBlockState(pos2).getBlock() != id)
-            return;
-        BlockPos c = new BlockPos(pos2);
-        if (map.containsKey(c) && depth >= map.get(c))
-            return;
-        this.addBlockCoordinate(pos2);
-        map.put(c, depth);
-        try {
-            if (extraSpread) {
-                for (int i = -1; i <= 1; i++)
-                    for (int j = -1; j <= 1; j++)
-                        for (int k = -1; k <= 1; k++)
-                            this.recursiveAdd(world, pos0, new BlockPos(pos0.getX() + i, pos0.getY() + j, pos0.getZ() + k), id, depth + 1, map);
-            } else {
-                this.recursiveAdd(world, pos0, pos0.east(), id, depth + 1, map);
-                this.recursiveAdd(world, pos0, pos0.west(), id, depth + 1, map);
-                this.recursiveAdd(world, pos0, pos0.above(), id, depth + 1, map);
-                this.recursiveAdd(world, pos0, pos0.below(), id, depth + 1, map);
-                this.recursiveAdd(world, pos0, pos2.south(), id, depth + 1, map);
-                this.recursiveAdd(world, pos0, pos2.north(), id, depth + 1, map);
-            }
-        } catch (StackOverflowError e) {
-            this.throwOverflow(depth);
-            e.printStackTrace();
-        }
+    private static void enqueueSearchNode(ArrayDeque<SearchNode> pending, Set<BlockPos> visited, BlockPos position, int depth) {
+        if (visited.add(position))
+            pending.addLast(new SearchNode(position.immutable(), depth));
     }
 
     /**

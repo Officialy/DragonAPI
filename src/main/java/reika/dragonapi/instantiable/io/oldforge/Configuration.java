@@ -98,7 +98,7 @@ public class Configuration {
             fileName = path;
             try
             {
-                load();
+                loadInternal();
             }
             catch (Throwable e)
             {
@@ -108,7 +108,7 @@ public class Configuration {
                 e.printStackTrace();
 
                 file.renameTo(fileBak);
-                load();
+                loadInternal();
             }
         }
     }
@@ -747,7 +747,12 @@ public class Configuration {
         return cat != null && cat.containsKey(key);
     }
 
-    public void load()
+    public final void load()
+    {
+        loadInternal();
+    }
+
+    private void loadInternal()
     {
         if (PARENT != null && PARENT != this)
         {
@@ -1031,8 +1036,8 @@ public class Configuration {
 
             if (file.canWrite())
             {
-                FileOutputStream fos = new FileOutputStream(file);
-                BufferedWriter buffer = new BufferedWriter(new OutputStreamWriter(fos, defaultEncoding));
+                try (BufferedWriter buffer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), defaultEncoding)))
+                {
 
                 buffer.write("# Configuration file" + NEW_LINE + NEW_LINE);
 
@@ -1053,8 +1058,7 @@ public class Configuration {
                     }
                 }
 
-                buffer.close();
-                fos.close();
+                }
             }
         }
         catch (IOException e)
@@ -1207,36 +1211,38 @@ public class Configuration {
 
             PushbackInputStream pbStream = new PushbackInputStream(source, data.length);
             int read = pbStream.read(data, 0, data.length);
+            if (read < 0)
+                read = 0;
             int size = 0;
 
             int bom16 = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
             int bom24 = bom16 << 8 | (data[2] & 0xFF);
             int bom32 = bom24 << 8 | (data[3] & 0xFF);
 
-            if (bom24 == 0xEFBBBF)
-            {
-                enc = "UTF-8";
-                size = 3;
-            }
-            else if (bom16 == 0xFEFF)
-            {
-                enc = "UTF-16BE";
-                size = 2;
-            }
-            else if (bom16 == 0xFFFE)
-            {
-                enc = "UTF-16LE";
-                size = 2;
-            }
-            else if (bom32 == 0x0000FEFF)
+            if (read >= 4 && bom32 == 0x0000FEFF)
             {
                 enc = "UTF-32BE";
                 size = 4;
             }
-            else if (bom32 == 0xFFFE0000) //This will never happen as it'll be caught by UTF-16LE,
-            {                             //but if anyone ever runs across a 32LE file, i'd like to disect it.
+            else if (read >= 4 && bom32 == 0xFFFE0000)
+            {
                 enc = "UTF-32LE";
                 size = 4;
+            }
+            else if (read >= 3 && bom24 == 0xEFBBBF)
+            {
+                enc = "UTF-8";
+                size = 3;
+            }
+            else if (read >= 2 && bom16 == 0xFEFF)
+            {
+                enc = "UTF-16BE";
+                size = 2;
+            }
+            else if (read >= 2 && bom16 == 0xFFFE)
+            {
+                enc = "UTF-16LE";
+                size = 2;
             }
 
             if (size < read)

@@ -113,21 +113,31 @@ public class ReikaStringParser {
 	}
 
 	public static String parseStringFormat(String sg) {
-		String[] parts = sg.split(",");
+		if (sg == null || sg.isBlank())
+			throw new IllegalArgumentException("Format expression cannot be empty");
+		String[] parts = sg.split(",", -1);
 		String str;
 		str = parts[0].replaceAll("\\s", "");
 		Object[] args = new Object[parts.length - 1];
 		for (int i = 1; i < parts.length; i++) {
-			parts[i].replaceAll("\\s", "");
-			args[i - 1] = parseReference(parts[i]);
+			String reference = parts[i].replaceAll("\\s", "");
+			if (reference.isEmpty())
+				throw new IllegalArgumentException("Empty reference at argument " + i + " in " + sg);
+			args[i - 1] = parseReference(reference);
 		}
-		return String.format(str, args);
+		try {
+			return String.format(str, args);
+		} catch (IllegalFormatException e) {
+			throw new IllegalArgumentException("Invalid format expression: " + sg, e);
+		}
 	}
 
 	private static String parseNumberMethod(String sg) {
 		String[] parts = sg.split("\\$");
-		if (parts.length > 2)
-			throw new RuntimeException("This method does not support multi-layer class calls! " + sg);
+		if (parts.length != 2)
+			throw new IllegalArgumentException("Invalid numeric method reference: " + sg);
+		if (!parts[1].endsWith(")") || parts[1].length() == 1)
+			throw new IllegalArgumentException("Numeric method reference has no method name: " + sg);
 		parts[1] = parts[1].substring(0, parts[1].length() - 1);
 		String cl = subtractFrom(parts[0], NUMBER_METHOD_CODE + "(");
 		String obj;
@@ -161,8 +171,10 @@ public class ReikaStringParser {
 
 	private static String parseStaticNumberVariable(String sg) {
 		String[] parts = sg.split("\\$");
-		if (parts.length > 2)
-			throw new RuntimeException("This method does not support multi-layer class calls! " + sg);
+		if (parts.length != 2)
+			throw new IllegalArgumentException("Invalid numeric field reference: " + sg);
+		if (!parts[1].endsWith(")") || parts[1].length() == 1)
+			throw new IllegalArgumentException("Numeric field reference has no field name: " + sg);
 		parts[1] = parts[1].substring(0, parts[1].length() - 1);
 		String cl = subtractFrom(parts[0], NUMBER_VARIABLE_CODE + "(");
 		String obj = "NOT FOUND";
@@ -227,6 +239,8 @@ public class ReikaStringParser {
 	}
 
 	public static String capFirstChar(String s) {
+		if (s == null || s.isEmpty())
+			return s;
 		return s.toUpperCase().charAt(0) + s.toLowerCase().substring(1);
 	}
 
@@ -348,6 +362,8 @@ public class ReikaStringParser {
 	}
 
 	public static String getFirstWord(String s) {
+		if (s == null || s.isEmpty())
+			return s;
 		return s.split(" ")[0];
 	}
 
@@ -372,9 +388,13 @@ public class ReikaStringParser {
 	}
 
 	public static String getLongestString(String[] sgs) {
+		if (sgs == null || sgs.length == 0)
+			throw new IllegalArgumentException("Cannot select the longest string from an empty collection");
 		int idx = 0;
 		for (int i = 0; i < sgs.length; i++) {
 			String sg = sgs[i];
+			if (sg == null)
+				throw new IllegalArgumentException("String collection cannot contain null entries");
 			if (sg.length() > sgs[idx].length())
 				idx = i;
 		}
@@ -445,8 +465,12 @@ public class ReikaStringParser {
 	}
 
 	public static boolean isWholeWord(String s, String lv) {
+		if (s == null || lv == null || s.isEmpty())
+			return false;
 		int idx1 = lv.indexOf(s);
-		int idx2 = lv.indexOf(s) + s.length();
+		if (idx1 < 0)
+			return false;
+		int idx2 = idx1 + s.length();
 		return (idx1 == 0 || isWordSeparator(lv.charAt(idx1 - 1))) && (idx2 == lv.length() || isWordSeparator(lv.charAt(idx2)));
 	}
 
@@ -508,6 +532,8 @@ public class ReikaStringParser {
 	}
 
 	public static boolean isValidVariableName(String s) {
+		if (s == null || s.isEmpty())
+			return false;
 		if (!Character.isLetter(s.charAt(0)))
 			return false;
 		char[] arr = s.toCharArray();

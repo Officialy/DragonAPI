@@ -88,9 +88,9 @@ public class Proportionality<F> extends CircularDivisionRenderer<F> {
         double max = -1;
         F big = null;
         for (F o : data.keySet()) {
-            double has = this.getValue(o);
-            if (has > max) {
-                has = max;
+			double has = this.getValue(o);
+			if (has > max) {
+				max = has;
                 big = o;
             }
         }

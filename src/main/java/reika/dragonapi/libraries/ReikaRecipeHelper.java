@@ -419,14 +419,18 @@ public class ReikaRecipeHelper {
            if (ReikaItemHelper.matchStacks(ingredient, replacement)) //not replacing self with self
                return false;
            ShapedRecipe s = (ShapedRecipe) ir;
-           for (int i = 0; i < getRecipeIngredients(s).size(); i++) {
-               if (ReikaItemHelper.matchStacks(ingredient, getRecipeIngredients(s).get(i))) {
+           List<Optional<Ingredient>> in = s.getIngredients();
+           for (int i = 0; i < in.size(); i++) {
+               Ingredient old = in.get(i).orElse(null);
+               if (old != null && ReikaItemHelper.matchStacks(ingredient, old)) {
                    flag = true;
                    if (rc != null)
-                       rc.onReplaced(ir, i, getRecipeIngredients(s).get(i), replacement);
-                   getRecipeIngredients(s).set(i, (Ingredient) replacement);
+                       rc.onReplaced(ir, i, old, replacement);
+                   in.set(i, Optional.of(Ingredient.of(((ItemStack) replacement).getItem())));
                }
            }
+           if (flag)
+               clearPlacementInfo(s);
        } else if (ir instanceof ShapelessRecipe) {
            if (!(replacement instanceof ItemStack)) {
                throw new MisuseException("You cannot put non-single-stack entries into a basic recipe type!");
@@ -440,9 +444,11 @@ public class ReikaRecipeHelper {
                    flag = true;
                    if (rc != null)
                        rc.onReplaced(ir, i, in.get(i), replacement);
-                   in.set(i, (Ingredient) replacement);
+                   in.set(i, Ingredient.of(((ItemStack) replacement).getItem()));
                }
            }
+           if (flag)
+               clearPlacementInfo(s);
         } else if (ir.getClass() == ic2ShapedClass) {
            try {
                Object[] in = (Object[]) shapedIc2Input.get(ir);
@@ -600,6 +606,8 @@ public class ReikaRecipeHelper {
                e.printStackTrace();
            }
        } else if (ir.getClass() == computerTurtleClass) {
+           if (!(replacement instanceof ItemStack))
+               throw new MisuseException("ComputerCraft recipes require a single ItemStack replacement");
            try {
                Item[] in = (Item[]) computerTurtleInput.get(ir);
                for (int i = 0; i < 3; i++) {
@@ -608,7 +616,7 @@ public class ReikaRecipeHelper {
                        if (in[idx] == ingredient.getItem()) {
                            flag = true;
                            if (rc != null)
-                               rc.onReplaced(ir, i, in[i], replacement);
+                               rc.onReplaced(ir, idx, in[idx], replacement);
                            in[idx] = ((ItemStack) replacement).getItem();
                        }
                    }
@@ -618,6 +626,16 @@ public class ReikaRecipeHelper {
            }
        }
        return flag;
+   }
+
+   private static void clearPlacementInfo(Recipe<?> recipe) {
+       try {
+           Field f = NormalCraftingRecipe.class.getDeclaredField("placementInfo");
+           f.setAccessible(true);
+           f.set(recipe, null);
+       } catch (ReflectiveOperationException e) {
+           throw new IllegalStateException("Could not invalidate the placement cache for " + recipe, e);
+       }
    }
 
    public static ArrayList<ItemStack> getAllItemsInRecipe(Recipe<?> ire) {
@@ -927,7 +945,9 @@ public class ReikaRecipeHelper {
            if (o1.getClass() != o2.getClass())
                return false;
            if (o1 instanceof Ingredient) {
-               if (!ReikaItemHelper.matchStacks(Arrays.stream(((Ingredient)o1).items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)).toList().get(i), Arrays.stream(((Ingredient)o2).items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)).toList().get(i)))
+               List<ItemStack> choices1 = ((Ingredient)o1).items().map(ItemStack::new).toList();
+               List<ItemStack> choices2 = ((Ingredient)o2).items().map(ItemStack::new).toList();
+               if (choices1.size() != choices2.size() || !choices1.stream().allMatch(a -> ReikaItemHelper.collectionContainsItemStack(choices2, a)))
                    return false;
            } else { //if (o1 instanceof Collection || o1 instanceof String)
                if (!o1.equals(o2))

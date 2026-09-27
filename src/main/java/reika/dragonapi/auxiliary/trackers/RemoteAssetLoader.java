@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 // 1.21.5: instance handlers; registered via NeoForge.EVENT_BUS.register(this) in the constructor.
 // Do NOT add @EventBusSubscriber — it requires static @SubscribeEvent methods.
@@ -153,6 +154,7 @@ public class RemoteAssetLoader {
         }
 
         private void download(AssetData dat) throws IOException {
+            Objects.requireNonNull(dat, "Asset data cannot be null");
             File f = dat.asset.getLocalPath();
             if (!ReikaFileReader.isFileWithin(f, DragonAPI.getMinecraftDirectory())) {
                 String s = "Remote Asset " + dat.asset.getDisplayName() + " attempted to download to " + f.getCanonicalPath() + "!" +
@@ -165,21 +167,16 @@ public class RemoteAssetLoader {
             f.delete();
             f.createNewFile();
             URLConnection c = new URL(dat.path).openConnection();
-            InputStream in = c.getInputStream();
-            OutputStream out = new FileOutputStream(f);
+            try (InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(f)) {
+                long time = System.currentTimeMillis();
+                ReikaFileReader.copyFile(in, out, 4096, this);
+                long duration = System.currentTimeMillis() - time;
 
-            long time = System.currentTimeMillis();
-            ReikaFileReader.copyFile(in, out, 4096, this);
-            long duration = System.currentTimeMillis() - time;
-
-            String s = "DRAGONAPI: Download of '" + dat.getDisplayName() + "' to '" + dat.asset.getLocalPath() + "' complete. Elapsed time: " + ReikaDateHelper.millisToHMSms(duration);
-            //dat.asset.mod.getModLogger()
-            DragonAPI.LOGGER.info(s);
-            DragonAPI.LOGGER.info("DRAGONAPI: Remote asset downloads now " + String.format("%.2f", Math.min(100, this.getTotalCompletion() * 100)) + "% complete.");
-            dat.asset.downloaded = true;
-
-            in.close();
-            out.close();
+                String s = "DRAGONAPI: Download of '" + dat.getDisplayName() + "' to '" + dat.asset.getLocalPath() + "' complete. Elapsed time: " + ReikaDateHelper.millisToHMSms(duration);
+                DragonAPI.LOGGER.info(s);
+                DragonAPI.LOGGER.info("DRAGONAPI: Remote asset downloads now " + String.format("%.2f", Math.min(100, this.getTotalCompletion() * 100)) + "% complete.");
+                dat.asset.downloaded = true;
+            }
         }
 
         @Override
@@ -434,4 +431,3 @@ public class RemoteAssetLoader {
     }
 
 }
-

@@ -50,12 +50,19 @@ public final class ClientAPIPacketHandler {
 
     public static void handle(int x, int y, int z, PacketIDs pack, int[] data, String sg, Player player) {
         ClientLevel world = Minecraft.getInstance().level;
-        if (world == null)
+        if (world == null || pack == null)
             return;
+        if (data == null)
+            data = new int[0];
         switch (pack) {
-            case NUMBERPARTICLE ->
+            case NUMBERPARTICLE -> {
+                if (data.length < 1)
+                    break;
                     Minecraft.getInstance().particleEngine.add(new StringParticleFX(world, x + 0.5, y + 0.5, z + 0.5, String.valueOf(data[0]), 0, 0, 0));
+            }
             case STRINGPARTICLE -> {
+                if (sg == null || sg.isEmpty())
+                    break;
                 StringParticleFX fx = new StringParticleFX(world, x + 0.5, y + 0.5, z + 0.5, sg, 0, 0, 0);
                 fx.setLife(Math.max(15, 3 * sg.length()));
                 fx.setScale(Math.max(0.01F, Math.min(1, 0.5F / sg.length())));
@@ -68,15 +75,21 @@ public final class ClientAPIPacketHandler {
             }
             case OLDMODS -> CommandableUpdateChecker.instance.onClientReceiveOldModID(sg);
             case LOGIN -> {
+                if (data.length < 1 || player == null)
+                    break;
                 NeoForge.EVENT_BUS.post(new ClientLoginEvent(player, data[0] > 0));
                 SettingInterferenceTracker.instance.onLogin(player);
             }
             case LOGOUT -> NeoForge.EVENT_BUS.post(new ClientLogoutEvent(player));
             case BREAKPARTICLES -> {
+                if (data.length < 2)
+                    break;
                 Block b = Block.stateById(data[0]).getBlock();
                 ReikaRenderHelper.spawnDropParticles(world, x, y, z, b, data[1]);
             }
             case ITEMDROPPER -> {
+                if (data.length < 1 || sg == null)
+                    break;
                 Entity e = world.getEntity(data[0]);
                 if (e instanceof ItemEntity) {
                     e.getPersistentData().putString("dropper", sg);
@@ -86,8 +99,13 @@ public final class ClientAPIPacketHandler {
 //                if (Minecraft.getInstance().screen != null)
 //                    Minecraft.getInstance().screen.initGui();
             }
-            case POPUP -> PopupWriter.instance().addMessage(new PopupWriter.Warning(sg, data[0]));
+            case POPUP -> {
+                if (data.length > 0 && sg != null)
+                    PopupWriter.instance().addMessage(new PopupWriter.Warning(sg, data[0]));
+            }
             case SENDLATENCY -> {
+                if (data.length < 4)
+                    break;
                 long t3 = System.currentTimeMillis();
                 long t1 = ReikaJavaLibrary.buildLong(data[0], data[1]);
                 long t2 = ReikaJavaLibrary.buildLong(data[2], data[3]);
@@ -95,8 +113,10 @@ public final class ClientAPIPacketHandler {
                 long toClientTime = t3 - t2;
                 ReikaChatHelper.write("Total latency: " + toServerTime + "ms to server, " + toClientTime + "ms from server.");
             }
-            case REDSTONECHANGE ->
-                    ((BlockEntityBase) world.getBlockEntity(new BlockPos(x, y, z))).onRedstoneChangedClientside(data[0] > 0, data[1] > 0);
+            case REDSTONECHANGE -> {
+                if (data.length >= 2 && world.getBlockEntity(new BlockPos(x, y, z)) instanceof BlockEntityBase tile)
+                    tile.onRedstoneChangedClientside(data[0] > 0, data[1] > 0);
+            }
             case CLEARCHAT -> ReikaChatHelper.clearChat();
 
 //            case MODLOCK:

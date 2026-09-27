@@ -29,15 +29,14 @@ public class BarGraphData {
         if (values.contains(x)) {
             int amt = data.get(x);
             data.put(x, amt + number);
-        } else {
-            int place = 0;
-            for (int i = 0; i < values.size(); i++) {
-                int p = values.get(i);
-                if (x < p) {
-                    i = values.size();
-                    place = i;
-                }
-            }
+		} else {
+			int place = values.size();
+			for (int i = 0; i < values.size(); i++) {
+				if (x < values.get(i)) {
+					place = i;
+					break;
+				}
+			}
             values.add(place, x);
             data.put(x, number);
         }

@@ -171,7 +171,7 @@ public enum ModWoodList implements TreeType {
                     }
                     id = Block.byItem(wood.getItem());
                     idleaf = Block.byItem(leaf.getItem());
-                    idsapling = Block.byItem(sapling.getItem());
+					idsapling = sapling != null ? Block.byItem(sapling.getItem()) : null;
                 }
                 case INSTANCE -> {
                     Block wood_b = this.loadBlock(cl, blockVar);
@@ -489,4 +489,3 @@ public enum ModWoodList implements TreeType {
         }
     }
 }
-

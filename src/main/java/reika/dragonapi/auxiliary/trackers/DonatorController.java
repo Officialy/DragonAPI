@@ -49,12 +49,19 @@ public final class DonatorController {
 	private void addDonators(DragonAPIMod mod, ArrayList<String> lines) {
 		for (String s : lines) {
 			s = ReikaStringParser.stripSpaces(s);
-			String[] parts = s.split(":");
+			if (s.isEmpty() || s.startsWith("//"))
+				continue;
+			String[] parts = s.split(":", 3);
 			parts[parts.length - 1] = ReikaStringParser.clipStringBefore(parts[parts.length - 1], "//");
-			if (parts.length == 3) {
-				this.addDonation(mod, parts[0], parts[1], Float.parseFloat(parts[2]));
-			} else {
-				this.addDonation(mod, parts[0], Float.parseFloat(parts[1]));
+			try {
+				if (parts.length == 3)
+					this.addDonation(mod, parts[0], parts[1], Float.parseFloat(parts[2]));
+				else if (parts.length == 2)
+					this.addDonation(mod, parts[0], Float.parseFloat(parts[1]));
+				else
+					DragonAPI.LOGGER.warn("Ignoring malformed donation entry for " + mod.getDisplayName() + ": " + s);
+			} catch (IllegalArgumentException e) {
+				DragonAPI.LOGGER.warn("Ignoring malformed donation entry for " + mod.getDisplayName() + ": " + s, e);
 			}
 		}
 	}
@@ -119,7 +126,8 @@ public final class DonatorController {
 	}
 
 	public Collection<Donator> getAllDonatorsFor(DragonAPIMod mod) {
-		return Collections.unmodifiableCollection(byModDonators.get(mod));
+		Collection<Donator> donors = byModDonators.get(mod);
+		return donors != null ? Collections.unmodifiableCollection(donors) : Collections.emptyList();
 	}
 
 	public Set<Donator> getReikasDonators() {
@@ -128,8 +136,10 @@ public final class DonatorController {
 
 	public boolean donatedTo(UUID ingame, DragonAPIMod mod) {
 		Collection<Donator> c = byModDonators.get(mod);
+		if (c == null)
+			return false;
 		for (Donator d : c) {
-			if (d.ingameName.equals(ingame))
+			if (Objects.equals(d.ingameName, ingame))
 				return true;
 		}
 		return false;
@@ -241,7 +251,7 @@ public final class DonatorController {
 
 		private Donator addDonation(String name, UUID ign, float amt) {
 			Donator d = new Donator(name, ign);
-			Donation dn = data.get(d);
+			Donation dn = data.get(name);
 			if (dn == null) {
 				dn = new Donation(d);
 				data.put(name, dn);

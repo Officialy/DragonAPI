@@ -63,9 +63,11 @@ public class APIPacketHandler implements PacketHandler {
 
     private final Random rand = new Random();
 
-    protected PacketIDs pack;
-
     public void handleData(ReikaPacketHelper.PacketObj packet, Level world, Player ep) {
+        if (packet == null || world == null) {
+            DragonAPI.LOGGER.error("Cannot handle a packet without both packet data and a level");
+            return;
+        }
         DataInputStream inputStream = packet.getDataIn();
 
         int control;
@@ -79,6 +81,7 @@ public class APIPacketHandler implements PacketHandler {
         boolean readinglong;
         CompoundTag NBT = null;
         String stringdata = null;
+        PacketIDs pack = null;
         PacketTypes packetType = packet.getType();
         // DragonAPI.LOGGER.info("Packet: {}{}", packet, inputStream.toString());
         try {
@@ -124,7 +127,7 @@ public class APIPacketHandler implements PacketHandler {
                     pack = PacketIDs.getEnum(control);
                 }
                 case STRING -> {
-                    stringdata = packet.toString();
+                    stringdata = packet.readString();
                     control = inputStream.readInt();
                     pack = PacketIDs.getEnum(control);
                 }
@@ -161,7 +164,7 @@ public class APIPacketHandler implements PacketHandler {
                     floatdata = inputStream.readFloat();
                 }
                 case SYNC -> {
-                    String name = packet.toString();
+                    String name = packet.readString();
                     x = inputStream.readInt();
                     y = inputStream.readInt();
                     z = inputStream.readInt();
@@ -169,12 +172,13 @@ public class APIPacketHandler implements PacketHandler {
                     return;
                 }
                 case TANK -> {
-                    String tank = packet.toString();
+                    String tank = packet.readString();
                     x = inputStream.readInt();
                     y = inputStream.readInt();
                     z = inputStream.readInt();
                     int level = inputStream.readInt();
-                    ReikaPacketHelper.updateBlockEntityTankData(world, x, y, z, tank, level);
+                    String fluid = ReikaPacketHelper.readString(inputStream);
+                    ReikaPacketHelper.updateBlockEntityTankData(world, x, y, z, tank, level, fluid);
                     return;
                 }
                 case NBT -> {
@@ -183,7 +187,7 @@ public class APIPacketHandler implements PacketHandler {
                     NBT = ((ReikaPacketHelper.DataPacket) packet).asNBT();
                 }
                 case STRINGINT -> {
-                    stringdata = packet.toString();
+                    stringdata = packet.readString();
                     control = inputStream.readInt();
                     pack = PacketIDs.getEnum(control);
                     data = new int[pack.getNumberDataInts()];
@@ -243,7 +247,7 @@ public class APIPacketHandler implements PacketHandler {
                 y = inputStream.readInt();
                 z = inputStream.readInt();
             }
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             DragonAPI.LOGGER.error("Error when handling " + packet.getType() + " packet [" + packet + "]: " + e);
             e.printStackTrace();
             return;
@@ -258,6 +262,11 @@ public class APIPacketHandler implements PacketHandler {
                 case PARTICLE:
                 case PARTICLEWITHPOS:
                 case PARTICLEWITHPOSVEL:
+                    int requiredParticleData = pack == PacketIDs.PARTICLE ? 2 : pack == PacketIDs.PARTICLEWITHPOS ? 8 : 14;
+                    if (data.length < requiredParticleData) {
+                        DragonAPI.LOGGER.error("{} packet had {} ints; expected at least {}", pack, data.length, requiredParticleData);
+                        break;
+                    }
                     if (data[0] >= 0 && data[0] < ReikaParticleHelper.particleList.length) {
                         double px;
                         double py;
@@ -300,7 +309,7 @@ public class APIPacketHandler implements PacketHandler {
                     }
                     int ordinal = data[0];
                     boolean used = data[1] > 0;
-                    if (ordinal < 0 || ordinal > KeyWatcher.Key.keyList.length) {
+                    if (ordinal < 0 || ordinal >= KeyWatcher.Key.keyList.length || ep == null) {
                         DragonAPI.LOGGER.error("Caught key packet for key #" + ordinal + " (use=" + used + "), yet no such key exists. Packet=" + packet);
                         break;
                     }
@@ -315,7 +324,11 @@ public class APIPacketHandler implements PacketHandler {
                         tile.syncAllData(data[0] > 0);
                     }
                     break;
-                case VTILESYNC:
+				case VTILESYNC:
+					if (NBT == null) {
+						DragonAPI.LOGGER.error("Received VTILESYNC without NBT payload");
+						break;
+					}
                     int tx = NBT.getIntOr("x", 0);
                     int ty = NBT.getIntOr("y", 0);
                     int tz = NBT.getIntOr("z", 0);
@@ -330,8 +343,12 @@ public class APIPacketHandler implements PacketHandler {
                 case TILEDELETE:
                     world.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 3);
                     break;
-                case PLAYERDATSYNC:
-                case PLAYERDATSYNC_CLIENT:
+				case PLAYERDATSYNC:
+				case PLAYERDATSYNC_CLIENT:
+					if (NBT == null || ep == null) {
+						DragonAPI.LOGGER.error("Received player-data sync without NBT payload");
+						break;
+					}
                     // This packet is DragonAPI custom/persistent player data only. Never
                     // feed it to Player.load: doing so also applies saved position and
                     // rotation and causes visible camera snapping during frequent syncs.
@@ -348,7 +365,8 @@ public class APIPacketHandler implements PacketHandler {
 				}
 				break;*/
                 case PLAYERDATSYNCREQ_CLIENT:
-                    ReikaPlayerAPI.syncCustomData((ServerPlayer) ep);
+                    if (ep instanceof ServerPlayer serverPlayer)
+                        ReikaPlayerAPI.syncCustomData(serverPlayer);
                     break;
                 case RERENDER:
                     ReikaRenderHelper.rerenderAllChunksLazily(); //todo was rerenderAllChunks
@@ -387,7 +405,8 @@ public class APIPacketHandler implements PacketHandler {
                     }
                     break;
                 case PLAYERKICK:
-                    ((ServerPlayer) ep).connection.disconnect(Component.literal(stringdata));
+                    if (ep instanceof ServerPlayer serverPlayer)
+                        serverPlayer.connection.disconnect(Component.literal(stringdata != null ? stringdata : ""));
                     break;
                 case ITEMDROPPERREQUEST: {
                     Entity e = world.getEntity(data[0]);
@@ -406,7 +425,8 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 }
                 case PLAYERINTERACT:
-                    NeoForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEventClient.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
+                    if (data[4] >= 0 && data[4] < PlayerInteractEventClient.Result.values().length)
+                        NeoForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEventClient.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
                     break;
                 case BIOMEPNGSTART:
                     BiomeMapCommand.startCollecting(data[0], stringdata, world.dimension()/*todo old dimension id's data[1]*/, data[2], data[3], data[4], data[5], data[6], data[7] > 0);
@@ -425,6 +445,8 @@ public class APIPacketHandler implements PacketHandler {
                     ModFileVersionChecker.instance.checkFiles((ServerPlayer) ep, stringdata);
                     break;
                 case ENTITYSYNC: {
+                    if (NBT == null)
+                        break;
                     int id = NBT.getIntOr("dispatchID", 0);
                     Entity e = world.getEntity(id);
                     if (e != null) {
@@ -520,7 +542,10 @@ public class APIPacketHandler implements PacketHandler {
         OREDUMP();
 
         public static PacketIDs getEnum(int index) {
-            return PacketIDs.values()[index];
+            PacketIDs[] values = PacketIDs.values();
+            if (index < 0 || index >= values.length)
+                throw new IllegalArgumentException("Invalid DragonAPI packet id " + index);
+            return values[index];
         }
 
         public boolean isLongPacket() {

@@ -51,6 +51,7 @@ import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 import reika.dragonapi.instantiable.data.maps.TimerMap;
 import reika.dragonapi.instantiable.io.SyncPacket;
 import reika.dragonapi.interfaces.DataSync;
+import reika.dragonapi.interfaces.blockentity.BreakAction;
 import reika.dragonapi.io.CompoundSyncPacket;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
@@ -166,6 +167,19 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
      */
     public final long getBlockEntityAge() {
         return tileAge;
+    }
+
+    /**
+     * V33a's BlockTEBase.breakBlock ran {@link BreakAction#breakBlock} from Block.breakBlock, i.e. on any
+     * server-side removal (player, explosion, /setblock, fluid, code), never only a player's break. This is
+     * 26.2's any-removal hook (server only, like 1.7.10's). BreakAction runs before super so an action that
+     * empties its own inventory (e.g. the Aura Infuser's dropItem) does so before vanilla spills Containers.
+     */
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        if (this instanceof BreakAction ba)
+            ba.breakBlock();
+        super.preRemoveSideEffects(pos, state);
     }
 
 
@@ -433,7 +447,9 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
                     }
                 }
             }
-        } catch (Exception e) {}
+		} catch (Exception e) {
+			DragonAPI.LOGGER.error("Failed to apply block entity update packet at " + worldPosition, e);
+		}
     }
 
     protected void onSetPlacer(Player ep) {
@@ -467,6 +483,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         if (getLevel().isClientSide())
             throw new MisuseException("Cannot get the serverside player on the client!");
         Player ep = this.getPlacer();
+        if (ep == null)
+            return null;
         if (ep instanceof ServerPlayer)
             return (ServerPlayer) ep;
         else if (!(ReikaPlayerAPI.isFake(ep)))

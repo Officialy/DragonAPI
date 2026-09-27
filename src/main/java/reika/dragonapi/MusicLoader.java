@@ -90,11 +90,14 @@ public class MusicLoader {
         }
 
         @Override
-        public String setExtension(String line) {
-            String[] parts = line.split("\\|");
-            String path = parts[0];
-            String name = path.substring(path.lastIndexOf('/')+1, path.length()-4);
-            return path.substring(path.length()-3);
+		public String setExtension(String line) {
+			if (line == null || line.isBlank())
+				return "";
+			String[] parts = line.split("\\|", 2);
+			String path = parts[0];
+			int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+			int dot = path.lastIndexOf('.');
+			return dot > slash && dot < path.length()-1 ? path.substring(dot+1) : "";
         }
     }
 

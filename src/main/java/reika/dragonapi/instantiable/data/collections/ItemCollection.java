@@ -2,6 +2,7 @@ package reika.dragonapi.instantiable.data.collections;
 
 
 import reika.dragonapi.libraries.ReikaNBTHelper;
+import reika.dragonapi.libraries.registry.ReikaItemHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -40,15 +41,16 @@ public class ItemCollection {
         return ret;
     }
 
-    public void drop(Level world, BlockPos pos) {
-        for (ItemStack is : data) {
-            while (is.getCount() > 0) {
-                int num = Math.min(is.getCount(), is.getMaxStackSize());
-                //ItemStack is2 = ReikaItemHelper.getSizedItemStack(is, num);
-                is.setCount(num--); //-= num
-                //ReikaItemHelper.dropItem(world, x + world.rand.nextDouble(), y + world.rand.nextDouble(), z + world.rand.nextDouble(), is2);
-            }
-        }
+	public void drop(Level world, BlockPos pos) {
+		for (ItemStack is : data) {
+			while (is.getCount() > 0) {
+				int num = Math.min(is.getCount(), is.getMaxStackSize());
+				ItemStack dropped = is.copyWithCount(num);
+				is.shrink(num);
+				ReikaItemHelper.dropItem(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, dropped);
+			}
+		}
+		this.clearEmpties();
     }
 
     @Override
@@ -72,13 +74,15 @@ public class ItemCollection {
         ReikaNBTHelper.readCollectionFromNBT(data, NBT, "items");
     }
 
-    public int removeItems(int amt) {
+	public int removeItems(int amt) {
+		if (amt <= 0)
+			return 0;
         int ret = 0;
         Iterator<ItemStack> it = data.iterator();
         while (it.hasNext()) {
             ItemStack is = it.next();
             int rem = Math.min(is.getCount(), amt);
-            is.setCount(rem--); // todo -= rem
+			is.shrink(rem);
             ret += rem;
             amt -= rem;
             if (is.getCount() <= 0)

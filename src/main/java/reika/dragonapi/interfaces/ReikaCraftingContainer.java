@@ -74,39 +74,16 @@ public abstract class ReikaCraftingContainer<V extends BlockEntityBase> extends 
 
     @Override
     public void clicked(int slot, int button, ContainerInput action, Player ep) {
-		/*
-		if (slot >= 18 && slot < tile.getSizeInventory()) {
-			ItemStack held = ep.inventory.getItemStack();
-			tile.setMapping(slot, ReikaItemHelper.getSizedItemStack(held, 1));
-			return held;
-		}
-		 */
-
-        //if (action == 4 && slot >= 18 && slot < tile.getSizeInventory())
-        //	action = 0;
-
-        this.updateCraftMatrix();
-        Player ip = ep;
-        //ReikaJavaLibrary.pConsole(ip.getItemStack());
-        V wr = this.getRecipe(craftMatrix, world);
-        if (wr != null && crafter.isReadyToCraft() && slot == 13) {
-            ItemStack drop = ip.getUseItem();
-            ItemStack craft = this.getOutput(wr);
-            if (drop != null && (!ReikaItemHelper.matchStacks(drop, craft) || drop.getCount()+craft.getCount() > drop.getMaxStackSize()))
-                return;
-            this.craft(wr, ep);
-            craft.onCraftedBy(ep, craft.getCount());
-            int outslot = crafter.getOutputSlot();
-            if (drop == null)
-                ip.addItem(crafter.getItem(outslot));
-            else
-                drop.setCount(drop.getCount() + crafter.getItem(outslot).getCount());
-            crafter.setItem(outslot, ItemStack.EMPTY);
+        if (slot == crafter.getOutputSlot() && crafter.isReadyToCraft() && !ep.level().isClientSide()) {
+            this.updateCraftMatrix();
+            V wr = this.getRecipe(craftMatrix, world);
+            if (wr != null && !this.getOutput(wr).isEmpty()) this.craft(wr, ep);
         }
+        super.clicked(slot, button, action, ep);
+        this.updateCraftMatrix();
     }
 
     protected abstract ItemStack getOutput(V wr);
 
     protected abstract V getRecipe(CraftingContainer craftMatrix, Level world);
 }
-

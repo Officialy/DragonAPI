@@ -11,25 +11,34 @@ package reika.dragonapi.modinteract.lua;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.fluids.IFluidTank;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import reika.dragonapi.interfaces.blockentity.HasFluidResourceHandler;
 
 public class LuaReadTank extends LuaMethod {
 
 	public LuaReadTank() {
-		super("readTank", IFluidHandler.class);
+		super("readTank", HasFluidResourceHandler.class);
 	}
 
 	@Override
 	protected Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
-		IFluidTank ifl = (IFluidTank)te;
-		if (ifl.getFluid().isEmpty())
-			return new Object[]{null, 0, ifl.getCapacity()};
+		ResourceHandler<FluidResource> handler = ((HasFluidResourceHandler)te).getFluidHandler(null);
+		if (handler == null)
+			throw new LuaMethodException("Block entity has no fluid capability");
+		if (args.length == 0 || !(args[0] instanceof Number number))
+			throw new LuaMethodException("Expected a tank index");
+		int index = number.intValue();
+		if (index < 0 || index >= handler.size())
+			throw new LuaMethodException("Tank index out of bounds: " + index);
+		FluidResource resource = handler.getResource(index);
+		if (resource.isEmpty())
+			return new Object[]{null, 0, handler.getCapacityAsInt(index, FluidResource.EMPTY), null};
 		Object[] o = new Object[4];
-		o[0] = BuiltInRegistries.FLUID.getKey(ifl.getFluid().getFluid()).getPath(); //todo check this
-		o[1] = ifl.getFluidAmount();
-		o[2] = ifl.getCapacity();
-		o[3] = ifl.getFluid().getHoverName().getString();
+		o[0] = BuiltInRegistries.FLUID.getKey(resource.getFluid()).toString();
+		o[1] = handler.getAmountAsInt(index);
+		o[2] = handler.getCapacityAsInt(index, resource);
+		o[3] = resource.toStack(1).getHoverName().getString();
 		return o;
 	}
 
@@ -49,4 +58,3 @@ public class LuaReadTank extends LuaMethod {
 	}
 
 }
-

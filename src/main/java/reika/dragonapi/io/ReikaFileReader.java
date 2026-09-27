@@ -35,17 +35,14 @@ public class ReikaFileReader {
 	private static long internetLastUnavailable = -1;
 
 	public static int getFileLength(File f) {
-		int len;
-		try {
-			LineNumberReader lnr = new LineNumberReader(new FileReader(f));
-			lnr.skip(Long.MAX_VALUE);
-			len = lnr.getLineNumber() + 1 + 1;
-			lnr.close();
+		try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+			int len = 0;
+			while (reader.readLine() != null)
+				len++;
+			return len;
 		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException("Could not load file data due to " + e.getCause() + " and " + e.getClass() + " !");
+			throw new RuntimeException("Could not load file data from " + f, e);
 		}
-		return len;
 	}
 
 	/**
@@ -137,13 +134,21 @@ public class ReikaFileReader {
 				"ns1.telstra.net"
 		};
 		for (int i = 0; i < attempts.length; i++) {
+			HttpURLConnection c = null;
 			try {
-				URLConnection c = new URL(attempts[i]).openConnection();
+				URLConnection connection = new URL(attempts[i]).openConnection();
+				if (!(connection instanceof HttpURLConnection))
+					continue;
+				c = (HttpURLConnection)connection;
 				c.setConnectTimeout(timeout);
-				((HttpURLConnection) c).getResponseCode();
+				c.setReadTimeout(timeout);
+				c.getResponseCode();
 				return true;
 			} catch (IOException ex) {
-
+				// Try the next independent endpoint.
+			} finally {
+				if (c != null)
+					c.disconnect();
 			}
 		}
 		internetLastUnavailable = System.currentTimeMillis();
@@ -157,6 +162,8 @@ public class ReikaFileReader {
 		ArrayList<File> li = new ArrayList<>();
 		if (f.isDirectory()) {
 			File[] files = f.listFiles();
+			if (files == null)
+				return li;
 			for (File in : files) {
 				if (in.isDirectory()) {
 					li.addAll(getAllFilesInFolder(in, ext));
@@ -274,23 +281,14 @@ public class ReikaFileReader {
 	}
 
 	public static ArrayList<Byte> getFileAsBytes(InputStream in, boolean printStackTrace, Charset set) {
-		BufferedReader r = getReader(in, set);
 		ArrayList<Byte> li = new ArrayList<>();
-		try {
-			byte b = (byte) r.read();
-			while (b != -1) {
-				li.add(b);
-				b = (byte) r.read();
-			}
+		try (InputStream source = in) {
+			int value;
+			while ((value = source.read()) != -1)
+				li.add((byte)value);
 		} catch (Exception e) {
 			if (printStackTrace)
 				e.printStackTrace();
-		} finally {
-			try {
-				r.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 		}
 		return li;
 	}
@@ -336,15 +334,14 @@ public class ReikaFileReader {
 	public static void writeDataToFile(File f, ArrayList<Byte> li, boolean printStackTrace) {
 		try {
 			f.delete();
-			f.getParentFile().mkdirs();
+			File parent = f.getParentFile();
+			if (parent != null)
+				parent.mkdirs();
 			f.createNewFile();
-			FileOutputStream fos = new FileOutputStream(f);
-			BufferedWriter p = new BufferedWriter(new OutputStreamWriter(fos));
-			for (byte b : li) {
-				p.write(b);
+			try (FileOutputStream out = new FileOutputStream(f)) {
+				for (byte b : li)
+					out.write(b & 0xFF);
 			}
-			p.flush();
-			p.close();
 		} catch (IOException e) {
 			if (printStackTrace) {
 				e.printStackTrace();
@@ -382,7 +379,6 @@ public class ReikaFileReader {
 	}
 
 	private static String getHash(InputStream is, HashType type) {
-		StringBuffer sb = new StringBuffer();
 		try {
 			byte[] buffer = new byte[1024];
 			MessageDigest complete = MessageDigest.getInstance(type.tag);
@@ -395,18 +391,11 @@ public class ReikaFileReader {
 			}
 			while (numRead != -1);
 
-			is.close();
 			byte[] hash = complete.digest();
-
-			for (int i = 0; i < hash.length; i++) {
-				sb.append(Integer.toString((hash[i] & 0xff) + 0x100, 16).substring(1).toUpperCase());
-			}
+			return HexFormat.of().withUpperCase().formatHex(hash);
 		} catch (Exception e) {
-			e.printStackTrace();
-			sb.append("IO ERROR: ");
-			sb.append(e);
+			throw new IllegalStateException("Could not calculate " + type + " hash", e);
 		}
-		return sb.toString();
 	}
 
 	public static InputStream getFileInsideJar(File f, String name) {
@@ -482,7 +471,7 @@ public class ReikaFileReader {
 				}
 			}
 		} catch (Exception e) {
-			Throwables.propagate(e);
+			throw Throwables.propagate(e);
 		} finally {
 			try {
 				in.close();
@@ -496,9 +485,9 @@ public class ReikaFileReader {
 	public static File createFileFromStream(InputStream in) throws IOException {
 		File tempFile = File.createTempFile("temp_" + in.hashCode(), null);
 		tempFile.deleteOnExit();
-		FileOutputStream out = new FileOutputStream(tempFile);
-		IOUtils.copy(in, out);
-		//in.close();
+		try (InputStream source = in; FileOutputStream out = new FileOutputStream(tempFile)) {
+			IOUtils.copy(source, out);
+		}
 		return tempFile;
 	}
 
@@ -528,13 +517,11 @@ public class ReikaFileReader {
 	}
 
 	public static void flipFileBytes(InputStream in, File out) {
-		try {
+		try (InputStream source = in) {
 			ArrayList<Byte> li = new ArrayList<>();
-			byte b = (byte) in.read();
-			while (b != -1) {
-				li.add(b);
-				b = (byte) in.read();
-			}
+			int value;
+			while ((value = source.read()) != -1)
+				li.add((byte)value);
 			Collections.reverse(li);
 			writeDataToFile(out, li, true);
 		} catch (Exception e) {
@@ -543,13 +530,11 @@ public class ReikaFileReader {
 	}
 
 	public static ArrayList<String> encryptFileBytes(InputStream in) {
-		try {
+		try (InputStream source = in) {
 			ArrayList<Byte> li = new ArrayList<>();
-			byte b = (byte) in.read();
-			while (b != -1) {
-				li.add(b);
-				b = (byte) in.read();
-			}
+			int value;
+			while ((value = source.read()) != -1)
+				li.add((byte)value);
 			encryptByteList(li);
 			ArrayList<String> li2 = new ArrayList<>();
 			String line = "";
@@ -638,7 +623,10 @@ public class ReikaFileReader {
 	}
 
 	public static File getFileByNameAnyExt(File folder, String name) {
-		for (File f : folder.listFiles()) {
+		File[] files = folder != null ? folder.listFiles() : null;
+		if (files == null)
+			return null;
+		for (File f : files) {
 			if (f.isDirectory())
 				continue;
 			if (getFileNameNoExtension(f, false, false).equals(name))
@@ -699,6 +687,10 @@ public class ReikaFileReader {
 		}
 
 		private byte[] getBytes(Object o) {
+			if (o == null) {
+				DragonAPI.LOGGER.error("Cannot serialize a null object!");
+				return new byte[0];
+			}
 			if (o instanceof byte[])
 				return (byte[]) o;
 			else if (o instanceof Integer)
@@ -786,9 +778,9 @@ public class ReikaFileReader {
 					line = r.readLine();
 					idx++;
 				}
-				FileOutputStream os = new FileOutputStream(f);
-				os.write(out.toString().getBytes());
-				os.close();
+				try (FileOutputStream os = new FileOutputStream(f)) {
+					os.write(out.toString().getBytes(set));
+				}
 				return true;
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -818,5 +810,4 @@ public class ReikaFileReader {
 
 	}
 }
-
 

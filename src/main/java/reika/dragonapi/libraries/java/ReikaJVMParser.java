@@ -4,7 +4,6 @@ import reika.dragonapi.client.ClientEnvironment;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.loading.FMLEnvironment;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
@@ -40,8 +39,9 @@ public class ReikaJVMParser {
         for (String s : args) {
             if (s.startsWith(pre)) {
                 int idx = s.indexOf('=');
-                String ret = s.substring(idx);
-                return ReikaJavaLibrary.safeIntParse(ret);
+                if (idx < 0 || idx == s.length() - 1)
+                    return -1;
+                return ReikaJavaLibrary.safeIntParse(s.substring(idx + 1));
             }
         }
         return -1;
@@ -51,26 +51,31 @@ public class ReikaJVMParser {
         for (String s : args) {
             if (s.startsWith("-Xmx")) {
                 String ret = s.substring(4);
+                if (ret.isEmpty())
+                    continue;
                 char size = ret.charAt(ret.length()-1);
                 if (Character.isLowerCase(size))
                     size = Character.toUpperCase(size);
-                ret = ret.substring(0, ret.length()-1);
-                int base = Integer.parseInt(ret);
+                long multiplier;
                 if (size == 'K') {
-                    return base*1000L;
+                    multiplier = 1024L;
                 }
                 else if (size == 'M') {
-                    return base*1000000L;
+                    multiplier = 1024L * 1024L;
                 }
                 else if (size == 'G') {
-                    return base*1000000000L;
+                    multiplier = 1024L * 1024L * 1024L;
                 }
                 else {
-                    throw new IllegalArgumentException("Invalid memory specification.");
+                    if (!Character.isDigit(size))
+                        throw new IllegalArgumentException("Invalid memory specification: " + s);
+                    multiplier = 1;
                 }
+                String number = multiplier == 1 ? ret : ret.substring(0, ret.length() - 1);
+                return Long.parseLong(number) * multiplier;
             }
         }
-        return 1000000000; //1GB default on most PCs
+        return Runtime.getRuntime().maxMemory();
     }
 
     static {
@@ -82,13 +87,7 @@ public class ReikaJVMParser {
 
     private static int[] getJavaVersion() {
         try {
-            String v = System.getProperty("java.version");
-            String[] parts = v.replaceAll("[^0-9\\._]", "").replaceAll("_", ".").split("\\.");
-            int[] ret = new int[parts.length-1]; //ignore the "1."
-            for (int i = 0; i < ret.length; i++) {
-                ret[i] = Integer.parseInt(parts[i+1]);
-            }
-            return ret;
+            return Runtime.version().version().stream().mapToInt(Integer::intValue).toArray();
         }
         catch (Exception e) {
             ReikaJavaLibrary.pConsole("***********************************************************************************************");
@@ -101,6 +100,8 @@ public class ReikaJVMParser {
 
     /** 0 for major (7, 8, etc), and 2 for release (eg 55 for 1.7_55) */
     public static int getJavaVersion(int subindex) {
+        if (subindex < 0 || subindex >= version.length)
+            throw new IllegalArgumentException("Java version component " + subindex + " is unavailable");
         return version[subindex];
     }
 

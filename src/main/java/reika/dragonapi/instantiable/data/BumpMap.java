@@ -35,7 +35,11 @@ public class BumpMap {
 
 	private void load() {
 		try (InputStream in = reference.getResourceAsStream(path)) {
+			if (in == null)
+				throw new IllegalArgumentException("Bump map resource not found: " + path);
 			BufferedImage img = ImageIO.read(in);
+			if (img == null)
+				throw new IllegalArgumentException("Resource is not a readable image: " + path);
 			data = new int[img.getWidth()][img.getHeight()];
 			for (int i = 0; i < img.getWidth(); i++) {
 				for (int k = 0; k < img.getHeight(); k++) {
@@ -43,7 +47,7 @@ public class BumpMap {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw new IllegalStateException("Could not load bump map " + path, e);
 		}
 	}
 

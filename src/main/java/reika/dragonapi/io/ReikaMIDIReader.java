@@ -39,8 +39,7 @@ public final class ReikaMIDIReader {
 
 	public static Sequence getMIDIFromFile(Class root, String path) {
 		DragonAPI.LOGGER.info("Reading MIDI at " + path);
-		try {
-			InputStream input = root.getResourceAsStream(path);
+		try (InputStream input = root.getResourceAsStream(path)) {
 			if (input == null) {
 				DragonAPI.LOGGER.error("File at " + path + " not found. Aborting.");
 				return null;
@@ -73,10 +72,7 @@ public final class ReikaMIDIReader {
 	public static Sequence getMIDIFromFile(InputStream in) throws IOException, InvalidMidiDataException {
 		try (in) {
 			return readMIDIFromFile(in);
-		} catch (Exception e) {
-			Throwables.throwIfUnchecked(e);
 		}
-		return null;
 	}
 
 	private static Sequence readMIDIFromFile(InputStream in) throws IOException, InvalidMidiDataException {
@@ -269,11 +265,11 @@ public final class ReikaMIDIReader {
 
 	public static int[][][] readMIDIFileToArray(Sequence seq) {
 		//debugMIDI(seq);
-		int[][][] data = new int[getMCTickLength(seq)][64][3];
 		if (seq == null) {
 			DragonAPI.LOGGER.error("Sequence is empty!");
-			return data;
+			return new int[0][64][3];
 		}
+		int[][][] data = new int[getMCTickLength(seq)][64][3];
 		int[][] dataline = new int[16][3];
 		int time;
 		int vol = 0;

@@ -38,9 +38,9 @@ public class DirectResource extends Resource {
                     if (st == null)
                         throw new RuntimeException("Resource not found at " + path);
                     data = ReikaJavaLibrary.streamToBytes(st);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+				} catch (IOException e) {
+					throw new IllegalStateException("Could not load resource " + path, e);
+				}
             }
             //ReikaJavaLibrary.pConsole("Loaded cache for "+path+", data="+data);
             return new ByteArrayInputStream(data);

@@ -134,8 +134,10 @@ public abstract class LuaBlock {
             return Integer.decode(s);
     }
 
-    private boolean isString(String s) {
-        return !Character.isDigit(s.charAt(s.charAt(0) == '-' && s.length() > 1 ? 1 : 0)) && !s.equalsIgnoreCase("true") && !s.equalsIgnoreCase("false");
+	private boolean isString(String s) {
+		if (s == null || s.isEmpty())
+			return true;
+		return !Character.isDigit(s.charAt(s.charAt(0) == '-' && s.length() > 1 ? 1 : 0)) && !s.equalsIgnoreCase("true") && !s.equalsIgnoreCase("false");
     }
 
     public final Collection<String> getKeys() {
@@ -369,7 +371,7 @@ public abstract class LuaBlock {
                 if (s.isEmpty())
                     continue;
 
-                if (s.contains("{")) {
+				if (s.contains("{")) {
                     bracketLevel++;
                     if (s.endsWith(" = {"))
                         s = s.substring(0, s.length()-4);
@@ -379,20 +381,28 @@ public abstract class LuaBlock {
                     catch (Exception e) {
                         DragonAPI.LOGGER.error("Failed to construct proper child LuaBlock for "+s+"' in "+this+": ");
                         e.printStackTrace();
-                        activeBlock = new BasicLuaBlock(s, activeBlock, this);
-                    }
-                }
-                else if (s.contains("}")) {
+						activeBlock = new BasicLuaBlock(s, activeBlock, this);
+					}
+					continue;
+				}
+				else if (s.contains("}")) {
+					if (activeBlock == null)
+						throw new IllegalArgumentException("Malformed file: closing brace without an active block");
                     if (activeBlock.containsKey("type") && activeBlock.parent != null && activeBlock.parent.isRoot)
                         this.addBlock(activeBlock.getString("type"), activeBlock);
                     activeBlock.onFinish();
-                    activeBlock = activeBlock.getParent();
-                    bracketLevel--;
-                }
+					activeBlock = activeBlock.getParent();
+					bracketLevel--;
+					if (bracketLevel < 0)
+						throw new IllegalArgumentException("Malformed file: too many closing braces");
+					continue;
+				}
 
-                if (!s.equals("{") && !s.equals("}") && !s.equals(activeBlock.name)) {
-                    s = s.replaceAll("\"", "");
-                    String[] parts = s.split("=");
+				if (activeBlock == null)
+					throw new IllegalArgumentException("Malformed file: data outside a block: " + s);
+				if (!s.equals("{") && !s.equals("}") && !s.equals(activeBlock.name)) {
+					s = s.replaceAll("\"", "");
+					String[] parts = s.split("=", 2);
                     if (parts.length == 2) {
                         String s1 = parts[0].substring(0, parts[0].length()-1);
                         if (s1.charAt(s1.length()-1) == ' ')
@@ -539,7 +549,11 @@ public abstract class LuaBlock {
         return b.isList() && b.data.size() == 1 && b.children.isEmpty() ? this.parseObject(b.data.values().iterator().next()) : b.isList() ? b.asList() : b.asHashMap();
     }
 
-    private Object parseObject(String s) {
+	private Object parseObject(String s) {
+		if (s == null)
+			return null;
+		if (s.isEmpty())
+			return "";
         if (s.equalsIgnoreCase("true"))
             return true;
         if (s.equalsIgnoreCase("false"))
@@ -550,8 +564,10 @@ public abstract class LuaBlock {
             Matcher m = TYPE_SPECIFIER.matcher(type);
             type = m.find() ? m.group(1) : null;
             s = s.replace("[datatype="+type+"]", "");
-            try {
-                override = ReikaASMHelper.PrimitiveType.valueOf(type.toUpperCase(Locale.ENGLISH));
+			try {
+				if (type == null)
+					throw new IllegalArgumentException("Missing datatype name");
+				override = ReikaASMHelper.PrimitiveType.valueOf(type.toUpperCase(Locale.ENGLISH));
             }
             catch (IllegalArgumentException ignored) {
 
@@ -562,14 +578,14 @@ public abstract class LuaBlock {
                 switch(override) {
                     case BYTE:
                         return Byte.parseByte(s);
-                    case SHORT:
-                        return (byte)Short.parseShort(s);
+					case SHORT:
+						return Short.parseShort(s);
                     case LONG:
                         return Long.parseLong(s);
                     case FLOAT:
                         return Float.parseFloat(s);
-                    case DOUBLE:
-                        return (float)Double.parseDouble(s);
+					case DOUBLE:
+						return Double.parseDouble(s);
                     default:
                         break;
                 }
@@ -710,4 +726,3 @@ public abstract class LuaBlock {
 
     }
 }
-

@@ -1,5 +1,8 @@
 package reika.dragonapi.modregistry;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import reika.dragonapi.DragonAPI;
@@ -181,9 +184,12 @@ public enum ModOreList implements OreType {
 		 */
         DragonAPI.LOGGER.info("Loading ore type "+this);
         ores.clear();
-        for (String label : oreLabel) {
-            oreNames.put(label, this);
-            ArrayList<ItemStack> toadd = null;//todo OreDictionary.getOres(label);
+		for (String label : oreLabel) {
+			oreNames.put(label, this);
+			ArrayList<ItemStack> toadd = new ArrayList<>();
+			TagKey<Item> tag = ReikaItemHelper.getOreTag(label);
+			if (tag != null)
+				BuiltInRegistries.ITEM.getTagOrEmpty(tag).forEach(holder -> toadd.add(new ItemStack(holder.value())));
             if (!toadd.isEmpty()) {
                 toadd.removeIf(is -> is.getItem() == null);
                 DragonAPI.LOGGER.info("\tDetected the following blocks for " + this + " from OreDict \"" + label + "\": " + toadd);
@@ -201,17 +207,8 @@ public enum ModOreList implements OreType {
             }
         }
 
-        DragonAPI.LOGGER.info("\tAdding special blocks for "+this+":");
-        Collection<ItemStack> c = null;// todo fix ModOreCompat.instance.load(this);
-        if (c.isEmpty()) {
-            DragonAPI.LOGGER.info("\tNo special blocks found.");
-        }
-        else {
-            DragonAPI.LOGGER.info("\t"+c.size()+" special blocks found: "+c);
-            for (ItemStack is : c)
-                if (!ReikaItemHelper.collectionContainsItemStack(ores, is))
-                    ores.add(is);
-        }
+		// Modern common tags replace both OreDictionary entries and the old hard-coded
+		// compatibility list; every registered member has already been collected above.
 
         if (!this.existsInGame())
             DragonAPI.LOGGER.info("\tNo ore blocks detected for "+this);

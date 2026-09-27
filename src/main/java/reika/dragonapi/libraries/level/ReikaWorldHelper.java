@@ -4,6 +4,8 @@ import java.util.ArrayList;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -12,6 +14,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.commands.FillBiomeCommand;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
@@ -41,7 +44,6 @@ import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
 // IFluidBlock removed in NeoForge - fluid blocks are handled differently
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import net.neoforged.fml.ModList;
@@ -171,8 +173,8 @@ public class ReikaWorldHelper {
 
     private static Simplex3DGenerator getOrCreateTemperatureNoise(Level world) {
         ImmutablePair<ResourceKey<Level>, Long> pair = new ImmutablePair<>(world.dimension(), ServerLifecycleHooks.getCurrentServer().overworld().getSeed());
-        Simplex3DGenerator gen = tempNoise.get(pair);
-        if (true) {
+		Simplex3DGenerator gen = tempNoise.get(pair);
+		if (gen == null) {
             gen = new Simplex3DGenerator(ServerLifecycleHooks.getCurrentServer().overworld().getSeed());
             gen.setFrequency(1 / 20D);
 //            gen.addOctave(3.7, 0.17, 117.6);
@@ -426,8 +428,10 @@ public class ReikaWorldHelper {
 //            BlockEvent.HarvestDropsEvent evt = new BlockEvent.HarvestDropsEvent(world, pos, b, ep); // fortune, 1F, li, ep, false);
 //            NeoForge.EVENT_BUS.post(evt);
 //            li = evt.drops;
-            ItemTossEvent evt = new ItemTossEvent(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), li.stream().iterator().next()), ep);
-            NeoForge.EVENT_BUS.post(evt);
+			if (!li.isEmpty()) {
+				ItemTossEvent evt = new ItemTossEvent(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), li.getFirst()), ep);
+				NeoForge.EVENT_BUS.post(evt);
+			}
 //            li = evt.getDrops();
         }
 //        harvesters.set(null);
@@ -931,29 +935,19 @@ public class ReikaWorldHelper {
     /**
      * Sets the biome type at an xz column. Args: World, x, z, biome
      */
-    public static void setBiomeForXZ(Level world, int x, int z, Biome biome) { //todo this doesnt work at all right now, pls fix xoxoxo
-        ChunkAccess ch = world.getChunk(x, z);
-
-        int ax = x - ch.getPos().x() * 16;
-        int az = z - ch.getPos().z() * 16;
-
-//        ResourceKey<Biome>[] biomes = ch.getBiomeArray();
-        int index = az * 16 + ax;
-//        if (index < 0 || index >= biomes.length) {
-//            DragonAPI.LOGGER.error("BIOME CHANGE ERROR: " + x + "&" + z + " @ " + ch.getPos().x + "&" + ch.getPos().z + ": " + ax + "%" + az + " -> " + index, Dist.DEDICATED_SERVER);
-//            return;
-//        }
-//        biomes[index] = biome;
-//        ch.setBiomeArray(biomes);
-        ch.markUnsaved();//todo check if this is setChunkModified();
-        for (int i = 0; i < 256; i++)
-            temperatureEnvironment(world, new BlockPos(x, i, z), (int) ReikaBiomeHelper.getBiomeTemp(biome));
-
-        if (!world.isClientSide()) {
-            int packet = APIPacketHandler.PacketIDs.BIOMECHANGE.ordinal();
-//     todo       ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, packet, world, x, 0, z, 1024, biome);
-        }
-    }
+	public static void setBiomeForXZ(Level world, int x, int z, Biome biome) {
+		if (!(world instanceof ServerLevel server))
+			return;
+		Holder.Reference<Biome> holder = server.registryAccess().lookupOrThrow(Registries.BIOME).listElements()
+				.filter(entry -> entry.value() == biome)
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("Biome is not registered in this level: " + biome));
+		BlockPos from = new BlockPos(x, server.getMinY(), z);
+		BlockPos to = new BlockPos(x, server.getMaxY()-1, z);
+		FillBiomeCommand.fill(server, from, to, holder).ifRight(error -> DragonAPI.LOGGER.error("Could not set biome column at {}, {}", x, z, error));
+		for (int y = server.getMinY(); y < server.getMaxY(); y++)
+			temperatureEnvironment(server, new BlockPos(x, y, z), (int)ReikaBiomeHelper.getBiomeTemp(biome));
+	}
 
     public static boolean isBlockSurroundedBySolid(Level world, BlockPos pos, boolean vertical) {
         for (int i = vertical ? 0 : 2; i < 6; i++) {
@@ -1171,4 +1165,3 @@ public class ReikaWorldHelper {
                 .dragonapi$isExistingChunkFull(new net.minecraft.world.level.ChunkPos(x, z));
     }
 }
-

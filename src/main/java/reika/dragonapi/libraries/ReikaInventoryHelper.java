@@ -311,39 +311,28 @@ public class ReikaInventoryHelper {
     public static boolean addToIInv(ItemStack is, ManagedItemHandler ii, boolean overrideValid, int firstSlot, int maxSlot) {
 //        if (InterfaceCache.DSU.instanceOf(ii))
 //            return addToDSU((IDeepStorageUnit)ii, is, false);
-        is = is.copy();
-        if (!hasSpaceFor(is, ii, overrideValid, firstSlot, maxSlot)) {
+        int first = Math.max(0, firstSlot);
+        int end = Math.min(maxSlot, ii.getSlots());
+        ItemStack remaining = is.copy();
+        if (first >= end || !hasSpaceFor(remaining, ii, overrideValid, first, end)) {
             return false;
         }
-        int max = Math.min(ii.getSlots(), is.getCount());
-        for (int i = firstSlot; i < maxSlot; i++) {
-            if (overrideValid || ii.isItemValid(i, is)) {
-                if (!isArmorItem(is)) {
-                    if (i >= (ii).getSlots())
-                        continue;
-                }
+        for (int i = first; i < end && !remaining.isEmpty(); i++) {
+            if (overrideValid || ii.isItemValid(i, remaining)) {
                 ItemStack in = ii.getStackInSlot(i);
-                if (in == null) {
-                    int added = Math.min(is.getCount(), max);
-                    int currentCount = is.getCount();
-                    is.setCount(currentCount -= added);
-                    ii.setStackInSlot(i, ReikaItemHelper.getSizedItemStack(is, added));
-                    return true;
-                } else {
-                    if (ReikaItemHelper.areStacksCombinable(is, in, max)) {
-                        int space = max - in.getCount();
-                        int added = Math.min(is.getCount(), space);
-                        int currentCount = is.getCount();
-                        is.setCount(currentCount -= added);
-                        int iicount = ii.getStackInSlot(i).getCount();
-                        ii.getStackInSlot(i).setCount(iicount += added);
-                        if (is.getCount() <= 0)
-                            return true;
-                    }
+                int max = Math.min(ii.getSlotLimit(i), remaining.getMaxStackSize());
+                if (in.isEmpty()) {
+                    int added = Math.min(remaining.getCount(), max);
+                    ii.setStackInSlot(i, remaining.copyWithCount(added));
+                    remaining.shrink(added);
+                } else if (ItemStack.isSameItemSameComponents(remaining, in)) {
+                    int added = Math.min(remaining.getCount(), Math.max(0, max-in.getCount()));
+                    in.grow(added);
+                    remaining.shrink(added);
                 }
             }
         }
-        return is.getCount() == 0;
+        return remaining.isEmpty();
     }
 
 
@@ -418,24 +407,12 @@ public class ReikaInventoryHelper {
     }
 
     public static int addToInventoryWithLeftover(Item id, int size, ManagedItemHandler inventory) {
-        int slot = locateInInventory(id, inventory);
-        int empty = findEmptySlot(inventory);
-        if (slot == -1) {
-            if (empty == -1)
-                return size;
-            inventory.setStackInSlot(slot, new ItemStack(id, size));
+        if (size <= 0)
             return 0;
-        }
-        int space = inventory.getStackInSlot(slot).getMaxStackSize() - inventory.getStackInSlot(slot).getCount();
-        if (space >= size) {
-            int count = inventory.getStackInSlot(slot).getCount();
-            inventory.getStackInSlot(slot).setCount(count += size);
-            return 0;
-        }
-        int count = inventory.getStackInSlot(slot).getCount();
-        inventory.getStackInSlot(slot).setCount(count += space);
-        size -= space;
-        return size;
+        ItemStack remaining = new ItemStack(id, size);
+        for (int slot = 0; slot < inventory.getSlots() && !remaining.isEmpty(); slot++)
+            remaining = inventory.insertItem(slot, remaining, false);
+        return remaining.getCount();
     }
 
     /**
@@ -671,9 +648,9 @@ public class ReikaInventoryHelper {
     public static ArrayList<Integer> findEmptySlots(ItemStack[] inventory) {
         ArrayList<Integer> li = new ArrayList<>();
         for (int i = 0; i < inventory.length; i++) {
-            if (inventory[i] == null)
+            if (inventory[i] == null) {
                 li.add(i);
-            if (inventory[i].getCount() <= 0) {
+            } else if (inventory[i].isEmpty()) {
                 inventory[i] = null;
                 li.add(i);
             }
@@ -685,10 +662,8 @@ public class ReikaInventoryHelper {
         ArrayList<Integer> li = new ArrayList<>();
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack is = inventory.getItem(i);
-            if (is == null)
-                li.add(i);
-            if (is.getCount() <= 0) {
-                inventory.setItem(i, null);
+            if (is == null || is.isEmpty()) {
+                inventory.setItem(i, ItemStack.EMPTY);
                 li.add(i);
             }
         }
@@ -845,7 +820,9 @@ public class ReikaInventoryHelper {
 
     public static boolean hasSpaceFor(ItemStack is, ManagedItemHandler ii, boolean overrideValid, int firstSlot, int maxSlot) {
         int size = is.getCount();
-        for (int i = firstSlot; i < maxSlot && size > 0; i++) {
+        int first = Math.max(0, firstSlot);
+        int end = Math.min(maxSlot, ii.getSlots());
+        for (int i = first; i < end && size > 0; i++) {
             int max = Math.min(ii.getSlotLimit(i), is.getMaxStackSize());
             if (overrideValid || ii.isItemValid(i, is)) {
                 ItemStack in = ii.getStackInSlot(i);
@@ -907,8 +884,9 @@ public class ReikaInventoryHelper {
         if (!(ReikaItemHelper.matchStacks(is, inv.getStackInSlot(slot)) && ItemStack.isSameItemSameComponents(is, inv.getStackInSlot(slot))) || inv.getStackInSlot(slot).getCount() + is.getCount() > max)
             return false;
 
-        int count = inv.getStackInSlot(slot).getCount();
-        inv.getStackInSlot(slot).setCount(count += is.getCount());
+        ItemStack combined = inv.getStackInSlot(slot);
+        combined.grow(is.getCount());
+        inv.setStackInSlot(slot, combined);
         return true;
     }
 
@@ -1064,26 +1042,14 @@ public class ReikaInventoryHelper {
     }
 
     public static int addStackAndReturnCount(ItemStack stack, ManagedItemHandler ii, int slotMin, int slotMax) {
-        int slots = ii.getSlots(); //todo ii instanceof ManagedItemHandler ? ((ManagedItemHandler)ii).getAccessibleSlotsFromSide(side.ordinal()) : ReikaArrayHelper.getLinearArray(slotMin, slotMax);
         int transferred = 0;
-        for (int idx = 0; idx < slots && stack.getCount() > 0; idx++) {
-            ItemStack is = ii.getStackInSlot(slots);
-            if (is == null) {
-                ii.insertItem(slots, stack.copy(), false);
-                transferred += stack.getCount();
-                stack.setCount(0);
-            } else {
-                if (ReikaItemHelper.areStacksCombinable(stack, is, ii.getSlots())) {
-                    int max = Math.min(stack.getMaxStackSize(), ii.getSlots());
-                    int space = max - is.getCount();
-                    if (space > 0) {
-                        int added = Math.min(space, stack.getCount());
-                        transferred += added;
-                        is.setCount(is.getCount() + added);
-                        stack.setCount(stack.getCount() - added);
-                    }
-                }
-            }
+        int first = Math.max(0, slotMin);
+        int last = Math.min(slotMax, ii.getSlots()-1);
+        for (int idx = first; idx <= last && !stack.isEmpty(); idx++) {
+            int before = stack.getCount();
+            ItemStack remainder = ii.insertItem(idx, stack, false);
+            transferred += before-remainder.getCount();
+            stack.setCount(remainder.getCount());
         }
         return transferred;
     }
@@ -1311,4 +1277,3 @@ public class ReikaInventoryHelper {
         }
     }
 }
-

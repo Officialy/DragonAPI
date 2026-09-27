@@ -36,6 +36,8 @@ public class SemanticVersionParser {
 		private final int[] versions;
 
 		private SemanticVersion(String s) {
+			if (s == null || s.isBlank())
+				throw new IllegalArgumentException("Semantic version cannot be empty");
 			String[] parts = s.split("\\.");
 			versions = new int[parts.length];
 			try {
@@ -44,8 +46,7 @@ public class SemanticVersionParser {
 				}
 			} catch (NumberFormatException e) {
 				String err = "'" + s + "' is not a valid semantic version! Must have '#.#.#...' formatting!";
-				//throw new IllegalArgumentException(err);
-				DragonAPI.LOGGER.debug("Error parsing a semantic version! " + err);
+				throw new IllegalArgumentException(err, e);
 			}
 		}
 

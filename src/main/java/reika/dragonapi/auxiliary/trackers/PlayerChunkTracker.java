@@ -60,39 +60,39 @@ public class PlayerChunkTracker implements TickRegistry.TickHandler {
     }
 
     @Override
-    public void tick(TickRegistry.TickType type, Object... tickData) {
-        isInTick = true;
-        synchronized (trackedPlayers) {
-            Iterator<Map.Entry<Player, TrackerEntry>> iterator = trackedPlayers.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Player, TrackerEntry> entry = iterator.next();
-                TrackerEntry tracker = entry.getValue();
-                if (entry.getKey().isDeadOrDying() || !tracker.condition.shouldBeTracked(entry.getKey())) {
-                    tracker.timeout--;
-                } else {
-                    tracker.timeout = UNREGISTER_THRESHOLD;
-                }
-                if (tracker.timeout <= 0) {
-                    iterator.remove();
-                    entry.getValue().condition.onUntrack(entry.getKey());
-
-                    // Triggering chunk reload.
-                    // "move" the previously managed distance FAR away so
-                    // Minecraft thinks it needs to create new chunks around the
-                    // player.
-                    if (entry.getKey() != null) {
-                        Player emp = entry.getKey();
-                        emp.xo = Double.MAX_VALUE;
-                        emp.zo = Double.MAX_VALUE;
-                    }
-                }
-            }
-        }
-        isInTick = false;
-        synchronized (queuedWaitingEntries) {
-            trackedPlayers.putAll(queuedWaitingEntries);
-            queuedWaitingEntries.clear();
-        }
+	public void tick(TickRegistry.TickType type, Object... tickData) {
+		isInTick = true;
+		try {
+			synchronized (trackedPlayers) {
+				Iterator<Map.Entry<Player, TrackerEntry>> iterator = trackedPlayers.entrySet().iterator();
+				while (iterator.hasNext()) {
+					Map.Entry<Player, TrackerEntry> entry = iterator.next();
+					TrackerEntry tracker = entry.getValue();
+					if (entry.getKey().isDeadOrDying() || !tracker.condition.shouldBeTracked(entry.getKey())) {
+						tracker.timeout--;
+					} else {
+						tracker.timeout = UNREGISTER_THRESHOLD;
+					}
+					if (tracker.timeout <= 0) {
+						iterator.remove();
+						entry.getValue().condition.onUntrack(entry.getKey());
+						if (entry.getKey() != null) {
+							Player emp = entry.getKey();
+							emp.xo = Double.MAX_VALUE;
+							emp.zo = Double.MAX_VALUE;
+						}
+					}
+				}
+			}
+		} finally {
+			isInTick = false;
+			synchronized (queuedWaitingEntries) {
+				synchronized (trackedPlayers) {
+					trackedPlayers.putAll(queuedWaitingEntries);
+				}
+				queuedWaitingEntries.clear();
+			}
+		}
     }
 
     // Should only execute for the server.
@@ -134,4 +134,3 @@ public class PlayerChunkTracker implements TickRegistry.TickHandler {
     }
 
 }
-

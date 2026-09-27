@@ -31,6 +31,8 @@ public class ReikaReflectionHelper {
      * Gets the value of a private int in an instance of obj.
      */
     public static int getPrivateInteger(Object obj, String field) {
+        if (obj == null || field == null || field.isEmpty())
+            return Integer.MIN_VALUE;
         try {
             Class<? extends Object> c = obj.getClass();
             Field f = null;
@@ -49,7 +51,7 @@ public class ReikaReflectionHelper {
                 throw new NoSuchFieldException();
             }
             int val = Integer.MIN_VALUE;
-            if (!f.canAccess(f)) {
+            if (!f.canAccess(obj)) {
                 f.setAccessible(true);
                 val = f.getInt(obj);
                 f.setAccessible(false);
@@ -74,6 +76,8 @@ public class ReikaReflectionHelper {
                 ReikaChatHelper.write("Security Manager locked field " + field + " in " + obj);
             }
             e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            DragonAPI.LOGGER.error("Field " + field + " in " + obj + " is not an instance integer", e);
         }
         return Integer.MIN_VALUE;
     }
@@ -82,6 +86,8 @@ public class ReikaReflectionHelper {
      * Gets the value of a private boolean in an instance of obj.
      */
     public static boolean getPrivateBoolean(Object obj, String field) {
+        if (obj == null || field == null || field.isEmpty())
+            return false;
         try {
             Class<?> c = obj.getClass();
             Field f = null;
@@ -100,7 +106,7 @@ public class ReikaReflectionHelper {
                 throw new NoSuchFieldException();
             }
             boolean val = false;
-            if (!f.canAccess(f)) { //todo test this, was f.isAccessible() before
+            if (!f.canAccess(obj)) {
                 f.setAccessible(true);
                 val = f.getBoolean(obj);
                 f.setAccessible(false);
@@ -125,6 +131,8 @@ public class ReikaReflectionHelper {
                 ReikaChatHelper.write("Security Manager locked field " + field + " in " + obj);
             }
             e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            DragonAPI.LOGGER.error("Field " + field + " in " + obj + " is not an instance boolean", e);
         }
         return false;
     }
@@ -282,7 +290,7 @@ public class ReikaReflectionHelper {
             if (m == null) {
                 try {
                     Class<?> c = Class.forName(cl);
-                    m = c.getDeclaredMethod(cl, getArgTypesFromArgs(args));
+                    m = c.getDeclaredMethod(name, getArgTypesFromArgs(args));
                     m.setAccessible(true);
                     methodCache.put(m, cl, name);
                 } catch (Exception e) {

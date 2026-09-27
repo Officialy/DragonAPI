@@ -213,12 +213,12 @@ public final class ReikaArrayHelper {
 	 * Rotates a square matrix 90 degrees clockwise and returns it. Args: Matrix
 	 */
 	public static int[][] rotateMatrix(int[][] mat) {
-		int[][] temp = mat; //Ensures size match
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				temp[i][j] = mat[mat.length - j - 1][i];
-			}
-		}
+		if (mat.length == 0)
+			return new int[0][0];
+		int[][] temp = new int[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				temp[j][mat.length-i-1] = mat[i][j];
 		return temp;
 	}
 
@@ -232,11 +232,11 @@ public final class ReikaArrayHelper {
 	}
 
 	public static int[][] reverseColumns(int[][] mat) {
-		int[][] temp = mat;
+		int[][] temp = new int[mat.length][];
 		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				temp[i][mat.length - 1 - j] = mat[i][j];
-			}
+			temp[i] = new int[mat[i].length];
+			for (int j = 0; j < mat[i].length; j++)
+				temp[i][mat[i].length-1-j] = mat[i][j];
 		}
 		return temp;
 	}
@@ -245,12 +245,12 @@ public final class ReikaArrayHelper {
 	 * Rotates a square matrix 90 degrees clockwise and returns it. Args: Matrix
 	 */
 	public static boolean[][] rotateMatrix(boolean[][] mat) {
-		boolean[][] temp = mat; //Ensures size match
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				temp[i][j] = mat[mat.length - j - 1][i];
-			}
-		}
+		if (mat.length == 0)
+			return new boolean[0][0];
+		boolean[][] temp = new boolean[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				temp[j][mat.length-i-1] = mat[i][j];
 		return temp;
 	}
 
@@ -258,12 +258,12 @@ public final class ReikaArrayHelper {
 	 * Transposes a 2D matrix and returns it. Args: Matrix
 	 */
 	public static int[][] transposeMatrix(int[][] mat) {
-		int[][] arr = mat;
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				arr[i][j] = mat[j][i];
-			}
-		}
+		if (mat.length == 0)
+			return new int[0][0];
+		int[][] arr = new int[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				arr[j][i] = mat[i][j];
 		return arr;
 	}
 
@@ -271,12 +271,12 @@ public final class ReikaArrayHelper {
 	 * Transposes a 2D matrix and returns it. Args: Matrix
 	 */
 	public static boolean[][] transposeMatrix(boolean[][] mat) {
-		boolean[][] arr = mat;
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				arr[i][j] = mat[j][i];
-			}
-		}
+		if (mat.length == 0)
+			return new boolean[0][0];
+		boolean[][] arr = new boolean[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				arr[j][i] = mat[i][j];
 		return arr;
 	}
 
@@ -284,12 +284,12 @@ public final class ReikaArrayHelper {
 	 * Rotates a square matrix 90 degrees clockwise and returns it. Args: Matrix
 	 */
 	public static double[][] rotateMatrix(double[][] mat) {
-		double[][] temp = mat; //Ensures size match
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				temp[i][j] = mat[mat.length - j - 1][i];
-			}
-		}
+		if (mat.length == 0)
+			return new double[0][0];
+		double[][] temp = new double[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				temp[j][mat.length-i-1] = mat[i][j];
 		return temp;
 	}
 
@@ -297,12 +297,12 @@ public final class ReikaArrayHelper {
 	 * Transposes a 2D matrix and returns it. Args: Matrix
 	 */
 	public static double[][] transposeMatrix(double[][] mat) {
-		double[][] arr = mat;
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				arr[i][j] = mat[j][i];
-			}
-		}
+		if (mat.length == 0)
+			return new double[0][0];
+		double[][] arr = new double[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				arr[j][i] = mat[i][j];
 		return arr;
 	}
 
@@ -310,12 +310,12 @@ public final class ReikaArrayHelper {
 	 * Rotates a square matrix 90 degrees clockwise and returns it. Args: Matrix
 	 */
 	public static String[][] rotateMatrix(String[][] mat) {
-		String[][] temp = mat; //Ensures size match
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				temp[i][j] = mat[mat.length - j - 1][i];
-			}
-		}
+		if (mat.length == 0)
+			return new String[0][0];
+		String[][] temp = new String[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				temp[j][mat.length-i-1] = mat[i][j];
 		return temp;
 	}
 
@@ -323,12 +323,12 @@ public final class ReikaArrayHelper {
 	 * Transposes a 2D matrix and returns it. Args: Matrix
 	 */
 	public static String[][] transposeMatrix(String[][] mat) {
-		String[][] arr = mat;
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				arr[i][j] = mat[j][i];
-			}
-		}
+		if (mat.length == 0)
+			return new String[0][0];
+		String[][] arr = new String[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				arr[j][i] = mat[i][j];
 		return arr;
 	}
 
@@ -336,12 +336,12 @@ public final class ReikaArrayHelper {
 	 * Rotates a square matrix 90 degrees clockwise and returns it. Args: Matrix
 	 */
 	public static ItemStack[][] rotateMatrix(ItemStack[][] mat) {
-		ItemStack[][] temp = mat; //Ensures size match
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				temp[i][j] = mat[mat.length - j - 1][i];
-			}
-		}
+		if (mat.length == 0)
+			return new ItemStack[0][0];
+		ItemStack[][] temp = new ItemStack[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				temp[j][mat.length-i-1] = mat[i][j];
 		return temp;
 	}
 
@@ -349,94 +349,27 @@ public final class ReikaArrayHelper {
 	 * Transposes a 2D matrix and returns it. Args: Matrix
 	 */
 	public static ItemStack[][] transposeMatrix(ItemStack[][] mat) {
-		ItemStack[][] arr = mat;
-		for (int i = 0; i < mat.length; i++) {
-			for (int j = 0; j < mat.length; j++) {
-				arr[i][j] = mat[j][i];
-			}
-		}
+		if (mat.length == 0)
+			return new ItemStack[0][0];
+		ItemStack[][] arr = new ItemStack[mat[0].length][mat.length];
+		for (int i = 0; i < mat.length; i++)
+			for (int j = 0; j < mat[i].length; j++)
+				arr[j][i] = mat[i][j];
 		return arr;
 	}
 
 	/**
 	 * Returns true if all nonzero values in the array are equal. Args: Array
 	 */
-	//TODO Make scale for all array sizes
 	public static boolean allNonZerosEqual(long[] powers) {
-		Arrays.sort(powers);
-		if (powers[0] != 0) {
-			if (powers[1] != 0)
-				if (powers[0] != powers[1])
-					return false;
-		}
-		if (powers[0] != 0) {
-			if (powers[2] != 0)
-				if (powers[0] != powers[2])
-					return false;
-		}
-		if (powers[0] != 0) {
-			if (powers[3] != 0)
-				if (powers[0] != powers[3])
-					return false;
-		}
-		if (powers[0] != 0) {
-			if (powers[4] != 0)
-				if (powers[0] != powers[4])
-					return false;
-		}
-		if (powers[0] != 0) {
-			if (powers[5] != 0)
-				if (powers[0] != powers[5])
-					return false;
-		}
-		if (powers[1] != 0) {
-			if (powers[2] != 0)
-				if (powers[1] != powers[2])
-					return false;
-		}
-		if (powers[1] != 0) {
-			if (powers[3] != 0)
-				if (powers[1] != powers[3])
-					return false;
-		}
-		if (powers[1] != 0) {
-			if (powers[4] != 0)
-				if (powers[1] != powers[4])
-					return false;
-		}
-		if (powers[1] != 0) {
-			if (powers[5] != 0)
-				if (powers[1] != powers[5])
-					return false;
-		}
-		if (powers[2] != 0) {
-			if (powers[3] != 0)
-				if (powers[2] != powers[3])
-					return false;
-		}
-		if (powers[2] != 0) {
-			if (powers[4] != 0)
-				if (powers[2] != powers[4])
-					return false;
-		}
-		if (powers[2] != 0) {
-			if (powers[5] != 0)
-				if (powers[2] != powers[5])
-					return false;
-		}
-		if (powers[3] != 0) {
-			if (powers[4] != 0)
-				if (powers[3] != powers[4])
-					return false;
-		}
-		if (powers[3] != 0) {
-			if (powers[5] != 0)
-				if (powers[3] != powers[5])
-					return false;
-		}
-		if (powers[4] != 0) {
-			if (powers[5] != 0)
-				return powers[4] == powers[5];
+		long expected = 0;
+		for (long value : powers) {
+			if (value == 0)
+				continue;
+			if (expected == 0)
+				expected = value;
+			else if (value != expected)
+				return false;
 		}
 		return true;
 	}
@@ -453,9 +386,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static void shuffleArray(char[] a) {
-		int mid = a.length / 2;
-		for (int i = mid; i < a.length; i++) {
-			int lo = DragonAPI.rand.nextInt(mid);
+		for (int i = a.length-1; i > 0; i--) {
+			int lo = DragonAPI.rand.nextInt(i+1);
 			char buffer = a[lo];
 			a[lo] = a[i];
 			a[i] = buffer;
@@ -463,9 +395,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static void shuffleArray(int[] a) {
-		int mid = a.length / 2;
-		for (int i = mid; i < a.length; i++) {
-			int lo = DragonAPI.rand.nextInt(mid);
+		for (int i = a.length-1; i > 0; i--) {
+			int lo = DragonAPI.rand.nextInt(i+1);
 			int buffer = a[lo];
 			a[lo] = a[i];
 			a[i] = buffer;
@@ -473,9 +404,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static void shuffleArray(double[] a) {
-		int mid = a.length / 2;
-		for (int i = mid; i < a.length; i++) {
-			int lo = DragonAPI.rand.nextInt(mid);
+		for (int i = a.length-1; i > 0; i--) {
+			int lo = DragonAPI.rand.nextInt(i+1);
 			double buffer = a[lo];
 			a[lo] = a[i];
 			a[i] = buffer;
@@ -487,9 +417,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static void shuffleArray(Object[] a, Random r) {
-		int mid = a.length / 2;
-		for (int i = mid; i < a.length; i++) {
-			int lo = r.nextInt(mid);
+		for (int i = a.length-1; i > 0; i--) {
+			int lo = r.nextInt(i+1);
 			Object buffer = a[lo];
 			a[lo] = a[i];
 			a[i] = buffer;
@@ -505,6 +434,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static boolean contains(int[] arr, int val) {
+		if (arr == null)
+			return false;
 		for (int i = 0; i < arr.length; i++) {
 			if (val == arr[i])
 				return true;
@@ -513,8 +444,10 @@ public final class ReikaArrayHelper {
 	}
 
 	public static boolean contains(Object[] arr, Object val) {
+		if (arr == null)
+			return false;
 		for (int i = 0; i < arr.length; i++) {
-			if (val.equals(arr[i]))
+			if (java.util.Objects.equals(val, arr[i]))
 				return true;
 		}
 		return false;
@@ -532,12 +465,25 @@ public final class ReikaArrayHelper {
 	}
 
 	public static int[] getLinearArrayExceptFor(int size, int... vals) {
-		int[] n = new int[size - vals.length];
-		for (int i = 0; i < n.length; i++) {
-			while (contains(vals, i)) {
-				i++;
+		if (size < 0)
+			throw new IllegalArgumentException("Array size cannot be negative");
+		boolean[] excluded = new boolean[size];
+		int excludedCount = 0;
+		if (vals != null) {
+			for (int value : vals) {
+				if (value < 0 || value >= size)
+					throw new IllegalArgumentException("Excluded index out of bounds: " + value);
+				if (!excluded[value]) {
+					excluded[value] = true;
+					excludedCount++;
+				}
 			}
-			n[i] = i;
+		}
+		int[] n = new int[size-excludedCount];
+		int index = 0;
+		for (int value = 0; value < size; value++) {
+			if (!excluded[value])
+				n[index++] = value;
 		}
 		return n;
 	}
@@ -743,6 +689,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static double getMinValue(double[] arr) {
+		if (arr == null || arr.length == 0)
+			throw new IllegalArgumentException("Cannot find a minimum in an empty array");
 		double val = arr[0];
 		for (int i = 1; i < arr.length; i++) {
 			if (arr[i] < val)
@@ -752,6 +700,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static double getMaxValue(double[] arr) {
+		if (arr == null || arr.length == 0)
+			throw new IllegalArgumentException("Cannot find a maximum in an empty array");
 		double val = arr[0];
 		for (int i = 1; i < arr.length; i++) {
 			if (arr[i] > val)
@@ -761,6 +711,8 @@ public final class ReikaArrayHelper {
 	}
 
 	public static int getMaxValue(int[] arr) {
+		if (arr == null || arr.length == 0)
+			throw new IllegalArgumentException("Cannot find a maximum in an empty array");
 		int val = arr[0];
 		for (int i = 1; i < arr.length; i++) {
 			if (arr[i] > val)

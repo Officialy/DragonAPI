@@ -251,6 +251,8 @@ public class XMLInterface {
 		}
 
 		private InputStream getInputStream() throws IOException {
+			if (paths.isEmpty())
+				throw new FileNotFoundException("No XML input paths were configured");
 			IOException ex = null;
 			for (int i = 0; i < paths.size(); i++) {
 				try {
@@ -270,7 +272,7 @@ public class XMLInterface {
 					}
 				}
 			}
-			throw ex;
+			throw ex != null ? ex : new FileNotFoundException("No XML input stream was available from " + paths);
 		}
 
 	}

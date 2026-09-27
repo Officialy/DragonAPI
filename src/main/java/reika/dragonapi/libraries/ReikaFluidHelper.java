@@ -7,7 +7,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
+import net.neoforged.neoforge.transfer.fluid.FluidUtil;
 import reika.dragonapi.instantiable.HybridTank;
 
 import java.util.HashMap;
@@ -78,7 +78,7 @@ public class ReikaFluidHelper {
 
     /** The fluid contained in a fluid-container item (bucket, tank, etc.), or {@link FluidStack#EMPTY}. */
     public static FluidStack getFluidForItem(ItemStack is) {
-        return FluidUtil.getFluidContained(is).orElse(FluidStack.EMPTY);
+        return FluidUtil.getFirstStackContained(is);
     }
 
 }

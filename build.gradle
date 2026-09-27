@@ -9,6 +9,10 @@ dependencies {
     // Dependencies unique to DragonAPI
 }
 
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+}
+
 tasks.register('inspectEnv', JavaExec) {
     classpath = sourceSets.main.compileClasspath
     mainClass = 'reika.dragonapi.test.EnvTest'

@@ -193,7 +193,7 @@ public final class BlockBox {
         int minz = minZ;
         int maxx = maxX;
         int maxy = maxY;
-        int maxz = maxX;
+		int maxz = maxZ;
         switch (side) {
             case DOWN:
                 miny = Math.max(value, miny);
@@ -225,7 +225,7 @@ public final class BlockBox {
         int minz = minZ;
         int maxx = maxX;
         int maxy = maxY;
-        int maxz = maxX;
+		int maxz = maxZ;
         switch (side) {
             case DOWN:
                 miny = Math.max(y0 - dist, miny);

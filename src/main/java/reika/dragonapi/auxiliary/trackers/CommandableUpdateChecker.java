@@ -156,10 +156,18 @@ public class CommandableUpdateChecker {
         if (f.exists()) {
             boolean deleteFile = false;
             ArrayList<String> li = ReikaFileReader.getFileAsLines(f, true);
-            for (int i = 0; i < li.size(); i++) {
-                String line = li.get(i);
-                String[] parts = line.split(":");
-                DragonAPIMod mod = modNames.get(parts[0]);
+			for (int i = 0; i < li.size(); i++) {
+				String line = li.get(i);
+				String[] parts = line.split(":", 3);
+				if (parts.length != 3) {
+					DragonAPI.LOGGER.warn("Ignoring malformed update-checker override: " + line);
+					continue;
+				}
+				DragonAPIMod mod = modNames.get(parts[0]);
+				if (mod == null) {
+					DragonAPI.LOGGER.warn("Ignoring update-checker override for unknown mod: " + parts[0]);
+					continue;
+				}
                 boolean b = Boolean.parseBoolean(parts[1]);
                 ModVersion version = ModVersion.getFromString(parts[2]);
                 if (version == ModVersion.timeout)
@@ -175,7 +183,11 @@ public class CommandableUpdateChecker {
     private void setChecker(DragonAPIMod mod, boolean enable) {
         File f = this.getFile();
         String name = ReikaStringParser.stripSpaces(mod.getDisplayName().toLowerCase(Locale.ENGLISH));
-        ModVersion latest = latestVersions.get(mod);
+		ModVersion latest = latestVersions.get(mod);
+		if (latest == null) {
+			DragonAPI.LOGGER.error("Cannot change update-checker state for " + mod.getDisplayName() + " before its latest version is known");
+			return;
+		}
         if (f.exists()) {
             ArrayList<String> li = ReikaFileReader.getFileAsLines(f, true);
             Iterator<String> it = li.iterator();
@@ -191,8 +203,8 @@ public class CommandableUpdateChecker {
                 for (int i = 0; i < li.size(); i++)
                     p.append(li.get(i) + "\n");
                 p.close();
-            } catch (IOException e) {
-
+			} catch (IOException e) {
+				DragonAPI.LOGGER.error("Could not write update-checker configuration", e);
             }
         } else {
             try {
@@ -434,12 +446,12 @@ public class CommandableUpdateChecker {
                     if (lines == null || lines.isEmpty())
                         throw new VersionNotLoadableException("File was empty or null");
                     String name = ReikaStringParser.stripSpaces(mod.getDisplayName().toLowerCase(Locale.ENGLISH));
-                    for (String line : lines) {
-                        if (line.toLowerCase().startsWith(name)) {
-                            String[] parts = line.split(":");
-                            ModVersion version = ModVersion.getFromString(parts[1]);
-                            return version;
-                        }
+				for (String line : lines) {
+					String[] parts = line.split(":", 2);
+					if (parts.length == 2 && parts[0].trim().equalsIgnoreCase(name)) {
+						ModVersion version = ModVersion.getFromString(parts[1]);
+						return version;
+					}
                     }
                 } catch (VersionNotLoadableException e) {
                     return ModVersion.timeout;
@@ -500,10 +512,10 @@ public class CommandableUpdateChecker {
             }
 
             @Override
-            public boolean equals(Object o) {
-                if (o instanceof UpdateHash uh) {
-                    return uh.player == player && uh.filepath.equals(player);
-                }
+			public boolean equals(Object o) {
+				if (o instanceof UpdateHash uh) {
+					return uh.player.equals(player) && java.util.Objects.equals(uh.filepath, filepath);
+				}
                 return false;
             }
 
@@ -577,5 +589,3 @@ public class CommandableUpdateChecker {
         }
 
     }
-
-

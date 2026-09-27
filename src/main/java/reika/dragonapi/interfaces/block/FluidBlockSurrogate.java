@@ -12,7 +12,6 @@ package reika.dragonapi.interfaces.block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 /**
  * Implement this if the block can be treated as a liquid source block for some implementations
@@ -28,9 +27,8 @@ public interface FluidBlockSurrogate {
 	boolean supportsQuantization(Level world, BlockPos pos);
 
 	/**
-	 * Works like the same in {@link IFluidHandler}.
+	 * Removes up to the requested amount from the represented world fluid source.
 	 */
 	int drain(Level world, BlockPos pos, Fluid f, int amt, boolean doDrain);
 
 }
-

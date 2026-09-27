@@ -91,18 +91,25 @@ public class ModVersion implements Comparable<ModVersion> {
 	}
 
 	public static ModVersion getFromString(String s) {
+		if (s == null || s.isBlank())
+			return error;
+		s = s.trim();
 		if (s.startsWith("$") || s.startsWith("@"))
 			return source;
 		if (s.contains("URL TIMEOUT"))
 			return timeout;
 		if (s.startsWith("v") || s.startsWith("V"))
 			s = s.substring(1);
-		char c = s.charAt(s.length() - 1);
-		if (Character.isDigit(c)) {
-			return new ModVersion(Integer.parseInt(s));
-		} else {
+		if (s.isEmpty())
+			return error;
+		try {
+			char c = s.charAt(s.length() - 1);
+			if (Character.isDigit(c))
+				return new ModVersion(Integer.parseInt(s));
 			String major = s.substring(0, s.length() - 1);
-			return new ModVersion(Integer.parseInt(major), c);
+			return major.isEmpty() || !Character.isLetter(c) ? error : new ModVersion(Integer.parseInt(major), c);
+		} catch (NumberFormatException e) {
+			return error;
 		}
 	}
 
@@ -115,11 +122,13 @@ public class ModVersion implements Comparable<ModVersion> {
 		Properties p = new Properties();
 		String path = ReikaStringParser.stripSpaces("version_" + ReikaStringParser.stripSpaces(innerName + ".properties"));
 		try {
-			InputStream stream = ModVersion.class.getClassLoader().getResourceAsStream(path);
-			if (stream == null) {
+			var entry = jar.getEntry(path);
+			if (entry == null) {
 				return ModVersion.error;
 			}
-			p.load(stream);
+			try (InputStream stream = jar.getInputStream(entry)) {
+				p.load(stream);
+			}
 			String mj = p.getProperty("Major");
 			String mn = p.getProperty("Minor");
 			if (mj == null || mn == null || mj.equals("null") || mn.equals("null") || mj.isEmpty() || mn.isEmpty())

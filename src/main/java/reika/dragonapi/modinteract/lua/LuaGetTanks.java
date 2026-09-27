@@ -9,47 +9,38 @@
  ******************************************************************************/
 package reika.dragonapi.modinteract.lua;
 
-import java.util.ArrayList;
-
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.fluids.IFluidTank;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import reika.dragonapi.interfaces.blockentity.HasFluidResourceHandler;
 
 public class LuaGetTanks extends LuaMethod {
 
 	public LuaGetTanks() {
-		super("getTanks", IFluidHandler.class);
+		super("getTanks", HasFluidResourceHandler.class);
 	}
 
 	@Override
 	protected Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
-		IFluidHandler ifl = (IFluidHandler)te;
-		ArrayList<IFluidTank> li = new ArrayList<>();
-		for (int i = 0; i < 1; i++) {
-			Direction dir = Direction.values()[i];
-			IFluidTank[] info = null; //todo ifl.getTankInfo(dir);
-			for (int k = 0; k < info.length; k++) {
-				IFluidTank ifo = info[k];
-				if (!li.contains(ifo)) {
-					li.add(ifo);
-				}
-			}
-		}
-		Object[] o = new Object[li.size()*4];
-		for (int i = 0; i < li.size(); i++) {
-			IFluidTank info = li.get(i);
-			if (info.getFluid() != null) {
-				o[i*3] = info.getFluid().toString();
-				o[i*3+1] = info.getFluidAmount();
-				o[i*3+2] = info.getCapacity();
-				o[i*3+3] = info.getFluid().getHoverName().getString();
+		ResourceHandler<FluidResource> handler = ((HasFluidResourceHandler)te).getFluidHandler(null);
+		if (handler == null)
+			throw new LuaMethodException("Block entity has no fluid capability");
+		int tanks = handler.size();
+		Object[] o = new Object[tanks*4];
+		for (int i = 0; i < tanks; i++) {
+			FluidResource fluid = handler.getResource(i);
+			int offset = i*4;
+			if (!fluid.isEmpty()) {
+				o[offset] = fluid.getFluid().toString();
+				o[offset+1] = handler.getAmountAsInt(i);
+				o[offset+2] = handler.getCapacityAsInt(i, fluid);
+				o[offset+3] = fluid.toStack(1).getHoverName().getString();
 			}
 			else {
-				o[i*3] = null;
-				o[i*3+1] = 0;
-				o[i*3+2] = info.getCapacity();
-				o[i*3+3] = null;
+				o[offset] = null;
+				o[offset+1] = 0;
+				o[offset+2] = handler.getCapacityAsInt(i, FluidResource.EMPTY);
+				o[offset+3] = null;
 			}
 		}
 		return o;
@@ -71,4 +62,3 @@ public class LuaGetTanks extends LuaMethod {
 	}
 
 }
-

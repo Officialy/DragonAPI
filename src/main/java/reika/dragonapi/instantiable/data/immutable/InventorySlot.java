@@ -23,10 +23,12 @@ public class InventorySlot {
         return is != null ? is.getCount() : 0;
     }
 
-    public int decrement(int amt) {
-        ItemStack is = this.getStack();
-        int ret = Math.min(amt, is.getCount());
-        is.setCount(is.getCount() - amt);
+	public int decrement(int amt) {
+		ItemStack is = this.getStack();
+		if (is == null || is.isEmpty() || amt <= 0)
+			return 0;
+		int ret = Math.min(amt, is.getCount());
+		is.shrink(ret);
         if (is.getCount() <= 0)
             inventory.setItem(slot, ItemStack.EMPTY);
         return ret;

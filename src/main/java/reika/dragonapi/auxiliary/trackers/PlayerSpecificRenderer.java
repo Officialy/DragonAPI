@@ -97,10 +97,16 @@ public final class PlayerSpecificRenderer {
        if (f.exists()) {
            ArrayList<String> li = ReikaFileReader.getFileAsLines(f, true);
            for (String s : li) {
+               if (s == null || s.isBlank() || s.stripLeading().startsWith("#"))
+                   continue;
                try {
-                   String[] parts = s.split("=");
-                   UUID uid = UUID.fromString(parts[0]);
-                   File img = new File(DragonAPI.getMinecraftDirectory(), "config/Reika/glowrenders/" + parts[1]);
+                   String[] parts = s.split("=", 2);
+                   if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
+                       DragonAPI.LOGGER.warn("Skipping malformed glow render entry: {}", s);
+                       continue;
+                   }
+                   UUID uid = UUID.fromString(parts[0].trim());
+                   File img = new File(DragonAPI.getMinecraftDirectory(), "config/Reika/glowrenders/" + parts[1].trim());
                    if (!img.exists())
                        throw new FileNotFoundException();
                    BufferedImage im = ImageIO.read(img);
@@ -108,8 +114,7 @@ public final class PlayerSpecificRenderer {
                        customGlows.put(uid, "*" + img.getAbsolutePath());
                    }
                } catch (Exception e) {
-                   e.printStackTrace();
-                   DragonAPI.LOGGER.error("Could not load glow render entry " + s);
+                   DragonAPI.LOGGER.error("Could not load glow render entry " + s, e);
                }
            }
        }
@@ -123,7 +128,7 @@ public final class PlayerSpecificRenderer {
    }
 
    private void renderAdditionalObjects(PoseStack stack, Player ep, float ptick, SubmitNodeCollector collector) {
-       if (ep.getUUID() == DragonAPI.Reika_UUID) {
+       if (DragonAPI.Reika_UUID.equals(ep.getUUID())) {
 //     todo       ReikaShader.instance.prepareRender(ep);
        }
        if (ep == Minecraft.getInstance().player && !DragonOptions.CUSTOMRENDER.getState())
@@ -334,4 +339,3 @@ public final class PlayerSpecificRenderer {
    }
 
 }
-

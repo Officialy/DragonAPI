@@ -9,6 +9,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -140,7 +141,8 @@ public class BiomeMapCommand {
     private static void generateMap(BiomeProvider bp, ServerPlayer ep, long start, int x, int z, int range, int res, int grid, boolean fullGrid, MapCompleteCallback callback) {
         int hash = rand.nextInt();
 
-        ResourceKey<Level> dim = bp instanceof WorldBiomes ? Level.OVERWORLD : ep.level().dimension();
+        ResourceKey<Level> dim = ep.level().dimension();
+        var biomeRegistry = ep.level().registryAccess().lookupOrThrow(Registries.BIOME);
         if (DragonAPI.isSinglePlayer()) {
             startCollecting(hash, bp.getName(), dim, x, z, range, res, grid, fullGrid);
         } else {
@@ -154,14 +156,19 @@ public class BiomeMapCommand {
         for (int dx = x - range; dx <= x + range; dx += res) {
             for (int dz = z - range; dz <= z + range; dz += res) {
                 Biome biome = bp.getBiome(dx, dz);
+                int biomeId = biomeRegistry.getId(biome);
+                if (biomeId < 0) {
+                    DragonAPI.LOGGER.warn("Skipping unregistered biome {} at {}, {}", biome, dx, dz);
+                    continue;
+                }
 //                ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, hash, dx, dz, b.biomeID);
                 n++;
                 if (DragonAPI.isSinglePlayer()) {
-                    addBiomePoint(hash, dx, dz, biome.hashCode());
+                    addBiomePoint(hash, dx, dz, biomeId);
                 } else {
                     dat.add(dx);
                     dat.add(dz);
-                    dat.add(biome.hashCode());
+                    dat.add(biomeId);
                 }
                 if (n >= PACKET_COMPILE) {
                     if (DragonAPI.isSinglePlayer()) {
@@ -180,13 +187,15 @@ public class BiomeMapCommand {
             //pad to fit normal packet size expectation
             int m = (dat.size() - 1) / 3;
             Biome biome = bp.getBiome(x, z);
+            int biomeId = biomeRegistry.getId(biome);
             if (DragonAPI.isSinglePlayer()) {
-                addBiomePoint(hash, x, z, biome.hashCode());
+                if (biomeId >= 0)
+                    addBiomePoint(hash, x, z, biomeId);
             } else {
                 for (int i = m; i < PACKET_COMPILE; i++) {
                     dat.add(x);
                     dat.add(z);
-                    dat.add(biome.hashCode());
+                    dat.add(biomeId);
                 }
                 ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, dat);
                 n = 0;
@@ -206,16 +215,17 @@ public class BiomeMapCommand {
     }
 
     private static Object[] getPlayer(CommandSourceStack ics, String[] args) throws CommandSyntaxException {
-        try {
-            return new Object[]{ics.getPlayerOrException(), false};
-        } catch (Exception e) {
-//          todo  ServerPlayer ep = ReikaPlayerAPI.getPlayerByNameAnyWorld(args[0]);
-            if (ics.getPlayerOrException() == null) {
-                ReikaChatHelper.sendChatToPlayer(ics.getPlayerOrException(), "If you specify a player, they must exist.");
-                throw new IllegalArgumentException(e);
-            }
-            return new Object[]{ics.getPlayerOrException(), true};
+        ServerPlayer executingPlayer = ics.getPlayer();
+        if (executingPlayer != null)
+            return new Object[]{executingPlayer, false};
+        if (args == null || args.length == 0)
+            throw EntityArgument.NO_PLAYERS_FOUND.create();
+        ServerPlayer target = ics.getServer().getPlayerList().getPlayerByName(args[0]);
+        if (target == null) {
+            ics.sendFailure(Component.literal("If you specify a player, they must exist."));
+            throw EntityArgument.NO_PLAYERS_FOUND.create();
         }
+        return new Object[]{target, true};
     }
 
     public static void startCollecting(int hash, String world, ResourceKey<Level> dim, int x, int z, int range, int res, int grid, boolean fullGrid) {
@@ -327,7 +337,9 @@ public class BiomeMapCommand {
             // stays loadable where commands are registered.
             var registry = reika.dragonapi.client.ClientEnvironment.level().registryAccess()
                     .lookupOrThrow(Registries.BIOME);
-            var b = (Biome) registry.stream().toArray()[data];
+            Biome b = registry.byId(data);
+            if (b == null)
+                return 0;
             var key = registry.getResourceKey(b);
             return key.map(biomeResourceKey -> getBiomeColor(x, z, biomeResourceKey)).orElse(0);
         }
@@ -364,8 +376,13 @@ public class BiomeMapCommand {
         }
 
         private void createLegendEntry(int b, int x, int y, Graphics g, BufferedImage img, int hpb) {
-            Biome biome = (Biome) reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME).stream().toArray()[b];
-            ResourceKey<Biome> key = reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME).getResourceKey(biome).get();
+            var registry = reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME);
+            Biome biome = registry.byId(b);
+            if (biome == null)
+                return;
+            ResourceKey<Biome> key = registry.getResourceKey(biome).orElse(null);
+            if (key == null)
+                return;
             g.drawString(biome.toString(), x + hpb + 4, y + hpb / 2 + 4);
             for (int i = -1; i <= hpb; i++) {
                 for (int k = -1; k <= hpb; k++) {
@@ -478,5 +495,3 @@ public class BiomeMapCommand {
     }
 
 }
-
-

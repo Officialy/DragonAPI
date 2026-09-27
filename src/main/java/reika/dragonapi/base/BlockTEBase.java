@@ -19,7 +19,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
-import reika.dragonapi.interfaces.blockentity.BreakAction;
 import reika.dragonapi.interfaces.blockentity.ConditionBreakDropsInventory;
 import reika.dragonapi.libraries.ReikaDirectionHelper;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
@@ -109,9 +108,7 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
         }
         if (drops)
             ReikaItemHelper.dropInventory(level, pos);
-        if (te instanceof BreakAction) {
-            ((BreakAction) te).breakBlock();
-        }
+        // BreakAction runs from BlockEntityBase.preRemoveSideEffects, on every removal rather than only this one.
         return super.onDestroyedByPlayer(state, level, pos, player, toolStack, willHarvest, fluid);
     }
 

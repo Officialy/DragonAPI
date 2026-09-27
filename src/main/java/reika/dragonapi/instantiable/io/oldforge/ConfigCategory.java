@@ -166,11 +166,11 @@ public class ConfigCategory implements Map<String, Property> {
         return this.requiresMcRestart;
     }
 
-    public ConfigCategory setPropertyOrder(List<String> propertyOrder) {
-        this.propertyOrder = propertyOrder;
-        for (String s : properties.keySet())
-            if (!propertyOrder.contains(s))
-                propertyOrder.add(s);
+	public ConfigCategory setPropertyOrder(List<String> propertyOrder) {
+		this.propertyOrder = propertyOrder != null ? new ArrayList<>(propertyOrder) : new ArrayList<>();
+		for (String s : properties.keySet())
+			if (!this.propertyOrder.contains(s))
+				this.propertyOrder.add(s);
         return this;
     }
 

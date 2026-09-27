@@ -311,17 +311,22 @@ public class ControlledConfig {
         }
     }
 
-    private String parseFileString(String s) {
-        if (s.charAt(0) == '*') {
-            String suffix = s.replaceAll("\\*", "");
-            s = ReikaFileReader.getRealPath(configFile)+"*"+suffix;
-        }
-        String ext = s.substring(s.lastIndexOf('.'));
+	private String parseFileString(String s) {
+		if (s == null || s.isBlank())
+			throw new IllegalArgumentException("Custom config filename cannot be empty");
+		if (s.charAt(0) == '*') {
+			String suffix = s.replace("*", "");
+			s = ReikaFileReader.getRealPath(configFile)+"*"+suffix;
+		}
+		int dot = s.lastIndexOf('.');
+		if (dot < 0)
+			throw new IllegalArgumentException("Custom config filename must have an extension: " + s);
+		String ext = s.substring(dot);
         int post = ext.indexOf('*');
         if (post >= 0) {
             ext = ext.substring(0, post);
-            s = s.replaceAll("\\*", "");
-            s = s.replaceAll(ext, "");
+			s = s.replace("*", "");
+			s = s.replace(ext, "");
             s = s+ext;
         }
         return s;
@@ -474,9 +479,14 @@ public class ControlledConfig {
             }
         }
 
-        for (ConfigList cfg : specialFiles.keySet()) {
-            String file = specialFiles.get(cfg);
-            HashMap<String, String> data = extraFiles.get(file);
+		for (ConfigList cfg : specialFiles.keySet()) {
+			String file = specialFiles.get(cfg);
+			HashMap<String, String> data = extraFiles.get(file);
+			if (data == null) {
+				controls[cfg.ordinal()] = this.getDefault(cfg);
+				queuedExceptions.add("Custom config file '" + file + "' was not registered.");
+				continue;
+			}
             String s = data.get(this.getLabel(cfg));
             if (s == null) {
                 controls[cfg.ordinal()] = this.getDefault(cfg);
@@ -588,14 +598,18 @@ public class ControlledConfig {
         }
     }
 
-    private void readData(HashMap<String, String> map, File f) {
-        ArrayList<String> li = ReikaFileReader.getFileAsLines(f, true);
-        for (String s : li) {
-            if (s.startsWith("[")) {
-                int min = s.indexOf('"');
-                int max = s.lastIndexOf('"');
-                String key = s.substring(min, max).replaceAll("\"", ""); //" [""="" "
-                String[] dat = key.split("=");
+	private void readData(HashMap<String, String> map, File f) {
+		ArrayList<String> li = ReikaFileReader.getFileAsLines(f, true);
+		for (String s : li) {
+			if (s.startsWith("[")) {
+				int min = s.indexOf('"');
+				int max = s.lastIndexOf('"');
+				if (min < 0 || max <= min) {
+					configMod.getModLogger().warn("Ignoring malformed custom config line in " + f + ": " + s);
+					continue;
+				}
+				String key = s.substring(min, max).replaceAll("\"", ""); //" [""="" "
+				String[] dat = key.split("=", 2);
                 if (dat.length == 2)
                     map.put(dat[0], dat[1]);
             }

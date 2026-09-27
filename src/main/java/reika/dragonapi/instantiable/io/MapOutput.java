@@ -12,6 +12,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 public abstract class MapOutput<V> {
 
@@ -86,7 +87,10 @@ public abstract class MapOutput<V> {
             f.delete();
         f.getParentFile().mkdirs();
         f.createNewFile();
-        BufferedImage img = new BufferedImage(data.length, data.length, BufferedImage.TYPE_INT_ARGB);
+        int height = Arrays.stream(data).mapToInt(row -> row.length).max().orElse(0);
+        if (data.length == 0 || height == 0)
+            throw new IOException("Cannot create an image from an empty map");
+        BufferedImage img = new BufferedImage(data.length, height, BufferedImage.TYPE_INT_ARGB);
         for (int i = 0; i < data.length; i++) {
             for (int k = 0; k < data[i].length; k++) {
                 img.setRGB(i, k, data[i][k]);

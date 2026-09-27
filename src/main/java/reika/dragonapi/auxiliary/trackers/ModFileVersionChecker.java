@@ -39,12 +39,14 @@ public class ModFileVersionChecker {
         }
     }
 
-    public void checkFiles(ServerPlayer ep, String s) {
-        boolean flag = false;
-        String[] parts = s.split(":");
-        if (parts.length != 2)
-            flag = true;
-        String mod = parts[0];
+	public void checkFiles(ServerPlayer ep, String s) {
+		String[] parts = s != null ? s.split(":", 2) : new String[0];
+		if (parts.length != 2) {
+			this.kick(ep, parts.length > 0 ? parts[0] : "<unknown>", "<malformed>", null);
+			return;
+		}
+		boolean flag = false;
+		String mod = parts[0];
         String hash = data.get(mod);
         if (!flag) {
             if (hash != null) { //Client-only mods will be ignored
@@ -87,5 +89,4 @@ public class ModFileVersionChecker {
     }
 
 }
-
 

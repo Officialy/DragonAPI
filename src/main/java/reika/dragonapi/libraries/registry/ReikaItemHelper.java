@@ -93,6 +93,8 @@ public class ReikaItemHelper {
             return false;
         } else if (b instanceof ItemStack) {
             return matchStacks(a, (ItemStack) b);
+        } else if (b instanceof net.minecraft.world.item.crafting.Ingredient ingredient) {
+            return ingredient.test(a);
         } else if (b instanceof BlockKey bk) {
             return matchStackWithBlock(a, bk.blockID);
         } else if (b instanceof Collection) {
@@ -511,20 +513,27 @@ public class ReikaItemHelper {
      * 26.2 port of the legacy OreDictionary membership check. Maps a legacy ore name to the modern
      * common-tag convention (e.g. "gemFluorite" -> c:gems/fluorite) and tests the stack's tags.
      */
-    public static boolean isInOreTag(ItemStack is, String ore) {
-        if (is.isEmpty() || ore == null || ore.isEmpty())
-            return false;
-        int i = 0;
-        while (i < ore.length() && Character.isLowerCase(ore.charAt(i)))
-            i++;
-        String category = ore.substring(0, i);
-        String material = ore.substring(i).toLowerCase(Locale.ROOT);
-        if (category.isEmpty() || material.isEmpty())
-            return false;
-        TagKey<Item> tag = TagKey.create(
-                Registries.ITEM,
-                Identifier.fromNamespaceAndPath("c", category + "s/" + material));
-        return is.is(tag);
-    }
+	public static boolean isInOreTag(ItemStack is, String ore) {
+		if (is.isEmpty() || ore == null || ore.isEmpty())
+			return false;
+		TagKey<Item> tag = getOreTag(ore);
+		return tag != null && is.is(tag);
+	}
+
+	/** Maps a legacy OreDictionary key to the equivalent conventional common item tag. */
+	public static TagKey<Item> getOreTag(String ore) {
+		if (ore == null || ore.isEmpty())
+			return null;
+		int i = 0;
+		while (i < ore.length() && Character.isLowerCase(ore.charAt(i)))
+			i++;
+		String category = ore.substring(0, i);
+		String material = ore.substring(i).toLowerCase(Locale.ROOT);
+		if (category.isEmpty() || material.isEmpty())
+			return null;
+		return TagKey.create(
+				Registries.ITEM,
+				Identifier.fromNamespaceAndPath("c", category + "s/" + material));
+	}
 
 }

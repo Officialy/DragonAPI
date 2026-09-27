@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -133,9 +134,9 @@ public final class ReikaJavaLibrary {
         return li;
     }
 
-    public static boolean isValidInteger(String s) {
-        if (s.contentEquals("-"))
-            return true;
+	public static boolean isValidInteger(String s) {
+		if (s == null || s.isEmpty() || s.contentEquals("-"))
+			return false;
         try {
             Integer.parseInt(s);
         } catch (NumberFormatException e) {
@@ -144,7 +145,9 @@ public final class ReikaJavaLibrary {
         return true;
     }
 
-    public static int safeIntParse(String s) {
+	public static int safeIntParse(String s) {
+		if (s == null || s.isEmpty())
+			return 0;
         boolean neg = false;
         int num = 0;
         if (s.startsWith("-")) {
@@ -157,7 +160,9 @@ public final class ReikaJavaLibrary {
         return neg ? -num : num;
     }
 
-    public static long safeLongParse(String s) {
+	public static long safeLongParse(String s) {
+		if (s == null || s.isEmpty())
+			return 0;
         boolean neg = false;
         long num = 0;
         if (s.startsWith("-")) {
@@ -256,12 +261,17 @@ public final class ReikaJavaLibrary {
         printClassSource(c.getName(), getClassBytes(c));
     }
 
-    public static byte[] getClassBytes(Class<?> c) {
-        String className = c.getName();
-        String classAsPath = className.replace('.', '/') + ".class";
-        InputStream stream = c.getClassLoader().getResourceAsStream(classAsPath);
-        try {
-            return IOUtils.toByteArray(stream);
+	public static byte[] getClassBytes(Class<?> c) {
+		if (c == null)
+			return new byte[0];
+		String className = c.getName();
+		String classAsPath = "/" + className.replace('.', '/') + ".class";
+		try (InputStream stream = c.getResourceAsStream(classAsPath)) {
+			if (stream == null) {
+				pConsole("DRAGONAPI: Class resource not found for " + className);
+				return new byte[0];
+			}
+			return IOUtils.toByteArray(stream);
         } catch (IOException e) {
             pConsole("DRAGONAPI: Error converting class to byte[]!");
             e.printStackTrace();
@@ -269,15 +279,17 @@ public final class ReikaJavaLibrary {
         }
     }
 
-    public static void printClassMetadata(String path, Class<?> c) {
-        String filename = "FailedClasses/" + path + ".classdata";
-        try {
-            File f = new File(filename);
-            f.getParentFile().mkdirs();
-            f.createNewFile();
-            BufferedWriter p = new BufferedWriter(new PrintWriter(f));
-            printClassMetadata(p, c);
-            p.close();
+	public static void printClassMetadata(String path, Class<?> c) {
+		String filename = "FailedClasses/" + path + ".classdata";
+		try {
+			File f = new File(filename);
+			File parent = f.getParentFile();
+			if (parent != null)
+				parent.mkdirs();
+			f.createNewFile();
+			try (BufferedWriter p = new BufferedWriter(new PrintWriter(f))) {
+				printClassMetadata(p, c);
+			}
         } catch (IOException e) {
             pConsole("DRAGONAPI: Error printing class data!");
             e.printStackTrace();
@@ -574,16 +586,16 @@ public final class ReikaJavaLibrary {
         return null;
     }
 
-    public static <I, O> Collection<O> getConstructedCollection(Collection<I> inputs, Constructor<O> c) {
-        Collection<O> outputs = new ArrayList<>();
-        try {
-            for (I in : inputs) {
-                O out = c.newInstance(in);
-                outputs.add(out);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+	public static <I, O> Collection<O> getConstructedCollection(Collection<I> inputs, Constructor<O> c) {
+		Collection<O> outputs = new ArrayList<>();
+		for (I in : inputs) {
+			try {
+				O out = c.newInstance(in);
+				outputs.add(out);
+			} catch (ReflectiveOperationException e) {
+				throw new IllegalStateException("Could not construct collection entry from " + in, e);
+			}
+		}
         return outputs;
     }
 
@@ -663,10 +675,14 @@ public final class ReikaJavaLibrary {
         return false;
     }
 
-    public static boolean removeValuesFromMap(Map<?, ?> map, Object value) {
-        boolean flag = false;
-        while (map.containsValue(value)) {
-            flag |= map.values().remove(value);
+	public static boolean removeValuesFromMap(Map<?, ?> map, Object value) {
+		boolean flag = false;
+		Iterator<? extends Entry<?, ?>> iterator = map.entrySet().iterator();
+		while (iterator.hasNext()) {
+			if (Objects.equals(iterator.next().getValue(), value)) {
+				iterator.remove();
+				flag = true;
+			}
         }
         return flag;
     }
@@ -840,8 +856,13 @@ public final class ReikaJavaLibrary {
         return (b1 & 255) | ((b2 & 255) << 8) | ((b3 & 255) << 16) | ((b4 & 255) << 24);
     }
 
-    public static String getClassLocation(Class<?> c) {
-        String ret = c.getResource(c.getSimpleName() + ".class").toString();
+	public static String getClassLocation(Class<?> c) {
+		if (c == null)
+			return null;
+		URL location = c.getResource(c.getSimpleName() + ".class");
+		if (location == null)
+			return null;
+		String ret = location.toString();
         ret = ret.substring("file:\\".length());
         ret = ret.replaceAll("%20", " ");
         return ret;
@@ -1002,6 +1023,4 @@ public final class ReikaJavaLibrary {
 
     }
 }
-
-
 

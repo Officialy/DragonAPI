@@ -1,6 +1,7 @@
 package reika.dragonapi.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -24,22 +25,11 @@ import java.util.Map;
 public class EntityListCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        String[] args = {"pig"};
-
-        dispatcher.register(Commands.literal("entitylist").executes((context) -> {
-            if (args.length != 1) {
-                context.getSource().sendFailure(Component.literal(ChatFormatting.RED + "Invalid arguments. Use /" + "entitylist" + " <side>."));
-            }
-
-            Dist side = null;
-            if(context.getSource().getPlayerOrException() != null) {
-                side = Dist.CLIENT;
-            } else{
-                side = Dist.DEDICATED_SERVER;
-            }
-
+        dispatcher.register(Commands.literal("entitylist")
+                .then(Commands.argument("side", StringArgumentType.word()).executes(context -> {
+            Dist side;
             try {
-//                side = Dist.valueOf(args[0].toUpperCase());
+                side = Dist.valueOf(StringArgumentType.getString(context, "side").toUpperCase(Locale.ENGLISH));
             } catch (IllegalArgumentException e) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(ChatFormatting.RED + "Invalid side. Use one of the following: ");
@@ -55,11 +45,22 @@ public class EntityListCommand {
                 return 1;
             }
 
-            ServerPlayer ep = context.getSource().getPlayerOrException();
-            ReikaChatHelper.sendChatToPlayer(ep, "Found entities:");
-            perform(side, ep);
+            CommandSourceStack source = context.getSource();
+            if (side == Dist.CLIENT) {
+                if (!(source.getEntity() instanceof ServerPlayer ep)) {
+                    source.sendFailure(Component.literal("Client entity data can only be requested by a player."));
+                    return 0;
+                }
+                ReikaChatHelper.sendChatToPlayer(ep, "Found entities:");
+                sendPacket(ep);
+            } else {
+                source.sendSuccess(() -> Component.literal("Found entities:"), false);
+                Player player = source.getEntity() instanceof Player p ? p : null;
+                for (String line : getData(player, side))
+                    source.sendSuccess(() -> Component.literal(line), false);
+            }
             return 1;
-        }));
+        })));
     }
 
 
@@ -71,18 +72,6 @@ public class EntityListCommand {
         ArrayList<String> data = getData(reika.dragonapi.client.ClientEnvironment.player(), Dist.CLIENT);
         for (String s : data) {
             ReikaChatHelper.writeString(s);
-        }
-    }
-
-    private static void perform(Dist side, ServerPlayer ep) {
-        switch (side) {
-            case CLIENT -> sendPacket(ep);
-            case DEDICATED_SERVER -> {
-                ArrayList<String> data = getData(ep, side);
-                for (String s : data) {
-                    ReikaChatHelper.sendChatToPlayer(ep, s);
-                }
-            }
         }
     }
 

@@ -171,6 +171,8 @@ public class ReikaASMHelper {
     }
 
     public static Class parseClass(String s) {
+        if (s == null || s.isEmpty())
+            throw new IllegalArgumentException("Class descriptor cannot be empty");
         if (s.charAt(0) == '[') {
             Class c = parseClass(s.substring(1));
             return Array.newInstance(c, 0).getClass();
@@ -209,10 +211,15 @@ public class ReikaASMHelper {
             AbstractInsnNode ain = m.instructions.get(i);
             if (ain instanceof LineNumberNode) {
                 if (((LineNumberNode)ain).line == line) {
-                    toRemove.add(ain.getPrevious()); //"L#"
-                    while (!(ain.getNext() instanceof LineNumberNode)) {
-                        toRemove.add(ain);
-                        ain = ain.getNext();
+                    AbstractInsnNode previous = ain.getPrevious();
+                    if (previous != null)
+                        toRemove.add(previous); // line label
+                    AbstractInsnNode cursor = ain;
+                    while (cursor != null) {
+                        if (cursor != ain && cursor instanceof LineNumberNode)
+                            break;
+                        toRemove.add(cursor);
+                        cursor = cursor.getNext();
                     }
                 }
             }
@@ -268,8 +275,12 @@ public class ReikaASMHelper {
     }
 
     public static String convertLPrefixToPlain(String arg) {
+        if (arg == null || arg.isEmpty())
+            throw new IllegalArgumentException("Descriptor cannot be empty");
         if (arg.startsWith("L")) {
             int semi = arg.indexOf(';');
+            if (semi < 0)
+                throw new IllegalArgumentException("Malformed class descriptor: " + arg);
             arg = arg.substring(1, semi);
         }
         return arg;
@@ -279,6 +290,8 @@ public class ReikaASMHelper {
         //ReikaJavaLibrary.pConsole("PARSING: "+desc);
         if (desc.startsWith("L")) { //Class
             int semi = desc.indexOf(';');
+            if (semi < 0)
+                throw new IllegalArgumentException("Malformed class descriptor: " + desc);
             String arg = desc.substring(0, semi+1);
             //ReikaJavaLibrary.pConsole("Parsed as class: "+arg);
             args.add(arg);
@@ -1222,9 +1235,9 @@ public class ReikaASMHelper {
             File f = new File(path, cname+".class");
             f.getParentFile().mkdirs();
             f.createNewFile();
-            FileOutputStream out = new FileOutputStream(f);
-            out.write(data);
-            out.close();
+            try (FileOutputStream out = new FileOutputStream(f)) {
+                out.write(data);
+            }
         }
         catch (Throwable t) {
             t.printStackTrace();
@@ -1465,6 +1478,5 @@ public class ReikaASMHelper {
         return ret;
     }
 }
-
 
 

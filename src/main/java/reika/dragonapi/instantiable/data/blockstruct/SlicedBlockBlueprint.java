@@ -62,8 +62,12 @@ public class SlicedBlockBlueprint {
 	}
 
 	public void addSlice(String... array) {
+		if (array == null || array.length == 0)
+			throw new MisuseException("Cannot register an empty slice!");
 		int l = array.length;
 		for (int i = 0; i < l; i++) {
+			if (array[i] == null)
+				throw new MisuseException("Slice rows cannot be null!");
 			if (i > 0)
 				if (array[i].length() != array[i-1].length())
 					throw new MisuseException("You must only register properly shaped slices!");

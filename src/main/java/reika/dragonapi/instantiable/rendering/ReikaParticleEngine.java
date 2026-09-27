@@ -222,10 +222,10 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
             while (it.hasNext()) {
                 try {
                     ParticleEntry fx = it.next();
-                    if (fx != null) {
-                        fx.effect.tick();
-                    }
-                    if (fx.effect == null || fx.effect.isAlive()) {
+					if (fx != null && fx.effect != null) {
+						fx.effect.tick();
+					}
+					if (fx == null || fx.effect == null || !fx.effect.isAlive()) {
                         it.remove();
                         effectiveCount--;
                     }
@@ -454,4 +454,3 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
         }
     }
 }
-

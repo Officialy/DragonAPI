@@ -6,6 +6,7 @@ package reika.dragonapi.instantiable.io.oldforge;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.regex.Pattern;
 public class Property {
 
@@ -422,8 +423,9 @@ public class Property {
      *
      * @param defaultValues an array of String values
      */
-    public Property setDefaultValues(String[] defaultValues)
-    {
+	public Property setDefaultValues(String[] defaultValues)
+	{
+		Objects.requireNonNull(defaultValues, "Default values cannot be null");
         this.defaultValue = "";
         for (String s : defaultValues)
             this.defaultValue += ", [" + s + "]";

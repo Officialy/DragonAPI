@@ -14,6 +14,16 @@ import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
 public class ReikaEncryptionHelper {
 
+	private static String[] validateParts(String[] parts) {
+		if (parts == null || parts.length == 0)
+			return new String[0];
+		for (String part : parts) {
+			if (part == null)
+				throw new IllegalArgumentException("Encryption inputs cannot contain null strings");
+		}
+		return parts;
+	}
+
 	public static <O> boolean isEncryptedMatch(O s, Encrypter<O> e, O... parts) {
 		return s.equals(e.encryptInto(parts));
 	}
@@ -28,6 +38,9 @@ public class ReikaEncryptionHelper {
 
 		@Override
 		public String encryptInto(String... parts) {
+			parts = validateParts(parts);
+			if (parts.length == 0)
+				return "";
 			char[] chars = new char[ReikaStringParser.getLongestString(parts).length()];
 			for (int i = 0; i < parts.length; i++) {
 				String s = parts[i];
@@ -45,6 +58,7 @@ public class ReikaEncryptionHelper {
 
 		@Override
 		public String encryptInto(String... parts) {
+			parts = validateParts(parts);
 			StringBuilder sb = new StringBuilder();
 			boolean action;
 			int idx = 0;
@@ -52,7 +66,7 @@ public class ReikaEncryptionHelper {
 				action = false;
 
 				for (int i = 0; i < parts.length; i++) {
-					if (idx < parts.length) {
+					if (idx < parts[i].length()) {
 						sb.append(parts[i].charAt(idx));
 						action = true;
 					}
@@ -71,7 +85,11 @@ public class ReikaEncryptionHelper {
 
 		@Override
 		public String encryptInto(String... parts) {
+			parts = validateParts(parts);
+			if (parts.length == 0)
+				return "";
 			char[] chars = new char[ReikaStringParser.getLongestString(parts).length()];
+			java.util.Arrays.fill(chars, ' ');
 
 			System.arraycopy(parts[0].toCharArray(), 0, chars, 0, parts[0].length());
 			for (int i = 1; i < parts.length; i++) {
@@ -94,6 +112,9 @@ public class ReikaEncryptionHelper {
 
 		@Override
 		public String encryptInto(String... parts) {
+			parts = validateParts(parts);
+			if (parts.length == 0)
+				return "";
 			char[] chars = new char[ReikaStringParser.getLongestString(parts).length()];
 			for (int i = 0; i < parts.length; i++) {
 				String s = parts[i];

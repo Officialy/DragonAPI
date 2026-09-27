@@ -5,6 +5,7 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
@@ -149,6 +150,8 @@ public class ReikaPacketHelper {
     }*/
 
     public static void sendNIntPacket(String ch, int id, PacketTarget p, List<Integer> data) {
+        Objects.requireNonNull(p, "Packet target cannot be null");
+        Objects.requireNonNull(data, "Packet data cannot be null");
         int npars = 1 + data.size(); //+1 for the size
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream(npars * 4); //4 bytes an int
@@ -156,13 +159,12 @@ public class ReikaPacketHelper {
         try {
             outputStream.writeInt(id);
             outputStream.writeInt(data.size());
-            if (data != null) {
-                for (int i : data) {
-                    outputStream.writeInt(i);
-                }
+            for (int i : data) {
+                outputStream.writeInt(i);
             }
         } catch (Exception ex) {
             DragonAPI.LOGGER.error("Error encoding NIntPacket", ex);
+            return;
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -282,6 +284,7 @@ public class ReikaPacketHelper {
     }
 
     public static void sendDataPacket(String ch, int id, BlockEntity te, ServerPlayer ep, int... data) {
+        Objects.requireNonNull(te, "Block entity cannot be null");
         int npars;
         if (data == null)
             npars = 4;
@@ -572,6 +575,8 @@ public class ReikaPacketHelper {
     }
 
     public static void sendUUIDPacket(String ch, int id, Level world, int x, int y, int z, UUID data) {
+        Objects.requireNonNull(world, "Level cannot be null");
+        Objects.requireNonNull(data, "UUID packet data cannot be null");
         ByteArrayOutputStream bos = new ByteArrayOutputStream(2 * 8 + 3 * 4); //4 bytes an int + 8 bytes a long
         DataOutputStream outputStream = new DataOutputStream(bos);
         try {
@@ -935,22 +940,24 @@ public class ReikaPacketHelper {
     }
 
     public static void sendStringIntPacket(String ch, int id, ServerPlayer ep, String sg, int... data) {
+        Objects.requireNonNull(ep, "Target player cannot be null");
+        Objects.requireNonNull(sg, "Packet string cannot be null");
+        data = data != null ? data : new int[0];
         int length = data.length * 4;
         ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         DataOutputStream outputStream = new DataOutputStream(bos);
         try {
             writeString(sg, outputStream);
             outputStream.writeInt(id);
-            if (data != null) {
-                for (int datum : data) {
-                    outputStream.writeInt(datum);
-                }
+            for (int datum : data) {
+                outputStream.writeInt(datum);
             }
             outputStream.writeInt(0);
             outputStream.writeInt(0);
             outputStream.writeInt(0);
         } catch (Exception ex) {
             DragonAPI.LOGGER.error("Error encoding StringIntPacket", ex);
+            return;
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -983,22 +990,24 @@ public class ReikaPacketHelper {
     }
 
     public static void sendStringIntPacket(String ch, int id, BlockEntity te, String sg, int... data) {
+        Objects.requireNonNull(te, "Block entity cannot be null");
+        Objects.requireNonNull(sg, "Packet string cannot be null");
+        data = data != null ? data : new int[0];
         int length = data.length * 4;
         ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         DataOutputStream outputStream = new DataOutputStream(bos);
         try {
             writeString(sg, outputStream);
             outputStream.writeInt(id);
-            if (data != null) {
-                for (int datum : data) {
-                    outputStream.writeInt(datum);
-                }
+            for (int datum : data) {
+                outputStream.writeInt(datum);
             }
             outputStream.writeInt(te.getBlockPos().getX());
             outputStream.writeInt(te.getBlockPos().getY());
             outputStream.writeInt(te.getBlockPos().getZ());
         } catch (Exception ex) {
             DragonAPI.LOGGER.error("Error encoding StringIntPacket with BlockEntity", ex);
+            return;
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -1036,22 +1045,24 @@ public class ReikaPacketHelper {
     }
 
     public static void sendStringIntPacket(String ch, int id, PacketTarget p, String sg, int... data) {
+        Objects.requireNonNull(p, "Packet target cannot be null");
+        Objects.requireNonNull(sg, "Packet string cannot be null");
+        data = data != null ? data : new int[0];
         int length = data.length * 4;
         ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         DataOutputStream outputStream = new DataOutputStream(bos);
         try {
             writeString(sg, outputStream);
             outputStream.writeInt(id);
-            if (data != null) {
-                for (int datum : data) {
-                    outputStream.writeInt(datum);
-                }
+            for (int datum : data) {
+                outputStream.writeInt(datum);
             }
             outputStream.writeInt(0);
             outputStream.writeInt(0);
             outputStream.writeInt(0);
         } catch (Exception ex) {
             DragonAPI.LOGGER.error("Error encoding StringIntPacket with PacketTarget", ex);
+            return;
             //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
         }
 
@@ -1110,6 +1121,8 @@ public class ReikaPacketHelper {
     }    }
 
     public static void sendStringPacketWithRadius(String ch, int id, BlockEntity te, int radius, String sg) {
+        Objects.requireNonNull(te, "Block entity cannot be null");
+        Objects.requireNonNull(sg, "Packet string cannot be null");
         int length = 0;
         ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
         DataOutputStream outputStream = new DataOutputStream(bos);
@@ -1121,7 +1134,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(te.getBlockPos().getZ());
         } catch (Exception ex) {
             DragonAPI.LOGGER.error("Error encoding StringPacket with radius", ex);
-            //throw new RuntimeException("String Packet for "+sg+" threw a packet exception!");
+            return;
         }
 
         PacketPipeline pipe = pipelines.get(ch);
@@ -1392,6 +1405,8 @@ public class ReikaPacketHelper {
     }
 
     public static void sendTankSyncPacket(String ch, BlockEntity te, String tankField) {
+        if (te == null || tankField == null || tankField.isBlank())
+            throw new IllegalArgumentException("Tank sync requires a block entity and field name");
         var x = te.getBlockPos().getX();
         var y = te.getBlockPos().getY();
         var z = te.getBlockPos().getZ();
@@ -1400,6 +1415,8 @@ public class ReikaPacketHelper {
         var outputStream = new DataOutputStream(bos);
         try {
             Field f = ReikaReflectionHelper.getProtectedInheritedField(te, tankField);
+            if (f == null)
+                throw new NoSuchFieldException(tankField);
             f.setAccessible(true);
             HybridTank tank = (HybridTank) f.get(te);
             writeString(tankField, outputStream);
@@ -1407,11 +1424,15 @@ public class ReikaPacketHelper {
             outputStream.writeInt(y);
             outputStream.writeInt(z);
             outputStream.writeInt(tank.getFluidLevel());
+            Identifier fluidId = tank.isEmpty() ? null : BuiltInRegistries.FLUID.getKey(tank.getActualFluid().getFluid());
+            writeString(fluidId != null ? fluidId.toString() : "", outputStream);
         } catch (ClassCastException ex) {
 //            ex.printStackTrace();
             DragonAPI.LOGGER.error(te + " tried to sync its tank, but it is not a HybridTank instance!");
-        } catch (IllegalAccessException | IOException ex) {
+            return;
+        } catch (ReflectiveOperationException | IOException ex) {
             DragonAPI.LOGGER.error("Error encoding TankSyncPacket", ex);
+            return;
         }
 
         var pipe = pipelines.get(ch);
@@ -1504,7 +1525,16 @@ public class ReikaPacketHelper {
         }
     }
 
+    /**
+     * Legacy entry point for packet handlers that predate fluid-id tank synchronization. It can
+     * resize an existing fluid stack, but an empty tank requires the fluid-aware overload.
+     */
+    @Deprecated
     public static void updateBlockEntityTankData(Level world, int x, int y, int z, String name, int level) {
+        updateBlockEntityTankData(world, x, y, z, name, level, "");
+    }
+
+    public static void updateBlockEntityTankData(Level world, int x, int y, int z, String name, int level, String fluidName) {
         if (world.isLoaded(new BlockPos(x, y, z))) {
             BlockEntity te = world.getBlockEntity(new BlockPos(x, y, z));
             if (te == null) {
@@ -1521,17 +1551,20 @@ public class ReikaPacketHelper {
                 HybridTank tank = (HybridTank) f.get(te);
                 if (level <= 0) {
                     tank.empty();
-                } else if (level > tank.getCapacity())
-                    level = tank.getCapacity();
-
-                if (tank.isEmpty()) {
-
                 } else {
-                    Fluid fluid = tank.getActualFluid().getFluid();
+                    level = Math.min(level, tank.getCapacity());
+                    Fluid fluid = null;
+                    Identifier fluidId = Identifier.tryParse(fluidName);
+                    if (fluidId != null && BuiltInRegistries.FLUID.containsKey(fluidId))
+                        fluid = BuiltInRegistries.FLUID.getValue(fluidId);
+                    else if (!tank.isEmpty())
+                        fluid = tank.getActualFluid().getFluid();
+                    if (fluid == null)
+                        throw new IllegalArgumentException("Cannot restore positive tank level without a valid fluid id: " + fluidName);
                     tank.setContents(level, fluid);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                DragonAPI.LOGGER.error("Error updating tank field {} at {}, {}, {}", name, x, y, z, e);
             }
         }
     }
@@ -1554,7 +1587,7 @@ public class ReikaPacketHelper {
         }
     }
 
-    private static String readString(DataInput par0DataInput) throws IOException {
+    public static String readString(DataInput par0DataInput) throws IOException {
         short short1 = par0DataInput.readShort();
 
         if (short1 > Short.MAX_VALUE) {
@@ -1864,5 +1897,3 @@ public class ReikaPacketHelper {
 
 
 }
-
-

@@ -19,11 +19,31 @@ public class TemporaryInventoryCrafting extends TransientCraftingContainer {
     }
 
     public TemporaryInventoryCrafting(ItemStack[][] in) {
-        this(in.length, in[0].length);
+        this(getWidth(in), getHeight(in));
         for (int i = 0; i < in.length; i++) {
             for (int k = 0; k < in[i].length; k++) {
-                this.setItem(k, i, in[i][k]);
+                this.setItem(k, i, in[i][k] != null ? in[i][k] : ItemStack.EMPTY);
             }
+        }
+    }
+
+    private static int getWidth(ItemStack[][] in) {
+        validateInput(in);
+        return in[0].length;
+    }
+
+    private static int getHeight(ItemStack[][] in) {
+        validateInput(in);
+        return in.length;
+    }
+
+    private static void validateInput(ItemStack[][] in) {
+        if (in == null || in.length == 0 || in[0] == null || in[0].length == 0)
+            throw new IllegalArgumentException("Crafting input must be a non-empty rectangular matrix");
+        int width = in[0].length;
+        for (int row = 0; row < in.length; row++) {
+            if (in[row] == null || in[row].length != width)
+                throw new IllegalArgumentException("Crafting input row " + row + " does not match width " + width);
         }
     }
 

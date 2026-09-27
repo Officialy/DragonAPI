@@ -46,7 +46,7 @@ public class DebugOverlay {
                 //if (APIProxyClient.key_nbt.isPressed()) {
                 var ep = mc.player;
                 var f = mc.font;
-                if (mc.gui.screen() == null) {
+                if (ep != null && mc.gui.screen() == null) {
                     float reach = 4;
                     var hit = ReikaPlayerAPI.getLookedAtBlockClient(4, false);
                     if (hit != null) {
@@ -54,17 +54,16 @@ public class DebugOverlay {
 //                        if (b.hasBlockEntity(ep.level().getBlockMetadata(hit.getBlockPos()))) {
                             BlockEntity te = ep.level().getBlockEntity(hit.getBlockPos());
                             if (te != null) {
-                                CompoundTag NBT = new CompoundTag();
                                 ArrayList<String> li = new ArrayList<>();
                                 try {
                                     // Note: This is debug code - using saveWithoutMetadata for inspection
-                                    te.saveWithoutMetadata(ep.level().registryAccess());
+                                    CompoundTag NBT = te.saveWithoutMetadata(ep.level().registryAccess());
                                     li.addAll(ReikaNBTHelper.parseNBTAsLines(NBT));
                                 }
                                 catch (Exception e) {
                                     StackTraceElement[] el = e.getStackTrace();
                                     li.add(ChatFormatting.RED.toString()+e.getClass()+": "+e.getLocalizedMessage());
-                                    for (int i = 0; i < 4; i++) {
+                                    for (int i = 0; i < Math.min(4, el.length); i++) {
                                         li.add(el[i].toString());
                                     }
                                 }
@@ -82,6 +81,5 @@ public class DebugOverlay {
         }
     }
 }
-
 
 

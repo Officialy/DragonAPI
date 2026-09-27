@@ -13,7 +13,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.bus.api.Event;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.capabilities.Capabilities;
 
 public abstract class TileEntityEvent extends Event {
 
@@ -44,7 +44,8 @@ public abstract class TileEntityEvent extends Event {
 	}
 
 	public final boolean isTileFluidHandler() {
-		return tile instanceof IFluidHandler;
+		return tile.getLevel() != null
+				&& tile.getLevel().getCapability(Capabilities.Fluid.BLOCK, tile.getBlockPos(), null) != null;
 	}
 
 	protected final BlockEntity getTile() {

@@ -20,6 +20,7 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.tags.TagKey;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.interfaces.IReikaRecipe;
 import reika.dragonapi.io.ReikaFileReader;
@@ -171,9 +172,13 @@ public class CustomRecipeList {
     public static Collection<ItemStack> parseItemCollection(Collection<String> in, boolean tolerateNull) {
         Collection<ItemStack> c = new ArrayList<>();
         for (String s : in) {
-            if (s.startsWith("ore:")) {
-                s = s.substring("ore:".length());
-                ArrayList<ItemStack> li = null;//OreDictionary.getOres(s);
+			if (s.startsWith("ore:")) {
+				s = s.substring("ore:".length());
+				ArrayList<ItemStack> li = new ArrayList<>();
+				TagKey<Item> tag = ReikaItemHelper.getOreTag(s);
+				if (tag != null) {
+					BuiltInRegistries.ITEM.getTagOrEmpty(tag).forEach(holder -> li.add(new ItemStack(holder.value())));
+				}
                 if (li.isEmpty() && !tolerateNull)
                     throw new IllegalArgumentException("Ore dictionary tag '" + s + "' has no items!");
                 else
@@ -544,4 +549,3 @@ public class CustomRecipeList {
         return objects.toArray(new Object[objects.size()]);
     }
 }
-
