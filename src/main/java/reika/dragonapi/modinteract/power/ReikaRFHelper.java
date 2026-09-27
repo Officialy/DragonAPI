@@ -9,9 +9,14 @@
  ******************************************************************************/
 package reika.dragonapi.modinteract.power;
 
+import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
-import net.neoforged.neoforge.energy.EnergyStorage;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import reika.dragonapi.libraries.java.ReikaReflectionHelper;
 import reika.dragonapi.libraries.mathsci.ReikaThermoHelper;
 
@@ -30,7 +35,7 @@ public class ReikaRFHelper {
     private static final int crucibleStoneMeltRF_Default = 200000; //configurable, defaults to 200k
     private static int crucibleStoneMelt = -1; //configurable, defaults to 200k
 
-    private static final ReikaReflectionHelper.FieldSelector energyStorageFinder = f -> IEnergyStorage.class.isAssignableFrom(f.getType());
+    private static final ReikaReflectionHelper.FieldSelector energyStorageFinder = f -> EnergyHandler.class.isAssignableFrom(f.getType());
 
     private static final ReikaReflectionHelper.FieldSelector energyFieldFinder = f -> f.getType() == int.class && f.getName().toLowerCase(Locale.ENGLISH).contains("energy");
 
@@ -54,13 +59,78 @@ public class ReikaRFHelper {
         }
     }
 
-    public static void drainStorage(EnergyStorage te, int amt) {
+    /**
+     * Forcibly drains up to {@code amt} FE from a block entity, the way an energy-sapping effect
+     * would: first through its energy capability on every face, then (for storages that refuse
+     * extraction) through any {@link EnergyHandler} fields it holds, and finally by lowering any
+     * int field whose name contains "energy".
+     */
+    public static void drainStorage(BlockEntity te, int amt) {
         if (te == null)
+            throw new IllegalArgumentException("Block entity cannot be null");
+        if (amt <= 0)
+            return;
+        Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<EnergyHandler> faces = getFaceHandlers(te);
+
+        for (EnergyHandler handler : faces)
+            extract(handler, amt);
+        if (getStored(faces) == 0)
+            return;
+
+        for (Field f : ReikaReflectionHelper.getFields(te.getClass(), energyStorageFinder)) {
+            try {
+                if (!f.canAccess(te))
+                    f.setAccessible(true);
+                drainStorage((EnergyHandler) f.get(te), amt, visited);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        if (getStored(faces) == 0)
+            return;
+
+        try {
+            drainEnergyFromFields(te, amt);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    /** Forcibly drains up to {@code amt} FE from one energy store; see {@link #drainStorage(BlockEntity, int)}. */
+    public static void drainStorage(EnergyHandler storage, int amt) {
+        if (storage == null)
             throw new IllegalArgumentException("Energy storage cannot be null");
         if (amt <= 0)
             return;
         Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
-        drainStorage(te, amt, visited);
+        drainStorage(storage, amt, visited);
+    }
+
+    /** The distinct energy handlers a block entity exposes, over all six faces. */
+    private static Set<EnergyHandler> getFaceHandlers(BlockEntity te) {
+        Set<EnergyHandler> handlers = Collections.newSetFromMap(new IdentityHashMap<>());
+        Level world = te.getLevel();
+        if (world == null)
+            return handlers;
+        for (Direction dir : Direction.values()) {
+            EnergyHandler handler = world.getCapability(Capabilities.Energy.BLOCK, te.getBlockPos(), te.getBlockState(), te, dir);
+            if (handler != null)
+                handlers.add(handler);
+        }
+        return handlers;
+    }
+
+    private static long getStored(Set<EnergyHandler> handlers) {
+        long has = 0;
+        for (EnergyHandler handler : handlers)
+            has += handler.getAmountAsLong();
+        return has;
+    }
+
+    private static void extract(EnergyHandler handler, int amt) {
+        try (Transaction transaction = Transaction.openRoot()) {
+            if (handler.extract(amt, transaction) > 0)
+                transaction.commit();
+        }
     }
 
     private static void drainEnergyFromFields(Object o, int amt) throws ReflectiveOperationException {
@@ -72,19 +142,23 @@ public class ReikaRFHelper {
         }
     }
 
-    private static void drainStorage(IEnergyStorage ies, int amt, Set<Object> visited) {
+    private static void drainStorage(EnergyHandler ies, int amt, Set<Object> visited) {
         if (ies == null || !visited.add(ies))
             return;
-        int has = ies.getEnergyStored();
-        ies.extractEnergy(amt, false);
-        if (ies.getEnergyStored() == 0)
+        int has = ies.getAmountAsInt();
+        extract(ies, amt);
+        if (ies.getAmountAsLong() == 0)
             return;
-        try {
-            Method m = ies.getClass().getMethod("setEnergyStored", int.class);
-            m.invoke(ies, Math.max(0, has - amt));
-        } catch (ReflectiveOperationException ignored) {
+        if (ies instanceof SimpleEnergyHandler simple) {
+            simple.set(Math.max(0, has - amt));
+        } else {
+            try {
+                Method m = ies.getClass().getMethod("setEnergyStored", int.class);
+                m.invoke(ies, Math.max(0, has - amt));
+            } catch (ReflectiveOperationException ignored) {
+            }
         }
-        if (ies.getEnergyStored() == 0)
+        if (ies.getAmountAsLong() == 0)
             return;
         try {
             drainEnergyFromFields(ies, amt);
@@ -95,7 +169,7 @@ public class ReikaRFHelper {
             try {
                 if (!f.canAccess(ies))
                     f.setAccessible(true);
-                drainStorage((IEnergyStorage) f.get(ies), amt, visited);
+                drainStorage((EnergyHandler) f.get(ies), amt, visited);
             } catch (ReflectiveOperationException ignored) {
             }
         }

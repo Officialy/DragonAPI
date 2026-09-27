@@ -9,19 +9,18 @@
  ******************************************************************************/
 package reika.dragonapi.modinteract.lua;
 
-
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 
 public class LuaGetRFCapacity extends LuaMethod {
 
 	public LuaGetRFCapacity() {
-		super("getMaxStoredRF", IEnergyStorage.class);
+		// Any block entity may expose FE through the capability; see LuaGetStoredRF.
+		super("getMaxStoredRF", null);
 	}
 
 	@Override
 	protected Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
-		return new Object[]{((IEnergyStorage)te).getMaxEnergyStored()};
+		return new Object[]{LuaGetStoredRF.getEnergyHandler(te, args).getCapacityAsInt()};
 	}
 
 	@Override
@@ -40,4 +39,3 @@ public class LuaGetRFCapacity extends LuaMethod {
 	}
 
 }
-

@@ -1,37 +1,28 @@
 package reika.dragonapi.modinteract.power;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.energy.EnergyStorage;
+import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
 
-public class ReikaEnergyStorage extends EnergyStorage {
+/**
+ * A transactional FE store owned by a block entity, which is marked changed whenever the stored
+ * amount changes. {@link SimpleEnergyHandler} reports external insertions and extractions once,
+ * when their root transaction commits, so a simulated or aborted transfer never dirties the owner.
+ */
+public class ReikaEnergyStorage extends SimpleEnergyHandler {
 
     public final BlockEntity blockEntity;
 
-    public ReikaEnergyStorage(int capacity, int maxReceive, int maxTransfer, BlockEntity blockEntity) {
-        super(capacity, maxReceive, maxTransfer);
+    public ReikaEnergyStorage(int capacity, int maxReceive, int maxExtract, BlockEntity blockEntity) {
+        super(capacity, maxReceive, maxExtract);
         this.blockEntity = blockEntity;
     }
 
     @Override
-    public int receiveEnergy(int maxReceive, boolean simulate) {
-        int received = super.receiveEnergy(maxReceive, simulate);
-        if (received > 0) {
-            blockEntity.setChanged();
-        }
-        return received;
-    }
-
-    @Override
-    public int extractEnergy(int maxExtract, boolean simulate) {
-        int extracted = super.extractEnergy(maxExtract, simulate);
-        if (extracted > 0) {
-            blockEntity.setChanged();
-        }
-        return extracted;
+    protected void onEnergyChanged(int previousAmount) {
+        blockEntity.setChanged();
     }
 
     public void setEnergy(int energy) {
-        this.energy = energy;
+        this.set(energy);
     }
 }
-

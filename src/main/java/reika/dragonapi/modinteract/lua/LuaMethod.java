@@ -138,7 +138,7 @@ public abstract class LuaMethod {
 
 	@Override
 	public final int hashCode() {
-		return displayName.hashCode() ^ requiredClass.hashCode();
+		return displayName.hashCode() ^ java.util.Objects.hashCode(requiredClass);
 	}
 
 	@Override
