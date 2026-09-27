@@ -37,7 +37,7 @@ public final class ImmutableItemStack {
         int hash = stack.getItem().hashCode() * 31;
         if (!stack.isEmpty() && !stack.getComponentsPatch().isEmpty()) {
             // Use VanillaRegistries to get a HolderLookup.Provider for serialization
-            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, VanillaRegistries.createLookup());
+            var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, VanillaRegistries.createWorldLookup());
             output.store("item", ItemStack.CODEC, stack);
             hash += output.buildResult().hashCode();
         }

@@ -111,7 +111,7 @@ public class ReikaBlockHelper {
         BlockState b = world.getBlockState(pos);
         if (b.getBlock() == Blocks.AIR)
             return false;
-        return (b.getPistonPushReaction() == PushReaction.BLOCK && !BlockProperties.isNonSolid(b.getBlock()) && b.getCollisionShape(world, pos) != null);
+        return (b.getPistonPushReaction() == PushReaction.IMMOVEABLE && !BlockProperties.isNonSolid(b.getBlock()) && b.getCollisionShape(world, pos) != null);
     }
 
     public static ItemStack getSilkTouch(Level world, BlockPos pos, Block id, Player ep, boolean dropFluids) {

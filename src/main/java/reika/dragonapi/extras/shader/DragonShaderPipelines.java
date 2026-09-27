@@ -9,9 +9,9 @@
  ******************************************************************************/
 package reika.dragonapi.extras.shader;
 
-import com.mojang.blaze3d.pipeline.BindGroupLayout;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.UniformType;
 
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;

@@ -42,7 +42,7 @@ public class DebugOverlay {
                 // TODO 1.21+: setShaderTexture now expects a GpuTexture. Use GuiGraphicsExtractor.blit with resource binding instead where needed. Previous code was using setShaderTexture(0, Identifier.parse("textures/gui/icons.png"))
             }
 
-            if (DragonOptions.TABNBT.getState() && InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), DragonOptions.DEBUGKEY.getValue())) {
+            if (DragonOptions.TABNBT.getState() && InputConstants.isKeyDown(DragonOptions.DEBUGKEY.getValue())) {
                 //if (APIProxyClient.key_nbt.isPressed()) {
                 var ep = mc.player;
                 var f = mc.font;

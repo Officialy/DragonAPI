@@ -4,6 +4,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import reika.dragonapi.auxiliary.trackers.PlayerFirstTimeTracker;
 import reika.dragonapi.auxiliary.trackers.PlayerHandler;
 
+import net.minecraft.util.Prediction;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import reika.dragonapi.libraries.ReikaInventoryHelper;
@@ -14,7 +15,7 @@ public abstract class ItemOnSpawnTracker implements PlayerFirstTimeTracker.Playe
 	public void onNewPlayer(Player ep) {
 		if (ReikaInventoryHelper.checkForItemStack(this.getItem(), ep.getInventory(), false))
 			return;
-		if (!ep.getInventory().add(this.getItem())) ep.drop(this.getItem(), true);
+		if (!ep.getInventory().add(this.getItem())) ep.drop(this.getItem(), true, Prediction.SERVER_ONLY);
 	}
 
 

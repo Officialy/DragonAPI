@@ -10,11 +10,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
-import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
-public class RandomTagSingleStateProvider extends BlockStateProvider {
+public class RandomTagSingleStateProvider implements BlockStateProvider {
     // The codec now only needs to know about the tag, which is the sole source of its state.
     public static final MapCodec<RandomTagSingleStateProvider> CODEC = RecordCodecBuilder.mapCodec(instance -> instance
             .group(TagKey.codec(Registries.BLOCK).fieldOf("tag").forGetter(p -> p.tag))
@@ -38,8 +39,8 @@ public class RandomTagSingleStateProvider extends BlockStateProvider {
     }
 
     @Override
-    protected @NotNull BlockStateProviderType<?> type() {
-        return BlockStateProviderTypes.RANDOM_TAG_SINGLE_STATE_PROVIDER.get();
+    public @NotNull MapCodec<RandomTagSingleStateProvider> codec() {
+        return CODEC;
     }
 
     /**
@@ -72,13 +73,14 @@ public class RandomTagSingleStateProvider extends BlockStateProvider {
     }
 
     @Override
-    public @NotNull BlockState getState(net.minecraft.world.level.WorldGenLevel level, @NotNull RandomSource random, @NotNull BlockPos pos) {
+    public @NotNull BlockState getState(LevelAccessor level, @NotNull RandomSource random, @NotNull BlockPos pos) {
         // TreeFeature calls a trunk provider once for every log. Consuming its RandomSource here
         // chose a different species for every Y coordinate. A "single state" provider instead
         // keys the choice to the world and trunk column, so one straight tree has one wood while
         // separate trees still vary and the result remains deterministic across chunk retries.
         initializeStates();
-        long seed = level.getSeed();
+        // 26.3 passes a LevelAccessor; worldgen always supplies a WorldGenLevel (as does ServerLevel).
+        long seed = level instanceof WorldGenLevel world ? world.getSeed() : 0L;
         seed ^= (long)pos.getX() * 341873128712L;
         seed ^= (long)pos.getZ() * 132897987541L;
         seed ^= seed >>> 29;

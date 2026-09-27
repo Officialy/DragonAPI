@@ -6,7 +6,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.TerrainParticle;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.rendertype.TextureTransform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
@@ -144,8 +149,8 @@ public class ReikaRenderHelper {
         final double f8 = Math.sqrt(dx * dx + dy * dy + dz * dz);
         double ang1 = -Math.atan2(dz, dx) * 180 / Math.PI - 90;
         double ang2 = -Math.atan2(f7, dy) * 180 / Math.PI - 90;
-        stack.mulPose(Axis.YP.rotationDegrees((float) ang1));
-        stack.mulPose(Axis.XP.rotationDegrees((float) ang2));
+        stack.rotate(Axis.YP.rotationDegrees((float) ang1));
+        stack.rotate(Axis.XP.rotationDegrees((float) ang2));
 
         // Snapshot the transformed pose; the submitted geometry is drawn after we pop the stack.
         PoseStack snap = new PoseStack();
@@ -227,6 +232,23 @@ public class ReikaRenderHelper {
         return (int) ang;
     }
 
+    private static RenderType enchantedGlint;
+
+    /**
+     * 26.2's {@code RenderTypes.glintTranslucent()}: the standalone item-glint overlay pass. 26.3
+     * removed it (along with render output targets); this rebuilds the same pipeline, texture and
+     * texturing, so enchanted-model shells look as before.
+     */
+    private static RenderType enchantedGlint() {
+        if (enchantedGlint == null)
+            enchantedGlint = RenderType.create("dragonapi_glint_translucent",
+                    RenderSetup.builder(RenderPipelines.GLINT)
+                            .withTexture("Sampler0", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+                            .setTextureTransform(TextureTransform.GLINT_TEXTURING)
+                            .createRenderSetup());
+        return enchantedGlint;
+    }
+
     public static void renderEnchantedModel(BlockEntity tile, TileModel model, ArrayList li, float rotation, PoseStack stack, SubmitNodeCollector collector) {
         float f9 = (System.nanoTime() / 100000000) % 64 / 64F;
 
@@ -237,7 +259,7 @@ public class ReikaRenderHelper {
         stack.scale(1.0F, -1.0F, -1.0F);
         stack.translate(0.5F, 0.5F, 0.5F);
 
-        stack.mulPose(Axis.YP.rotationDegrees(rotation));
+        stack.rotate(Axis.YP.rotationDegrees(rotation));
 
         double d = 1.0125;
         int p = 2;
@@ -255,7 +277,7 @@ public class ReikaRenderHelper {
         stack.popPose();
 
         final int light = LightCoordsUtil.FULL_BRIGHT;
-        collector.submitCustomGeometry(snap, RenderTypes.glintTranslucent(), (pose, buffer) -> {
+        collector.submitCustomGeometry(snap, enchantedGlint(), (pose, buffer) -> {
             model.renderAll(snap, buffer, light, tile, li);
         });
     }

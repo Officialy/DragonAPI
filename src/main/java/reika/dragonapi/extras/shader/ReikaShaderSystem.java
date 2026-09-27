@@ -9,9 +9,9 @@
  ******************************************************************************/
 package reika.dragonapi.extras.shader;
 
-import com.mojang.blaze3d.GpuFormat;
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.GpuFormat;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
 import com.mojang.blaze3d.framegraph.FramePass;
@@ -19,8 +19,8 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.resource.RenderTargetDescriptor;
 import com.mojang.blaze3d.resource.ResourceHandle;
-import com.mojang.blaze3d.systems.CommandEncoder;
-import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.renderpearl.api.commands.CommandEncoder;
+import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.Minecraft;
@@ -200,7 +200,8 @@ public final class ReikaShaderSystem {
         ResourceHandle<RenderTarget> mainHandle = frame.importExternal("main", main);
         ResourceHandle<RenderTarget> stencilHandle = frame.createInternal(
                 "dragonapi_stencil",
-                new RenderTargetDescriptor(width, height, false, new Vector4f(0, 0, 0, 0), GpuFormat.RGBA8_UNORM));
+                new RenderTargetDescriptor(width, height,
+                        new RenderTargetDescriptor.TextureProperties(new Vector4f(0, 0, 0, 0), GpuFormat.RGBA8_UNORM), null));
 
         FramePass stencilPass = frame.addPass("dragonapi_reika_stencil");
         ResourceHandle<RenderTarget> stencilOut = stencilPass.readsAndWrites(stencilHandle);
@@ -279,7 +280,7 @@ public final class ReikaShaderSystem {
                 () -> "DragonAPI focus accumulation",
                 target.getColorTextureView(),
                 Optional.of(new Vector4f(0, 0, 0, 0)))) {
-            pass.setPipeline(DragonShaderPipelines.REIKA_STENCIL);
+            pass.setPipeline(RenderSystem.getCompiledPipeline(DragonShaderPipelines.REIKA_STENCIL));
             RenderSystem.bindDefaultUniforms(pass); // Globals, for ScreenSize
             pass.setUniform("FocusPoints", focusUbo.currentBuffer());
             pass.draw(3, 1, 0, 0); // core/screenquad builds the fullscreen triangle from gl_VertexID

@@ -3,9 +3,12 @@ package reika.dragonapi.instantiable.rendering.structure;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -24,6 +27,7 @@ import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.feature.FeatureRenderDispatcher;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -42,6 +46,7 @@ import net.neoforged.neoforge.client.pipeline.PipelineModifier;
 import net.neoforged.neoforge.client.pipeline.RegisterPipelineModifiersEvent;
 
 import reika.dragonapi.DragonAPI;
+import reika.dragonapi.mixin.PictureInPictureRendererAccessor;
 
 /**
  * Draws a {@link StructureRenderState} into its own off-screen colour and depth texture, which the
@@ -86,7 +91,8 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 			// constructor also fixes the format to RGBA8_UNORM and the write mask to WRITE_ALL, which
 			// would silently change whatever the sheet's own pipeline declared -- and the result is
 			// cached per pipeline, so it would not correct itself later.
-			ColorTargetState existing = pipeline.getColorTargetState();
+			// 26.3 pipelines carry a list of colour targets; the sheet pipelines draw to target 0.
+			ColorTargetState existing = pipeline.getColorTargetStates().isEmpty() ? null : pipeline.getColorTargetStates().get(0);
 			ColorTargetState additive = existing == null
 					? new ColorTargetState(BlendFunction.LIGHTNING)
 					: new ColorTargetState(Optional.of(BlendFunction.LIGHTNING), existing.format(),
@@ -127,9 +133,9 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 		if (state.offsetX() != 0 || state.offsetY() != 0)
 			pose.translate(state.offsetX() / state.scale(), state.offsetY() / state.scale(), 0);
 		pose.scale(1, -1, -1);
-		pose.mulPose(Axis.XP.rotationDegrees(state.rotX()));
-		pose.mulPose(Axis.YP.rotationDegrees(state.rotY()));
-		pose.mulPose(Axis.ZP.rotationDegrees(state.rotZ()));
+		pose.rotate(Axis.XP.rotationDegrees(state.rotX()));
+		pose.rotate(Axis.YP.rotationDegrees(state.rotY()));
+		pose.rotate(Axis.ZP.rotationDegrees(state.rotZ()));
 		pose.translate(-state.midX(), -state.midY(), -state.midZ());
 
 		BlockStateModelSet models = mc.getModelManager().getBlockStateModelSet();
@@ -139,11 +145,11 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 
 		if (state.hasAlpha()) {
 			// The solid pass has to reach the framebuffer before the additive one blends against it.
-			mc.gameRenderer.featureRenderDispatcher().renderAllFeatures((SubmitNodeStorage)collector);
+			this.flush((SubmitNodeStorage)collector);
 			RenderSystem.pushPipelineModifier(ADDITIVE);
 			try {
 				submitPass(state, pose, collector, models, colors, true);
-				mc.gameRenderer.featureRenderDispatcher().renderAllFeatures((SubmitNodeStorage)collector);
+				this.flush((SubmitNodeStorage)collector);
 			}
 			finally {
 				RenderSystem.popPipelineModifier();
@@ -153,6 +159,28 @@ public final class StructurePipRenderer extends PictureInPictureRenderer<Structu
 		CameraRenderState camera = new CameraRenderState();
 		submitBlockEntities(state, pose, collector, mc, camera);
 		submitEntities(state, pose, collector, mc, camera);
+	}
+
+	/**
+	 * Draws everything submitted so far into this renderer's texture, now. 26.2 had
+	 * {@code renderAllFeatures(storage)} for this; 26.3 draws inside a render pass that
+	 * {@link PictureInPictureRenderer#prepare} opens only after {@code renderToTexture} returns, so
+	 * this opens an equivalent pass on the same targets. {@code prepareFrame} drains what it takes,
+	 * so the base pass later draws only what was submitted after the flush.
+	 */
+	private void flush(SubmitNodeStorage storage) {
+		PictureInPictureRendererAccessor targets = (PictureInPictureRendererAccessor)(Object)this;
+		GpuTextureView color = targets.dragonapi$getTextureView();
+		if (color == null)
+			return;
+		FeatureRenderDispatcher dispatcher = Minecraft.getInstance().gameRenderer.featureRenderDispatcher();
+		try (FeatureRenderDispatcher.PreparedFrame frame = dispatcher.prepareFrame(storage);
+				RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+						() -> "DragonAPI structure preview flush", color, Optional.empty(),
+						targets.dragonapi$getDepthTextureView(), OptionalDouble.empty())) {
+			RenderSystem.bindDefaultUniforms(pass);
+			FeatureRenderDispatcher.renderAllFeatures(pass, frame);
+		}
 	}
 
 	/** V33a's entity loop, for structures partly defined by entities rather than blocks. */

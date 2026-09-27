@@ -20,7 +20,6 @@ import reika.dragonapi.instantiable.io.RemoteSourcedAsset;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 
@@ -97,17 +96,17 @@ public class DirectResourceManager implements ResourceManager, ResourceManagerRe
     }
 
     @Override
-    public Map<Identifier, Resource> listResources(String p_215563_, Predicate<Identifier> p_215564_) {
-        return null;
+    public Map<Identifier, Resource> listResources(String directory, ResourceManager.Selector selector) {
+        return Map.of(); // serves individual dynamic assets through getResource only; nothing to enumerate
     }
 
     @Override
-    public Map<Identifier, List<Resource>> listResourceStacks(String p_215565_, Predicate<Identifier> p_215566_) {
-        return null;
+    public Map<Identifier, List<Resource>> listResourceStacks(String directory, ResourceManager.Selector selector) {
+        return Map.of();
     }
 
     @Override
     public Stream<PackResources> listPacks() {
-        return null;
+        return Stream.empty();
     }
 }

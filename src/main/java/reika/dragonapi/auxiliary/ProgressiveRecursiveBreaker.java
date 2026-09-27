@@ -330,7 +330,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         private boolean canSpreadTo(Level world, BlockPos pos) {
             if (taxiCabDistance && Math.abs(pos.getX() - originX) + Math.abs(pos.getY() - originY) + Math.abs(pos.getZ() - originZ) > maxDepth)
                 return false;
-            BlockPos c = new BlockPos(pos);
+            BlockPos c = pos.immutable();
             if (!excluded.isEmpty() && excluded.contains(c))
                 return false;
             if (pathTracking && path.contains(c))

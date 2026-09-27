@@ -131,7 +131,7 @@ public class BlockArray implements Iterable<BlockPos> {
             return false;
         if (!bounds.isBlockInside(pos))
             return false;
-        BlockPos c = new BlockPos(pos);
+        BlockPos c = pos.immutable();
         this.addKey(c);
         this.setLimits(pos);
 //        DragonAPI.LOGGER.info("Adding "+pos);
@@ -163,7 +163,7 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
     public void remove(BlockPos pos) {
-        BlockPos c = new BlockPos(pos);
+        BlockPos c = pos.immutable();
         this.removeKey(c);
         if (this.isEdge(pos)) {
             this.recalcLimits();

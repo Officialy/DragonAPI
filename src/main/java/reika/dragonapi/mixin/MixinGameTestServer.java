@@ -37,14 +37,17 @@ public abstract class MixinGameTestServer {
         int batchSize = Math.max(1, Math.min(50, Integer.getInteger("dragonapi.gametest.batchSize", 12)));
         List<GameTestBatch> original = cir.getReturnValue();
         List<GameTestBatch> split = new ArrayList<>();
-        Map<Holder<TestEnvironmentDefinition<?>>, Integer> indices = new HashMap<>();
+        // 26.3 batches are keyed by environment AND dimension (GameTestBatchFactory.BatchKey); number
+        // the split batches per key the same way and keep each batch's dimension.
+        Map<List<Object>, Integer> indices = new HashMap<>();
         for (GameTestBatch batch : original) {
             List<GameTestInfo> tests = List.copyOf(batch.gameTestInfos());
+            List<Object> key = List.of(batch.environment(), batch.dimension());
             for (int start = 0; start < tests.size(); start += batchSize) {
                 int end = Math.min(start + batchSize, tests.size());
-                int index = indices.getOrDefault(batch.environment(), 0);
-                split.add(new GameTestBatch(index, List.copyOf(tests.subList(start, end)), batch.environment()));
-                indices.put(batch.environment(), index + 1);
+                int index = indices.getOrDefault(key, 0);
+                split.add(new GameTestBatch(index, List.copyOf(tests.subList(start, end)), batch.environment(), batch.dimension()));
+                indices.put(key, index + 1);
             }
         }
         cir.setReturnValue(List.copyOf(split));

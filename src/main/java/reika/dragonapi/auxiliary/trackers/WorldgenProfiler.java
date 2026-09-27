@@ -176,7 +176,7 @@ public class WorldgenProfiler {
         initGenerator(getOrCreateGenerator(gen), cx, cz);
     }*/
 
-    public static void startGenerator(Level world, Feature<?> gen, int x, int z) {
+    public static void startGenerator(Level world, Feature gen, int x, int z) {
         if (!enableProfiling || world.dimension() != currentProfilingDimension)
             return;
         initGenerator(getOrCreateGenerator(gen), x >> 4, z >> 4);
@@ -225,7 +225,7 @@ public class WorldgenProfiler {
         //totalProfiledTime += dur;
     }
 
-    public static void onRunGenerator(Level world, Feature<?> gen, int x, int z) {
+    public static void onRunGenerator(Level world, Feature gen, int x, int z) {
         if (!enableProfiling)
             return;
 
@@ -307,7 +307,7 @@ public class WorldgenProfiler {
         return a;
     }
 
-    private static GeneratorProfile getOrCreateGenerator(Feature<?> gen) {
+    private static GeneratorProfile getOrCreateGenerator(Feature gen) {
         if (subGenerators.containsKey(gen))
             return null;//getOrCreateGenerator(subGenerators.get(gen));
         ProfileKey key = new ProfileKey(gen);
@@ -369,7 +369,7 @@ public class WorldgenProfiler {
     }
 
     /**
-     * Use this to prevent a subgenerator from showing as its own entry (eg a Feature<?> object used inside an PlacedFeature)
+     * Use this to prevent a subgenerator from showing as its own entry (eg a Feature object used inside an PlacedFeature)
      * so that it is instead merged into its parent.
      */
     public static void registerGeneratorAsSubGenerator(WorldProfilerParent parent, Object sub) {
@@ -397,9 +397,9 @@ public class WorldgenProfiler {
                 value = o;
                 type = MapGenBase.class;
             }
-            else if (o instanceof Feature<?>) {
-                value = WorldGenProfile.calcName((Feature<?>)o);
-                type = Feature<?>.class;
+            else if (o instanceof Feature) {
+                value = WorldGenProfile.calcName((Feature)o);
+                type = Feature.class;
             }*/
             else if (o instanceof Biome) {
                 value = getLevel().registryAccess().lookupOrThrow(Registries.BIOME).getKey((Biome) o).toString();
@@ -444,11 +444,11 @@ public class WorldgenProfiler {
 
     private static final class WorldGenProfile extends GeneratorProfile implements Comparable<GeneratorProfile> {
 
-        private WorldGenProfile(Feature<?> gen) {
+        private WorldGenProfile(Feature gen) {
             super(calcName(gen));
         }
 
-        private static String calcName(Feature<?> gen) {
+        private static String calcName(Feature gen) {
             String s = gen.getClass().getName();
             String pre = "Feature: ";
             /*if (gen instanceof WorldGenMinable) {

@@ -128,7 +128,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public Block getBlock(BlockGetter world) {
         return world != null
                 ? world.getBlockState(
-                                new BlockPos(new BlockPos(pos.getX(), pos.getY(), pos.getZ())))
+                                new BlockPos(pos.getX(), pos.getY(), pos.getZ()))
                         .getBlock()
                 : null;
     }

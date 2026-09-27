@@ -91,7 +91,7 @@ public final class ReikaNBTHelper {
             synchronized (ReikaNBTHelper.class) {
                 local = CACHED_REGISTRY_ACCESS;
                 if (local == null) {
-                    local = VanillaRegistries.createLookup();
+                    local = VanillaRegistries.createWorldLookup();
                     CACHED_REGISTRY_ACCESS = local;
                 }
             }

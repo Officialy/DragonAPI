@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import net.minecraft.server.packs.AbstractPackResources;
+import net.minecraft.server.packs.AbstractPackMetadataResources;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.level.Level;
@@ -170,7 +170,7 @@ public class ReikaObfuscationHelper {
 //        addMethod("getCoordList", "func_75052_o_", false, MapGenStructure.class);
         addMethod("tryExtend", "func_150079_i", false, PistonBaseBlock.class, Level.class, int.class, int.class, int.class, int.class);
         if (isClientSide()) {
-            addMethod("getInputStreamByName", "func_110591_a", false, AbstractPackResources.class, String.class);
+            addMethod("getInputStreamByName", "func_110591_a", false, AbstractPackMetadataResources.class, String.class);
         }*//*
 		if (isClientSide()) {
 			addField("field_110859_k", "field_110859_k", false, RenderBiped.class); //armor texture map
@@ -183,8 +183,8 @@ public class ReikaObfuscationHelper {
         addField("potionTypes", "field_76425_a", true, Potion.class);*//*
 		addField("biomeList", "field_76773_a", true, Biome.class);
 		addField("weaponDamage", "field_77827_a", false, ItemSword.class);
-		addField("isAggressive", "field_104003_g", false, EnderMan.class);
-		addField("stareTimer", "field_70826_g", false, EnderMan.class);
+		addField("isAggressive", "field_104003_g", false, Enderman.class);
+		addField("stareTimer", "field_70826_g", false, Enderman.class);
 		addField("theWorldGenerator", "field_82915_S", false, BiomeGenHills.class);
 		addField("blockFlammability", "blockFlammability", false, Blocks.class);
 		addField("blockFireSpreadSpeed", "blockFireSpreadSpeed", false, Blocks.class);

@@ -233,7 +233,7 @@ public class ThrottleableEffectRenderer extends ParticleEngine {
     }
 
     public static boolean renderThroughWalls() {
-        return InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), InputConstants.KEY_INSERT);
+        return InputConstants.isKeyDown(InputConstants.KEY_INSERT);
     }
 
     public static boolean isParticleVisible(Particle fx) {

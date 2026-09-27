@@ -76,7 +76,7 @@ public abstract class ParticleEntity extends InertEntity implements IEntityWithC
 		if (setPos)
 			this.snapTo(this.getBlockX()+0.5, this.getBlockY()+0.5, this.getBlockZ()+0.5, 0, 0);
 		this.setDeltaMovement(dir.getStepX()*this.getSpeed(), dir.getStepY()*this.getSpeed(), dir.getStepZ()*this.getSpeed());
-		this.hurtMarked = true;
+		this.syncVelocity = true;
 	}
 
 	@Override

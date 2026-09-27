@@ -8,6 +8,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.sounds.AmbientLeavesBlockSoundPlayer;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -22,7 +23,7 @@ public abstract class BlockCustomLeaf extends LeavesBlock {
     protected final Random rand = new Random();
 
     protected BlockCustomLeaf(BlockBehaviour.Properties properties) {
-        super(0.0F, properties);
+        super(AmbientLeavesBlockSoundPlayer.noAmbientSound(), properties); // 26.3: no falling-leaf particles (was chance 0.0F), no ambient sound
 //        if (FMLEnvironment.getDist() == Dist.CLIENT)
 //            this.setGraphicsLevel(Minecraft.getInstance().options.fancyGraphics);
     }

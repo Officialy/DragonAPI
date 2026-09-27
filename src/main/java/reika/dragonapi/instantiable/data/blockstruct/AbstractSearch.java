@@ -17,7 +17,7 @@ public abstract class AbstractSearch {
     public int depthLimit = Integer.MAX_VALUE;
 
     public AbstractSearch(BlockPos pos) {
-        root = new BlockPos(pos);
+        root = pos.immutable();
         searchedCoords.add(root);
     }
 

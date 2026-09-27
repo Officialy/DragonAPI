@@ -319,7 +319,7 @@ public final class PlayerSpecificRenderer {
                stack.translate(0, 1.6, 0);
                stack.scale(1, -1, 1);
                if (ep.isCrouching()) {
-                   stack.mulPose(new Quaternionf(Axis.XP.rotationDegrees(22.5f)));
+                   stack.rotate(new Quaternionf(Axis.XP.rotationDegrees(22.5f)));
                    stack.translate(-0.02, 0.1, -0.05);
                }
                // 26.2: MultiBufferSource/renderBuffers() are gone — submit the body parts through the

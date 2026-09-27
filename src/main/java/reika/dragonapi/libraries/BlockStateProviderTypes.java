@@ -1,7 +1,8 @@
 package reika.dragonapi.libraries;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -17,18 +18,18 @@ import reika.dragonapi.DragonAPI;
  */
 public final class BlockStateProviderTypes {
 
-	public static final DeferredRegister<BlockStateProviderType<?>> REGISTRY =
-			DeferredRegister.create(BuiltInRegistries.BLOCKSTATE_PROVIDER_TYPE, DragonAPI.MODID);
+	public static final DeferredRegister<MapCodec<? extends BlockStateProvider>> REGISTRY =
+			DeferredRegister.create(Registries.BLOCK_STATE_PROVIDER_TYPE, DragonAPI.MODID);
 
 	/** Uniform pick from an explicit list of states. */
-	public static final DeferredHolder<BlockStateProviderType<?>, BlockStateProviderType<RandomSingleStateProvider>>
+	public static final DeferredHolder<MapCodec<? extends BlockStateProvider>, MapCodec<RandomSingleStateProvider>>
 			RANDOM_SINGLE_STATE_PROVIDER = REGISTRY.register("random_single_state",
-					() -> new BlockStateProviderType<>(RandomSingleStateProvider.CODEC));
+					() -> RandomSingleStateProvider.CODEC);
 
 	/** Uniform pick from every block in a tag, resolved lazily so datapack contents are visible. */
-	public static final DeferredHolder<BlockStateProviderType<?>, BlockStateProviderType<RandomTagSingleStateProvider>>
+	public static final DeferredHolder<MapCodec<? extends BlockStateProvider>, MapCodec<RandomTagSingleStateProvider>>
 			RANDOM_TAG_SINGLE_STATE_PROVIDER = REGISTRY.register("random_tag_single_state",
-					() -> new BlockStateProviderType<>(RandomTagSingleStateProvider.CODEC));
+					() -> RandomTagSingleStateProvider.CODEC);
 
 	private BlockStateProviderTypes() {}
 }

@@ -106,7 +106,7 @@ public class ReikaEntityHelper {
         double my = ent.onGround() || ent.getY() > y ? 0.4 * power : 0;
         ent.setDeltaMovement(ent.getDeltaMovement().add(mx, my, mz));
         // velocityChanged: players only take the motion from a server velocity packet.
-        ent.hurtMarked = true;
+        ent.syncVelocity = true;
     }
 
     /**
@@ -163,7 +163,7 @@ public class ReikaEntityHelper {
             Slime cube = (Slime) ent;
             return 200 * cube.getSize() * cube.getSize();
         }
-        if (ent instanceof EnderMan)
+        if (ent instanceof Enderman)
             return 40;
         if (ent instanceof Silverfish)
             return 1;
@@ -437,7 +437,7 @@ public class ReikaEntityHelper {
     public static Class<? extends LivingEntity> getEntityCategoryClass(LivingEntity e) {
         if (e instanceof Player)
             return Player.class;
-        else if (e instanceof EnderMan || e instanceof ZombifiedPiglin)
+        else if (e instanceof Enderman || e instanceof ZombifiedPiglin)
             return e.getClass();
         else if (e instanceof AbstractCubeMob)
             return AbstractCubeMob.class;

@@ -268,7 +268,7 @@ public class ReikaWorldHelper {
         for (int y = top; y >= world.getMinY(); y--) {
             pos.setY(y);
             BlockState state = world.getBlockState(pos);
-            if (state.blocksMotion() && !state.is(net.minecraft.tags.BlockTags.LEAVES))
+            if (state.is(net.minecraft.tags.BlockTags.BLOCKS_MOTION_NO_LEAVES)) // 26.3: motion blocking is tag-driven
                 return y + 1;
         }
         return world.getMinY() - 1;
@@ -883,7 +883,7 @@ public class ReikaWorldHelper {
                     ItemEntity ent = new ItemEntity(world, x + rand.nextFloat(), y + 0.5, z + rand.nextFloat(), scrap);
                     ent.setDeltaMovement(-0.2 + 0.4 * rand.nextFloat(), 0.5 * rand.nextFloat(), -0.2 + 0.4 * rand.nextFloat());
                     world.addFreshEntity(ent);
-                    ent.hurtMarked = true;
+                    ent.syncVelocity = true;
                 }
             }
         }

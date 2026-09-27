@@ -1,6 +1,8 @@
 package reika.dragonapi.client;
 
-import net.minecraft.util.Util;
+import com.mojang.blaze3d.Blaze3D;
+import java.net.URI;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 
@@ -19,10 +21,12 @@ public final class ClientLinkPrompt {
     private ClientLinkPrompt() {}
 
     public static void openURL(String url) {
+        // 26.3: link screens and the platform opener take a URI; Util$OS#openUri moved to Blaze3D.
+        URI uri = URI.create(url);
         Minecraft.getInstance().gui.setScreen(new ConfirmLinkScreen(confirmed -> {
             if (confirmed)
-                Util.getPlatform().openUri(url);
+                Blaze3D.openUri(uri);
             Minecraft.getInstance().gui.setScreen(null);
-        }, url, true));
+        }, uri, true));
     }
 }

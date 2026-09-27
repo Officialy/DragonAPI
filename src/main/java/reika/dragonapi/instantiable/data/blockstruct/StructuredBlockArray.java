@@ -73,7 +73,7 @@ public class StructuredBlockArray extends BlockArray {
             return false;
         super.addBlockCoordinate(pos);
         Block b = world.getBlockState(pos).getBlock();
-        BlockPos c = new BlockPos(pos);
+        BlockPos c = pos.immutable();
         data.put(c, new BlockKey(b));
         return true;
     }

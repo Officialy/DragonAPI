@@ -60,7 +60,7 @@ public final class ConnectedQuads {
 			case WEST -> from.x -= inflate;
 		}
 		CuboidFace cf = new CuboidFace(face, tint ? 0 : CuboidFace.NO_TINT, "", null, Quadrant.R0);
-		return FaceBakery.bakeQuad(baker, from, to, cf, mat, face, BlockModelRotation.IDENTITY, null, true, 0);
+		return FaceBakery.bakeQuad(baker, from, to, cf, mat, face, BlockModelRotation.IDENTITY, null, null, 0); // null shade override = normal directional shading (26.2 shade=true)
 	}
 
 	/** A one-face model part (quad culled against its face) with the given sprite. */
