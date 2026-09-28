@@ -9,6 +9,7 @@
  ******************************************************************************/
 package reika.dragonapi.extras.shader;
 
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.renderpearl.api.pipeline.UniformType;
@@ -50,6 +51,8 @@ public final class DragonShaderPipelines {
             .withBindGroupLayout(BindGroupLayout.builder()
                     .withUniform("FocusPoints", UniformType.UNIFORM_BUFFER)
                     .build())
+            // 26.2 defaulted a pipeline with no colour target to this; 26.3 gives it none.
+            .withColorTargetState(ColorTargetState.DEFAULT)
             .build();
 
     /** Subscribed on the mod event bus by {@code DragonAPI}; client only. */
