@@ -21,6 +21,7 @@
         "MixinHurtByTargetGoal",
         "MixinZombifiedPiglin",
         "MixinEnderMan",
+        "MixinBlockTransformer",
         "CreeperAccessor"
     ],
     "injectors": {

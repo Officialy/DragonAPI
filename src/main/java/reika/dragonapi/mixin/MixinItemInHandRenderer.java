@@ -7,13 +7,13 @@ import com.mojang.math.Axis;
 
 import net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer;
 import net.minecraft.client.renderer.state.level.FirstPersonHandsAndItemsRenderState;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.MapItem;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -21,16 +21,15 @@ import reika.dragonapi.instantiable.rendering.HeldMapRenderers;
 
 /**
  * Routes {@link HeldMapRenderers} items through vanilla's first-person map rendering.
- * 26.3 replaced {@code ItemInHandRenderer} with {@link FirstPersonHandsAndItemsRenderer} and
- * detects a held map by its {@code MAP_ID} component rather than {@code instanceof MapItem}.
+ * 26.3 replaced {@code ItemInHandRenderer} with {@link FirstPersonHandsAndItemsRenderer}; its (NeoForge
+ * patched) arm branch still picks the map path with {@code instanceof MapItem}.
  */
 @Mixin(FirstPersonHandsAndItemsRenderer.class)
 public class MixinItemInHandRenderer {
 
-    @WrapOperation(method = "submitArmWithItem", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/item/ItemStack;has(Lnet/minecraft/core/component/DataComponentType;)Z"))
-    private boolean dragonapi$heldMapIsMap(ItemStack stack, DataComponentType<?> type, Operation<Boolean> original) {
-        return original.call(stack, type) || type == DataComponents.MAP_ID && HeldMapRenderers.get(stack) != null;
+    @WrapOperation(method = "submitArmWithItem", constant = @Constant(classValue = MapItem.class))
+    private boolean dragonapi$heldMapIsMap(Object item, Operation<Boolean> original, @com.llamalad7.mixinextras.sugar.Local(argsOnly = true) ItemStack stack) {
+        return original.call(item) || HeldMapRenderers.get(stack) != null;
     }
 
     @Inject(method = "renderMap", at = @At("HEAD"), cancellable = true)

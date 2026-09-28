@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableList;
 
 import net.minecraft.gametest.framework.GameTestBatch;
 import net.minecraft.gametest.framework.GameTestRunner;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +23,7 @@ public abstract class MixinGameTestRunner {
 
     @Shadow
     @Final
-    private ServerLevel level;
+    private MinecraftServer server; // 26.3: the runner holds the server instead of a ServerLevel
 
     @Shadow
     private ImmutableList<GameTestBatch> batches;
@@ -41,11 +41,11 @@ public abstract class MixinGameTestRunner {
     }
 
     private int dragonapi$removeSyntheticPlayers() {
-        List<ServerPlayer> players = List.copyOf(this.level.getServer().getPlayerList().getPlayers());
+        List<ServerPlayer> players = List.copyOf(this.server.getPlayerList().getPlayers());
         int removed = 0;
         for (ServerPlayer player : players) {
             if (GameTestRuntimeMonitor.isSyntheticPlayer(player)) {
-                this.level.getServer().getPlayerList().remove(player);
+                this.server.getPlayerList().remove(player);
                 removed++;
             }
         }
