@@ -1,8 +1,9 @@
-#version 330
+#ifndef DRAGONAPI_REIKA_COLOR_GLSL
+#define DRAGONAPI_REIKA_COLOR_GLSL
 
 // Ported from DragonAPI's 1.7.10 Resources/Shader/lib_color.txt, which shader programs pulled in
 // via the old "#import color" directive. Modern Minecraft has its own include mechanism, so this is
-// consumed with "#moj_import <dragonapi:reika_color.glsl>".
+// consumed with "#include <dragonapi:reika_color.glsl>" (26.3; "#moj_import" before).
 
 vec3 rgb2hsb(vec3 c) {
     vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -29,3 +30,5 @@ vec3 getGrayscaledColor(vec3 color) {
     float br = getVisualBrightness(color);
     return vec3(br, br, br);
 }
+
+#endif

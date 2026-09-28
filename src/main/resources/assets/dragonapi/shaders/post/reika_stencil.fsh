@@ -1,6 +1,7 @@
 #version 330
+#extension GL_ARB_separate_shader_objects : require
 
-#moj_import <minecraft:globals.glsl>
+#include <minecraft:globals.glsl>
 
 // Focus-point accumulation pass. Ported from DragonAPI's 1.7.10 reika_stencil.frag.
 //
@@ -26,9 +27,9 @@ layout(std140) uniform FocusPoints {
     vec4 Focus[MAX_FOCUS_POINTS]; // .xy = screen UV, .z = screen radius, .w = strength
 };
 
-in vec2 texCoord;
+layout(location = 0) in vec2 texCoord;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 void main() {
     // Screen distances are measured x-normalised, matching lib_math.txt's distsq().

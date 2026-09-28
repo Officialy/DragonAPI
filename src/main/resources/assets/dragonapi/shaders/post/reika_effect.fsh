@@ -1,6 +1,7 @@
 #version 330
+#extension GL_ARB_separate_shader_objects : require
 
-#moj_import <dragonapi:reika_color.glsl>
+#include <dragonapi:reika_color.glsl>
 
 // The screen warp itself. Ported from DragonAPI's 1.7.10 reika_effect.frag.
 //
@@ -14,9 +15,9 @@
 uniform sampler2D InSampler;
 uniform sampler2D StencilSampler;
 
-in vec2 texCoord;
+layout(location = 0) in vec2 texCoord;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec4 stencil = texture(StencilSampler, texCoord);
