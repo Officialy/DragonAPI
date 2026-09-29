@@ -82,6 +82,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     protected UUID placerUUID;
     protected boolean fakePlaced;
     private int ticksExisted;
+    /** Whether a natural tick has run, so the next one advances {@link #ticksExisted}. */
+    private boolean hasTicked;
 
     private FakePlayer fakePlayer;
     private long tileAge = 0;
@@ -336,6 +338,17 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
         lastTickCall = time;
 
+        // 1.7.10 ran updateEntity(world, x, y, z, meta) inside this method, before ticksExisted++, so a
+        // getTicksExisted() == 0 check there fired on the first tick. The port's tickers call
+        // updateEntity(Level, BlockPos) after this method returns, and tiles that drive the lifecycle
+        // themselves call it as their first statement. Advancing the count at the start of the next
+        // natural tick, rather than at the end of this one, gives those bodies the 1.7.10 value.
+        if (isNaturalTick) {
+            if (hasTicked)
+                ticksExisted++;
+            hasTicked = true;
+        }
+
         if (this.shouldRunUpdateCode()) {
             try {
                 if (isNaturalTick)
@@ -375,7 +388,6 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
             }
 
             callbacks.tick();
-            ticksExisted++;
             tileAge++;
         }
     }
