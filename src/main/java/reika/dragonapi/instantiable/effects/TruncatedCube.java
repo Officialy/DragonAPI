@@ -17,26 +17,28 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import net.minecraft.core.Direction;
-
-import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
+import net.minecraft.world.phys.Vec3;
 
 /**
- * A cube with its eight corners cut off: six octagonal faces and eight triangles. {@code mainSize} is the
- * half-width; {@code cutSize} is how far from each edge's midpoint the cut starts.
+ * V33a DragonAPI {@code TruncatedCube}: a cube of half-size {@code mainSize} with every corner cut back to
+ * {@code cutSize} from the edges, drawn as six octagonal faces plus eight corner triangles, optionally outlined.
  *
- * <p>1.7.10 drew each face as a GL_TRIANGLE_FAN from the centre and outlined it with GL_LINE_LOOP. 26.2's
- * geometry pipelines are quads and line lists, so {@link #renderFaces} emits each fan triangle as a
- * degenerate quad and {@link #renderEdges} emits each loop as line segments; the shape is the same.
+ * <p>1.7.10 drew the faces as triangle fans and the outline as line loops straight to the Tessellator. 26.x has
+ * neither immediate mode nor loops in a shared buffer, so {@link #render} emits the faces as a triangle list and
+ * the outline as line segments, each into the consumer of whatever render type the caller chose (V33a's callers set
+ * ADDITIVEDARK, unlit and without depth writes).
  */
 public class TruncatedCube {
 
+	/** V33a {@code ForgeDirection.VALID_DIRECTIONS} order. */
+	private static final Direction[] FACES = {Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH,
+			Direction.WEST, Direction.EAST};
+
 	public double mainSize;
 	public double cutSize;
+	private List<Vec3>[] faces;
+	private List<List<Vec3>> corners;
 
-	private List<DecimalPosition>[] faces;
-	private List<ArrayList<DecimalPosition>> corners;
-
-	/** Args: cut size, main (half) size -- the 1.7.10 argument order. */
 	public TruncatedCube(double s, double s2) {
 		mainSize = s2;
 		cutSize = s;
@@ -44,189 +46,188 @@ public class TruncatedCube {
 
 	@SuppressWarnings("unchecked")
 	public TruncatedCube cache(boolean startCenter, double x0, double y0, double z0) {
-		faces = new List[6];
-		for (Direction dir : Direction.values()) {
-			faces[dir.ordinal()] = Collections.unmodifiableList(this.getFaceVertices(dir, startCenter, x0, y0, z0));
+		List<Vec3>[] f = new List[6];
+		for (int i = 0; i < 6; i++) {
+			f[i] = Collections.unmodifiableList(this.getFaceVertices(FACES[i], startCenter, x0, y0, z0));
 		}
-		corners = Collections.unmodifiableList(this.getCornerVertices(x0, y0, z0));
+		List<List<Vec3>> c = Collections.unmodifiableList(this.getCornerVertices(x0, y0, z0));
+		faces = f;
+		corners = c;
 		return this;
 	}
 
-	/** The face's perimeter, closed (first point repeated), optionally led by its centre for a fan. */
-	public List<DecimalPosition> getFaceVertices(Direction face, boolean startCenter, double x0, double y0, double z0) {
+	/** One face's octagon; with {@code startCenter} its centre first and the first rim point repeated last (a fan). */
+	public List<Vec3> getFaceVertices(Direction face, boolean startCenter, double x0, double y0, double z0) {
 		if (faces != null)
-			return faces[face.ordinal()];
-		ArrayList<DecimalPosition> li = new ArrayList<>();
+			return faces[indexOf(face)];
 		double m = mainSize;
 		double c = cutSize;
-		switch (face) {
-			case DOWN -> {
+		ArrayList<Vec3> li = new ArrayList<>();
+		switch(face) {
+			case DOWN:
 				if (startCenter)
-					li.add(new DecimalPosition(x0, y0 - m, z0));
-				li.add(new DecimalPosition(x0 - c, y0 - m, z0 - m));
-				li.add(new DecimalPosition(x0 + c, y0 - m, z0 - m));
-				li.add(new DecimalPosition(x0 + m, y0 - m, z0 - c));
-				li.add(new DecimalPosition(x0 + m, y0 - m, z0 + c));
-				li.add(new DecimalPosition(x0 + c, y0 - m, z0 + m));
-				li.add(new DecimalPosition(x0 - c, y0 - m, z0 + m));
-				li.add(new DecimalPosition(x0 - m, y0 - m, z0 + c));
-				li.add(new DecimalPosition(x0 - m, y0 - m, z0 - c));
-				li.add(new DecimalPosition(x0 - c, y0 - m, z0 - m));
-			}
-			case UP -> {
+					li.add(new Vec3(x0, y0-m, z0));
+				li.add(new Vec3(x0-c, y0-m, z0-m));
+				li.add(new Vec3(x0+c, y0-m, z0-m));
+				li.add(new Vec3(x0+m, y0-m, z0-c));
+				li.add(new Vec3(x0+m, y0-m, z0+c));
+				li.add(new Vec3(x0+c, y0-m, z0+m));
+				li.add(new Vec3(x0-c, y0-m, z0+m));
+				li.add(new Vec3(x0-m, y0-m, z0+c));
+				li.add(new Vec3(x0-m, y0-m, z0-c));
+				li.add(new Vec3(x0-c, y0-m, z0-m));
+				break;
+			case UP:
 				if (startCenter)
-					li.add(new DecimalPosition(x0, y0 + m, z0));
-				li.add(new DecimalPosition(x0 - c, y0 + m, z0 - m));
-				li.add(new DecimalPosition(x0 - m, y0 + m, z0 - c));
-				li.add(new DecimalPosition(x0 - m, y0 + m, z0 + c));
-				li.add(new DecimalPosition(x0 - c, y0 + m, z0 + m));
-				li.add(new DecimalPosition(x0 + c, y0 + m, z0 + m));
-				li.add(new DecimalPosition(x0 + m, y0 + m, z0 + c));
-				li.add(new DecimalPosition(x0 + m, y0 + m, z0 - c));
-				li.add(new DecimalPosition(x0 + c, y0 + m, z0 - m));
-				li.add(new DecimalPosition(x0 - c, y0 + m, z0 - m));
-			}
-			case WEST -> {
+					li.add(new Vec3(x0, y0+m, z0));
+				li.add(new Vec3(x0-c, y0+m, z0-m));
+				li.add(new Vec3(x0-m, y0+m, z0-c));
+				li.add(new Vec3(x0-m, y0+m, z0+c));
+				li.add(new Vec3(x0-c, y0+m, z0+m));
+				li.add(new Vec3(x0+c, y0+m, z0+m));
+				li.add(new Vec3(x0+m, y0+m, z0+c));
+				li.add(new Vec3(x0+m, y0+m, z0-c));
+				li.add(new Vec3(x0+c, y0+m, z0-m));
+				li.add(new Vec3(x0-c, y0+m, z0-m));
+				break;
+			case WEST:
 				if (startCenter)
-					li.add(new DecimalPosition(x0 - m, y0, z0));
-				li.add(new DecimalPosition(x0 - m, y0 - c, z0 - m));
-				li.add(new DecimalPosition(x0 - m, y0 - m, z0 - c));
-				li.add(new DecimalPosition(x0 - m, y0 - m, z0 + c));
-				li.add(new DecimalPosition(x0 - m, y0 - c, z0 + m));
-				li.add(new DecimalPosition(x0 - m, y0 + c, z0 + m));
-				li.add(new DecimalPosition(x0 - m, y0 + m, z0 + c));
-				li.add(new DecimalPosition(x0 - m, y0 + m, z0 - c));
-				li.add(new DecimalPosition(x0 - m, y0 + c, z0 - m));
-				li.add(new DecimalPosition(x0 - m, y0 - c, z0 - m));
-			}
-			case EAST -> {
+					li.add(new Vec3(x0-m, y0, z0));
+				li.add(new Vec3(x0-m, y0-c, z0-m));
+				li.add(new Vec3(x0-m, y0-m, z0-c));
+				li.add(new Vec3(x0-m, y0-m, z0+c));
+				li.add(new Vec3(x0-m, y0-c, z0+m));
+				li.add(new Vec3(x0-m, y0+c, z0+m));
+				li.add(new Vec3(x0-m, y0+m, z0+c));
+				li.add(new Vec3(x0-m, y0+m, z0-c));
+				li.add(new Vec3(x0-m, y0+c, z0-m));
+				li.add(new Vec3(x0-m, y0-c, z0-m));
+				break;
+			case EAST:
 				if (startCenter)
-					li.add(new DecimalPosition(x0 + m, y0, z0));
-				li.add(new DecimalPosition(x0 + m, y0 - c, z0 - m));
-				li.add(new DecimalPosition(x0 + m, y0 + c, z0 - m));
-				li.add(new DecimalPosition(x0 + m, y0 + m, z0 - c));
-				li.add(new DecimalPosition(x0 + m, y0 + m, z0 + c));
-				li.add(new DecimalPosition(x0 + m, y0 + c, z0 + m));
-				li.add(new DecimalPosition(x0 + m, y0 - c, z0 + m));
-				li.add(new DecimalPosition(x0 + m, y0 - m, z0 + c));
-				li.add(new DecimalPosition(x0 + m, y0 - m, z0 - c));
-				li.add(new DecimalPosition(x0 + m, y0 - c, z0 - m));
-			}
-			case SOUTH -> {
+					li.add(new Vec3(x0+m, y0, z0));
+				li.add(new Vec3(x0+m, y0-c, z0-m));
+				li.add(new Vec3(x0+m, y0+c, z0-m));
+				li.add(new Vec3(x0+m, y0+m, z0-c));
+				li.add(new Vec3(x0+m, y0+m, z0+c));
+				li.add(new Vec3(x0+m, y0+c, z0+m));
+				li.add(new Vec3(x0+m, y0-c, z0+m));
+				li.add(new Vec3(x0+m, y0-m, z0+c));
+				li.add(new Vec3(x0+m, y0-m, z0-c));
+				li.add(new Vec3(x0+m, y0-c, z0-m));
+				break;
+			case SOUTH:
 				if (startCenter)
-					li.add(new DecimalPosition(x0, y0, z0 + m));
-				li.add(new DecimalPosition(x0 - m, y0 - c, z0 + m));
-				li.add(new DecimalPosition(x0 - c, y0 - m, z0 + m));
-				li.add(new DecimalPosition(x0 + c, y0 - m, z0 + m));
-				li.add(new DecimalPosition(x0 + m, y0 - c, z0 + m));
-				li.add(new DecimalPosition(x0 + m, y0 + c, z0 + m));
-				li.add(new DecimalPosition(x0 + c, y0 + m, z0 + m));
-				li.add(new DecimalPosition(x0 - c, y0 + m, z0 + m));
-				li.add(new DecimalPosition(x0 - m, y0 + c, z0 + m));
-				li.add(new DecimalPosition(x0 - m, y0 - c, z0 + m));
-			}
-			case NORTH -> {
+					li.add(new Vec3(x0, y0, z0+m));
+				li.add(new Vec3(x0-m, y0-c, z0+m));
+				li.add(new Vec3(x0-c, y0-m, z0+m));
+				li.add(new Vec3(x0+c, y0-m, z0+m));
+				li.add(new Vec3(x0+m, y0-c, z0+m));
+				li.add(new Vec3(x0+m, y0+c, z0+m));
+				li.add(new Vec3(x0+c, y0+m, z0+m));
+				li.add(new Vec3(x0-c, y0+m, z0+m));
+				li.add(new Vec3(x0-m, y0+c, z0+m));
+				li.add(new Vec3(x0-m, y0-c, z0+m));
+				break;
+			case NORTH:
 				if (startCenter)
-					li.add(new DecimalPosition(x0, y0, z0 - m));
-				li.add(new DecimalPosition(x0 - m, y0 - c, z0 - m));
-				li.add(new DecimalPosition(x0 - m, y0 + c, z0 - m));
-				li.add(new DecimalPosition(x0 - c, y0 + m, z0 - m));
-				li.add(new DecimalPosition(x0 + c, y0 + m, z0 - m));
-				li.add(new DecimalPosition(x0 + m, y0 + c, z0 - m));
-				li.add(new DecimalPosition(x0 + m, y0 - c, z0 - m));
-				li.add(new DecimalPosition(x0 + c, y0 - m, z0 - m));
-				li.add(new DecimalPosition(x0 - c, y0 - m, z0 - m));
-				li.add(new DecimalPosition(x0 - m, y0 - c, z0 - m));
-			}
+					li.add(new Vec3(x0, y0, z0-m));
+				li.add(new Vec3(x0-m, y0-c, z0-m));
+				li.add(new Vec3(x0-m, y0+c, z0-m));
+				li.add(new Vec3(x0-c, y0+m, z0-m));
+				li.add(new Vec3(x0+c, y0+m, z0-m));
+				li.add(new Vec3(x0+m, y0+c, z0-m));
+				li.add(new Vec3(x0+m, y0-c, z0-m));
+				li.add(new Vec3(x0+c, y0-m, z0-m));
+				li.add(new Vec3(x0-c, y0-m, z0-m));
+				li.add(new Vec3(x0-m, y0-c, z0-m));
+				break;
 		}
 		return li;
 	}
 
-	/** The eight corner triangles. */
-	public List<ArrayList<DecimalPosition>> getCornerVertices(double x0, double y0, double z0) {
+	/** The eight corner triangles, top four then bottom four. */
+	public List<List<Vec3>> getCornerVertices(double x0, double y0, double z0) {
 		if (corners != null)
 			return corners;
 		double m = mainSize;
 		double c = cutSize;
-		ArrayList<ArrayList<DecimalPosition>> li = new ArrayList<>();
+		ArrayList<List<Vec3>> li = new ArrayList<>();
 		//top corners
-		li.add(triangle(x0 + m, y0 + m, z0 - c, x0 + m, y0 + c, z0 - m, x0 + c, y0 + m, z0 - m));
-		li.add(triangle(x0 - c, y0 + m, z0 - m, x0 - m, y0 + c, z0 - m, x0 - m, y0 + m, z0 - c));
-		li.add(triangle(x0 + c, y0 + m, z0 + m, x0 + m, y0 + c, z0 + m, x0 + m, y0 + m, z0 + c));
-		li.add(triangle(x0 - m, y0 + m, z0 + c, x0 - m, y0 + c, z0 + m, x0 - c, y0 + m, z0 + m));
+		li.add(List.of(new Vec3(x0+m, y0+m, z0-c), new Vec3(x0+m, y0+c, z0-m), new Vec3(x0+c, y0+m, z0-m)));
+		li.add(List.of(new Vec3(x0-c, y0+m, z0-m), new Vec3(x0-m, y0+c, z0-m), new Vec3(x0-m, y0+m, z0-c)));
+		li.add(List.of(new Vec3(x0+c, y0+m, z0+m), new Vec3(x0+m, y0+c, z0+m), new Vec3(x0+m, y0+m, z0+c)));
+		li.add(List.of(new Vec3(x0-m, y0+m, z0+c), new Vec3(x0-m, y0+c, z0+m), new Vec3(x0-c, y0+m, z0+m)));
 		//bottom corners
-		li.add(triangle(x0 + c, y0 - m, z0 - m, x0 + m, y0 - c, z0 - m, x0 + m, y0 - m, z0 - c));
-		li.add(triangle(x0 - m, y0 - m, z0 - c, x0 - m, y0 - c, z0 - m, x0 - c, y0 - m, z0 - m));
-		li.add(triangle(x0 + m, y0 - m, z0 + c, x0 + m, y0 - c, z0 + m, x0 + c, y0 - m, z0 + m));
-		li.add(triangle(x0 - c, y0 - m, z0 + m, x0 - m, y0 - c, z0 + m, x0 - m, y0 - m, z0 + c));
+		li.add(List.of(new Vec3(x0+c, y0-m, z0-m), new Vec3(x0+m, y0-c, z0-m), new Vec3(x0+m, y0-m, z0-c)));
+		li.add(List.of(new Vec3(x0-m, y0-m, z0-c), new Vec3(x0-m, y0-c, z0-m), new Vec3(x0-c, y0-m, z0-m)));
+		li.add(List.of(new Vec3(x0+m, y0-m, z0+c), new Vec3(x0+m, y0-c, z0+m), new Vec3(x0+c, y0-m, z0+m)));
+		li.add(List.of(new Vec3(x0-c, y0-m, z0+m), new Vec3(x0-m, y0-c, z0+m), new Vec3(x0-m, y0-m, z0+c)));
 		return li;
-	}
-
-	private static ArrayList<DecimalPosition> triangle(double x1, double y1, double z1, double x2, double y2, double z2,
-			double x3, double y3, double z3) {
-		ArrayList<DecimalPosition> li = new ArrayList<>();
-		li.add(new DecimalPosition(x1, y1, z1));
-		li.add(new DecimalPosition(x2, y2, z2));
-		li.add(new DecimalPosition(x3, y3, z3));
-		return li;
-	}
-
-	/** The filled faces and corners in {@code c1} (ARGB), on a QUADS position-colour pipeline. */
-	public void renderFaces(PoseStack.Pose pose, VertexConsumer out, double x, double y, double z, int c1) {
-		for (Direction dir : Direction.values()) {
-			List<DecimalPosition> li = this.getFaceVertices(dir, true, x, y, z);
-			DecimalPosition centre = li.get(0);
-			for (int i = 1; i < li.size() - 1; i++) {
-				vertex(pose, out, centre, c1);
-				vertex(pose, out, li.get(i), c1);
-				vertex(pose, out, li.get(i + 1), c1);
-				vertex(pose, out, centre, c1);
-			}
-		}
-		for (List<DecimalPosition> li : this.getCornerVertices(x, y, z)) {
-			vertex(pose, out, li.get(0), c1);
-			vertex(pose, out, li.get(1), c1);
-			vertex(pose, out, li.get(2), c1);
-			vertex(pose, out, li.get(0), c1);
-		}
 	}
 
 	/**
-	 * The face and corner outlines in {@code c2} (ARGB), on a LINES pipeline. 1.7.10 widened them as the viewer
-	 * came closer: {@code max(0.125, 2 - pdist/16)} pixels.
+	 * V33a {@code render(x, y, z, c1, c2, edge, pdist)}: faces and corners in ARGB {@code c1}, and with {@code edge}
+	 * their outlines in {@code c2}. {@code faces} takes position-colour triangles; {@code edges} (may be null when
+	 * {@code edge} is false) takes position-colour-normal-width lines, whose width V33a shrank with distance.
 	 */
-	public void renderEdges(PoseStack.Pose pose, VertexConsumer out, double x, double y, double z, int c2, float pdist) {
-		float w = Math.max(0.125F, 2F - 0.0625F * pdist);
-		for (Direction dir : Direction.values()) {
-			List<DecimalPosition> li = this.getFaceVertices(dir, false, x, y, z);
-			for (int i = 0; i < li.size() - 1; i++)
-				line(pose, out, li.get(i), li.get(i + 1), c2, w);
+	public void render(PoseStack.Pose pose, VertexConsumer faces, VertexConsumer edges, double x, double y, double z,
+			int c1, int c2, boolean edge, float pdist) {
+		this.renderFaces(pose, faces, x, y, z, c1);
+		if (edge)
+			this.renderEdges(pose, edges, x, y, z, c2, pdist);
+	}
+
+	/** The fill: each face as a fan from its centre, then the corner triangles, in ARGB {@code c1}. */
+	public void renderFaces(PoseStack.Pose pose, VertexConsumer faces, double x, double y, double z, int c1) {
+		for (int i = 0; i < 6; i++) {
+			List<Vec3> fan = this.getFaceVertices(FACES[i], true, x, y, z);
+			Vec3 centre = fan.getFirst();
+			for (int k = 1; k < fan.size()-1; k++) {
+				vertex(faces, pose, centre, c1);
+				vertex(faces, pose, fan.get(k), c1);
+				vertex(faces, pose, fan.get(k+1), c1);
+			}
 		}
-		for (List<DecimalPosition> li : this.getCornerVertices(x, y, z)) {
-			for (int i = 0; i < 3; i++)
-				line(pose, out, li.get(i), li.get((i + 1) % 3), c2, w);
+		for (List<Vec3> tri : this.getCornerVertices(x, y, z)) {
+			for (Vec3 p : tri)
+				vertex(faces, pose, p, c1);
 		}
 	}
 
-	private static void vertex(PoseStack.Pose pose, VertexConsumer out, DecimalPosition p, int color) {
-		out.addVertex(pose, (float)p.xCoord, (float)p.yCoord, (float)p.zCoord).setColor(color);
+	/** The outline of every face and corner in ARGB {@code c2}, V33a's width {@code max(1/8, 2 - pdist/16)}. */
+	public void renderEdges(PoseStack.Pose pose, VertexConsumer edges, double x, double y, double z, int c2, float pdist) {
+		float w = Math.max(0.125F, 2F-0.0625F*pdist);
+		for (int i = 0; i < 6; i++)
+			loop(edges, pose, this.getFaceVertices(FACES[i], false, x, y, z), c2, w);
+		for (List<Vec3> tri : this.getCornerVertices(x, y, z))
+			loop(edges, pose, tri, c2, w);
 	}
 
-	private static void line(PoseStack.Pose pose, VertexConsumer out, DecimalPosition a, DecimalPosition b,
-			int color, float width) {
-		float nx = (float)(b.xCoord - a.xCoord);
-		float ny = (float)(b.yCoord - a.yCoord);
-		float nz = (float)(b.zCoord - a.zCoord);
-		float len = (float)Math.sqrt(nx * nx + ny * ny + nz * nz);
-		if (len > 0) {
-			nx /= len;
-			ny /= len;
-			nz /= len;
+	private static void loop(VertexConsumer lines, PoseStack.Pose pose, List<Vec3> points, int color, float width) {
+		for (int i = 0; i < points.size(); i++) {
+			Vec3 a = points.get(i);
+			Vec3 b = points.get((i+1)%points.size());
+			// A face rim already repeats its first point to close; skip the zero-length closing segment.
+			if (a.equals(b))
+				continue;
+			Vec3 n = b.subtract(a).normalize();
+			lines.addVertex(pose, (float)a.x, (float)a.y, (float)a.z).setColor(color)
+					.setNormal(pose, (float)n.x, (float)n.y, (float)n.z).setLineWidth(width);
+			lines.addVertex(pose, (float)b.x, (float)b.y, (float)b.z).setColor(color)
+					.setNormal(pose, (float)n.x, (float)n.y, (float)n.z).setLineWidth(width);
 		}
-		out.addVertex(pose, (float)a.xCoord, (float)a.yCoord, (float)a.zCoord).setColor(color)
-				.setNormal(pose, nx, ny, nz).setLineWidth(width);
-		out.addVertex(pose, (float)b.xCoord, (float)b.yCoord, (float)b.zCoord).setColor(color)
-				.setNormal(pose, nx, ny, nz).setLineWidth(width);
+	}
+
+	private static void vertex(VertexConsumer v5, PoseStack.Pose pose, Vec3 p, int color) {
+		v5.addVertex(pose, (float)p.x, (float)p.y, (float)p.z).setColor(color);
+	}
+
+	private static int indexOf(Direction d) {
+		for (int i = 0; i < FACES.length; i++)
+			if (FACES[i] == d)
+				return i;
+		throw new IllegalArgumentException(String.valueOf(d));
 	}
 
 }
