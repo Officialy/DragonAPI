@@ -146,9 +146,12 @@ public class ReikaBlockHelper {
     public static double getBlockVolume(Level world, BlockPos pos) {
         BlockState b = world.getBlockState(pos);
         VoxelShape shape = b.getShape(world, pos);
-        double dx = shape.bounds().maxX-shape.bounds().minX;
-        double dy = shape.bounds().maxY-shape.bounds().minY;
-        double dz = shape.bounds().maxZ-shape.bounds().minZ;
+		if (shape.isEmpty())
+			return 0;
+		var bounds = shape.bounds();
+		double dx = bounds.maxX-bounds.minX;
+		double dy = bounds.maxY-bounds.minY;
+		double dz = bounds.maxZ-bounds.minZ;
         return dx*dy*dz;
     }
 

@@ -10,7 +10,7 @@ public class CoordHelper {
     public static Collection<BlockPos> getAdjacentCoordinates(BlockPos pos) {
         ArrayList<BlockPos> li = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            li.add(offset(Direction.values()[i], 1));
+			li.add(pos.relative(Direction.values()[i]));
         }
         return li;
     }

@@ -26,6 +26,11 @@ public class ItemMatch {
 
     }
 
+    /** Mutable match set for ingredients that gain concrete alternatives after construction. */
+    public static ItemMatch empty() {
+        return new ItemMatch();
+    }
+
     private ItemMatch(HashSet<KeyedItemStack> set, ArrayList<ItemStack> li) {
         items.addAll(set);
         displayList.addAll(li);
