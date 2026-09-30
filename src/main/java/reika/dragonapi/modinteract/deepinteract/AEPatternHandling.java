@@ -14,12 +14,14 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.crafting.pattern.AECraftingPattern;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
 /**
@@ -35,6 +37,18 @@ public class AEPatternHandling {
 	/** 1.7.10 {@code InterfaceCache.AEPATTERN.instanceOf(item)}. */
 	public static boolean isPattern(ItemStack is) {
 		return is != null && !is.isEmpty() && PatternDetailsHelper.isEncodedPattern(is);
+	}
+
+	/** 1.7.10 {@code InterfaceCache.MEINTERFACE}: the block that holds patterns, now AE2's pattern provider. */
+	public static boolean isPatternProvider(BlockEntity te) {
+		return te instanceof PatternProviderLogicHost;
+	}
+
+	/** Adds a pattern to a pattern provider's pattern slots; returns what did not fit. */
+	public static ItemStack insertIntoPatternProvider(BlockEntity te, ItemStack is) {
+		if (te instanceof PatternProviderLogicHost host)
+			return host.getLogic().getPatternInv().addItems(is);
+		return is;
 	}
 
 	public static boolean isCraftingRecipe(ItemStack is, Level world) {
