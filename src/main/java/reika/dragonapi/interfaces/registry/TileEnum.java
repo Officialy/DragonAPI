@@ -9,6 +9,7 @@
  ******************************************************************************/
 package reika.dragonapi.interfaces.registry;
 
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -19,5 +20,10 @@ public interface TileEnum {
     String getName();
 
     BlockState getBlockState();
+
+    /** 1.7.10 {@code getCraftedProduct}: the item this tile is crafted as; by default its block's item. */
+    default ItemStack getCraftedProduct() {
+        return new ItemStack(this.getBlockState().getBlock());
+    }
 
 }
