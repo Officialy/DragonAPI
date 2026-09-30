@@ -118,6 +118,10 @@ public class MESystemReader implements BasicAEInterface.StackWatcher.Listener {
 		isEmpty = !iterator.hasNext() || (iterator.next() == node && ig.size() == 1);
 	}
 
+	public boolean isOn(IGridNode n) {
+		return node == n;
+	}
+
 	public MESystemReader setRequester(ICraftingRequester icr) {
 		requester = icr;
 		return this;

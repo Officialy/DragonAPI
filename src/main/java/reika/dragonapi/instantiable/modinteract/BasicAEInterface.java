@@ -127,6 +127,31 @@ public class BasicAEInterface implements IInWorldGridNodeHost, IActionHost, IGri
 		return tile;
 	}
 
+	/**
+	 * V33a machines rebuilt their {@code MESystemReader} whenever their grid node changed, carrying the old reader's
+	 * crafting jobs over. Returns the reader to keep: {@code old} if it is still on this node, a new one (with this
+	 * machine as its action source) if the node changed, or null (old detached) if the node is gone.
+	 * <p>Machines call this rather than constructing readers themselves, so their own bytecode never has to prove a
+	 * {@code BasicAEInterface} is an {@code IActionHost} - which would load AE classes during verification.
+	 */
+	@Nullable
+	public reika.dragonapi.modinteract.deepinteract.MESystemReader updateReader(@Nullable reika.dragonapi.modinteract.deepinteract.MESystemReader old) {
+		IGridNode n = node.getNode();
+		if (n == null) {
+			if (old != null)
+				old.detach();
+			return null;
+		}
+		if (old != null && old.isOn(n))
+			return old;
+		return old == null ? new reika.dragonapi.modinteract.deepinteract.MESystemReader(n, this) : new reika.dragonapi.modinteract.deepinteract.MESystemReader(n, old);
+	}
+
+	/** V33a cable connection types: glass (default), covered, smart, dense... */
+	public BasicAEInterface setCoveredCable() {
+		return this.setCableType(AECableType.COVERED);
+	}
+
 	/** Receives this node's storage change notifications; see {@code MESystemReader.addCallback}. */
 	public StackWatcher getWatcher() {
 		return watcher;
