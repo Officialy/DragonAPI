@@ -50,40 +50,40 @@ public class AppEngHandler {
 
 	private boolean loaded;
 
-	private ItemStack certus;
-	private ItemStack chargedCertus;
-	private ItemStack dust;
+	private Item certus;
+	private Item chargedCertus;
+	private Item dust;
 
-	private ItemStack fluix;
-	private ItemStack fluixdust;
+	private Item fluix;
+	private Item fluixdust;
 
-	private ItemStack silicon;
+	private Item silicon;
 
-	private ItemStack basicChip;
-	private ItemStack advChip;
-	private ItemStack basicChipPattern;
-	private ItemStack advChipPattern;
+	private Item basicChip;
+	private Item advChip;
+	private Item basicChipPattern;
+	private Item advChipPattern;
 
-	private ItemStack siliconPress;
-	private ItemStack logicPress;
-	private ItemStack calcPress;
-	private ItemStack engPress;
+	private Item siliconPress;
+	private Item logicPress;
+	private Item calcPress;
+	private Item engPress;
 
-	private ItemStack goldProcessor;
-	private ItemStack quartzProcessor;
-	private ItemStack diamondProcessor;
+	private Item goldProcessor;
+	private Item quartzProcessor;
+	private Item diamondProcessor;
 
 	private Item cell1k;
 	private Item cell4k;
 	private Item cell16k;
 	private Item cell64k;
 
-	private ItemStack storage1k;
-	private ItemStack storage4k;
-	private ItemStack storage16k;
-	private ItemStack storage64k;
+	private Item storage1k;
+	private Item storage4k;
+	private Item storage16k;
+	private Item storage64k;
 
-	private ItemStack blankPattern;
+	private Item blankPattern;
 	private Item encodedPattern;
 	private Item processingPattern;
 
@@ -171,10 +171,16 @@ public class AppEngHandler {
 		return i;
 	}
 
+	/** Any AE2 item by its registry path (ae2:{@code id}), or null; safe where an ItemStack is not (datagen, setup). */
 	@Nullable
-	private ItemStack getMaterial(String id) {
-		Item i = this.getItem(id);
-		return i != null ? new ItemStack(i) : null;
+	public Item getAEItem(String id) {
+		return this.hasMod() ? this.getItem(id) : null;
+	}
+
+	/** Items only: an ItemStack made this early (mod setup, datagen) throws "Components not bound yet". */
+	@Nullable
+	private Item getMaterial(String id) {
+		return this.getItem(id);
 	}
 
 	@Nullable
@@ -187,8 +193,8 @@ public class AppEngHandler {
 		return b;
 	}
 
-	private static ItemStack copy(ItemStack is) {
-		return is != null ? is.copy() : null;
+	private static ItemStack copy(Item is) {
+		return is != null ? new ItemStack(is) : null;
 	}
 
 	public boolean initializedProperly() {
@@ -217,10 +223,10 @@ public class AppEngHandler {
 
 	public Collection<ItemStack> getPossibleMeteorChestLoot() {
 		ArrayList<ItemStack> li = new ArrayList<>();
-		li.add(calcPress);
-		li.add(engPress);
-		li.add(logicPress);
-		li.add(siliconPress);
+		li.add(copy(calcPress));
+		li.add(copy(engPress));
+		li.add(copy(logicPress));
+		li.add(copy(siliconPress));
 		return li;
 	}
 
@@ -229,10 +235,10 @@ public class AppEngHandler {
 		int n = 1 + rand.nextInt(3);
 		for (int i = 0; i < n; i++) {
 			switch (rand.nextInt(4)) {
-				case 0 -> li.add(calcPress);
-				case 1 -> li.add(engPress);
-				case 2 -> li.add(logicPress);
-				case 3 -> li.add(siliconPress);
+				case 0 -> li.add(copy(calcPress));
+				case 1 -> li.add(copy(engPress));
+				case 2 -> li.add(copy(logicPress));
+				case 3 -> li.add(copy(siliconPress));
 			}
 		}
 		return li;
