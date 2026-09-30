@@ -34,17 +34,17 @@ public interface WorldRift {
 
 	/**
 	 * Runs {@code action} with the far end's location, as the 1.7.10 callers did inline ({@code loc =
-	 * sr.getLinkTarget(); if (loc != null) ...}). It does nothing and returns false while the rift is unlinked, while
-	 * the far end is not loaded (the rift itself forwards nothing then either), or when this call chain has already
-	 * passed through {@link Guard#MAX_DEPTH} rifts: two rifts whose far sides face each other recursed until the stack
-	 * overflowed in 1.7.10.
+	 * sr.getLinkTarget(); if (loc != null) ...}); whatever the action reads at the far end loads on demand, as it did
+	 * then. It does nothing and returns false while the rift is unlinked or its far world is absent, or when this call
+	 * chain has already passed through {@link Guard#MAX_DEPTH} rifts: two rifts whose far sides face each other
+	 * recursed until the stack overflowed in 1.7.10.
 	 */
 	static boolean forward(WorldRift rift, java.util.function.Consumer<WorldLocation> action) {
 		WorldLocation loc = rift.getLinkTarget();
 		if (loc == null)
 			return false;
 		net.minecraft.world.level.Level world = loc.getWorld();
-		if (world == null || !world.isLoaded(loc.pos))
+		if (world == null)
 			return false;
 		int[] depth = Guard.DEPTH.get();
 		if (depth[0] >= Guard.MAX_DEPTH)
