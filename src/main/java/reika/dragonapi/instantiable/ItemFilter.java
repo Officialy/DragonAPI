@@ -2,7 +2,10 @@ package reika.dragonapi.instantiable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import reika.dragonapi.libraries.ReikaNBTHelper;
 import reika.dragonapi.libraries.io.NBTCompat;
+import reika.dragonapi.libraries.registry.ReikaItemHelper;
+import reika.dragonapi.modinteract.deepinteract.MESystemReader.MatchMode;
 
 import java.util.HashMap;
 
@@ -105,6 +108,70 @@ public abstract class ItemFilter {
         @Override
         public ItemStack getItem() {
             return null;
+        }
+
+    }
+
+
+    /**
+     * 1.7.10 {@code ItemRule}: match one item under a {@link MatchMode}. {@code MatchMode} is nested in the AE reader
+     * but {@link MatchMode#compare} touches no AE classes, so this filter works without AE2.
+     */
+    public static final class ItemRule extends ItemFilter {
+
+        private ItemStack item;
+        private MatchMode mode;
+
+        public ItemRule(ItemStack is) {
+            this(is, MatchMode.EXACTNONBT);
+        }
+
+        public ItemRule(ItemStack is, MatchMode m) {
+            item = ReikaItemHelper.getSizedItemStack(is, is.getMaxStackSize());
+            mode = m;
+        }
+
+        @Override
+        public boolean matches(ItemStack is) {
+            return mode.compare(is, item);
+        }
+
+        @Override
+        public int hashCode() {
+            return item.getItem().hashCode() ^ mode.ordinal();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof ItemRule ir) {
+                return ItemStack.matches(item, ir.item) && mode == ir.mode;
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return item + " * " + mode;
+        }
+
+        @Override
+        public ItemStack getItem() {
+            return item.copy();
+        }
+
+        @Override
+        public void load(CompoundTag tag) {
+            ItemStack[] inv = ReikaNBTHelper.getInvFromNBT(tag.getCompoundOrEmpty("item"));
+            item = inv.length > 0 && inv[0] != null ? inv[0] : ItemStack.EMPTY;
+            mode = MatchMode.list[NBTCompat.getInt(tag, "mode", MatchMode.EXACTNONBT.ordinal())];
+        }
+
+        @Override
+        public void saveAdditional(CompoundTag tag) {
+            tag.putInt("mode", mode.ordinal());
+            CompoundTag sub = new CompoundTag();
+            ReikaNBTHelper.writeInvToNBT(new ItemStack[]{item}, sub);
+            tag.put("item", sub);
         }
 
     }

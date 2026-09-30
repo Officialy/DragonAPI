@@ -53,7 +53,7 @@ public enum ModList implements ModEntry, Dependency {
 	IC2("IC2", "ic2.core.Ic2Items"),
 	GREGTECH("gregtech"),
 	FORESTRY("Forestry"),
-	APPENG("appliedenergistics2"), //appeng.api.definitions
+	APPENG("ae2"), //modern AE2 mod id (1.7.10 was "appliedenergistics2"); appeng.api.definitions
 	MFFS("MFFS", "mffs.ModularForceFieldSystem"), //ensure still here
 	REDPOWER("RedPower"),
 	TWILIGHT("TwilightForest", "twilightforest.block.TFBlocks", "twilightforest.item.TFItems"),

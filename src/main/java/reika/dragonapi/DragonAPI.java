@@ -77,6 +77,7 @@ public class DragonAPI extends DragonAPIMod {
 
         modEventBus.addListener(this::commonSetup);
         ChunkManager.register(modEventBus);
+        reika.dragonapi.modinteract.AEHooks.init(modEventBus);
         modEventBus.addListener(this::clientSetup);
 
         // Guarded: RegisterRenderPipelinesEvent is a client-only event class, so even referencing
