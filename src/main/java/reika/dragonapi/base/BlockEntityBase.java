@@ -731,8 +731,9 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         return 20;
     }
 
+    /** 1.7.10 {@code setBlockToAir}: flag 3, so neighbours update and clients see the block go. */
     protected final void delete() {
-        level.setBlock(getBlockPos(), Blocks.AIR.defaultBlockState(), 1);
+        level.setBlock(getBlockPos(), Blocks.AIR.defaultBlockState(), 3);
     }
 
     /**
