@@ -963,28 +963,22 @@ public class ReikaWorldHelper {
     }
 
     /**
-     * A bucket of the fluid at {@code pos} if it is a source, else null. 1.7.10 drained only a still liquid
-     * (metadata 0) or what a fluid block's simulated drain gave, which for a flowing block was nothing; the port
-     * had returned a bucket for flowing liquid too.
+     * A bucket of the fluid at {@code pos} if it is a liquid source block, else null. 1.7.10 drained only a still
+     * {@code BlockLiquid} (metadata 0) or what an {@code IFluidBlock}'s simulated drain gave (nothing for a flowing
+     * one); 26.x fluid blocks, vanilla and modded, are all {@link LiquidBlock}s. The port had returned a bucket for
+     * flowing liquid and for any block with a source fluid state -- waterlogged chests, stairs, kelp -- which callers
+     * then removed as though they were water. Waterlogging did not exist in 1.7.10.
      */
     public static FluidStack getDrainableFluid(Level world, BlockPos pos) {
         BlockState b = world.getBlockState(pos);
-        if (!b.getFluidState().isSource())
+        if (!(b.getBlock() instanceof LiquidBlock) || !b.getFluidState().isSource())
             return null;
-        if (b.getBlock() instanceof LiquidBlock) {
-            Fluid f = ReikaFluidHelper.lookupFluidForBlock(b);
-            return f != null ? new FluidStack(f, FluidType.BUCKET_VOLUME) : null;
-        } else if (!b.getFluidState().isEmpty()) {
-            // 1.21.5: IFluidBlock was removed; derive the fluid from the block's fluid state instead.
-            Fluid f = b.getFluidState().getType();
-            if (f == null || f == Fluids.EMPTY) {
-                DragonAPI.LOGGER.error("Found a fluid block " + b + ":" + b.getBlock().getName() + " with a null fluid @ " + pos + "!");
-                return null;
-            }
-            return new FluidStack(f, FluidType.BUCKET_VOLUME);
-        } else {
+        Fluid f = ReikaFluidHelper.lookupFluidForBlock(b);
+        if (f == null || f == Fluids.EMPTY) {
+            DragonAPI.LOGGER.error("Found a fluid block " + b + ":" + b.getBlock().getName() + " with a null fluid @ " + pos + "!");
             return null;
         }
+        return new FluidStack(f, FluidType.BUCKET_VOLUME);
     }
 
     /**
