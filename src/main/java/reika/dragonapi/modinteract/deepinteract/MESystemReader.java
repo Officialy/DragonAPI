@@ -662,17 +662,28 @@ public class MESystemReader implements BasicAEInterface.StackWatcher.Listener {
 
 	public static abstract class ItemInSystemEffect implements MESystemEffect {
 
-		private final ItemStack itemKey;
+		private final java.util.function.Supplier<ItemStack> keySupplier;
 		private final boolean anyVariant;
+		private ItemStack itemKey;
 
 		public ItemInSystemEffect(ItemStack is) {
-			this(is, false);
+			this(() -> is, false);
 		}
 
-		/** @param anyVariant count every stack of the item regardless of components (1.7.10's {@code WILDCARD_VALUE} damage) */
-		public ItemInSystemEffect(ItemStack is, boolean anyVariant) {
-			itemKey = is;
+		/**
+		 * The stack is built on first use: effects are registered during mod setup, before item components are bound,
+		 * and an {@code ItemStack} made then throws "Components not bound yet".
+		 * @param anyVariant count every stack of the item regardless of components (1.7.10's {@code WILDCARD_VALUE} damage)
+		 */
+		public ItemInSystemEffect(java.util.function.Supplier<ItemStack> is, boolean anyVariant) {
+			keySupplier = is;
 			this.anyVariant = anyVariant;
+		}
+
+		protected final ItemStack getItemKey() {
+			if (itemKey == null)
+				itemKey = keySupplier.get();
+			return itemKey;
 		}
 
 		@Override
@@ -706,13 +717,13 @@ public class MESystemReader implements BasicAEInterface.StackWatcher.Listener {
 				KeyCounter kc = me.getCachedContents();
 				if (kc != null) {
 					for (Object2LongMap.Entry<AEKey> e : kc) {
-						if (e.getKey() instanceof AEItemKey key && key.getItem() == itemKey.getItem())
+						if (e.getKey() instanceof AEItemKey key && key.getItem() == this.getItemKey().getItem())
 							amt += e.getLongValue();
 					}
 				}
 			}
 			else {
-				amt = me.getItemCount(itemKey, !itemKey.getComponentsPatch().isEmpty());
+				amt = me.getItemCount(this.getItemKey(), !this.getItemKey().getComponentsPatch().isEmpty());
 			}
 			if (amt > 0) {
 				this.doEffect(grid, amt);
