@@ -67,6 +67,10 @@ public class ReikaFluidHelper {
         return s.endsWith("ol") || s.endsWith("al") || s.endsWith("one");
     }
 
+    /** 1.7.10 {@code fluidComparator}: fluids in registry-id order (1.7.10 compared FluidRegistry ids). */
+    public static final java.util.Comparator<Fluid> fluidComparator = java.util.Comparator.comparingInt(
+            f -> net.minecraft.core.registries.BuiltInRegistries.FLUID.getId(f));
+
     public static Fluid lookupFluidForBlock(BlockState b) {
         if (b == Blocks.LAVA.defaultBlockState() || b == Fluids.FLOWING_LAVA.getFlowing().defaultFluidState().createLegacyBlock())
             return Fluids.LAVA;

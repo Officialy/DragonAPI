@@ -962,8 +962,15 @@ public class ReikaWorldHelper {
         return true;
     }
 
+    /**
+     * A bucket of the fluid at {@code pos} if it is a source, else null. 1.7.10 drained only a still liquid
+     * (metadata 0) or what a fluid block's simulated drain gave, which for a flowing block was nothing; the port
+     * had returned a bucket for flowing liquid too.
+     */
     public static FluidStack getDrainableFluid(Level world, BlockPos pos) {
         BlockState b = world.getBlockState(pos);
+        if (!b.getFluidState().isSource())
+            return null;
         if (b.getBlock() instanceof LiquidBlock) {
             Fluid f = ReikaFluidHelper.lookupFluidForBlock(b);
             return f != null ? new FluidStack(f, FluidType.BUCKET_VOLUME) : null;
