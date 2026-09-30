@@ -1,5 +1,6 @@
 package reika.dragonapi.instantiable.storage;
 
+import java.util.function.BiPredicate;
 import java.util.function.IntPredicate;
 
 import net.neoforged.neoforge.transfer.DelegatingResourceHandler;
@@ -14,10 +15,15 @@ import net.neoforged.neoforge.transfer.transaction.TransactionContext;
  */
 public class SlotFilteredItemHandler extends DelegatingResourceHandler<ItemResource> {
 
-	private final IntPredicate canInsert;
+	private final BiPredicate<Integer, ItemResource> canInsert;
 	private final IntPredicate canExtract;
 
 	public SlotFilteredItemHandler(ResourceHandler<ItemResource> delegate, IntPredicate canInsert, IntPredicate canExtract) {
+		this(delegate, (i, r) -> canInsert.test(i), canExtract);
+	}
+
+	/** @param canInsert per-slot and per-item, like 1.7.10's {@code isItemValidForSlot} for automation */
+	public SlotFilteredItemHandler(ResourceHandler<ItemResource> delegate, BiPredicate<Integer, ItemResource> canInsert, IntPredicate canExtract) {
 		super(delegate);
 		this.canInsert = canInsert;
 		this.canExtract = canExtract;
@@ -25,12 +31,12 @@ public class SlotFilteredItemHandler extends DelegatingResourceHandler<ItemResou
 
 	@Override
 	public boolean isValid(int index, ItemResource resource) {
-		return canInsert.test(index) && super.isValid(index, resource);
+		return canInsert.test(index, resource) && super.isValid(index, resource);
 	}
 
 	@Override
 	public int insert(int index, ItemResource resource, int amount, TransactionContext transaction) {
-		return canInsert.test(index) ? super.insert(index, resource, amount, transaction) : 0;
+		return canInsert.test(index, resource) ? super.insert(index, resource, amount, transaction) : 0;
 	}
 
 	@Override

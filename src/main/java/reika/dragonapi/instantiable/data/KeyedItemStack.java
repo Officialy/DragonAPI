@@ -228,10 +228,12 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
             switch (this) {
                 case ID:
                     return k1.item.getItem() == k2.item.getItem();
+                case METADATA: //1.7.10 item damage
+                    return k1.item.getDamageValue() == k2.item.getDamageValue();
                 case SIZE:
                     return k1.item.getCount() == k2.item.getCount();
-                case NBT:
-                    return ItemStack.matches(k1.item, k2.item);
+                case NBT: //components only; size is its own criterion (ItemStack.matches also compared counts)
+                    return ItemStack.isSameItemSameComponents(k1.item, k2.item);
             }
             return false;
         }
