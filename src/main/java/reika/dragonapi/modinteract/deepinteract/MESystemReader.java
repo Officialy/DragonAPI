@@ -118,6 +118,11 @@ public class MESystemReader implements BasicAEInterface.StackWatcher.Listener {
 		isEmpty = !iterator.hasNext() || (iterator.next() == node && ig.size() == 1);
 	}
 
+	@Nullable
+	public IGrid getGrid() {
+		return node != null ? node.getGrid() : null;
+	}
+
 	public boolean isOn(IGridNode n) {
 		return node == n;
 	}
