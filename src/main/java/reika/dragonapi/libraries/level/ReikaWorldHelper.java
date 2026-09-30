@@ -541,7 +541,11 @@ public class ReikaWorldHelper {
                 return true;
             return !mat.isSolid();
         }*/
-        return !b.isSolid();
+        // 26.3's solid-render test rejects modelled iron pipes, even though the legacy Material.iron
+        // sealed a reactor. Motion tags carry material solidity; leaves/cactus and collisionless
+        // plants, portals and external conduits retain their legacy air-exposure behavior.
+        return b.isAir() || b.getCollisionShape(world, pos).isEmpty()
+                || !b.is(net.minecraft.tags.BlockTags.BLOCKS_MOTION_NO_LEAVES) || b.is(Blocks.CACTUS);
     }
 
     public static boolean isExposedToAirWithException(Level world, int x, int y, int z, Block ex) {
