@@ -67,6 +67,47 @@ import static reika.dragonapi.DragonAPI.rand;
 public class ReikaEntityHelper {
 
     private static final HashMap<Class<?>, Boolean> hostilityMap = new HashMap<>();
+    private static final HashMap<Class<?>, Integer> mobColors = new HashMap<>();
+
+    static {
+        mobColors.put(Creeper.class, 0x41b736); mobColors.put(Skeleton.class, 0xcfcfcf);
+        mobColors.put(Spider.class, 0x5a472b); mobColors.put(Giant.class, 0x436d35);
+        mobColors.put(Zombie.class, 0x436d35); mobColors.put(Slime.class, 0x5aa244);
+        mobColors.put(Ghast.class, 0xf0f0f0); mobColors.put(ZombifiedPiglin.class, 0xb58383);
+        mobColors.put(Enderman.class, 0xcc0ff8); mobColors.put(CaveSpider.class, 0x124d5a);
+        mobColors.put(Silverfish.class, 0x8c8c8c); mobColors.put(Blaze.class, 0xebb41a);
+        mobColors.put(MagmaCube.class, 0x540e00); mobColors.put(EnderDragon.class, 0xe079fa);
+        mobColors.put(WitherBoss.class, 0x4f4f4f); mobColors.put(Bat.class, 0x76643d);
+        mobColors.put(Witch.class, 0xa39483); mobColors.put(Pig.class, 0xee9e9e);
+        mobColors.put(Sheep.class, 0xd6d6d6); mobColors.put(Cow.class, 0x433525);
+        mobColors.put(Chicken.class, 0xc19343); mobColors.put(Squid.class, 0x536c7f);
+        mobColors.put(Wolf.class, 0xb7b3b4); mobColors.put(MushroomCow.class, 0x970304);
+        mobColors.put(net.minecraft.world.entity.animal.golem.SnowGolem.class, 0xe28f22);
+        mobColors.put(Ocelot.class, 0xf2c56e); mobColors.put(IronGolem.class, 0xd0b9a8);
+        mobColors.put(Villager.class, 0xb27a62); mobColors.put(Player.class, 0x0000ff);
+        mobColors.put(Animal.class, 0x00a000);
+        mobColors.put(net.minecraft.world.entity.animal.golem.AbstractGolem.class, 0x7f7f7f);
+        mobColors.put(Monster.class, 0xff0000); mobColors.put(Entity.class, 0xffffff);
+    }
+
+    /** V33a radar colors, with a cached random shade for subclasses of a known mob. */
+    public static int mobToColor(LivingEntity entity) {
+        Class<?> type = entity.getClass();
+        Integer color = mobColors.get(type);
+        if (color == null) {
+            color = 0xffffff;
+            for (Class<?> parent = type.getSuperclass(); parent != null && parent != Entity.class; parent = parent.getSuperclass()) {
+                Integer inherited = mobColors.get(parent);
+                if (inherited != null) {
+                    color = reika.dragonapi.libraries.rendering.ReikaColorAPI.getColorWithBrightnessMultiplier(inherited,
+                            (float)reika.dragonapi.libraries.java.ReikaRandomHelper.getRandomBetween(.25, 1));
+                    break;
+                }
+            }
+            mobColors.put(type, color);
+        }
+        return color;
+    }
 
     /** Knocks one entity away from another. Args: Attacker, target, power */
     public static void knockbackEntity(Entity a, Entity b, double power) {
@@ -243,7 +284,7 @@ public class ReikaEntityHelper {
     private static boolean calcHostility(Class<? extends LivingEntity> mob) {
 //        if (TameHostile.class.isAssignableFrom(mob))
 //            return false;
-        if (Mob.class.isAssignableFrom(mob))
+        if (net.minecraft.world.entity.monster.Monster.class.isAssignableFrom(mob))
             return true;
         if (Ghast.class.isAssignableFrom(mob))
             return true;
