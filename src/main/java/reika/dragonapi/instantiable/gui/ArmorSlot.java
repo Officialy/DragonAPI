@@ -25,7 +25,7 @@ public class ArmorSlot extends Slot {
 
     @Override
     public boolean mayPlace(ItemStack is) {
-        return is.isEmpty() && is.getItem().canEquip(is, armorType, player.player);
+        return !is.isEmpty() && is.getItem().canEquip(is, armorType, player.player);
     }
     @Override
     public int getMaxStackSize() {
