@@ -26,7 +26,7 @@ import reika.dragonapi.interfaces.blockentity.ChunkLoadingTile;
 import reika.dragonapi.interfaces.entity.ChunkLoadingEntity;
 
 /**
- * NeoForge 26.2 implementation of DragonAPI's block-entity chunk-ticket manager.
+ * NeoForge 26.3 implementation of DragonAPI's block-entity chunk-ticket manager.
  *
  * <p>Tickets are persistent and owned by the loading block position. On world load the controller
  * validates the owner is still a {@link ChunkLoadingTile} and trims the restored ticket set to the
@@ -44,6 +44,7 @@ public final class ChunkManager {
 					BlockEntity blockEntity = level.getBlockEntity(entry.getKey());
 					if (!(blockEntity instanceof ChunkLoadingTile loadingTile)) {
 						helper.removeAllTickets(entry.getKey());
+						instance.liveTickets.remove(new WorldLocation(level, entry.getKey()));
 						continue;
 					}
 					Set<Long> requested = new HashSet<>();
@@ -55,6 +56,14 @@ public final class ChunkManager {
 					}
 					for (long packed : entry.getValue().naturalSpawning())
 						helper.removeTicket(entry.getKey(), packed, true);
+					// Rebuild the live ownership cache for restored tickets. Otherwise a tile that
+					// loses power on its first tick cannot release the saved radius, and contraction
+					// leaves chunks from the previous session permanently forced.
+					Set<ChunkPos> restored = new HashSet<>();
+					for (long packed : entry.getValue().normal()) {
+						if (requested.contains(packed)) restored.add(ChunkPos.unpack(packed));
+					}
+					instance.liveTickets.put(new WorldLocation(blockEntity), restored);
 				}
 			});
 
@@ -65,6 +74,18 @@ public final class ChunkManager {
 
 	public static void register(IEventBus modBus) {
 		modBus.addListener(ChunkManager::registerController);
+		net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(ChunkManager::onServerStopped);
+	}
+
+	private static void onServerStopped(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
+		// Saved tickets remain on disk. Runtime ownership must not leak into another integrated
+		// server opened in the same JVM, where dimension/position keys can otherwise collide.
+		instance.clearLiveOwners();
+	}
+
+	private synchronized void clearLiveOwners() {
+		liveTickets.clear();
+		entityTickets.clear();
 	}
 
 	private static void registerController(RegisterTicketControllersEvent event) {
