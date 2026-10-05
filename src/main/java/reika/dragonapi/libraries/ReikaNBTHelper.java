@@ -137,14 +137,13 @@ public final class ReikaNBTHelper {
             return ((StringTag) NBT).value();
         } else if (NBT instanceof ByteArrayTag) {
             return ((ByteArrayTag) NBT).getAsByteArray();
-        } else if (NBT instanceof CompoundTag) {
+        } else if (NBT instanceof CompoundTag tag) {
             if (((CompoundTag) NBT).getBooleanOr("flag_isItemStack", false)) {
                 var registryAccess = cachedRegistryAccess();
                 var input = TagValueInput.create(ProblemReporter.DISCARDING, registryAccess, (CompoundTag) NBT);
                 return input.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
             } else {
                 HashMap<String, Object> map = new HashMap();
-                CompoundTag tag = (CompoundTag) NBT;
                 for (String s : tag.keySet()) {
                     map.put(s, getValue(tag.get(s)));
                 }
@@ -260,7 +259,7 @@ public final class ReikaNBTHelper {
         if (tag2 == null || tag2.isEmpty())
             return;
         for (String o : tag2.keySet()) {
-            String s = (String) o;
+            String s = o;
             Tag key = tag2.get(s);
             tag1.put(s, combineTags(tag1.get(s), key.copy()));
         }
@@ -334,8 +333,8 @@ public final class ReikaNBTHelper {
 
     public static void overwriteNBT(CompoundTag tag, CompoundTag over) {
         for (String o : over.keySet()) {
-            Tag b = over.get((String) o);
-            tag.put((String) o, b);
+            Tag b = over.get(o);
+            tag.put(o, b);
         }
     }
 

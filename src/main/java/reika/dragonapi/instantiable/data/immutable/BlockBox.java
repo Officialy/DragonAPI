@@ -416,7 +416,7 @@ public final class BlockBox {
     }
 
     public static BlockBox between(DecimalPosition e1, DecimalPosition e2) {
-        return new BlockBox(Mth.floor(e1.xCoord), Mth.floor(e1.yCoord), Mth.floor(e1.zCoord), Mth.floor(e2.xCoord), Mth.floor(e2.yCoord), Mth.floor(e2.zCoord));
+        return new BlockBox(Mth.floor(e1.xCoord()), Mth.floor(e1.yCoord()), Mth.floor(e1.zCoord()), Mth.floor(e2.xCoord()), Mth.floor(e2.yCoord()), Mth.floor(e2.zCoord()));
     }
 
     private static BlockBox between(BlockPos c1, BlockPos c2) {

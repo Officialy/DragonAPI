@@ -1,14 +1,6 @@
 package reika.dragonapi.instantiable.data.immutable;
 
-public class Column {
-
-    public final int minY;
-    public final int maxY;
-
-    public Column(int y1, int y2) {
-        minY = y1;
-        maxY = y2;
-    }
+public record Column(int minY, int maxY) {
 
     public Column topSlice(int y) {
         if (y > maxY)

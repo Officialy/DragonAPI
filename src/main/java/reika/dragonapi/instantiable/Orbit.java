@@ -11,38 +11,32 @@ package reika.dragonapi.instantiable;
 
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 
-public class Orbit {
+public record Orbit(double semimajorAxis, double eccentricity, double inclination, double RAAN,
+                    double argumentOfPerigee, double zeroAng) {
 
-	public final double semimajorAxis;
-	public final double eccentricity;
-	public final double inclination;
-	public final double RAAN;
-	public final double argumentOfPerigee;
-	public final double zeroAng;
+    public Orbit(double semimajorAxis, double eccentricity, double inclination, double RAAN, double argumentOfPerigee, double zeroAng) {
+        this.semimajorAxis = semimajorAxis;
+        this.eccentricity = eccentricity;
+        this.inclination = Math.toRadians(inclination);
+        this.RAAN = Math.toRadians(RAAN);
+        this.argumentOfPerigee = Math.toRadians(argumentOfPerigee);
+        this.zeroAng = Math.toRadians(zeroAng);
+    }
 
-	public Orbit(double a, double e, double i, double raan, double w, double theta) {
-		semimajorAxis = a;
-		eccentricity = e;
-		inclination = Math.toRadians(i);
-		RAAN = Math.toRadians(raan);
-		argumentOfPerigee = Math.toRadians(w);
-		zeroAng = Math.toRadians(theta);
-	}
+    //TODO - old reika code
+    public DecimalPosition getPosition(double x0, double y0, double z0, double time, double mu) {
+        double dtheta = 0; //incomplete
+        return this.getPosition(x0, y0, z0, time, mu);
+    }
 
-	//TODO - old reika code
-	public DecimalPosition getPosition(double x0, double y0, double z0, double time, double mu) {
-		double dtheta = 0; //incomplete
-		return this.getPosition(x0, y0, z0, time, mu);
-	}
+    public DecimalPosition getPosition(double x0, double y0, double z0, double dtheta) {
+        double theta = zeroAng + dtheta;
+        double dd = semimajorAxis * (1 - eccentricity * eccentricity) / (1 + eccentricity * Math.cos(Math.toRadians(theta)));
+        double x = dd * (Math.cos(RAAN) * Math.cos(Math.toRadians(theta) + argumentOfPerigee) - Math.sin(RAAN) * Math.sin(Math.toRadians(theta) + argumentOfPerigee) * Math.cos(inclination));
+        double y = dd * (Math.sin(RAAN) * Math.cos(Math.toRadians(theta) + argumentOfPerigee) + Math.cos(RAAN) * Math.sin(Math.toRadians(theta) + argumentOfPerigee)) * Math.cos(inclination);
+        double z = dd * Math.sin(Math.toRadians(theta) + argumentOfPerigee) * Math.sin(inclination);
 
-	public DecimalPosition getPosition(double x0, double y0, double z0, double dtheta) {
-		double theta = zeroAng + dtheta;
-		double dd = semimajorAxis * (1 - eccentricity * eccentricity) / (1 + eccentricity * Math.cos(Math.toRadians(theta)));
-		double x = dd * (Math.cos(RAAN) * Math.cos(Math.toRadians(theta) + argumentOfPerigee) - Math.sin(RAAN) * Math.sin(Math.toRadians(theta) + argumentOfPerigee) * Math.cos(inclination));
-		double y = dd * (Math.sin(RAAN) * Math.cos(Math.toRadians(theta) + argumentOfPerigee) + Math.cos(RAAN) * Math.sin(Math.toRadians(theta) + argumentOfPerigee)) * Math.cos(inclination);
-		double z = dd * Math.sin(Math.toRadians(theta) + argumentOfPerigee) * Math.sin(inclination);
-
-		return new DecimalPosition(x + x0, y + y0, z + z0);
-	}
+        return new DecimalPosition(x + x0, y + y0, z + z0);
+    }
 
 }

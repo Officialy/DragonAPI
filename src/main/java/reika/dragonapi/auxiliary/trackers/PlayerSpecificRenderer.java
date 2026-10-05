@@ -305,37 +305,31 @@ public final class PlayerSpecificRenderer {
 
    }
 
-   private static class PlayerModelRenderer implements PlayerRenderObj {
+    private record PlayerModelRenderer(ModifiedPlayerModel model) implements PlayerRenderObj {
 
-       private final ModifiedPlayerModel model;
+        public void extractRenderState(PoseStack stack, Player ep, float tick, PlayerRotationData dat, SubmitNodeCollector collector) {
+            if (ep != null) {
+                stack.pushPose();
+                stack.translate(0, 1.6, 0);
+                stack.scale(1, -1, 1);
+                if (ep.isCrouching()) {
+                    stack.rotate(new Quaternionf(Axis.XP.rotationDegrees(22.5f)));
+                    stack.translate(-0.02, 0.1, -0.05);
+                }
+                // 26.2: MultiBufferSource/renderBuffers() are gone — submit the body parts through the
+                // feature pipeline. Snapshot the transform so the deferred draw uses it after we pop.
+                PoseStack snap = new PoseStack();
+                snap.last().set(stack.last());
+                stack.popPose();
+                collector.submitCustomGeometry(snap, model.renderType(model.getTexture()), (pose, consumer) ->
+                        model.renderBodyParts(snap, consumer, 15728880, OverlayTexture.NO_OVERLAY, ep, tick));
+            }
+        }
 
-       private PlayerModelRenderer(ModifiedPlayerModel m) {
-           model = m;
-       }
-
-       public void extractRenderState(PoseStack stack, Player ep, float tick, PlayerRotationData dat, SubmitNodeCollector collector) {
-           if (ep != null) {
-               stack.pushPose();
-               stack.translate(0, 1.6, 0);
-               stack.scale(1, -1, 1);
-               if (ep.isCrouching()) {
-                   stack.rotate(new Quaternionf(Axis.XP.rotationDegrees(22.5f)));
-                   stack.translate(-0.02, 0.1, -0.05);
-               }
-               // 26.2: MultiBufferSource/renderBuffers() are gone — submit the body parts through the
-               // feature pipeline. Snapshot the transform so the deferred draw uses it after we pop.
-               PoseStack snap = new PoseStack();
-               snap.last().set(stack.last());
-               stack.popPose();
-               collector.submitCustomGeometry(snap, model.renderType(model.getTexture()), (pose, consumer) ->
-                       model.renderBodyParts(snap, consumer, 15728880, OverlayTexture.NO_OVERLAY, ep, tick));
-           }
-       }
-
-       @Override
-       public int getRenderPriority() {
-           return Integer.MIN_VALUE;
-       }
-   }
+        @Override
+        public int getRenderPriority() {
+            return Integer.MIN_VALUE;
+        }
+    }
 
 }

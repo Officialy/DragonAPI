@@ -143,28 +143,22 @@ public class OneWayCollections {
 
 	}
 
-	private static final class WrapperIterator<E> implements Iterator<E> {
+    private record WrapperIterator<E>(Iterator<E> wrapped) implements Iterator<E> {
 
-		private final Iterator<E> wrapped;
+        public void remove() {
+            throw new UnsupportedOperationException("You cannot remove entries from this collection with an iterator!");
+        }
 
-		private WrapperIterator(Iterator<E> wrap) {
-			wrapped = wrap;
-		}
+        @Override
+        public boolean hasNext() {
+            return wrapped.hasNext();
+        }
 
-		public void remove() {
-			throw new UnsupportedOperationException("You cannot remove entries from this collection with an iterator!");
-		}
+        @Override
+        public E next() {
+            return wrapped.next();
+        }
 
-		@Override
-		public boolean hasNext() {
-			return wrapped.hasNext();
-		}
-
-		@Override
-		public E next() {
-			return wrapped.next();
-		}
-
-	}
+    }
 
 }

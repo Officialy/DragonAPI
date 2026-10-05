@@ -196,12 +196,10 @@ public class ReikaEntityHelper {
             return 20; //spirit creature
         if (ent instanceof Blaze)
             return 300;
-        if (ent instanceof MagmaCube) {
-            MagmaCube cube = (MagmaCube) ent;
+        if (ent instanceof MagmaCube cube) {
             return 400 * cube.getSize() * cube.getSize();
         }
-        if (ent instanceof Slime) {
-            Slime cube = (Slime) ent;
+        if (ent instanceof Slime cube) {
             return 200 * cube.getSize() * cube.getSize();
         }
         if (ent instanceof Enderman)

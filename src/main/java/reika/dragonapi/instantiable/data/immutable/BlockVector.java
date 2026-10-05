@@ -6,12 +6,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import reika.dragonapi.libraries.io.NBTCompat;
 
-public final class BlockVector {
-
-    public final int xCoord;
-    public final int yCoord;
-    public final int zCoord;
-    public final Direction direction;
+public record BlockVector(int xCoord, int yCoord, int zCoord, Direction direction) {
 
     public BlockVector(Direction dir, BlockPos c) {
         this(dir, c.getX(), c.getY(), c.getZ());
@@ -27,13 +22,6 @@ public final class BlockVector {
 
     public BlockVector(Direction dir, int x, int y, int z) {
         this(x, y, z, dir);
-    }
-
-    public BlockVector(int x, int y, int z, Direction dir) {
-        xCoord = x;
-        yCoord = y;
-        zCoord = z;
-        direction = dir;
     }
 
     public static BlockVector load(CompoundTag tag) {

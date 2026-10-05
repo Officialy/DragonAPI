@@ -100,63 +100,70 @@ public final class ModCropList {
         return fallback;
     }
 
-    private static final class AgeCrop implements CropType {
-        private final Block block;
-        private final IntegerProperty age;
-        private final int ripeAge;
-        private final int harvestedAge;
-        private final Item seed;
-
-        private AgeCrop(Block block, IntegerProperty age, int ripeAge, int harvestedAge, Item seed) {
-            this.block = block;
-            this.age = age;
-            this.ripeAge = ripeAge;
-            this.harvestedAge = harvestedAge;
-            this.seed = seed;
-        }
-
-        @Override public boolean existsInGame() { return true; }
-        @Override public boolean destroyOnHarvest() { return false; }
-        @Override public boolean neverDropsSecondSeed() { return seed == Items.AIR; }
-        @Override public boolean isCrop(BlockState state) { return state.is(block) && state.hasProperty(age); }
-        @Override public boolean isSeedItem(ItemStack stack) { return seed != Items.AIR && stack.is(seed); }
+    private record AgeCrop(Block block, IntegerProperty age, int ripeAge, int harvestedAge,
+                           Item seed) implements CropType {
 
         @Override
-        public boolean isRipe(Level level, BlockPos pos) {
-            BlockState state = level.getBlockState(pos);
-            return isCrop(state) && state.getValue(age) >= ripeAge;
+        public boolean existsInGame() {
+            return true;
         }
 
         @Override
-        public int getGrowthState(Level level, BlockPos pos) {
-            BlockState state = level.getBlockState(pos);
-            return isCrop(state) ? state.getValue(age) : -1;
+        public boolean destroyOnHarvest() {
+            return false;
         }
 
         @Override
-        public void setHarvested(Level level, BlockPos pos) {
-            BlockState state = level.getBlockState(pos);
-            if (isCrop(state)) level.setBlock(pos, state.setValue(age, harvestedAge), 3);
+        public boolean neverDropsSecondSeed() {
+            return seed == Items.AIR;
         }
 
         @Override
-        public void makeRipe(Level level, BlockPos pos) {
-            BlockState state = level.getBlockState(pos);
-            if (isCrop(state)) level.setBlock(pos, state.setValue(age, ripeAge), 3);
+        public boolean isCrop(BlockState state) {
+            return state.is(block) && state.hasProperty(age);
         }
 
         @Override
-        public List<ItemStack> getDrops(Level level, BlockPos pos, int fortune) {
-            if (!(level instanceof ServerLevel server))
-                throw new IllegalArgumentException("Crop loot is server-authoritative");
-            ItemStack tool = new ItemStack(Items.IRON_HOE);
-            if (fortune > 0)
-                tool.enchant(level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
-                        .getOrThrow(Enchantments.FORTUNE), fortune);
-            return new ArrayList<>(Block.getDrops(level.getBlockState(pos), server, pos,
-                    level.getBlockEntity(pos), null, tool));
+        public boolean isSeedItem(ItemStack stack) {
+            return seed != Items.AIR && stack.is(seed);
         }
-    }
+
+            @Override
+            public boolean isRipe(Level level, BlockPos pos) {
+                BlockState state = level.getBlockState(pos);
+                return isCrop(state) && state.getValue(age) >= ripeAge;
+            }
+
+            @Override
+            public int getGrowthState(Level level, BlockPos pos) {
+                BlockState state = level.getBlockState(pos);
+                return isCrop(state) ? state.getValue(age) : -1;
+            }
+
+            @Override
+            public void setHarvested(Level level, BlockPos pos) {
+                BlockState state = level.getBlockState(pos);
+                if (isCrop(state)) level.setBlock(pos, state.setValue(age, harvestedAge), 3);
+            }
+
+            @Override
+            public void makeRipe(Level level, BlockPos pos) {
+                BlockState state = level.getBlockState(pos);
+                if (isCrop(state)) level.setBlock(pos, state.setValue(age, ripeAge), 3);
+            }
+
+            @Override
+            public List<ItemStack> getDrops(Level level, BlockPos pos, int fortune) {
+                if (!(level instanceof ServerLevel server))
+                    throw new IllegalArgumentException("Crop loot is server-authoritative");
+                ItemStack tool = new ItemStack(Items.IRON_HOE);
+                if (fortune > 0)
+                    tool.enchant(level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+                            .getOrThrow(Enchantments.FORTUNE), fortune);
+                return new ArrayList<>(Block.getDrops(level.getBlockState(pos), server, pos,
+                        level.getBlockEntity(pos), null, tool));
+            }
+        }
 
     private ModCropList() {}
 }

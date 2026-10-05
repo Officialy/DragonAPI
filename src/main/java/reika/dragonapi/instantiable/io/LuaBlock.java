@@ -3,7 +3,6 @@ package reika.dragonapi.instantiable.io;
 import com.google.common.base.Charsets;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
@@ -690,39 +689,31 @@ public abstract class LuaBlock {
 
     }
 
-    private static class LuaBlockKey implements Comparable<LuaBlockKey> {
+    private record LuaBlockKey(String name, String lookupKey) implements Comparable<LuaBlockKey> {
 
-        public final String name;
-        public final String lookupKey;
-
-        private LuaBlockKey(String s) {
-            this(s, s);
-        }
-
-        private LuaBlockKey(String s, String k) {
-            name = s;
-            lookupKey = k;
-        }
+            private LuaBlockKey(String s) {
+                this(s, s);
+            }
 
         @Override
-        public String toString() {
-            return name;
-        }
+            public String toString() {
+                return name;
+            }
 
-        @Override
-        public boolean equals(Object o) {
-            return o instanceof LuaBlockKey && ((LuaBlockKey)o).lookupKey.equals(lookupKey);
-        }
+            @Override
+            public boolean equals(Object o) {
+                return o instanceof LuaBlockKey && ((LuaBlockKey) o).lookupKey.equals(lookupKey);
+            }
 
-        @Override
-        public int hashCode() {
-            return lookupKey.hashCode();
-        }
+            @Override
+            public int hashCode() {
+                return lookupKey.hashCode();
+            }
 
-        @Override
-        public int compareTo(LuaBlockKey o) {
-            return name.compareTo(o.name);
-        }
+            @Override
+            public int compareTo(LuaBlockKey o) {
+                return name.compareTo(o.name);
+            }
 
-    }
+        }
 }

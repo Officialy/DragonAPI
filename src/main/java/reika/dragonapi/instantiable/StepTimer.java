@@ -82,12 +82,12 @@ public final class StepTimer {
 		return "Timer @ " + value + "/" + cap;
 	}
 
-	protected void writeSyncTag(CompoundTag NBT, String id) {
+	private void writeSyncTag(CompoundTag NBT, String id) {
 		NBT.putInt(id + "cap", cap);
 		NBT.putInt(id + "tick", value);
 	}
 
-	protected void readSyncTag(CompoundTag NBT, String id) {
+	private void readSyncTag(CompoundTag NBT, String id) {
         cap = NBTCompat.getInt(NBT, id + "cap", cap);
         value = NBTCompat.getInt(NBT, id + "tick", value);
 	}

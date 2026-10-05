@@ -8,15 +8,22 @@ import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 /**
  * Output-only "result" slot: rejects placement, runs achievement hooks on extraction.
  *
- * <p>1.21.9: was a {@code SlotItemHandler} subclass. The whole {@code IItemHandler} family
+ * <p>26.3: was a {@code SlotItemHandler} subclass. The whole {@code IItemHandler} family
  * was deprecated; we now extend the new {@link ResourceHandlerSlot} and bind to a
  * {@link ManagedItemHandler} via its {@code set} index modifier so callers don't have to
  * supply the {@code IndexModifier} themselves.
  */
 public class ResultSlotItemHandler extends ResourceHandlerSlot {
+    private final java.util.function.Consumer<ItemStack> onResultTaken;
 
     public ResultSlotItemHandler(ManagedItemHandler handler, int index, int xPosition, int yPosition) {
+        this(handler, index, xPosition, yPosition, stack -> {});
+    }
+
+    public ResultSlotItemHandler(ManagedItemHandler handler, int index, int xPosition, int yPosition,
+                                 java.util.function.Consumer<ItemStack> onResultTaken) {
         super(handler, handler::set, index, xPosition, yPosition);
+        this.onResultTaken = onResultTaken;
     }
 
     @Override
@@ -27,11 +34,13 @@ public class ResultSlotItemHandler extends ResourceHandlerSlot {
     @Override
     public void onTake(Player p_150563_, ItemStack p_150564_) {
         this.checkTakeAchievements(p_150564_);
+        onResultTaken.accept(p_150564_);
         super.onTake(p_150563_, p_150564_);
     }
 
     @Override
     protected void onQuickCraft(ItemStack p_39555_, int p_39556_) {
         this.checkTakeAchievements(p_39555_);
+        onResultTaken.accept(p_39555_);
     }
 }

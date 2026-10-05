@@ -63,9 +63,9 @@ public class OpenPathFinder implements PropagationCondition {
 		return vol <= thresh;
 	}
 
-	public static enum PassRules {
+	public enum PassRules {
 		SOFT,
 		LIQUIDS,
-		SMALLNONSOLID;
-	}
+		SMALLNONSOLID
+    }
 }

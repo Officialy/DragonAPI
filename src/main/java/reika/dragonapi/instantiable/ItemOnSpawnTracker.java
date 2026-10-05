@@ -1,8 +1,6 @@
 package reika.dragonapi.instantiable;
 
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import reika.dragonapi.auxiliary.trackers.PlayerFirstTimeTracker;
-import reika.dragonapi.auxiliary.trackers.PlayerHandler;
 
 import net.minecraft.util.Prediction;
 import net.minecraft.world.entity.player.Player;
@@ -13,9 +11,12 @@ public abstract class ItemOnSpawnTracker implements PlayerFirstTimeTracker.Playe
 
 	@Override
 	public void onNewPlayer(Player ep) {
-		if (ReikaInventoryHelper.checkForItemStack(this.getItem(), ep.getInventory(), false))
+		ItemStack stack = this.getItem().copy();
+		if (ReikaInventoryHelper.checkForItemStack(stack, ep.getInventory(), false))
 			return;
-		if (!ep.getInventory().add(this.getItem())) ep.drop(this.getItem(), true, Prediction.SERVER_ONLY);
+		// This routine fills only slots with room, then drops the remainder. Inventory.add can
+		// discard an uninserted stack for creative players and can leave a partial remainder.
+		ep.getInventory().placeItemBackInInventory(stack, false, Prediction.SERVER_ONLY);
 	}
 
 

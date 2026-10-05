@@ -2,6 +2,7 @@ package reika.dragonapi.auxiliary;
 
 import java.util.HashMap;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.material.Fluid;
@@ -50,38 +51,36 @@ public class IconLookupRegistry {
 		return c != null ? (IconEnum)Enum.valueOf(c, s) : null;
 	}
 
-	public static class FluidDelegate implements IconEnum {
+    public record FluidDelegate(Fluid fluid) implements IconEnum {
 
-		public final Fluid fluid;
+        /**
+         * A registry id, or (as 1.7.10 fluid names were) a bare name matched against the fluid registry's paths.
+         */
+        private static Fluid lookup(String name) {
+            Identifier id = Identifier.tryParse(name);
+            if (id != null && BuiltInRegistries.FLUID.containsKey(id))
+                return BuiltInRegistries.FLUID.getValue(id);
+            for (Fluid f : BuiltInRegistries.FLUID) {
+                if (BuiltInRegistries.FLUID.getKey(f).getPath().equals(name))
+                    return f;
+            }
+            return null;
+        }
 
-		public FluidDelegate(Fluid f) {
-			fluid = f;
-		}
+        @Override
+        public String name() {
+            return "forgefluid_" + BuiltInRegistries.FLUID.getKey(fluid);
+        }
 
-		/** A registry id, or (as 1.7.10 fluid names were) a bare name matched against the fluid registry's paths. */
-		private static Fluid lookup(String name) {
-			Identifier id = Identifier.tryParse(name);
-			if (id != null && BuiltInRegistries.FLUID.containsKey(id))
-				return BuiltInRegistries.FLUID.getValue(id);
-			for (Fluid f : BuiltInRegistries.FLUID) {
-				if (BuiltInRegistries.FLUID.getKey(f).getPath().equals(name))
-					return f;
-			}
-			return null;
-		}
+        /**
+         * Client only: the fluid's still texture, from its baked fluid model.
+         */
+        @Override
+        public Identifier getIcon() {
+            return Minecraft.getInstance().getModelManager().getFluidStateModelSet()
+                    .get(fluid.defaultFluidState()).stillMaterial().sprite().contents().name();
+        }
 
-		@Override
-		public String name() {
-			return "forgefluid_"+BuiltInRegistries.FLUID.getKey(fluid);
-		}
-
-		/** Client only: the fluid's still texture, from its baked fluid model. */
-		@Override
-		public Identifier getIcon() {
-			return net.minecraft.client.Minecraft.getInstance().getModelManager().getFluidStateModelSet()
-					.get(fluid.defaultFluidState()).stillMaterial().sprite().contents().name();
-		}
-
-	}
+    }
 
 }

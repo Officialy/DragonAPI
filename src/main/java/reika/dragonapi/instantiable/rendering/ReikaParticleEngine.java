@@ -255,35 +255,31 @@ public abstract class ReikaParticleEngine extends ParticleEngine implements Thro
 
     }
 
-    private static class RenderKey {
+    private record RenderKey(RenderMode mode, TextureMode texture) {
 
-        private final RenderMode mode;
-        private final TextureMode texture;
-
-        private RenderKey(TextureMode s, RenderMode rm) {
-            texture = s;
-            mode = rm;
-        }
-
-        private void apply() {
-            mode.apply();
-            texture.bind();
-        }
-
-        @Override
-        public int hashCode() {
-            return texture.hashCode() ^ mode.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o instanceof RenderKey r) {
-                return texture.equals(r.texture) && mode.equals(r.mode);
+            private RenderKey(TextureMode s, RenderMode rm) {
+                this(rm, s);
             }
-            return false;
-        }
 
-    }
+            private void apply() {
+                mode.apply();
+                texture.bind();
+            }
+
+            @Override
+            public int hashCode() {
+                return texture.hashCode() ^ mode.hashCode();
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (o instanceof RenderKey r) {
+                    return texture.equals(r.texture) && mode.equals(r.mode);
+                }
+                return false;
+            }
+
+        }
 
     public static abstract class TextureMode {
 

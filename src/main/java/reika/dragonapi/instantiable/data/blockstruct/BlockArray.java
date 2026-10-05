@@ -1277,20 +1277,14 @@ public class BlockArray implements Iterable<BlockPos> {
         return new BlockArrayIterator();
     }
 
-    private static class HeightComparator implements Comparator<BlockPos> {
-
-        private final boolean reverse;
-
-        private HeightComparator(boolean rev) {
-            reverse = rev;
-        }
+    private record HeightComparator(boolean reverse) implements Comparator<BlockPos> {
 
         @Override
-        public int compare(BlockPos o1, BlockPos o2) {
-            return reverse ? o2.getY() - o1.getY() : o1.getY() - o2.getY();
-        }
+            public int compare(BlockPos o1, BlockPos o2) {
+                return reverse ? o2.getY() - o1.getY() : o1.getY() - o2.getY();
+            }
 
-    }
+        }
 //
 //    public static abstract class BlockTypePrioritizer implements Comparator<BlockPos> {
 //

@@ -148,7 +148,7 @@ public class CommandableUpdateChecker {
     }
 
     private boolean shouldCheck(DragonAPIMod mod) {
-        return overrides.containsKey(mod) ? overrides.get(mod) : true;
+        return !overrides.containsKey(mod) || overrides.get(mod);
     }
 
     private void getOverrides() {
@@ -499,86 +499,80 @@ public class CommandableUpdateChecker {
             }
         }
 
-        private static class UpdateHash {
+    private record UpdateHash(long timestamp, String filepath, UUID player) {
 
-            private final long timestamp;
-            private final String filepath;
-            private final UUID player;
-
-            private UpdateHash(UUID id, String file, long time) {
-                player = id;
-                filepath = file;
-                timestamp = time;
-            }
-
-            @Override
-			public boolean equals(Object o) {
-				if (o instanceof UpdateHash uh) {
-					return uh.player.equals(player) && java.util.Objects.equals(uh.filepath, filepath);
-				}
-                return false;
-            }
-
-            @Override
-            public String toString() {
-                String time = String.valueOf(timestamp);
-                String id = player.toString();
-                StringBuffer sb = new StringBuffer();
-                int idx = 0;
-                while (idx < time.length() || idx < id.length() || idx < filepath.length()) {
-                    long c1 = idx >= time.length() ? '*' : time.charAt(idx);
-                    long c2 = idx >= id.length() ? '*' : id.charAt(idx);
-                    long c3 = idx >= filepath.length() ? '*' : filepath.charAt(idx);
-                    long sum = c1 | (c2 << 16) | (c3 << 32);
-                    idx++;
-                    //ReikaJavaLibrary.pConsole(c1+" & "+c2+" & "+c3+" > "+sum+" $ "+this.getStringForInt(sum));
-                    sb.append(getStringForInt(sum) + ":");
-                }
-                //ReikaJavaLibrary.pConsole("Final: "+time+" & "+id+" & "+filepath+" > "+sb.toString());
-                return sb.toString();
-            }
-
-            public static UpdateHash decode(String s) {
-                StringBuilder path = new StringBuilder();
-                StringBuilder id = new StringBuilder();
-                StringBuilder time = new StringBuilder();
-                String[] parts = s.split(":");
-                for (int i = 0; i < parts.length; i++) {
-                    String p = parts[i];
-                    long dat = getIntForString(p);
-                    char c1 = (char) (dat & 65535);
-                    char c2 = (char) ((dat >> 16) & 65535);
-                    char c3 = (char) ((dat >> 32) & 65535);
-                    //ReikaJavaLibrary.pConsole(c1+" & "+c2+" & "+c3+" < "+dat+" $ "+p);
-                    if (c1 != '*')
-                        time.append(c1);
-                    if (c2 != '*')
-                        id.append(c2);
-                    if (c3 != '*')
-                        path.append(c3);
-                }
-                //ReikaJavaLibrary.pConsole("Final: "+time+" & "+id+" & "+path+" < "+s);
-                return new UpdateHash(UUID.fromString(id.toString()), path.toString(), Long.parseLong(time.toString()));
-            }
-
-            private static String getStringForInt(long l) {
-                return Long.toString(l, 36);
-            }
-
-            private static long getIntForString(String s) {
-                return Long.parseLong(s, 36);
-            }
-
-            private static final char[] chars = {
-                    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-                    'k', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
-                    'v', 'w', 'x', 'y', 'z', '~', '`', '+', '-', '=',
-                    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',
-                    '[', ']', '{', '}', ';', ':', '<', '>', ',', '.',
-            };
-
+        private UpdateHash(UUID id, String file, long time) {
+            this(time, file, id);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof UpdateHash uh) {
+                return uh.player.equals(player) && Objects.equals(uh.filepath, filepath);
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            String time = String.valueOf(timestamp);
+            String id = player.toString();
+            StringBuffer sb = new StringBuffer();
+            int idx = 0;
+            while (idx < time.length() || idx < id.length() || idx < filepath.length()) {
+                long c1 = idx >= time.length() ? '*' : time.charAt(idx);
+                long c2 = idx >= id.length() ? '*' : id.charAt(idx);
+                long c3 = idx >= filepath.length() ? '*' : filepath.charAt(idx);
+                long sum = c1 | (c2 << 16) | (c3 << 32);
+                idx++;
+                //ReikaJavaLibrary.pConsole(c1+" & "+c2+" & "+c3+" > "+sum+" $ "+this.getStringForInt(sum));
+                sb.append(getStringForInt(sum) + ":");
+            }
+            //ReikaJavaLibrary.pConsole("Final: "+time+" & "+id+" & "+filepath+" > "+sb.toString());
+            return sb.toString();
+        }
+
+        public static UpdateHash decode(String s) {
+            StringBuilder path = new StringBuilder();
+            StringBuilder id = new StringBuilder();
+            StringBuilder time = new StringBuilder();
+            String[] parts = s.split(":");
+            for (int i = 0; i < parts.length; i++) {
+                String p = parts[i];
+                long dat = getIntForString(p);
+                char c1 = (char) (dat & 65535);
+                char c2 = (char) ((dat >> 16) & 65535);
+                char c3 = (char) ((dat >> 32) & 65535);
+                //ReikaJavaLibrary.pConsole(c1+" & "+c2+" & "+c3+" < "+dat+" $ "+p);
+                if (c1 != '*')
+                    time.append(c1);
+                if (c2 != '*')
+                    id.append(c2);
+                if (c3 != '*')
+                    path.append(c3);
+            }
+            //ReikaJavaLibrary.pConsole("Final: "+time+" & "+id+" & "+path+" < "+s);
+            return new UpdateHash(UUID.fromString(id.toString()), path.toString(), Long.parseLong(time.toString()));
+        }
+
+        private static String getStringForInt(long l) {
+            return Long.toString(l, 36);
+        }
+
+        private static long getIntForString(String s) {
+            return Long.parseLong(s, 36);
+        }
+
+        private static final char[] chars = {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+                'k', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
+                'v', 'w', 'x', 'y', 'z', '~', '`', '+', '-', '=',
+                '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',
+                '[', ']', '{', '}', ';', ':', '<', '>', ',', '.',
+        };
+
+    }
 
         private static class VersionNotLoadableException extends RuntimeException {
 

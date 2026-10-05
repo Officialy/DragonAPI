@@ -198,21 +198,13 @@ public abstract class LuaMethod {
 
 	}
 
-	private static class MethodKey {
+    private record MethodKey(String name, Class parent) {
 
-		private final String name;
-		private final Class parent;
+        private MethodKey(LuaMethod m) {
+            this(m.displayName, m.requiredClass);
+        }
 
-		private MethodKey(LuaMethod m) {
-			this(m.displayName, m.requiredClass);
-		}
-
-		private MethodKey(String s, Class c) {
-			name = s;
-			parent = c;
-		}
-
-	}
+    }
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ElementType.TYPE})

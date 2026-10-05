@@ -74,38 +74,22 @@ public class ReflectiveFailureTracker {
 		DragonAPI.LOGGER.error(s);
 	}
 
-	private static class StringLog {
+    private record StringLog(String erroredClass, String error) {
 
-		private final String erroredClass;
-		private final String error;
+        @Override
+        public final String toString() {
+            return error.getClass().getSimpleName() + " \"" + error;
+        }
 
-		private StringLog(String c, String e) {
-			error = e;
-			erroredClass = c;
-		}
+    }
 
-		@Override
-		public final String toString() {
-			return error.getClass().getSimpleName() + " \"" + error;
-		}
+    private record ExceptionLog(String erroredClass, Exception error) {
 
-	}
+        @Override
+        public final String toString() {
+            return error.getClass().getSimpleName() + " \"" + error.getMessage() + "\" thrown from " + erroredClass;
+        }
 
-	private static class ExceptionLog {
-
-		private final String erroredClass;
-		private final Exception error;
-
-		private ExceptionLog(String c, Exception e) {
-			error = e;
-			erroredClass = c;
-		}
-
-		@Override
-		public final String toString() {
-			return error.getClass().getSimpleName() + " \"" + error.getMessage() + "\" thrown from " + erroredClass;
-		}
-
-	}
+    }
 
 }

@@ -45,9 +45,9 @@ public class LightningBolt {
 
 		middle = new DecimalPosition[nsteps + 1];
 		for (int i = 0; i < middle.length; i++) {
-			double dx = p1.xCoord + (p2.xCoord - p1.xCoord) * i / nsteps;
-			double dy = p1.yCoord + (p2.yCoord - p1.yCoord) * i / nsteps;
-			double dz = p1.zCoord + (p2.zCoord - p1.zCoord) * i / nsteps;
+			double dx = p1.xCoord() + (p2.xCoord() - p1.xCoord()) * i / nsteps;
+			double dy = p1.yCoord() + (p2.yCoord() - p1.yCoord()) * i / nsteps;
+			double dz = p1.zCoord() + (p2.zCoord() - p1.zCoord()) * i / nsteps;
 			middle[i] = new DecimalPosition(dx, dy, dz);
 		}
 	}
@@ -112,7 +112,7 @@ public class LightningBolt {
 	}
 
 	public DecimalPosition getPosition(int n) {
-		return new DecimalPosition(middle[n].xCoord + offsets[n][0], middle[n].yCoord + offsets[n][1], middle[n].zCoord + offsets[n][2]);
+		return new DecimalPosition(middle[n].xCoord() + offsets[n][0], middle[n].yCoord() + offsets[n][1], middle[n].zCoord() + offsets[n][2]);
 	}
 
 	@Override

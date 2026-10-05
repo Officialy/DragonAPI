@@ -204,9 +204,7 @@ public final class ReikaGuiAPI extends Screen {
         ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
         if (in == null)
             return;
-        boolean noshape = false;
-        if (ire instanceof ShapelessRecipe)
-            noshape = true;
+        boolean noshape = ire instanceof ShapelessRecipe;
         this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
     }
 
@@ -227,10 +225,8 @@ public final class ReikaGuiAPI extends Screen {
          ItemStack[] in = ReikaRecipeHelper.getPermutedRecipeArray(ire);
          if (in == null)
              return;
-         boolean noshape = false;
-         if (ire instanceof ShapelessRecipe)
-             noshape = true;
-         this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
+         boolean noshape = ire instanceof ShapelessRecipe;
+        this.drawRecipe(render, f, x, y, in, x2, y2, isout, noshape);
     }
 
     /** Draw a crafting recipe in the GUI. Args: x in, y in; items of: top-left, top, top-right, left,

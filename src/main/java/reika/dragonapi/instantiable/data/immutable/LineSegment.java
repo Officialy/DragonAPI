@@ -9,22 +9,12 @@
  ******************************************************************************/
 package reika.dragonapi.instantiable.data.immutable;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import reika.dragonapi.libraries.ReikaDirectionHelper;
 
-public final class LineSegment {
-
-    public final Vec3 origin;
-    public final Vec3 target;
-
-    public LineSegment(Vec3 pos, Vec3 pos2) {
-        origin = pos;
-        target = pos2;
-    }
+public record LineSegment(Vec3 origin, Vec3 target) {
 
     public static LineSegment getFromXYZDir(Vec3 pos, Direction dir, int len) {
         return new LineSegment(pos, new Vec3(pos.x() + len * dir.getStepX(), pos.y() + len * dir.getStepY(), pos.z() + len * dir.getStepZ()));

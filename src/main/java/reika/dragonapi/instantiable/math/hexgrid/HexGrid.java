@@ -219,126 +219,111 @@ public class HexGrid {
 		}
 	}
 
-	public static final class Hex {
+    public record Hex(double size, int q, int r, int s) {
 
-		public final double size;
-		public final int q;
-		public final int r;
-		public final int s;
+        public Hex(double size, int q, int r, int s) {
+            this.size = size;
+            this.q = q;
+            this.r = r;
+            this.s = s;
+            if (q + r + s != 0)
+                throw new IllegalArgumentException("Q, R, and S must sum to zero!");
+        }
 
-		public Hex(double sz, int q, int r, int s) {
-			size = sz;
-			this.q = q;
-			this.r = r;
-			this.s = s;
-			if (q + r + s != 0)
-				throw new IllegalArgumentException("Q, R, and S must sum to zero!");
-		}
+        public Hex scale(int k) {
+            return new Hex(size, q * k, r * k, s * k);
+        }
 
-		public Hex scale(int k) {
-			return new Hex(size, q * k, r * k, s * k);
-		}
+        public Hex getNeighbor(int direction) {
+            return add(size, this, DIRECTIONS.get(direction));
+        }
 
-		public Hex getNeighbor(int direction) {
-			return add(size, this, DIRECTIONS.get(direction));
-		}
+        public Hex diagonalNeighbor(int direction) {
+            return add(size, this, DIAGONALS.get(direction));
+        }
 
-		public Hex diagonalNeighbor(int direction) {
-			return add(size, this, DIAGONALS.get(direction));
-		}
+        public int length() {
+            return (Math.abs(q) + Math.abs(r) + Math.abs(s)) / 2;
+        }
 
-		public int length() {
-			return (Math.abs(q) + Math.abs(r) + Math.abs(s)) / 2;
-		}
+        public Collection<Hex> getNeighbors() {
+            Collection<Hex> c = new HashSet<>();
+            for (Hex h : DIRECTIONS)
+                c.add(add(size, this, h));
+            return c;
+        }
 
-		public Collection<Hex> getNeighbors() {
-			Collection<Hex> c = new HashSet<>();
-			for (Hex h : DIRECTIONS)
-				c.add(add(size, this, h));
-			return c;
-		}
+        public static int distance(double size, Hex a, Hex b) {
+            return subtract(size, a, b).length();
+        }
 
-		public static int distance(double size, Hex a, Hex b) {
-			return subtract(size, a, b).length();
-		}
+        public Hex offset(Hex h) {
+            return add(size, this, h);
+        }
 
-		public Hex offset(Hex h) {
-			return add(size, this, h);
-		}
+        public Hex offset(int q, int r, int s) {
+            return add(size, this, new Hex(size, q, r, s));
+        }
 
-		public Hex offset(int q, int r, int s) {
-			return add(size, this, new Hex(size, q, r, s));
-		}
+        public Hex subtract(Hex h) {
+            return subtract(size, this, h);
+        }
 
-		public Hex subtract(Hex h) {
-			return subtract(size, this, h);
-		}
+        public static Hex add(double size, Hex a, Hex b) {
+            return new Hex(size, a.q + b.q, a.r + b.r, a.s + b.s);
+        }
 
-		public static Hex add(double size, Hex a, Hex b) {
-			return new Hex(size, a.q + b.q, a.r + b.r, a.s + b.s);
-		}
+        public static Hex subtract(double size, Hex a, Hex b) {
+            return new Hex(size, a.q - b.q, a.r - b.r, a.s - b.s);
+        }
 
-		public static Hex subtract(double size, Hex a, Hex b) {
-			return new Hex(size, a.q - b.q, a.r - b.r, a.s - b.s);
-		}
+        @Override
+        public int hashCode() {
+            return (-q * 17 ^ r * 77) * s * 37;
+        }
 
-		@Override
-		public int hashCode() {
-			return (-q * 17 ^ r * 77) * s * 37;
-		}
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Hex h && h.q == q && h.r == r && h.s == s;
+        }
 
-		@Override
-		public boolean equals(Object o) {
-			return o instanceof Hex h && h.q == q && h.r == r && h.s == s;
-		}
+        @Override
+        public String toString() {
+            return q + "," + r + "," + s;
+        }
+    }
 
-		@Override
-		public String toString() {
-			return q + "," + r + "," + s;
-		}
-	}
+    private record FractionalHex(double size, double q, double r, double s) {
 
-	private static final class FractionalHex {
+        /**
+         * Rounds to the nearest cube coordinate, repairing whichever axis drifted furthest.
+         */
+        private Hex hexRound() {
+            int rq = (int) Math.round(q);
+            int rr = (int) Math.round(r);
+            int rs = (int) Math.round(s);
+            double dq = Math.abs(rq - q);
+            double dr = Math.abs(rr - r);
+            double ds = Math.abs(rs - s);
+            if (dq > dr && dq > ds)
+                rq = -rr - rs;
+            else if (dr > ds)
+                rr = -rq - rs;
+            else
+                rs = -rq - rr;
+            return new Hex(size, rq, rr, rs);
+        }
 
-		private final double size;
-		private final double q;
-		private final double r;
-		private final double s;
+        private static FractionalHex lerp(double size, FractionalHex a, FractionalHex b, double t) {
+            return new FractionalHex(size, a.q * (1 - t) + b.q * t, a.r * (1 - t) + b.r * t,
+                    a.s * (1 - t) + b.s * t);
+        }
 
-		private FractionalHex(double sz, double q, double r, double s) {
-			size = sz;
-			this.q = q;
-			this.r = r;
-			this.s = s;
-		}
-
-		/** Rounds to the nearest cube coordinate, repairing whichever axis drifted furthest. */
-		private Hex hexRound() {
-			int rq = (int)Math.round(q);
-			int rr = (int)Math.round(r);
-			int rs = (int)Math.round(s);
-			double dq = Math.abs(rq - q);
-			double dr = Math.abs(rr - r);
-			double ds = Math.abs(rs - s);
-			if (dq > dr && dq > ds)
-				rq = -rr - rs;
-			else if (dr > ds)
-				rr = -rq - rs;
-			else
-				rs = -rq - rr;
-			return new Hex(size, rq, rr, rs);
-		}
-
-		private static FractionalHex lerp(double size, FractionalHex a, FractionalHex b, double t) {
-			return new FractionalHex(size, a.q * (1 - t) + b.q * t, a.r * (1 - t) + b.r * t,
-					a.s * (1 - t) + b.s * t);
-		}
-
-		@Override
-		public String toString() {
-			return q + ", " + r + ", " + s;
-		}
-	}
+        @Override
+        public String toString() {
+            return q + ", " + r + ", " + s;
+        }
+    }
 
 	/** V33a hexLinedraw: the hexes a straight line between two cells passes through. */
 	public static List<Hex> lineDraw(double size, Hex a, Hex b) {
@@ -353,97 +338,61 @@ public class HexGrid {
 		return results;
 	}
 
-	/** Square-grid offset coordinates, for interoperating with rectangular storage. */
-	public static final class OffsetCoord {
+    /**
+     * Square-grid offset coordinates, for interoperating with rectangular storage.
+     */
+    public record OffsetCoord(int col, int row) {
 
-		public static final int EVEN = 1;
-		public static final int ODD = -1;
+        public static final int EVEN = 1;
+        public static final int ODD = -1;
 
-		public final int col;
-		public final int row;
+        public Hex roffsetToCube(double size, int offset) {
+            int q = col - (row + offset * (row & 1)) / 2;
+            return new Hex(size, q, row, -q - row);
+        }
 
-		public OffsetCoord(int col, int row) {
-			this.col = col;
-			this.row = row;
-		}
+        public Hex qoffsetToCube(double size, int offset) {
+            int r = row - (col + offset * (col & 1)) / 2;
+            return new Hex(size, col, r, -col - r);
+        }
 
-		public Hex roffsetToCube(double size, int offset) {
-			int q = col - (row + offset * (row & 1)) / 2;
-			return new Hex(size, q, row, -q - row);
-		}
+        public static OffsetCoord roffsetFromCube(int offset, Hex h) {
+            return new OffsetCoord(h.q + (h.r + offset * (h.r & 1)) / 2, h.r);
+        }
 
-		public Hex qoffsetToCube(double size, int offset) {
-			int r = row - (col + offset * (col & 1)) / 2;
-			return new Hex(size, col, r, -col - r);
-		}
+        public static OffsetCoord qoffsetFromCube(int offset, Hex h) {
+            return new OffsetCoord(h.q, h.r + (h.q + offset * (h.q & 1)) / 2);
+        }
+    }
 
-		public static OffsetCoord roffsetFromCube(int offset, Hex h) {
-			return new OffsetCoord(h.q + (h.r + offset * (h.r & 1)) / 2, h.r);
-		}
+    private record Orientation(double f0, double f1, double f2, double f3, double b0, double b1, double b2, double b3,
+                               double startAngle) {
 
-		public static OffsetCoord qoffsetFromCube(int offset, Hex h) {
-			return new OffsetCoord(h.q, h.r + (h.q + offset * (h.q & 1)) / 2);
-		}
-	}
 
-	private static final class Orientation {
+    }
 
-		private final double f0;
-		private final double f1;
-		private final double f2;
-		private final double f3;
-		private final double b0;
-		private final double b1;
-		private final double b2;
-		private final double b3;
-		private final double startAngle;
+    public record Point(double x, double y) {
 
-		private Orientation(double f0, double f1, double f2, double f3, double b0, double b1,
-				double b2, double b3, double startAngle) {
-			this.f0 = f0;
-			this.f1 = f1;
-			this.f2 = f2;
-			this.f3 = f3;
-			this.b0 = b0;
-			this.b1 = b1;
-			this.b2 = b2;
-			this.b3 = b3;
-			this.startAngle = startAngle;
-		}
+        public Point translate(double dx, double dy) {
+            return new Point(x + dx, y + dy);
+        }
 
-		double startAngle() {
-			return startAngle;
-		}
-	}
+        public Point scale(double d) {
+            return this.scale(d, d);
+        }
 
-	public static final class Point {
+        public Point scale(double sx, double sy) {
+            return new Point(x * sx, y * sy);
+        }
 
-		public final double x;
-		public final double y;
-
-		public Point(double x, double y) {
-			this.x = x;
-			this.y = y;
-		}
-
-		public Point translate(double dx, double dy) {
-			return new Point(x + dx, y + dy);
-		}
-
-		public Point scale(double d) {
-			return this.scale(d, d);
-		}
-
-		public Point scale(double sx, double sy) {
-			return new Point(x * sx, y * sy);
-		}
-
-		/** Rotates about a pivot in the XZ plane, as upstream did through ReikaVectorHelper. */
-		public Point rotate(double r, int ox, int oz) {
-			Vec3 ret = ReikaVectorHelper.rotateVector(new Vec3(x - ox, 0, y - oz), 0, r, 0);
-			return new Point(ox + ret.x, oz + ret.z);
-		}
-	}
+        /**
+         * Rotates about a pivot in the XZ plane, as upstream did through ReikaVectorHelper.
+         */
+        public Point rotate(double r, int ox, int oz) {
+            Vec3 ret = ReikaVectorHelper.rotateVector(new Vec3(x - ox, 0, y - oz), 0, r, 0);
+            return new Point(ox + ret.x, oz + ret.z);
+        }
+    }
 
 	public static final class GridProperties {
 

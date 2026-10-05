@@ -45,7 +45,7 @@ public class CurvedTrajectory {
             while (it.hasNext()) {
                 Trail t = it.next();
                 t.step();
-                if (bounds.asAABB().intersects(t.position.xCoord, t.position.yCoord, t.position.zCoord, t.position.xCoord, t.position.yCoord, t.position.zCoord)) {
+                if (bounds.asAABB().intersects(t.position.xCoord(), t.position.yCoord(), t.position.zCoord(), t.position.xCoord(), t.position.yCoord(), t.position.zCoord())) {
                     Collection<BlockPos> li = ts.getBlocks(t.position);
                     if (li.isEmpty()) {
                         it.remove();

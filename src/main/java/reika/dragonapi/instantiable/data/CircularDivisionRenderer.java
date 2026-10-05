@@ -160,18 +160,12 @@ public abstract class CircularDivisionRenderer<F> {
 
     }
 
-    public static class IntColorCallback implements ColorCallback {
-
-        public final int color;
-
-        public IntColorCallback(int c) {
-            color = c;
-        }
+    public record IntColorCallback(int color) implements ColorCallback {
 
         public int getColor(Object key) {
-            return color;
-        }
+                return color;
+            }
 
-    }
+        }
 
 }

@@ -94,7 +94,7 @@ public class APIPacketHandler implements PacketHandler {
                     DragonAPI.LOGGER.debug("SOUND packet received with " + availableBytes + " bytes available");
                     
                     if (availableBytes < 41) {
-                        DragonAPI.LOGGER.warn("Received an incomplete SOUND packet (only " + availableBytes + " bytes available, need 41). Packet details: " + packet.toString());
+                        DragonAPI.LOGGER.warn("Received an incomplete SOUND packet (only " + availableBytes + " bytes available, need 41). Packet details: " + packet);
                         return;
                     }
                     try {
@@ -319,8 +319,7 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case TILESYNC:
                     BlockEntity te = world.getBlockEntity(new BlockPos(x, y, z));
-                    if (te instanceof BlockEntityBase && !world.isClientSide()) {
-                        BlockEntityBase tile = (BlockEntityBase) te;
+                    if (te instanceof BlockEntityBase tile && !world.isClientSide()) {
                         tile.syncAllData(data[0] > 0);
                     }
                     break;

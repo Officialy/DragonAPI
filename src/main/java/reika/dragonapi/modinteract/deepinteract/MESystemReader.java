@@ -476,7 +476,7 @@ public class MESystemReader implements BasicAEInterface.StackWatcher.Listener {
 	public static boolean sharesCommonTag(ItemStack is1, ItemStack is2) {
 		if (is1.isEmpty() || is2.isEmpty())
 			return false;
-		return is1.getItem().builtInRegistryHolder().tags().anyMatch(t -> "c".equals(t.location().getNamespace()) && is2.is((TagKey<Item>)t));
+		return is1.getItem().builtInRegistryHolder().tags().anyMatch(t -> "c".equals(t.location().getNamespace()) && is2.is(t));
 	}
 
 	public static Collection<IGrid> getAllMENetworks() {
@@ -712,7 +712,7 @@ public class MESystemReader implements BasicAEInterface.StackWatcher.Listener {
 					if (ign2 == null)
 						ign2 = grid.getNodes().iterator().next();
 					IGridNode fake = ign2;
-					me = new MESystemReader(fake, (IActionHost)() -> fake);
+					me = new MESystemReader(fake, () -> fake);
 				}
 			}
 			catch (Exception e) {

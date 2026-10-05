@@ -30,37 +30,29 @@ public final class ProportionedMixMap<V, K> {
 		return data.get(k1, k2);
 	}
 
-	/**
-	 * "Note: this class has a natural ordering that is inconsistent with equals."
-	 */
-	private static final class MixPut<V> implements Comparable<MixPut> {
+    /**
+     * "Note: this class has a natural ordering that is inconsistent with equals."
+     */
+    private record MixPut<V>(V entry, int amount) implements Comparable<MixPut> {
 
-		private final V entry;
-		private final int amount;
+        @Override
+        public int hashCode() {
+            return entry.hashCode() ^ amount;
+        }
 
-		private MixPut(V v, int amt) {
-			entry = v;
-			amount = amt;
-		}
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof MixPut m) {
+                return m.entry.equals(entry) && m.amount == amount;
+            }
+            return false;
+        }
 
-		@Override
-		public int hashCode() {
-			return entry.hashCode() ^ amount;
-		}
+        @Override
+        public int compareTo(MixPut o) {
+            return this.entry == o.entry ? this.amount - o.amount : 0;
+        }
 
-		@Override
-		public boolean equals(Object o) {
-			if (o instanceof MixPut m) {
-				return m.entry.equals(entry) && m.amount == amount;
-			}
-			return false;
-		}
-
-		@Override
-		public int compareTo(MixPut o) {
-			return this.entry == o.entry ? this.amount - o.amount : 0;
-		}
-
-	}
+    }
 
 }

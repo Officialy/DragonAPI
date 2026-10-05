@@ -91,7 +91,7 @@ public class MENetwork {
 
 	@Override
 	public String toString() {
-		return blocks.toString() + " > " + storage;
+		return blocks + " > " + storage;
 	}
 
 	public static MENetwork getFromGridHost(BlockEntity te, IInWorldGridNodeHost host, Direction dir) {

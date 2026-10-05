@@ -176,40 +176,31 @@ public class RemoteSourcedAsset {
 
     }
 
-    public static final class RemoteSourcedAssetRepository {
+    public record RemoteSourcedAssetRepository(String rootClass, String rootPath, String rootRemote, String rootLocal,
+                                               DragonAPIMod owner) {
 
-        public final String rootClass;
-        public final String rootPath;
-        public final String rootRemote;
-        public final String rootLocal;
+            //        private final RemoteAssetLoader.RemoteAssetRepository repository;
 
-        public final DragonAPIMod owner;
-//        private final RemoteAssetLoader.RemoteAssetRepository repository;
+            public RemoteSourcedAssetRepository(DragonAPIMod mod, String c, String r, String l) {
+                this(mod, c, "", r, l);
+            }
 
-        public RemoteSourcedAssetRepository(DragonAPIMod mod, String c, String r, String l) {
-            this(mod, c, "", r, l);
+            public RemoteSourcedAssetRepository(DragonAPIMod mod, String c, String p, String r, String l) {
+
+                this(c, p, r, l, mod);
+    //            repository = new DynamicRemoteAssetRepository();
+            }
+
+            public RemoteSourcedAsset createAsset(String file) {
+                RemoteSourcedAsset rem = new RemoteSourcedAsset(rootClass, rootPath.isEmpty() ? file : rootPath + "/" + file, rootRemote, rootLocal);
+                rem.load();
+                return rem;
+            }
+
+            public void addToAssetLoader() {
+    //            RemoteAssetLoader.instance.registerAssets(repository);
+            }
+
         }
-
-        public RemoteSourcedAssetRepository(DragonAPIMod mod, String c, String p, String r, String l) {
-            rootClass = c;
-            rootLocal = l;
-            rootRemote = r;
-            rootPath = p;
-
-            owner = mod;
-//            repository = new DynamicRemoteAssetRepository();
-        }
-
-        public RemoteSourcedAsset createAsset(String file) {
-            RemoteSourcedAsset rem = new RemoteSourcedAsset(rootClass, rootPath.isEmpty() ? file : rootPath + "/" + file, rootRemote, rootLocal);
-            rem.load();
-            return rem;
-        }
-
-        public void addToAssetLoader() {
-//            RemoteAssetLoader.instance.registerAssets(repository);
-        }
-
-    }
 
 }

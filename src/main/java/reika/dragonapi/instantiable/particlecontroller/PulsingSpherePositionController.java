@@ -56,17 +56,17 @@ public class PulsingSpherePositionController implements PositionController {
 
 	@Override
 	public double getPositionX(Entity e) {
-		return center.xCoord + currentRadius * cartesian[0];
+		return center.xCoord() + currentRadius * cartesian[0];
 	}
 
 	@Override
 	public double getPositionY(Entity e) {
-		return center.yCoord + currentRadius * cartesian[1];
+		return center.yCoord() + currentRadius * cartesian[1];
 	}
 
 	@Override
 	public double getPositionZ(Entity e) {
-		return center.zCoord + currentRadius * cartesian[2];
+		return center.zCoord() + currentRadius * cartesian[2];
 	}
 
 }

@@ -1,26 +1,15 @@
 package reika.dragonapi.libraries.java;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.level.block.Block;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
-import reika.dragonapi.base.DragonAPIMod;
-import reika.dragonapi.exception.IDConflictException;
-import reika.dragonapi.exception.MisuseException;
-import reika.dragonapi.exception.RegistrationException;
 import reika.dragonapi.instantiable.data.maps.PluralMap;
-import reika.dragonapi.interfaces.registry.RegistrationList;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 
 public class ReikaReflectionHelper {
@@ -239,19 +228,13 @@ public class ReikaReflectionHelper {
         boolean isValid(Method m);
     }
 
-    public static final class TypeSelector implements FieldSelector {
-
-        public final Class<?> type;
-
-        public TypeSelector(Class<?> c) {
-            type = c;
-        }
+    public record TypeSelector(Class<?> type) implements FieldSelector {
 
         @Override
-        public boolean isValid(Field f) {
-            return f.getType() == type;
+            public boolean isValid(Field f) {
+                return f.getType() == type;
+            }
         }
-    }
 
     public static boolean checkForField(Class<?> c, String name, int... modifiers) {
         try {

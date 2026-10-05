@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 /** 1.7.10 {@code DirectionalAEInterface}: a {@link BasicAEInterface} that only connects on chosen sides. */
 public class DirectionalAEInterface extends BasicAEInterface {
 
-	private EnumSet<Direction> sideSet;
+	private final EnumSet<Direction> sideSet;
 
 	public DirectionalAEInterface(BlockEntity te, ItemStack is) {
 		this(te, is, EnumSet.noneOf(Direction.class));

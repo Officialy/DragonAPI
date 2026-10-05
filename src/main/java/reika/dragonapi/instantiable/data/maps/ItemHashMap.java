@@ -323,7 +323,7 @@ public final class ItemHashMap<V> {
 
 		@Override
 		public String toString() {
-			return BuiltInRegistries.ITEM.getKey(itemID).toString() + " (" + this.asItemStack().getHoverName().getString() + ")";
+			return BuiltInRegistries.ITEM.getKey(itemID) + " (" + this.asItemStack().getHoverName().getString() + ")";
 		}
 
 		public ItemStack asItemStack() {

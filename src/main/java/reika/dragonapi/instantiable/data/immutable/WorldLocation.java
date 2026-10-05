@@ -5,7 +5,6 @@ import reika.dragonapi.client.ClientEnvironment;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
@@ -24,7 +23,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import reika.dragonapi.interfaces.Location;
 import reika.dragonapi.libraries.ReikaAABBHelper;
@@ -77,7 +75,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public WorldLocation(Level world, DecimalPosition d) {
-        this(world, Mth.floor(d.xCoord), Mth.floor(d.yCoord), Mth.floor(d.zCoord));
+        this(world, Mth.floor(d.xCoord()), Mth.floor(d.yCoord()), Mth.floor(d.zCoord()));
     }
 
     public WorldLocation(Level world, double x, double y, double z) {

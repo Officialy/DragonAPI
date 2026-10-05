@@ -59,7 +59,7 @@ public class ReikaPlayerAPI {
     }
 
     public static boolean isAdmin(ServerPlayer ep) {
-        return ((ServerLevel)ep.level()).getServer().getPlayerList().isOp(ep.nameAndId());
+        return ep.level().getServer().getPlayerList().isOp(ep.nameAndId());
     }
 
 
@@ -96,7 +96,7 @@ public class ReikaPlayerAPI {
     public static List<ServerPlayer> getPlayersWithin(Level world, AABB box) {
         ArrayList<ServerPlayer> li = new ArrayList<>();
         for (Object o : world.players()) {
-            if (o instanceof ServerPlayer ep && ((ServerPlayer)o).getBoundingBox().intersects(box)) {
+            if (o instanceof ServerPlayer ep && ep.getBoundingBox().intersects(box)) {
                 if (ep.getBoundingBox().intersects(box)) {
                     li.add(ep);
                 }

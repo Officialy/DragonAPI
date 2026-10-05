@@ -51,7 +51,15 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
 
     @SubscribeEvent
     public static void unloadWorld(LevelEvent.Unload evt) {
-        breakers.clear();
+        if (evt.getLevel() instanceof ServerLevel level) {
+            Collection<ProgressiveBreaker> active = breakers.get(level.dimension());
+            for (ProgressiveBreaker breaker : List.copyOf(active)) {
+                if (breaker.world == level) {
+                    breaker.terminate();
+                    active.remove(breaker);
+                }
+            }
+        }
     }
 
     public void addBlockPos(Level world, BlockPos pos) {
@@ -81,8 +89,8 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
 
         ArrayList<BlockKey> ids = new ArrayList<>();
 
-        ids.add(new BlockKey(log));
-        ids.add(new BlockKey(leaf));
+        for (var state : log.getStateDefinition().getPossibleStates()) ids.add(new BlockKey(state));
+        for (var state : leaf.getStateDefinition().getPossibleStates()) ids.add(new BlockKey(state));
         int depth = 30;
         // ModWoodList package doesn't exist - commenting out special tree depth handling
         // TODO: Use Tags for wood types / logs & leaves, maybe some way to associate each log with their leaves? idk
@@ -125,21 +133,14 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
     @Override
     public void tick(TickRegistry.TickType type, Object... tickData) {
         Level world = (Level) tickData[0];
-        Collection<ProgressiveBreaker> li = breakers.get(world.dimension());
-        if (li != null) {
-            if (!world.isClientSide()) {
-                Iterator<ProgressiveBreaker> it = li.iterator();
-                while (it.hasNext()) {
-                    ProgressiveBreaker b = it.next();
-                    if (b.isDone) {
-                        it.remove();
-                    } else {
-                        b.tick();
-                    }
-                }
-            } else {
-                li.clear();
-            }
+        if (world.isClientSide()) return;
+        Collection<ProgressiveBreaker> active = breakers.get(world.dimension());
+        Iterator<ProgressiveBreaker> iterator = active.iterator();
+        while (iterator.hasNext()) {
+            ProgressiveBreaker breaker = iterator.next();
+            if (breaker.world != world) continue;
+            if (breaker.isDone) iterator.remove();
+            else breaker.tick();
         }
     }
 
@@ -159,6 +160,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
     }
 
     public void clearBreakers() {
+        for (ProgressiveBreaker breaker : List.copyOf(breakers.allValues(false))) breaker.terminate();
         breakers.clear();
     }
 
@@ -191,7 +193,10 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         public int fortune = 0;
         public boolean silkTouch = false;
         public boolean drops = true;
-        public ManagedItemHandler dropInventory = new ManagedItemHandler();
+        public ManagedItemHandler dropInventory;
+        /** Optional modern loot tool and insertion callback, preserving components and enchantments. */
+        public ItemStack lootTool;
+        public java.util.function.BiConsumer<BlockPos, ItemStack> dropConsumer;
         public Player player;
         public float hungerFactor = 1;
         public BlockBox bounds = BlockBox.infinity();
@@ -240,10 +245,18 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
 
         private ProgressiveBreaker(Level world, BlockPos pos, int depth) {
             this(world, pos, world.getBlockState(pos).getBlock(), depth);
+            ids.clear();
+            ids.add(BlockKey.getAt(world, pos));
         }
 
         public void addBlock(BlockKey bk) {
             ids.add(bk);
+        }
+
+        public void setBlocks(boolean blacklist, Collection<BlockKey> blocks) {
+            ids.clear();
+            ids.addAll(blocks);
+            isBlacklist = blacklist;
         }
 
         public void setBlacklist(BlockKey... keys) {
@@ -271,6 +284,8 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                     BlockPos c = start.getNthBlock(i);
                     if (excluded.contains(c))
                         continue;
+                    // Revalidate queued states: the world can change between breadth-first waves.
+                    if (!this.canSpreadTo(world, c)) continue;
                     Block b = world.getBlockState(c).getBlock();
                     if (b == Blocks.AIR && !breakAir)
                         continue;
@@ -317,6 +332,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         }
 
         private void finish() {
+            if (isDone) return;
             isDone = true;
             if (call != null) {
                 call.onFinish(this);
@@ -342,8 +358,8 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
             if (id == Blocks.AIR && !breakAir)
                 return false;
             if (!isOmni) {
-                BlockKey bk = new BlockKey(id);
-                return ids.contains(bk) || passThrough.contains(bk);
+                BlockKey bk = BlockKey.getAt(world, pos);
+                return (isBlacklist != ids.contains(bk)) || passThrough.contains(bk);
             }
             return player == null || (!world.isClientSide() && ReikaPlayerAPI.playerCanBreakAt((ServerLevel) world, pos, (ServerPlayer) player));
         }
@@ -351,8 +367,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         private void dropBlock(Level world, BlockPos pos) {
             Block id = world.getBlockState(pos).getBlock();
 
-            boolean pass = !doBreak || passThrough.contains(new BlockKey(id));
-            DragonAPI.LOGGER.info("pass=" + pass);
+            boolean pass = !doBreak || passThrough.contains(BlockKey.getAt(world, pos));
             if (!pass && id != Blocks.AIR) {
                 if (drops) {
                     ArrayList<ItemStack> drops = new ArrayList<>();
@@ -366,6 +381,9 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                         }
                     } else if (id instanceof MachineRegistryBlock) {
                         drops.add(((MachineRegistryBlock) id).getMachine(world, pos).getBlockState().getBlock().asItem().getDefaultInstance());
+                    } else if (lootTool != null && world instanceof ServerLevel level) {
+                        drops.addAll(Block.getDrops(world.getBlockState(pos), level, pos,
+                                world.getBlockEntity(pos), player, lootTool));
                     } else {
                         if (silkTouch && id.canHarvestBlock(id.defaultBlockState(), world, pos, player)) {
                             ItemStack silk = ReikaBlockHelper.getSilkTouch(world, pos, id, player, dropFluids);
@@ -377,6 +395,10 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                             drops.addAll(ReikaWorldHelper.getDropsAt(world, pos, fortune, player));
                     }
                     for (ItemStack is : drops) {
+                        if (dropConsumer != null) {
+                            dropConsumer.accept(pos, is);
+                            continue;
+                        }
                         boolean flag = false;
                         if (dropInventory != null) {
                             // Try to add directly to inventory instead of using ItemEntityPickupEvent
@@ -401,11 +423,8 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
             if (call != null)
                 call.onPreBreak(this, world, pos, id);
             if (!pass && id != Blocks.AIR) {
-                world.setBlock(pos, Blocks.AIR.defaultBlockState(), 0, causeUpdates ? 3 : 2);
+                world.setBlock(pos, Blocks.AIR.defaultBlockState(), causeUpdates ? Block.UPDATE_ALL : Block.UPDATE_CLIENTS);
             }
-            if (!pass && causeUpdates)
-                world.sendBlockUpdated(pos, id.defaultBlockState(), id.defaultBlockState(), 3);
-//                world.markBlockForUpdate(pos);
             if (!pass && player != null) {
                 player.awardStat(Stats.BLOCK_MINED.get(id), 1);
                 player.causeFoodExhaustion(0.025F * hungerFactor);

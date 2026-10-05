@@ -267,9 +267,7 @@ public class RemoteAssetLoader {
                 li.add("File list for remote asset repository '" + this.getDisplayName() + "'");
                 li.add("Downloaded from " + this.getRepositoryURL() + " to " + this.getLocalStorageFolder());
                 int n = li.get(li.size() - 1).length();
-                StringBuilder sb = new StringBuilder();
-                sb.append("=".repeat(n));
-                li.add(sb.toString());
+                li.add("=".repeat(n));
                 for (RemoteAsset a : assets) {
                     li.add(a.getDisplayName() + " -> " + a.getLocalPath() + " {Size=" + a.data.size + " B,  Hash=" + a.data.hash + "}");
                 }
@@ -397,15 +395,7 @@ public class RemoteAssetLoader {
 
     }
 
-    private static class BigWarning {
-
-        private final String message;
-        private final RemoteAssetRepository repository;
-
-        private BigWarning(String msg, RemoteAssetRepository rar) {
-            message = msg;
-            repository = rar;
-        }
+    private record BigWarning(String message, RemoteAssetRepository repository) {
 
     }
 

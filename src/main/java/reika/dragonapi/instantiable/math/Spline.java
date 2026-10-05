@@ -70,11 +70,11 @@ public class Spline {
 
     private void renderPoints(VertexConsumer renderer, PoseStack.Pose pose, List<DecimalPosition> li, double x, double y, double z, boolean closed, int r, int g, int b, int a) {
         for (DecimalPosition d : li) {
-            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a).setLineWidth(1.0F);
+            renderer.addVertex(pose, (float)(x + d.xCoord()), (float)(y + d.yCoord()), (float)(z + d.zCoord())).setColor(r, g, b, a).setLineWidth(1.0F);
         }
         if (closed) {
             DecimalPosition d = li.get(0);
-            renderer.addVertex(pose, (float)(x + d.xCoord), (float)(y + d.yCoord), (float)(z + d.zCoord)).setColor(r, g, b, a).setLineWidth(1.0F);
+            renderer.addVertex(pose, (float)(x + d.xCoord()), (float)(y + d.yCoord()), (float)(z + d.zCoord())).setColor(r, g, b, a).setLineWidth(1.0F);
         }
     }
 
@@ -131,26 +131,26 @@ public class Spline {
             // the first and last segments
 
             // Get the change in x and y between the first and second DecimalPositioninates.
-            double dx = vertices.get(1).xCoord - vertices.get(0).xCoord;
-            double dy = vertices.get(1).yCoord - vertices.get(0).yCoord;
-            double dz = vertices.get(1).zCoord - vertices.get(0).zCoord;
+            double dx = vertices.get(1).xCoord() - vertices.get(0).xCoord();
+            double dy = vertices.get(1).yCoord() - vertices.get(0).yCoord();
+            double dz = vertices.get(1).zCoord() - vertices.get(0).zCoord();
 
             // Then using the change, extrapolate backwards to find a control point.
-            double x1 = vertices.get(0).xCoord - dx;
-            double y1 = vertices.get(0).yCoord - dy;
-            double z1 = vertices.get(0).zCoord - dz;
+            double x1 = vertices.get(0).xCoord() - dx;
+            double y1 = vertices.get(0).yCoord() - dy;
+            double z1 = vertices.get(0).zCoord() - dz;
 
             // Actaully create the start point from the extrapolated values.
             DecimalPosition start = new DecimalPosition(x1, y1, z1);
 
             // Repeat for the end control point.
             int n = vertices.size() - 1;
-            dx = vertices.get(n).xCoord - vertices.get(n - 1).xCoord;
-            dy = vertices.get(n).yCoord - vertices.get(n - 1).yCoord;
-            dz = vertices.get(n).zCoord - vertices.get(n - 1).zCoord;
-            double xn = vertices.get(n).xCoord + dx;
-            double yn = vertices.get(n).yCoord + dy;
-            double zn = vertices.get(n).zCoord + dz;
+            dx = vertices.get(n).xCoord() - vertices.get(n - 1).xCoord();
+            dy = vertices.get(n).yCoord() - vertices.get(n - 1).yCoord();
+            dz = vertices.get(n).zCoord() - vertices.get(n - 1).zCoord();
+            double xn = vertices.get(n).xCoord() + dx;
+            double yn = vertices.get(n).yCoord() + dy;
+            double zn = vertices.get(n).zCoord() + dz;
             DecimalPosition end = new DecimalPosition(xn, yn, zn);
 
             // insert the start control point at the start of the vertices list.
@@ -207,9 +207,9 @@ public class Spline {
         double[] z = new double[4];
         double[] time = new double[4];
         for (int i = 0; i < 4; i++) {
-            x[i] = points.get(index + i).xCoord;
-            y[i] = points.get(index + i).yCoord;
-            z[i] = points.get(index + i).zCoord;
+            x[i] = points.get(index + i).xCoord();
+            y[i] = points.get(index + i).yCoord();
+            z[i] = points.get(index + i).zCoord();
             time[i] = i;
         }
 
@@ -322,7 +322,7 @@ public class Spline {
         }
 
         public BasicSplinePoint(DecimalPosition p) {
-            this(p.xCoord, p.yCoord, p.zCoord);
+            this(p.xCoord(), p.yCoord(), p.zCoord());
         }
 
         public BasicSplinePoint setRelativeTo(double x, double y, double z) {
@@ -362,7 +362,7 @@ public class Spline {
         private double targetZ;
 
         public BasicVariablePoint(DecimalPosition pos, double var, double vel) {
-            super(pos.xCoord, pos.yCoord, pos.zCoord);
+            super(pos.xCoord(), pos.yCoord(), pos.zCoord());
             origin = pos;
             variance = var;
             velocity = vel;
@@ -398,9 +398,9 @@ public class Spline {
         }
 
         private void pickNewTarget() {
-            targetX = ReikaRandomHelper.getRandomPlusMinus(origin.xCoord, variance);
-            targetY = ReikaRandomHelper.getRandomPlusMinus(origin.yCoord, variance);
-            targetZ = ReikaRandomHelper.getRandomPlusMinus(origin.zCoord, variance);
+            targetX = ReikaRandomHelper.getRandomPlusMinus(origin.xCoord(), variance);
+            targetY = ReikaRandomHelper.getRandomPlusMinus(origin.yCoord(), variance);
+            targetZ = ReikaRandomHelper.getRandomPlusMinus(origin.zCoord(), variance);
         }
 
         @Override

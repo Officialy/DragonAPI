@@ -266,32 +266,27 @@ public class BiomeMapCommand {
 
     }
 
-    private static class WorldBiomes implements BiomeProvider {
+    private record WorldBiomes(Level world) implements BiomeProvider {
 
-        private final Level world;
+            /*
+            @Override
+            public String getFileName(long seed, String name, int x, int z, int range, int res, int grid, boolean fullGrid) {
+            }*/
 
-        private WorldBiomes(Level world) {
-            this.world = world;
-        }
-		/*
-		@Override
-		public String getFileName(long seed, String name, int x, int z, int range, int res, int grid, boolean fullGrid) {
-		}*/
-
-        @Override
-        public Biome getBiome(int x, int z) {
-            if (world instanceof CustomBiomeDistributionWorld) {
-                return ((CustomBiomeDistributionWorld) world).getBiomeID(world, x, z);
+            @Override
+            public Biome getBiome(int x, int z) {
+                if (world instanceof CustomBiomeDistributionWorld) {
+                    return ((CustomBiomeDistributionWorld) world).getBiomeID(world, x, z);
+                }
+                return world.getBiomeManager().getBiome(new BlockPos(x, 100, z)).value();
             }
-            return world.getBiomeManager().getBiome(new BlockPos(x, 100, z)).value();
-        }
 
-        @Override
-        public String getName() {
-            return world.getLevelData().toString();//todo.getWorldName() + "/[" + world.getSaveHandler().getWorldDirectoryName() + "]";
-        }
+            @Override
+            public String getName() {
+                return world.getLevelData().toString();//todo.getWorldName() + "/[" + world.getSaveHandler().getWorldDirectoryName() + "]";
+            }
 
-    }
+        }
 
 /*    private static class SeedBiomes implements BiomeProvider {
 

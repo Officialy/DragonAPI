@@ -4,14 +4,10 @@ import net.minecraft.world.Container;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public class InventorySlot {
-
-    public final Container inventory;
-    public final int slot;
+public record InventorySlot(Container inventory, int slot) {
 
     public InventorySlot(int slot, Container inv) {
-        inventory = inv;
-        this.slot = slot;
+        this(inv, slot);
     }
 
     public ItemStack getStack() {
@@ -23,12 +19,12 @@ public class InventorySlot {
         return is != null ? is.getCount() : 0;
     }
 
-	public int decrement(int amt) {
-		ItemStack is = this.getStack();
-		if (is == null || is.isEmpty() || amt <= 0)
-			return 0;
-		int ret = Math.min(amt, is.getCount());
-		is.shrink(ret);
+    public int decrement(int amt) {
+        ItemStack is = this.getStack();
+        if (is == null || is.isEmpty() || amt <= 0)
+            return 0;
+        int ret = Math.min(amt, is.getCount());
+        is.shrink(ret);
         if (is.getCount() <= 0)
             inventory.setItem(slot, ItemStack.EMPTY);
         return ret;

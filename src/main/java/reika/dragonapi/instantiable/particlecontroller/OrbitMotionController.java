@@ -58,17 +58,17 @@ public class OrbitMotionController implements PositionController {
 
 	@Override
 	public double getPositionX(Entity e) {
-		return position.xCoord;
+		return position.xCoord();
 	}
 
 	@Override
 	public double getPositionY(Entity e) {
-		return position.yCoord;
+		return position.yCoord();
 	}
 
 	@Override
 	public double getPositionZ(Entity e) {
-		return position.zCoord;
+		return position.zCoord();
 	}
 
 }

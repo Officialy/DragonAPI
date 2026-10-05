@@ -63,7 +63,7 @@ public abstract class AbstractSearch {
 
     public interface FixedPositionTarget {
 
-        BlockPos getTarget();
+        BlockPos target();
 
     }
 
@@ -73,25 +73,14 @@ public abstract class AbstractSearch {
 
     }
 
-    public static final class LocationTerminus implements TerminationCondition, FixedPositionTarget {
-
-        public final BlockPos target;
-
-        public LocationTerminus(BlockPos c) {
-            target = c;
-        }
+    public record LocationTerminus(BlockPos target) implements TerminationCondition, FixedPositionTarget {
 
         @Override
-        public boolean isValidTerminus(Level world, BlockPos pos) {
-            return target.equals(pos);
-        }
+            public boolean isValidTerminus(Level world, BlockPos pos) {
+                return target.equals(pos);
+            }
 
-        @Override
-        public BlockPos getTarget() {
-            return target;
         }
-
-    }
 
     public static final class CompoundPropagationCondition implements PropagationCondition {
 
@@ -132,24 +121,16 @@ public abstract class AbstractSearch {
 
     }
 
-    public static final class DirectionalPropagation implements PropagationCondition {
-
-        public final BlockPos location;
-        public final boolean requireCloser;
-
-        public DirectionalPropagation(BlockPos c, boolean cl) {
-            location = c;
-            requireCloser = cl;
-        }
+    public record DirectionalPropagation(BlockPos location, boolean requireCloser) implements PropagationCondition {
 
         @Override
-        public boolean isValidLocation(Level world, BlockPos pos, BlockPos from) {
-            int d0 = new WorldLocation(world, from).getTaxicabDistanceTo(location);
-            int d1 = new WorldLocation(world, pos).getTaxicabDistanceTo(location);
-            return requireCloser ? d1 < d0 : d0 < d1;
-        }
+            public boolean isValidLocation(Level world, BlockPos pos, BlockPos from) {
+                int d0 = new WorldLocation(world, from).getTaxicabDistanceTo(location);
+                int d1 = new WorldLocation(world, pos).getTaxicabDistanceTo(location);
+                return requireCloser ? d1 < d0 : d0 < d1;
+            }
 
-    }
+        }
 
     public static final class WalkablePropagation implements PropagationCondition {
 

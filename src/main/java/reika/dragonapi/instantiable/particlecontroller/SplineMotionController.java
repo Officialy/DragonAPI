@@ -67,17 +67,17 @@ public class SplineMotionController implements PositionController {
 
 	@Override
 	public double getPositionX(Entity e) {
-		return points.get(this.getIndex(e)).xCoord;
+		return points.get(this.getIndex(e)).xCoord();
 	}
 
 	@Override
 	public double getPositionY(Entity e) {
-		return points.get(this.getIndex(e)).yCoord;
+		return points.get(this.getIndex(e)).yCoord();
 	}
 
 	@Override
 	public double getPositionZ(Entity e) {
-		return points.get(this.getIndex(e)).zCoord;
+		return points.get(this.getIndex(e)).zCoord();
 	}
 
 }

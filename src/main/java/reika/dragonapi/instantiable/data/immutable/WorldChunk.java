@@ -12,11 +12,10 @@ import net.minecraft.world.level.chunk.LevelChunk;
 
 import reika.dragonapi.libraries.io.NBTCompat;
 
-/** Immutable chunk coordinate paired with its 26.2 dimension key. */
-public final class WorldChunk {
-
-    public final ResourceKey<Level> dimension;
-    public final ChunkPos chunk;
+/**
+ * Immutable chunk coordinate paired with its 26.2 dimension key.
+ */
+public record WorldChunk(ResourceKey<Level> dimension, ChunkPos chunk) {
 
     public WorldChunk(Level world, LevelChunk chunk) {
         this(world, chunk.getPos());
@@ -39,13 +38,17 @@ public final class WorldChunk {
         this.chunk = Objects.requireNonNull(chunk, "chunk");
     }
 
-    /** Compatibility reader for V33a's three vanilla numeric dimension ids. */
+    /**
+     * Compatibility reader for V33a's three vanilla numeric dimension ids.
+     */
     @Deprecated
     public WorldChunk(int dimensionId, int x, int z) {
         this(dimensionKeyFromLegacyId(dimensionId), x, z);
     }
 
-    /** Compatibility reader for V33a's three vanilla numeric dimension ids. */
+    /**
+     * Compatibility reader for V33a's three vanilla numeric dimension ids.
+     */
     @Deprecated
     public WorldChunk(int dimensionId, ChunkPos chunk) {
         this(dimensionKeyFromLegacyId(dimensionId), chunk);
@@ -66,11 +69,6 @@ public final class WorldChunk {
         return value instanceof WorldChunk other
                 && dimension.equals(other.dimension)
                 && chunk.equals(other.chunk);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(dimension, chunk);
     }
 
     @Override

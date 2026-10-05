@@ -53,7 +53,7 @@ public abstract class NoiseGeneratorBase {
 
         if (!octaves.isEmpty()) {
             for (Octave o : octaves) {
-                val += this.calcValue(x + o.phaseShift, y + o.phaseShift, z + o.phaseShift, o.frequency, o.amplitude);
+                val += this.calcValue(x + o.phaseShift(), y + o.phaseShift(), z + o.phaseShift(), o.frequency(), o.amplitude());
             }
             if (clampEdge)
                 val = Mth.clamp(val, -1, 1);

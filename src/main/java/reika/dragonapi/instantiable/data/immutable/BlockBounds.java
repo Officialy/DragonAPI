@@ -1,9 +1,7 @@
 package reika.dragonapi.instantiable.data.immutable;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.AABB;
 import reika.dragonapi.libraries.io.NBTCompat;
@@ -12,27 +10,21 @@ import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
 import java.util.ArrayList;
 
-public class BlockBounds {
-
-    public final double negativeX;
-    public final double negativeY;
-    public final double negativeZ;
-    public final double positiveX;
-    public final double positiveY;
-    public final double positiveZ;
+public record BlockBounds(double negativeX, double negativeY, double negativeZ, double positiveX, double positiveY,
+                          double positiveZ) {
 
     /*public static BlockBounds fromBlock(Block b, BlockGetter world, BlockPos pos) {
         b.setBlockBoundsBasedOnState(world, pos);
         return new BlockBounds(b.getBlockBoundsMinX(), b.getBlockBoundsMinY(), b.getBlockBoundsMinZ(), b.getBlockBoundsMaxX(), b.getBlockBoundsMaxY(), b.getBlockBoundsMaxZ());
     }*/
 
-    public BlockBounds(double nx, double ny, double nz, double px, double py, double pz) {
-        negativeX = Math.max(0, nx);
-        negativeY = Math.max(0, ny);
-        negativeZ = Math.max(0, nz);
-        positiveX = Math.min(1, px);
-        positiveY = Math.min(1, py);
-        positiveZ = Math.min(1, pz);
+    public BlockBounds(double negativeX, double negativeY, double negativeZ, double positiveX, double positiveY, double positiveZ) {
+        this.negativeX = Math.max(0, negativeX);
+        this.negativeY = Math.max(0, negativeY);
+        this.negativeZ = Math.max(0, negativeZ);
+        this.positiveX = Math.min(1, positiveX);
+        this.positiveY = Math.min(1, positiveY);
+        this.positiveZ = Math.min(1, positiveZ);
         this.verify();
     }
 

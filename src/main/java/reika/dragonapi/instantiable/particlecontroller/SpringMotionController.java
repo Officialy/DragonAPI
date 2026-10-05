@@ -44,17 +44,17 @@ public class SpringMotionController implements PositionController {
 
 	@Override
 	public double getPositionX(Entity e) {
-		return origin.xCoord + linearPosition * xComponent;
+		return origin.xCoord() + linearPosition * xComponent;
 	}
 
 	@Override
 	public double getPositionY(Entity e) {
-		return origin.yCoord + linearPosition * yComponent;
+		return origin.yCoord() + linearPosition * yComponent;
 	}
 
 	@Override
 	public double getPositionZ(Entity e) {
-		return origin.zCoord + linearPosition * zComponent;
+		return origin.zCoord() + linearPosition * zComponent;
 	}
 
 }

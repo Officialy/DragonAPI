@@ -1005,22 +1005,20 @@ public final class ReikaJavaLibrary {
 
     }
 
-    private static class FallbackComparator implements Comparator<Object> {
+    private record FallbackComparator(boolean useDefaultCompare) implements Comparator<Object> {
 
-        private final boolean useDefaultCompare;
+            private FallbackComparator(Class<?> test) {
+                this(Comparable.class.isAssignableFrom(test));
+            }
 
-        private FallbackComparator(Class<?> test) {
-            useDefaultCompare = Comparable.class.isAssignableFrom(test);
+            @Override
+            public int compare(Object o1, Object o2) {
+                if (useDefaultCompare)
+                    return ((Comparable<Object>) o1).compareTo(o2);
+                else
+                    return Integer.compare(o1.hashCode(), o2.hashCode());
+            }
+
         }
-
-        @Override
-        public int compare(Object o1, Object o2) {
-            if (useDefaultCompare)
-                return ((Comparable<Object>) o1).compareTo(o2);
-            else
-                return Integer.compare(o1.hashCode(), o2.hashCode());
-        }
-
-    }
 }
 

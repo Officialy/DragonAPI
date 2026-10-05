@@ -36,7 +36,7 @@ public class DelayedKnockback implements ScheduledEvent {
 	@Override
 	public void fire() {
 		if (target.isAlive())
-			ReikaEntityHelper.knockbackEntityFromPos(position.xCoord, position.yCoord, position.zCoord, target, amount, exponent);
+			ReikaEntityHelper.knockbackEntityFromPos(position.xCoord(), position.yCoord(), position.zCoord(), target, amount, exponent);
 	}
 
 	@Override

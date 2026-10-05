@@ -10,11 +10,9 @@
 package reika.dragonapi.extras;
 
 import reika.dragonapi.base.DragonAPIMod;
-import reika.dragonapi.exception.InstallationException;
 import reika.dragonapi.libraries.java.ReikaStringParser;
 import reika.dragonapi.libraries.java.SemanticVersionParser;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
@@ -165,7 +163,7 @@ public class ModVersion implements Comparable<ModVersion> {
 
 	public static ModVersion fromSemanticVersion(String s) {
 		SemanticVersionParser.SemanticVersion sm = SemanticVersionParser.getVersion(s);
-		int[] ver = sm.getVersions();
+		int[] ver = sm.versions();
 		int major = ver.length > 0 ? ver[0] : 1 ;
 		int minor = ver.length > 1 ? ver[1] : 1;
 		return new ModVersion(major, Character.toChars('a' - 1 + minor)[0]);

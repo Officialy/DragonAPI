@@ -53,54 +53,42 @@ public abstract class PiecewiseExpression extends MathExpression {
 		return sb.toString();
 	}
 
-	private static class Range implements Comparable<Range> {
+    private record Range(double lowerLimit, double upperLimit, boolean inclLower,
+                         boolean inclUpper) implements Comparable<Range> {
 
-		private final double lowerLimit;
-		private final double upperLimit;
-		private final boolean inclLower;
-		private final boolean inclUpper;
+        public boolean contains(double arg) {
+            if (arg > lowerLimit && arg < upperLimit)
+                return true;
+            if (arg == lowerLimit)
+                return inclLower;
+            if (arg == upperLimit)
+                return inclUpper;
+            return false;
+        }
 
-		private Range(double l, double h, boolean il, boolean iu) {
-			lowerLimit = l;
-			upperLimit = h;
+        @Override
+        public int compareTo(Range o) {
+            return (int) (lowerLimit * 100);
+        }
 
-			inclLower = il;
-			inclUpper = iu;
-		}
+        @Override
+        public int hashCode() {
+            return (int) (lowerLimit * 100) ^ (int) (upperLimit * 100) + (inclLower ? 50000 : 0) + (inclUpper ? 1000000 : 0);
+        }
 
-		public boolean contains(double arg) {
-			if (arg > lowerLimit && arg < upperLimit)
-				return true;
-			if (arg == lowerLimit)
-				return inclLower;
-			if (arg == upperLimit)
-				return inclUpper;
-			return false;
-		}
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof Range r) {
+                return r.lowerLimit == lowerLimit && r.upperLimit == upperLimit && r.inclLower == inclLower && r.inclUpper == inclUpper;
+            }
+            return false;
+        }
 
-		@Override
-		public int compareTo(Range o) {
-			return (int) (lowerLimit * 100);
-		}
+        @Override
+        public final String toString() {
+            return (inclLower ? "[" : "(") + lowerLimit + "," + upperLimit + (inclUpper ? "]" : ")");
+        }
 
-		@Override
-		public int hashCode() {
-			return (int) (lowerLimit * 100) ^ (int) (upperLimit * 100) + (inclLower ? 50000 : 0) + (inclUpper ? 1000000 : 0);
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (o instanceof Range r) {
-				return r.lowerLimit == lowerLimit && r.upperLimit == upperLimit && r.inclLower == inclLower && r.inclUpper == inclUpper;
-			}
-			return false;
-		}
-
-		@Override
-		public final String toString() {
-			return (inclLower ? "[" : "(") + lowerLimit + "," + upperLimit + (inclUpper ? "]" : ")");
-		}
-
-	}
+    }
 
 }

@@ -88,7 +88,7 @@ public class ReikaRecipeHelper {
    }
 
 
-   public static interface ReplacementCallback {
+   public interface ReplacementCallback {
 
        void onReplaced(Recipe<?> ir, int slot, Object from, Object to);
 
@@ -192,8 +192,7 @@ public class ReikaRecipeHelper {
        for (Object o : c) {
            if (o == null)
                continue;
-           if (o instanceof ItemStack) {
-               ItemStack is = (ItemStack) o;
+           if (o instanceof ItemStack is) {
                ret.add(is);
            } else if (o instanceof Collection) {
                ret.addAll((Collection<? extends ItemStack>) o);
@@ -207,8 +206,7 @@ public class ReikaRecipeHelper {
        for (Object o : c) {
            if (o == null)
                continue;
-           if (o instanceof ItemStack) {
-               ItemStack is = (ItemStack) o;
+           if (o instanceof ItemStack is) {
                ret.add(is);
            }
        }
@@ -278,8 +276,7 @@ public class ReikaRecipeHelper {
 
        ItemStack[] in = new ItemStack[9];
        if (r.width == 3 && r.height == 3) {
-           for (int i = 0; i < 9; i++)
-               in[i] = add[i];
+           System.arraycopy(add, 0, in, 0, 9);
        }
        if (r.width == 1 && r.height == 1) {
            in[4] = add[0];
@@ -339,8 +336,7 @@ public class ReikaRecipeHelper {
            ReikaJavaLibrary.dumpStack();
            return null;
        }
-       if (ire instanceof ShapedRecipe) {
-           ShapedRecipe r = (ShapedRecipe) ire;
+       if (ire instanceof ShapedRecipe r) {
            num = getRecipeIngredients(r).size();
            w = r.getWidth();
            h = r.getHeight();
@@ -349,8 +345,7 @@ public class ReikaRecipeHelper {
                isin[i] = getRecipeItemStack(is.items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)[i], client);
            }
 
-       } else if (ire instanceof ShapelessRecipe) {
-           ShapelessRecipe sr = (ShapelessRecipe) ire;
+       } else if (ire instanceof ShapelessRecipe sr) {
            //DragonAPI.LOGGER.info(ire);
            for (int i = 0; i < getRecipeIngredients(sr).size(); i++) {
                ItemStack is = getRecipeIngredients(sr).get(i).items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)[i]; //todo check array i
@@ -358,9 +353,8 @@ public class ReikaRecipeHelper {
            }
            w = getRecipeIngredients(sr).size() >= 3 ? 3 : getRecipeIngredients(sr).size();
            h = (getRecipeIngredients(sr).size() + 2) / 3;
-       } else if (ire instanceof SmeltingRecipe) {
-              SmeltingRecipe sr = (SmeltingRecipe) ire;
-              ItemStack is = getRecipeOutput(sr);
+       } else if (ire instanceof SmeltingRecipe sr) {
+           ItemStack is = getRecipeOutput(sr);
               isin[0] = getRecipeItemStack(is, client);
               w = 1;
               h = 1;
@@ -412,13 +406,12 @@ public class ReikaRecipeHelper {
 
 //        ir = getTEWrappedRecipe(ir);
 
-       if (ir instanceof ShapedRecipe) {
+       if (ir instanceof ShapedRecipe s) {
            if (!(replacement instanceof ItemStack)) {
                throw new MisuseException("You cannot put non-single-stack entries into a basic recipe type!");
            }
            if (ReikaItemHelper.matchStacks(ingredient, replacement)) //not replacing self with self
                return false;
-           ShapedRecipe s = (ShapedRecipe) ir;
            List<Optional<Ingredient>> in = s.getIngredients();
            for (int i = 0; i < in.size(); i++) {
                Ingredient old = in.get(i).orElse(null);
@@ -431,13 +424,12 @@ public class ReikaRecipeHelper {
            }
            if (flag)
                clearPlacementInfo(s);
-       } else if (ir instanceof ShapelessRecipe) {
+       } else if (ir instanceof ShapelessRecipe s) {
            if (!(replacement instanceof ItemStack)) {
                throw new MisuseException("You cannot put non-single-stack entries into a basic recipe type!");
            }
            if (ReikaItemHelper.matchStacks(ingredient, replacement)) //not replacing self with self
                return false;
-           ShapelessRecipe s = (ShapelessRecipe) ir;
            List<Ingredient> in = getRecipeIngredients(s);
            for (int i = 0; i < in.size(); i++) {
                if (ReikaItemHelper.matchStacks(ingredient, in.get(i))) {
@@ -863,8 +855,7 @@ public class ReikaRecipeHelper {
        /*if (ire instanceof ShapedRecipe) {
            ShapedRecipe r = (ShapedRecipe) ire;
            return new ShapedRecipe(null, "", ((ShapelessRecipe) ire).category(), ((ShapedRecipe) ire).getWidth(), ((ShapedRecipe) ire).getHeight(), decode1DArray(getRecipeIngredients(r), r.getWidth(), r.getHeight()), getRecipeOutput(ire));
-       } else */if (ire instanceof ShapelessRecipe) {
-           ShapelessRecipe sr = (ShapelessRecipe) ire;
+       } else */if (ire instanceof ShapelessRecipe sr) {
            List<Ingredient> in = getRecipeIngredients(sr);
 
            NonNullList<Ingredient> ingredients = NonNullList.create();
@@ -887,11 +878,9 @@ public class ReikaRecipeHelper {
                ShapedRecipe so = (ShapedRecipe) ire;
                java.util.List<net.minecraft.world.item.crafting.Ingredient> decoded = decode1DArray(getRecipeIngredients(so), getOreRecipeWidth(so), getOreRecipeHeight(so));
                return new ShapedRecipe(new net.minecraft.world.item.crafting.Recipe.CommonInfo(true), new net.minecraft.world.item.crafting.CraftingRecipe.CraftingBookInfo(((ShapedRecipe) ire).category(), ""), new net.minecraft.world.item.crafting.ShapedRecipePattern(getOreRecipeWidth(so), getOreRecipeHeight(so), decoded.stream().map(i -> i.isEmpty() ? java.util.Optional.<net.minecraft.world.item.crafting.Ingredient>empty() : java.util.Optional.of(i)).toList(), java.util.Optional.empty()), net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire))); //todo nulls and 1\'s
-           } else */if (ire instanceof ShapelessRecipe) {
-               ShapelessRecipe sr = (ShapelessRecipe) ire;
+           } else */if (ire instanceof ShapelessRecipe sr) {
                return new ShapelessRecipe(new Recipe.CommonInfo(true), new CraftingRecipe.CraftingBookInfo(((ShapelessRecipe) ire).category(), ""), ItemStackTemplate.fromNonEmptyStack(getRecipeOutput(ire)), getRecipeIngredients(sr));
-           } else if (ire instanceof ShapelessRecipe) {
-               ShapelessRecipe sr = (ShapelessRecipe) ire;
+           } else if (ire instanceof ShapelessRecipe sr) {
                List<Ingredient> in = getRecipeIngredients(sr);
                NonNullList<Ingredient> ingredients = NonNullList.create();
 
@@ -920,13 +909,11 @@ public class ReikaRecipeHelper {
 //        r2 = getTEWrappedRecipe(r2);
        if (!ItemStack.isSameItem(getRecipeOutput(r1), getRecipeOutput(r2)))
            return false;
-       if (r1 instanceof ShapedRecipe) {
-           ShapedRecipe sr1 = (ShapedRecipe) r1;
+       if (r1 instanceof ShapedRecipe sr1) {
            ShapedRecipe sr2 = (ShapedRecipe) r2;
            return matchIngredientCollections(getRecipeIngredients(sr1), getRecipeIngredients(sr2));
-       } else if (r1 instanceof ShapelessRecipe) {
-            ShapelessRecipe sr1 = (ShapelessRecipe) r1;
-            ShapelessRecipe sr2 = (ShapelessRecipe) r2;
+       } else if (r1 instanceof ShapelessRecipe sr1) {
+           ShapelessRecipe sr2 = (ShapelessRecipe) r2;
             return matchIngredientCollections(getRecipeIngredients(sr1), getRecipeIngredients(sr2));
        }
        return false;

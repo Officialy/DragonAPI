@@ -9,8 +9,6 @@
  ******************************************************************************/
 package reika.dragonapi.libraries.java;
 
-import reika.dragonapi.DragonAPI;
-
 import java.util.Arrays;
 
 public class SemanticVersionParser {
@@ -31,41 +29,40 @@ public class SemanticVersionParser {
 		return new SemanticVersion(s);
 	}
 
-	public static class SemanticVersion implements Comparable<SemanticVersion> {
+    public record SemanticVersion(int[] versions) implements Comparable<SemanticVersion> {
 
-		private final int[] versions;
+        private SemanticVersion(String s) {
+            if (s == null || s.isBlank())
+                throw new IllegalArgumentException("Semantic version cannot be empty");
+            String[] parts = s.split("\\.");
+            this(new int[parts.length]);
+            try {
+                for (int i = 0; i < parts.length; i++) {
+                    versions[i] = Integer.parseInt(parts[i]);
+                }
+            } catch (NumberFormatException e) {
+                String err = "'" + s + "' is not a valid semantic version! Must have '#.#.#...' formatting!";
+                throw new IllegalArgumentException(err, e);
+            }
+        }
 
-		private SemanticVersion(String s) {
-			if (s == null || s.isBlank())
-				throw new IllegalArgumentException("Semantic version cannot be empty");
-			String[] parts = s.split("\\.");
-			versions = new int[parts.length];
-			try {
-				for (int i = 0; i < parts.length; i++) {
-					versions[i] = Integer.parseInt(parts[i]);
-				}
-			} catch (NumberFormatException e) {
-				String err = "'" + s + "' is not a valid semantic version! Must have '#.#.#...' formatting!";
-				throw new IllegalArgumentException(err, e);
-			}
-		}
+        @Override
+        /** Returns negative numbers for older versions, to keep with the "negative is before" rule */
+        public int compareTo(SemanticVersion o) {
+            for (int i = 0; i < versions.length; i++) {
+                int us = versions[i];
+                int them = o.versions.length > i ? o.versions[i] : 0;
+                if (us != them) {
+                    return us - them;
+                }
+            }
+            return 0;
+        }
 
-		@Override
-		/** Returns negative numbers for older versions, to keep with the "negative is before" rule */
-		public int compareTo(SemanticVersion o) {
-			for (int i = 0; i < versions.length; i++) {
-				int us = versions[i];
-				int them = o.versions.length > i ? o.versions[i] : 0;
-				if (us != them) {
-					return us - them;
-				}
-			}
-			return 0;
-		}
+        @Override
+        public int[] versions() {
+            return Arrays.copyOf(versions, versions.length);
+        }
 
-		public int[] getVersions() {
-			return Arrays.copyOf(versions, versions.length);
-		}
-
-	}
+    }
 }

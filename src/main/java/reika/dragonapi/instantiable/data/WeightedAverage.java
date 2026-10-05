@@ -36,15 +36,7 @@ public class WeightedAverage {
         return val;
     }
 
-    private static class Average {
-
-        private final double value;
-        private final double weight;
-
-        private Average(double v, double w) {
-            value = v;
-            weight = w;
-        }
+    private record Average(double value, double weight) {
 
     }
 }

@@ -109,7 +109,7 @@ public final class FlexibleIngredient {
 	}
 
 	private boolean checkSize(ItemStack is) {
-		return this.exists() ? is.getCount() >= numberToUse : true;
+		return !this.exists() || is.getCount() >= numberToUse;
 	}
 
 	public boolean matchWithSize(ItemStack in) {
@@ -150,9 +150,9 @@ public final class FlexibleIngredient {
 		return new FlexibleIngredient(li, (float)b.getDouble("consumption_chance"), num);
 	}
 
-	public static interface IngredientIDHandler {
+	public interface IngredientIDHandler {
 
-		public String fullIDForItems(Collection<KeyedItemStack> c);
+		String fullIDForItems(Collection<KeyedItemStack> c);
 
 	}
 }

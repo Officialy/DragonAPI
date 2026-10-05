@@ -41,15 +41,7 @@ public class LastCallTimer<V> {
         return t != null && t.time + t.duration >= time;
     }
 
-    private static class Timer {
-
-        private final long time;
-        private final long duration;
-
-        private Timer(long t, long d) {
-            this.time = t;
-            this.duration = d;
-        }
+    private record Timer(long time, long duration) {
 
     }
 

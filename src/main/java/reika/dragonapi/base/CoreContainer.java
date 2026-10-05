@@ -12,7 +12,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import reika.dragonapi.instantiable.storage.ManagedItemHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
@@ -341,7 +340,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         OptionalInt s = super.findSlot(container, slot);
         if (s == null) {
             for (InventorySlot is : relaySlots) {
-                if (is.inventory == ii && is.slot == slot) {
+                if (is.inventory() == ii && is.slot() == slot) {
 //                    return is.toSlot(-20, -20).getContainerSlot();
                     return OptionalInt.of(is.toSlot(-20, -20).getSlotIndex());
                 }

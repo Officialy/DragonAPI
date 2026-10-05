@@ -90,7 +90,10 @@ public class CustomRecipeList {
         try {
             File f = new File(this.getBaseFilepath(), "example" + this.getExtension());
             f.createNewFile();
-            ReikaFileReader.writeLinesToFile(f, exampleBlock.writeToStrings(), true);
+            ArrayList<String> lines = exampleBlock.writeToStrings();
+            // The database already owns the root block. Serializing its surrounding
+            // braces would create an extra anonymous entry without a recipe type.
+            ReikaFileReader.writeLinesToFile(f, new ArrayList<>(lines.subList(1, lines.size()-1)), true);
         } catch (Exception e) {
             e.printStackTrace();
         }

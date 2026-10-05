@@ -1,10 +1,6 @@
 package reika.dragonapi.instantiable.data.blockstruct;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
@@ -71,17 +67,17 @@ public class FilledBlockArray extends StructuredBlockArray {
 	}
 
 	public void setBlock(int x, int y, int z, BlockCheck bk) {
-		super.addBlockCoordinate(new BlockPos(x, y, z));
+		super.addBlockCoordinate(new BlockPos(x, y, z), bk.asBlockKey());
 		data.put(new BlockPos(x, y, z), bk);
 	}
 
 	public void setEmpty(int x, int y, int z, boolean soft, boolean nonsolid, Block... exceptions) {
-		super.addBlockCoordinate(new BlockPos(x, y, z));
+		super.addBlockCoordinate(new BlockPos(x, y, z), BlockKey.AIR);
 		data.put(new BlockPos(x, y, z), new EmptyCheck(soft, nonsolid, exceptions));
 	}
 
 	public void addEmpty(int x, int y, int z, boolean soft, boolean nonsolid, Block... exceptions) {
-		super.addBlockCoordinate(new BlockPos(x, y, z));
+		super.addBlockCoordinate(new BlockPos(x, y, z), BlockKey.AIR);
 		this.addBlockToCoord(new BlockPos(x, y, z), new EmptyCheck(soft, nonsolid, exceptions));
 	}
 
@@ -94,7 +90,7 @@ public class FilledBlockArray extends StructuredBlockArray {
 	}
 
 	public void addBlock(int x, int y, int z, BlockCheck b) {
-		super.addBlockCoordinate(new BlockPos(x, y, z));
+		super.addBlockCoordinate(new BlockPos(x, y, z), b.asBlockKey());
 		this.addBlockToCoord(new BlockPos(x, y, z), b);
 	}
 
@@ -441,8 +437,7 @@ public class FilledBlockArray extends StructuredBlockArray {
 			allowNonSolid = nonsolid;
 			allowSoft = soft;
 			exceptions = new ArrayList<>();
-			for (Block b : exc)
-				exceptions.add(b);
+            Collections.addAll(exceptions, exc);
 		}
 
 		@Override
@@ -461,10 +456,8 @@ public class FilledBlockArray extends StructuredBlockArray {
 			if (b.isAir())
 				return true;
 			// The 1.7.10 "soft blocks" allowance is deferred (ReikaWorldHelper.softBlocks unported).
-			if (allowNonSolid && world != null && b.getCollisionShape(world, pos).isEmpty())
-				return true;
-			return false;
-		}
+            return allowNonSolid && world != null && b.getCollisionShape(world, pos).isEmpty();
+        }
 
 		@Override
 		public void place(Level world, BlockPos pos, int flags) {
@@ -493,9 +486,8 @@ public class FilledBlockArray extends StructuredBlockArray {
 
 		@Override
 		public boolean match(BlockCheck bc) {
-			if (bc instanceof EmptyCheck) {
-				EmptyCheck ec = (EmptyCheck)bc;
-				return ec.allowNonSolid == allowNonSolid && ec.allowSoft == allowSoft && ec.exceptions.equals(exceptions);
+			if (bc instanceof EmptyCheck ec) {
+                return ec.allowNonSolid == allowNonSolid && ec.allowSoft == allowSoft && ec.exceptions.equals(exceptions);
 			}
 			return false;
 		}

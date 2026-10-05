@@ -67,14 +67,15 @@ public class StructuredBlockArray extends BlockArray {
 
     @Override
     public boolean addBlockCoordinate(BlockPos pos) {
-        if (overflow)
-            return false;
-        if (this.hasBlock(pos))
+        return this.addBlockCoordinate(pos, new BlockKey(world.getBlockState(pos)));
+    }
+
+    /** Declared layouts supply their state without reading a live world, including during datagen. */
+    protected final boolean addBlockCoordinate(BlockPos pos, BlockKey state) {
+        if (overflow || this.hasBlock(pos))
             return false;
         super.addBlockCoordinate(pos);
-        Block b = world.getBlockState(pos).getBlock();
-        BlockPos c = pos.immutable();
-        data.put(c, new BlockKey(b));
+        data.put(pos.immutable(), state);
         return true;
     }
 

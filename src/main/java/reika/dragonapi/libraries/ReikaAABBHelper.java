@@ -1,22 +1,14 @@
 package reika.dragonapi.libraries;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.api.distmarker.Dist;
-import org.joml.Matrix4f;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
-import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 
 public class ReikaAABBHelper {
 
@@ -318,12 +310,12 @@ public class ReikaAABBHelper {
     public static AABB fromPoints(DecimalPosition... points) {
         double[] limits = new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY};
         for (int i = 0; i < points.length; i++) {
-            limits[0] = Math.min(limits[0], points[i].xCoord);
-            limits[1] = Math.min(limits[1], points[i].yCoord);
-            limits[2] = Math.min(limits[2], points[i].zCoord);
-            limits[3] = Math.max(limits[3], points[i].xCoord);
-            limits[4] = Math.max(limits[4], points[i].yCoord);
-            limits[5] = Math.max(limits[5], points[i].zCoord);
+            limits[0] = Math.min(limits[0], points[i].xCoord());
+            limits[1] = Math.min(limits[1], points[i].yCoord());
+            limits[2] = Math.min(limits[2], points[i].zCoord());
+            limits[3] = Math.max(limits[3], points[i].xCoord());
+            limits[4] = Math.max(limits[4], points[i].yCoord());
+            limits[5] = Math.max(limits[5], points[i].zCoord());
         }
         return new AABB(limits[0], limits[1], limits[2], limits[3], limits[4], limits[5]);
     }

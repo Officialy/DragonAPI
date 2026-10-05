@@ -131,7 +131,7 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
         }
 
         // Return the calculated distance with the displacement value applied.
-        return value + this.ValueNoise3D(Mth.floor(candidate.position.xCoord), Mth.floor(candidate.position.yCoord), Mth.floor(candidate.position.zCoord), 0);
+        return value + this.ValueNoise3D(Mth.floor(candidate.position.xCoord()), Mth.floor(candidate.position.yCoord()), Mth.floor(candidate.position.zCoord()), 0);
     }
 
     /**
@@ -146,7 +146,7 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
         y += this.getYDisplacement(x0, y0, z0);
         z += this.getZDisplacement(x0, y0, z0);
         DecimalPosition raw = this.candidates(x * inputFactor, y * inputFactor, z * inputFactor).get(0).position;
-        return new DecimalPosition(raw.xCoord / inputFactor, raw.yCoord / inputFactor, raw.zCoord / inputFactor);
+        return new DecimalPosition(raw.xCoord() / inputFactor, raw.yCoord() / inputFactor, raw.zCoord() / inputFactor);
     }
 
     public Collection<DecimalPosition> getNeighborCellsAt(double x, double y, double z) {
@@ -197,7 +197,7 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
                     double zPos = zCur + randomFactor * this.ValueNoise3D(xCur, yCur, zCur, (int) ~seed);
                     DecimalPosition d = new DecimalPosition(xPos, yPos, zPos);
                     if (d.getDistanceTo(x, y, z) <= r)
-                        ret.add(new DecimalPosition(d.xCoord / inputFactor, d.yCoord / inputFactor, d.zCoord / inputFactor));
+                        ret.add(new DecimalPosition(d.xCoord() / inputFactor, d.yCoord() / inputFactor, d.zCoord() / inputFactor));
                 }
             }
         }
@@ -223,7 +223,7 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
                 double zPos = zCur + randomFactor * this.ValueNoise3D(xCur, 0, zCur, (int) ~seed);
                 DecimalPosition d = new DecimalPosition(xPos, 0, zPos);
                 if (d.getDistanceTo(x, 0, z) <= r)
-                    ret.add(new DecimalPosition(d.xCoord / inputFactor, 0, d.zCoord / inputFactor));
+                    ret.add(new DecimalPosition(d.xCoord() / inputFactor, 0, d.zCoord() / inputFactor));
             }
         }
 
@@ -247,10 +247,10 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
         DecimalPosition candidate1 = candidateList.get(0).position;
         DecimalPosition candidate2 = candidateList.get(1).position;
 
-        double cx = (candidate1.xCoord + candidate2.xCoord) / (2 * inputFactor);
-        double cy = (candidate1.zCoord + candidate2.zCoord) / (2 * inputFactor);
-        double dx = (candidate2.xCoord - candidate1.xCoord) / inputFactor;
-        double dy = (candidate2.zCoord - candidate1.zCoord) / inputFactor;
+        double cx = (candidate1.xCoord() + candidate2.xCoord()) / (2 * inputFactor);
+        double cy = (candidate1.zCoord() + candidate2.zCoord()) / (2 * inputFactor);
+        double dx = (candidate2.xCoord() - candidate1.xCoord()) / inputFactor;
+        double dy = (candidate2.zCoord() - candidate1.zCoord()) / inputFactor;
         double invslope = -dx / dy;
         double mpx = cx + 1;
         double mpy = cy + invslope;
@@ -292,7 +292,7 @@ public class VoronoiNoiseGenerator extends NoiseGeneratorBase {
      */
     public boolean chunkContainsCenter(int x, int z) {
         DecimalPosition pos = this.getClosestRoot(x, 0, z);
-        return pos.xCoord >= x && pos.zCoord >= z && pos.xCoord < x + 16 && pos.yCoord < z + 16;
+        return pos.xCoord() >= x && pos.zCoord() >= z && pos.xCoord() < x + 16 && pos.yCoord() < z + 16;
     }
 
     private static final class Root implements Comparable<Root> {

@@ -1,6 +1,5 @@
 package reika.dragonapi.auxiliary;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -214,43 +213,40 @@ public class PopupWriter extends Screen {
         }
     }
 
-    public static class Warning {
+    public record Warning(String text, int width) {
 
-        public final String text;
-        public final int width;
-
-        public Warning(String s) {
-            this(s, Math.max(calcMinSizeForText(s), 192));
-        }
-
-        public Warning(String s, int w) {
-            text = s;
-            width = Math.min(300, w);
-        }
-
-        private static int calcMinSizeForText(String s) { //at w=192, 74 chars becomes 4 lines, or about 18 chars a line (1 char = 11px); ideally keep line count <= 6
-            int w = 192;
-            int c = 18;
-            int lines = s.length() / c;
-            while (lines > 6) {
-                w += 16;
-                c += 2;
-                lines = s.length() / c;
+            public Warning(String s) {
+                this(s, Math.max(calcMinSizeForText(s), 192));
             }
-            return w;
-        }
 
-        @Override
-        public int hashCode() {
-            return text.hashCode();
-        }
+            public Warning(String text, int width) {
+                this.text = text;
+                this.width = Math.min(300, width);
+            }
 
-        @Override
-        public boolean equals(Object o) {
-            return o instanceof Warning && text.equals(((Warning) o).text);
-        }
+            private static int calcMinSizeForText(String s) { //at w=192, 74 chars becomes 4 lines, or about 18 chars a line (1 char = 11px); ideally keep line count <= 6
+                int w = 192;
+                int c = 18;
+                int lines = s.length() / c;
+                while (lines > 6) {
+                    w += 16;
+                    c += 2;
+                    lines = s.length() / c;
+                }
+                return w;
+            }
 
-    }
+            @Override
+            public int hashCode() {
+                return text.hashCode();
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                return o instanceof Warning && text.equals(((Warning) o).text);
+            }
+
+        }
 
 }
 

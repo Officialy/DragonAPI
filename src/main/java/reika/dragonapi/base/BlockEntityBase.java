@@ -560,7 +560,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     private void sendPacketToAllAround(SyncPacket p, int radius) {
         if (!level.isClientSide()) {
-            CustomPacketPayload payload = ReikaPacketHelper.toPayload(DragonAPI.MODID, (ReikaPacketHelper.PacketObj) p, DragonAPI.packetChannel);
+            CustomPacketPayload payload = ReikaPacketHelper.toPayload(DragonAPI.MODID, p, DragonAPI.packetChannel);
             ServerLevel serverLevel = (ServerLevel)level;
             double radiusSq = radius * (double)radius;
             for (ServerPlayer player : serverLevel.players()) {

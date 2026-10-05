@@ -28,20 +28,12 @@ public class RecentEventCounter {
         return data.size();
     }
 
-    private static class RecentEvent {
-
-        private final long time;
-        private final long lifespan;
-
-        private RecentEvent(long t, long l) {
-            time = t;
-            lifespan = l;
-        }
+    private record RecentEvent(long time, long lifespan) {
 
         public boolean isElapsed(long t) {
-            return t - time >= lifespan;
-        }
+                return t - time >= lifespan;
+            }
 
-    }
+        }
 
 }

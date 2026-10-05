@@ -1692,7 +1692,7 @@ public class ReikaPacketHelper {
                             if (payloadLen > previewBytes) data.skipBytes(payloadLen - previewBytes);
                             StringBuilder hex = new StringBuilder(previewBytes * 2);
                             for (byte b : preview) hex.append(String.format("%02x", b & 0xFF));
-                            payloadHexPreview = hex.toString() + (payloadLen > previewBytes ? "…" : "");
+                            payloadHexPreview = hex + (payloadLen > previewBytes ? "…" : "");
                         } else {
                             payloadHexPreview = "<empty>";
                         }
