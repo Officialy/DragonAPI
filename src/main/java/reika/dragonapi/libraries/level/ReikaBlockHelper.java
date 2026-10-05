@@ -182,5 +182,43 @@ public class ReikaBlockHelper {
         return id instanceof SemiUnbreakable && ((SemiUnbreakable) id).isUnbreakable(world, pos);
     }
 
+
+    private static java.lang.reflect.Method pistonMoveBlocks;
+
+    /**
+     * 1.7.10 {@code extendPiston}: extends an unpowered piston as if it had just received a signal, by calling the
+     * piston's private move routine directly (upstream reflected {@code tryExtend}). The piston, still unpowered,
+     * retracts by itself on its next neighbour update, exactly as it did upstream. This mirrors 26.3's own
+     * {@code PistonBaseBlock.triggerEvent} extend branch: the move event, the move, the extended state, the sound
+     * and the game event.
+     */
+    public static boolean extendPiston(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof net.minecraft.world.level.block.piston.PistonBaseBlock piston)
+                || state.getValue(net.minecraft.world.level.block.piston.PistonBaseBlock.EXTENDED))
+            return false;
+        net.minecraft.core.Direction direction = state.getValue(net.minecraft.world.level.block.piston.PistonBaseBlock.FACING);
+        if (net.neoforged.neoforge.event.EventHooks.onPistonMovePre(level, pos, direction, true))
+            return false;
+        try {
+            if (pistonMoveBlocks == null) {
+                pistonMoveBlocks = net.minecraft.world.level.block.piston.PistonBaseBlock.class.getDeclaredMethod(
+                        "moveBlocks", Level.class, BlockPos.class, net.minecraft.core.Direction.class, boolean.class);
+                pistonMoveBlocks.setAccessible(true);
+            }
+            if (!(Boolean)pistonMoveBlocks.invoke(piston, level, pos, direction, true))
+                return false;
+        }
+        catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not drive piston at " + pos, e);
+        }
+        BlockState extended = state.setValue(net.minecraft.world.level.block.piston.PistonBaseBlock.EXTENDED, true);
+        level.setBlock(pos, extended, 67);
+        level.playSound(null, pos, net.minecraft.sounds.SoundEvents.PISTON_EXTEND, net.minecraft.sounds.SoundSource.BLOCKS,
+                0.5F, level.getRandom().nextFloat() * 0.25F + 0.6F);
+        level.gameEvent(net.minecraft.world.level.gameevent.GameEvent.BLOCK_ACTIVATE, pos,
+                net.minecraft.world.level.gameevent.GameEvent.Context.of(extended));
+        return true;
+    }
 }
 
