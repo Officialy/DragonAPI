@@ -145,7 +145,9 @@ public class ReikaPlayerAPI {
         Vec3 vec = ep.getEyePosition();//new Vec3(ep.getX(), (ep.getY() + 1.62) - ep.yo, ep.getZ());
         Vec3 vec2 = ep.getViewVector(1F); //1F
         Vec3 vec3 = vec.add(vec2.x() * reach, vec2.y() * reach, vec2.z() * reach);
-        BlockHitResult hit = ep.level().clip(new ClipContext(vec, vec3, ClipContext.Block.COLLIDER, liq ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, ep));
+        // 1.7.10 rayTraceBlocks hit each block's selection bounds, not its collision box: blocks with no collision
+        // (pylons, plants, ...) are still looked at. COLLIDER let the ray pass straight through them.
+        BlockHitResult hit = ep.level().clip(new ClipContext(vec, vec3, ClipContext.Block.OUTLINE, liq ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, ep));
 
         GetPlayerLookEvent evt = new GetPlayerLookEvent(ep, hit, vec, vec3);
         NeoForge.EVENT_BUS.post(evt);
