@@ -20,13 +20,15 @@ import reika.dragonapi.instantiable.event.BlockTransformResultEvent;
 
 /**
  * Posts {@link BlockTransformResultEvent} for the state an item's block transformer picked, so the
- * tool-modification hook NeoForge's {@code BlockToolModificationEvent} gave 26.2 tilling, stripping and
+ * tool-modification hook NeoForge's {@code BlockToolModificationEvent} gave 26.2 tilling, stripping, and
  * flattening survives their move onto 26.3's data-driven transformers.
  */
 @Mixin(BlockTransformer.class)
 public abstract class MixinBlockTransformer {
 
-	@WrapOperation(method = "transformBlock", at = @At(value = "INVOKE",
+	// NeoForge 26.3.0.48 split transformBlock: the (UseOnContext) form only delegates to this overload, which
+	// holds the transform loop, so the bare name would select the delegate and find no injection point.
+	@WrapOperation(method = "transformBlock(Lnet/minecraft/world/item/context/UseOnContext;Lnet/minecraft/core/Holder;)Lnet/minecraft/world/InteractionResult;", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/world/level/levelgen/feature/stateproviders/BlockStateProvider;getOptionalState(Lnet/minecraft/world/level/LevelAccessor;Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;"))
 	private @Nullable BlockState dragonapi$fireTransformResult(BlockStateProvider provider, LevelAccessor level,
 			RandomSource random, BlockPos pos, Operation<BlockState> original,
