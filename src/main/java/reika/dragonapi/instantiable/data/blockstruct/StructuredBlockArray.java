@@ -23,6 +23,7 @@ public class StructuredBlockArray extends BlockArray {
 
     public StructuredBlockArray(Level world) {
         this.world = world;
+        this.setWorld(world);
     }
 
     @Override
@@ -60,8 +61,7 @@ public class StructuredBlockArray extends BlockArray {
         if (data.isEmpty())
             return null;
         BlockPos li = data.keySet().iterator().next();
-        data.remove(li);
-        super.removeKey(li);
+        this.remove(li);
         return li;
     }
 
@@ -103,7 +103,7 @@ public class StructuredBlockArray extends BlockArray {
 
     public final boolean hasNonAirBlock(int x, int y, int z) {
         Block b = this.getBlockAt(x, y, z);
-        return b != null && b != Blocks.AIR && b.defaultBlockState().getProperties() != Blocks.AIR.defaultBlockState().getProperties() && !(b instanceof AirBlock);
+        return b != null && !b.defaultBlockState().isAir();
     }
 
     @Override
@@ -122,7 +122,7 @@ public class StructuredBlockArray extends BlockArray {
         int count = 0;
         for (BlockPos li : data.keySet()) {
             BlockKey block = data.get(li);
-            if (block.match((BlockCheck) id))
+            if (block.blockID.is(id))
                 count++;
         }
         return count;
@@ -130,13 +130,16 @@ public class StructuredBlockArray extends BlockArray {
 
     @Override
     public StructuredBlockArray offset(int x, int y, int z) {
-        super.offset(x, y, z);
-        HashMap<BlockPos, BlockKey> map = new HashMap();
-        for (BlockPos c : data.keySet()) {
-            map.put(c.offset(x, y, z), data.get(c));
-        }
+        return this.offset(new BlockPos(x, y, z));
+    }
+
+    @Override
+    public StructuredBlockArray offset(BlockPos offset) {
+        super.offset(offset);
+        HashMap<BlockPos, BlockKey> shifted = new HashMap<>();
+        data.forEach((position, key) -> shifted.put(position.offset(offset), key));
         data.clear();
-        data.putAll(map);
+        data.putAll(shifted);
         return this;
     }
 
@@ -200,7 +203,7 @@ public class StructuredBlockArray extends BlockArray {
 //        for (BlockPos c : data.keySet()) {
 //            BlockKey bc = data.get(c);
 //            BlockPos c2 = c.rotate90About(ox, oz, left);
-//            b.data.put(c2, bc);
+//            b.addBlockCoordinate(c2, bc);
 //        }
 //        return b;
 //    }
@@ -212,7 +215,7 @@ public class StructuredBlockArray extends BlockArray {
 //            BlockKey bc = data.get(c);
 //            BlockPos c2 = c.rotate180About(ox, oz);
 //
-//            b.data.put(c2, bc);
+//            b.addBlockCoordinate(c2, bc);
 //        }
 //        return b;
 //    }
@@ -225,22 +228,22 @@ public class StructuredBlockArray extends BlockArray {
 
     @Override
     public BlockArray flipX() {
-        StructuredBlockArray b = (StructuredBlockArray)super.flipX();
+        StructuredBlockArray b = (StructuredBlockArray)this.instantiate();
         for (BlockPos c : data.keySet()) {
             BlockKey bc = data.get(c);
             BlockPos c2 = new BlockPos(-c.getX(), c.getY(), c.getZ());
-            b.data.put(c2, bc);
+            b.addBlockCoordinate(c2, bc);
         }
         return b;
     }
 
     @Override
     public BlockArray flipZ() {
-        StructuredBlockArray b = (StructuredBlockArray)super.flipZ();
+        StructuredBlockArray b = (StructuredBlockArray)this.instantiate();
         for (BlockPos c : data.keySet()) {
             BlockKey bc = data.get(c);
             BlockPos c2 = new BlockPos(c.getX(), c.getY(), -c.getZ());
-            b.data.put(c2, bc);
+            b.addBlockCoordinate(c2, bc);
         }
         return b;
     }

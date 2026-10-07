@@ -13,6 +13,7 @@ import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.commands.FillBiomeCommand;
 import net.minecraft.util.Mth;
@@ -102,9 +103,6 @@ public class ReikaWorldHelper {
 
            temperatureBlockEffects.put(MapColor.STONE, TemperatureEffect.rockMelting);
            temperatureBlockEffects.put(MapColor.METAL, TemperatureEffect.rockMelting);
-           temperatureBlockEffects.put(MapColor.ICE, TemperatureEffect.iceMelting);
-           temperatureBlockEffects.put(MapColor.SNOW, TemperatureEffect.snowVaporization);
-           temperatureBlockEffects.put(MapColor.WOOL, TemperatureEffect.woolIgnition);
            temperatureBlockEffects.put(MapColor.WOOD, TemperatureEffect.woodIgnition);
            temperatureBlockEffects.put(MapColor.GRASS, TemperatureEffect.groundGlassing);
            temperatureBlockEffects.put(MapColor.SAND, TemperatureEffect.groundGlassing);
@@ -386,8 +384,7 @@ public class ReikaWorldHelper {
                     if (Math.abs(i) + Math.abs(k) <= 4) {
                         int dx = pos.getX() + i;
                         int dz = pos.getZ() + k;
-                        MapColor mat = getMapColor(world, new BlockPos(dx, pos.getY(), dz));
-                        TemperatureEffect eff = temperatureBlockEffects.get(mat);
+                        TemperatureEffect eff = getTemperatureEffect(world, new BlockPos(dx, pos.getY(), dz));
                         if (eff != null && temperature >= eff.minimumTemperature) {
                             eff.apply(world, new BlockPos(dx, pos.getY(), dz), temperature, callback);
                         }
@@ -401,14 +398,28 @@ public class ReikaWorldHelper {
                     int dx = pos.getX() + dir.getStepX() * d;
                     int dy = pos.getY() + dir.getStepY() * d;
                     int dz = pos.getZ() + dir.getStepZ() * d;
-                    MapColor mat = getMapColor(world, new BlockPos(dx, dy, dz));
-                    TemperatureEffect eff = temperatureBlockEffects.get(mat);
+                    TemperatureEffect eff = getTemperatureEffect(world, new BlockPos(dx, dy, dz));
                     if (eff != null && temperature >= eff.minimumTemperature) {
                         eff.apply(world, new BlockPos(dx, dy, dz), temperature, callback);
                     }
                 }
             }
         }
+    }
+
+    private static TemperatureEffect getTemperatureEffect(Level world, BlockPos pos) {
+        if (!world.hasChunkAt(pos))
+            return null;
+        BlockState state = world.getBlockState(pos);
+        // Map colours describe appearance, not material. White wool shares SNOW's colour;
+        // coloured wool can share WOOD/PLANT colours. Classify these materials first.
+        if (state.is(BlockTags.WOOL))
+            return TemperatureEffect.woolIgnition;
+        if (state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK))
+            return TemperatureEffect.snowVaporization;
+        if (state.is(BlockTags.ICE))
+            return TemperatureEffect.iceMelting;
+        return temperatureBlockEffects.get(state.getMapColor(world, pos));
     }
 
     public static List<ItemStack> getDropsAt(Level world, BlockPos pos, int fortune, Player ep) {
@@ -811,6 +822,8 @@ public class ReikaWorldHelper {
         }
     }
 
+    public static void clearWorldIDCache() { worldIDMap.clear(); }
+
     public static WorldID getCurrentWorldID(Level world) {
         if (world.isClientSide())
             throw new MisuseException("This cannot be called from the client side!");
@@ -824,7 +837,7 @@ public class ReikaWorldHelper {
     }
 
     private static String getWorldKey(Level world) {
-        File f = world.getServer().getServerDirectory().toFile();
+        File f = world.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile();
         return ReikaFileReader.getRealPath(f);// return ReikaFileReader.getRelativePath(DragonAPI.getMinecraftDirectory(), f);
     }
 
@@ -840,7 +853,7 @@ public class ReikaWorldHelper {
     private static File getWorldMetadataFolder(Level world) {
         if (world.isClientSide())
             throw new MisuseException("This cannot be called from the client side!");
-        File ret = new File(world.getServer().getServerDirectory().toFile(), "DragonAPI_Data");
+        File ret = new File(world.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile(), "DragonAPI_Data");
         ret.mkdirs();
         return ret;
     }
@@ -857,6 +870,7 @@ public class ReikaWorldHelper {
         }
         WorldID id = new WorldID(world);
         id.writeToFile(f);
+        worldIDMap.put(getWorldKey(world), id);
     }
 
     /**
@@ -1081,11 +1095,11 @@ public class ReikaWorldHelper {
         private final HashSet<String> modList;
 
         private WorldID(Level world) {
-            this(System.currentTimeMillis(), DragonAPI.getLaunchTime(), worldsThisSession, ReikaFileReader.getRealPath(world.getServer().getServerDirectory().toFile()), getSessionName(), getModList());
+            this(System.currentTimeMillis(), DragonAPI.getLaunchTime(), worldsThisSession, ReikaFileReader.getRealPath(world.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile()), getSessionName(), getModList());
             worldsThisSession++;
         }
 
-        private WorldID(long time, long session, int index, String folder, String player, HashSet<String> modlist) {
+        private WorldID(long time, long session, long index, String folder, String player, HashSet<String> modlist) {
             worldCreationTime = time;
             sourceSessionStartTime = session;
             sessionWorldIndex = index;
@@ -1115,15 +1129,15 @@ public class ReikaWorldHelper {
                 String player = data.getStringOr("creatingPlayer", "");
                 HashSet<String> modlist = new HashSet<>();
                 ListTag li = data.getListOrEmpty("mods");
-                for (Object o : li) {
-                    modlist.add((String) o);
-                }
-                return new WorldID(c, s, data.getIntOr("sessionIndex", 0), folder, player, modlist);
+                for (var tag : li) tag.asString().ifPresent(modlist::add);
+                return new WorldID(c, s, data.getLongOr("sessionIndex", 0), folder, player, modlist);
             } catch (Exception e) {
                 e.printStackTrace();
                 return NONEXISTENT;
             }
         }
+
+        public java.util.Set<String> getMods() { return java.util.Set.copyOf(modList); }
 
         public boolean isValid() {
             return worldCreationTime > 0 && !originalFolder.equals("[NONEXISTENT]");
@@ -1136,6 +1150,9 @@ public class ReikaWorldHelper {
             data.putLong("sessionIndex", sessionWorldIndex);
             data.putString("originalFolder", originalFolder);
             data.putString("creatingPlayer", creatingPlayer);
+            ListTag mods = new ListTag();
+            modList.stream().sorted().forEach(mod -> mods.add(net.minecraft.nbt.StringTag.valueOf(mod)));
+            data.put("mods", mods);
             try (FileOutputStream out = new FileOutputStream(f)) {
                 NbtIo.writeCompressed(data, out);
             } catch (Exception e) {

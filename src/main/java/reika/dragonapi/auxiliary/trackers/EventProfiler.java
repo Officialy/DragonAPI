@@ -52,7 +52,8 @@ public class EventProfiler {
         fullNameShortcuts.put(eventType.getSimpleName(), eventType);
     }
 
-    private static Class currentProfile;
+    private static Class<? extends Event> currentProfile;
+    private static Class<? extends Event> lastProfile;
     private static final HashMap<Object, EventProfile> profileData = new HashMap<>(); //not class as keys, since all are basically ASMEventHandler (IEventListener no longer exists)
     private static int totalCount;
 
@@ -67,6 +68,7 @@ public class EventProfiler {
             return;
         }
         currentProfile = c;
+        lastProfile = c;
     }
 
     public static ProfileStartStatus startProfiling(String eventType) {
@@ -78,7 +80,11 @@ public class EventProfiler {
             if (fullNameShortcuts.containsKey(eventType))
                 startProfiling(fullNameShortcuts.get(eventType));
             else
-                startProfiling((Class<? extends Event>)Class.forName(eventType));
+                {
+                Class<?> type = Class.forName(eventType, false, EventProfiler.class.getClassLoader());
+                if (!Event.class.isAssignableFrom(type)) return ProfileStartStatus.NOTANEVENT;
+                startProfiling(type.asSubclass(Event.class));
+            }
             return ProfileStartStatus.SUCCESS;
         }
         catch (ClassNotFoundException e) {
@@ -116,11 +122,11 @@ public class EventProfiler {
     }
 
     public static String getProfiledEventType() {
-        return currentProfile.getName();
+        return lastProfile == null ? "[none]" : lastProfile.getName();
     }
 
     public static int getEventFireCount() {
-        return totalCount/profileData.size(); //since count is incremented once per handle, not per fire
+        return profileData.isEmpty() ? 0 : totalCount/profileData.size(); //since count is incremented once per handle, not per fire
     }
 
     private static EventProfile getOrCreateProfile(Object e) {
@@ -176,7 +182,7 @@ public class EventProfiler {
             if (s.startsWith("ASM: "))
                 s = s.substring("ASM: ".length());
             else
-                s = null;//"FORGE PRIORITY WRAPPER: "+s; //null these ones out entirely
+                s = e.getClass().getName() + ": " + s; //null these ones out entirely
             identifier = s;
         }
 
@@ -194,7 +200,7 @@ public class EventProfiler {
         }
 
         public long getAverageTime() {
-            return totalTime/fireCount;
+            return fireCount == 0 ? 0 : totalTime/fireCount;
         }
 
         @Override

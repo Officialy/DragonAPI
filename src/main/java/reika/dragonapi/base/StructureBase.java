@@ -16,14 +16,18 @@ public abstract class StructureBase {
 
 
 	public final synchronized FilledBlockArray getStructureForDisplay() {
-		isDisplayCall = true;
-		this.initDisplayData();
-		// Display-only preview; the structure classes themselves are server-side multiblock data.
-		FilledBlockArray ret = this.getArray(reika.dragonapi.client.ClientEnvironment.level(), 0, 0, 0);
-		isDisplayCall = false;
-		this.finishDisplayCall();
-		return ret;
-	}
+        if (!net.neoforged.fml.loading.FMLEnvironment.getDist().isClient()
+                || !reika.dragonapi.client.ClientEnvironment.hasGameInstance())
+            throw new IllegalStateException("Structure previews require a running client");
+        isDisplayCall = true;
+        try {
+            this.initDisplayData();
+            return this.getArray(reika.dragonapi.client.ClientEnvironment.level(), 0, 0, 0);
+        } finally {
+            isDisplayCall = false;
+            this.finishDisplayCall();
+        }
+    }
 
 	protected void initDisplayData() {
 

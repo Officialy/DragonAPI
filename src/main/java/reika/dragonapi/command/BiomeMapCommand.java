@@ -41,94 +41,118 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 
 
-//todo FIX COMMAND ARGUMENTS
 public class BiomeMapCommand {
 
-    public static final int PACKET_COMPILE = 2048; //packet size in bytes = 4*(1+n*3)
+    public static final int PACKET_COMPILE = 512; //packet size in bytes = 4*(1+n*3)
 
     private static BiomeMapCommand instance;
 
     private static final Random rand = new Random();
     private final static HashMap<Integer, BiomeMap> activeMaps = new HashMap<>();
+    private static final Map<ResourceKey<Biome>, CustomMapColorBiome> customColors = new HashMap<>();
+
+    /** Biomes are final in 26.3; register custom coloring by registry key instead of subclassing. */
+    public static void registerBiomeColor(ResourceKey<Biome> key, CustomMapColorBiome color) {
+        customColors.put(Objects.requireNonNull(key), Objects.requireNonNull(color));
+    }
 
     public BiomeMapCommand() {
         instance = this;
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("biomepng")
-//                .then(Commands.argument("seed", StringArgumentType.string()))
-//                .then(Commands.argument("range", IntegerArgumentType.integer(1)))
-//                .then(Commands.argument("resolution", IntegerArgumentType.integer(1)))
-//                .then(Commands.argument("grid", IntegerArgumentType.integer(1)))
-//                .then(Commands.argument("fullgrid", BoolArgumentType.bool()))
-                .executes((context) -> {
-                    /*String[] args = {
-                            String.valueOf(StringArgumentType.getString(context, "seed")),
-                            String.valueOf(IntegerArgumentType.getInt(context, "range")),
-                            String.valueOf(IntegerArgumentType.getInt(context, "resolution")),
-                            String.valueOf(IntegerArgumentType.getInt(context, "grid")),
-                            String.valueOf(BoolArgumentType.getBool(context, "fullgrid"))
-                    };*/
-
-                    String[] args = {"seed=-8335656470636700638", "1000", "1", "1", "false"};
-                    return processCommand(context.getSource(), args);
-                }));
+        var root = Commands.literal("biomepng").requires(Commands.hasPermission(Commands.LEVEL_ADMINS));
+        root.then(mapArguments(false));
+        root.then(Commands.literal("seed").then(Commands.argument("seeds", StringArgumentType.string()).then(mapArguments(true))));
+        root.then(Commands.argument("seeds", StringArgumentType.string()).then(mapArguments(true)));
+        root.then(Commands.literal("player").then(Commands.argument("player", EntityArgument.player())
+                .then(mapArguments(false))
+                .then(Commands.argument("seeds", StringArgumentType.string()).then(mapArguments(true)))));
+        dispatcher.register(root);
     }
 
-    public static int processCommand(CommandSourceStack sourceStack, String[] args) throws CommandSyntaxException {
-        Object[] ret = getPlayer(sourceStack, args);
-        Collection<BiomeProvider> set = new ArrayList<>();
-        DragonAPI.LOGGER.info("starting biomepng");
-        if (args.length < 2) {
-            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "Illegal arguments. Use [seed=<seed>] [range] [resolution] <grid> <fullGrid>.");
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, Integer> mapArguments(boolean seeds) {
+        return Commands.argument("range", IntegerArgumentType.integer(1, 100000))
+                .then(Commands.argument("resolution", IntegerArgumentType.integer(1, 100000))
+                        .executes(context -> runMap(context, seeds, false, false))
+                        .then(Commands.argument("grid", IntegerArgumentType.integer(0))
+                                .executes(context -> runMap(context, seeds, true, false))
+                                .then(Commands.argument("fullgrid", BoolArgumentType.bool())
+                                        .executes(context -> runMap(context, seeds, true, true)))));
+    }
+
+    private static int runMap(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context,
+                              boolean seeds, boolean grid, boolean fullGrid) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            source = source.withEntity(player);
+        } catch (IllegalArgumentException absent) { /* Player command branch was not used. */ }
+        ArrayList<String> args = new ArrayList<>();
+        if (seeds) {
+            String value = StringArgumentType.getString(context, "seeds");
+            args.add(value.startsWith("seed=") ? value : "seed=" + value);
+        }
+        args.add(Integer.toString(IntegerArgumentType.getInteger(context, "range")));
+        args.add(Integer.toString(IntegerArgumentType.getInteger(context, "resolution")));
+        if (grid) args.add(Integer.toString(IntegerArgumentType.getInteger(context, "grid")));
+        if (fullGrid) args.add(Boolean.toString(BoolArgumentType.getBool(context, "fullgrid")));
+        return processCommand(source, args.toArray(String[]::new));
+    }
+
+    public static int processCommand(CommandSourceStack source, String[] args) throws CommandSyntaxException {
+        Object[] target = getPlayer(source, args);
+        ServerPlayer player = (ServerPlayer)target[0];
+        int index = (boolean)target[1] ? 1 : 0;
+        Collection<BiomeProvider> providers = new ArrayList<>();
+        try {
+            if (index < args.length && args[index].startsWith("seed=")) {
+                for (long seed : parseSeeds(args[index++].substring(5))) providers.add(new SeedBiomes(player.level(), seed));
+            }
+            if (args.length - index < 2 || args.length - index > 4)
+                throw new IllegalArgumentException("Use [seed=<seed,list,range>] <range> <resolution> [grid] [fullgrid].");
+            int range = Integer.parseInt(args[index++]);
+            int resolution = Integer.parseInt(args[index++]);
+            validateMapSize(range, resolution);
+            int grid = index < args.length ? Integer.parseInt(args[index++]) : 0;
+            if (grid < 0) throw new IllegalArgumentException("Grid must be non-negative.");
+            boolean fullGrid = index < args.length && Boolean.parseBoolean(args[index]);
+            if (providers.isEmpty()) providers.add(new WorldBiomes(player.level()));
+            for (BiomeProvider provider : providers)
+                generateMap(provider, player, System.currentTimeMillis(), Mth.floor(player.getX()), Mth.floor(player.getZ()), range, resolution, grid, fullGrid, null);
+            return providers.size();
+        } catch (IllegalArgumentException error) {
+            source.sendFailure(Component.literal(error.getMessage()));
             return 0;
         }
-        if (args[0].toLowerCase(Locale.ENGLISH).startsWith("seed=")) {
-            args[0] = args[0].substring(5);
-            /*todo if (args[0].contains(",")) {
-                String[] parts = args[0].split(",");
-                for (String s : parts) {
-                    set.add(new SeedBiomes(Long.parseLong(s)));
-                }
-            } else if (args[0].charAt(0) != '-' && args[0].contains("-")) {
-                String[] parts = args[0].split("\\-");
-                long s1 = Long.parseLong(parts[0]);
-                long s2 = Long.parseLong(parts[1]);
-                for (long seed = s1; seed <= s2; seed++) {
-                    set.add(new SeedBiomes(seed));
-                }
-            } else {
-                set.add(new SeedBiomes(Long.parseLong(args[0])));
-            }*/
-            String[] nargs = new String[args.length - 1];
-            System.arraycopy(args, 1, nargs, 0, nargs.length);
-            args = nargs;
-        }
-        ServerPlayer ep = (ServerPlayer) ret[0];
-        if ((boolean) ret[1]) {
-            String[] nargs = new String[args.length - 1];
-            System.arraycopy(args, 1, nargs, 0, nargs.length);
-            args = nargs;
-        }
-        int range = Integer.parseInt(args[0]);
-        int res = Integer.parseInt(args[1]);
-        int grid = args.length >= 3 ? Integer.parseInt(args[2]) : -1;
-        boolean fullGrid = grid > 0 && args.length >= 4 && Boolean.parseBoolean(args[3]);
-        int x = Mth.floor(ep.getX());
-        int z = Mth.floor(ep.getZ());
-        long start = System.currentTimeMillis();
-
-        if (set.isEmpty())
-            set.add(new WorldBiomes(ep.level()));
-
-        for (BiomeProvider bp : set)
-            generateMap(bp, ep, start, x, z, range, res, grid, fullGrid, null);
-
-        return 1;
     }
+
+    public static List<Long> parseSeeds(String input) {
+        List<Long> seeds = new ArrayList<>();
+        for (String token : input.split(",", -1)) {
+            var range = java.util.regex.Pattern.compile("(-?[0-9]+)-(-?[0-9]+)").matcher(token);
+            if (range.matches()) {
+                long first = Long.parseLong(range.group(1)), last = Long.parseLong(range.group(2));
+                if (last < first || java.math.BigInteger.valueOf(last).subtract(java.math.BigInteger.valueOf(first)).compareTo(java.math.BigInteger.valueOf(15)) > 0)
+                    throw new IllegalArgumentException("Seed ranges must be ascending and contain at most 16 seeds.");
+                for (long seed = first;; seed++) { seeds.add(seed); if (seed == last) break; }
+            } else seeds.add(Long.parseLong(token));
+            if (seeds.size() > 16) throw new IllegalArgumentException("At most 16 seed maps may be requested at once.");
+        }
+        return List.copyOf(seeds);
+    }
+
+    public static void validateMapSize(int range, int resolution) {
+        if (range < 1 || range > 100000 || resolution < 1 || resolution > 100000)
+            throw new IllegalArgumentException("Range and resolution must be between 1 and 100000.");
+        long width = 2L * range / resolution + 1;
+        if (width * width > 4194304) throw new IllegalArgumentException("Map exceeds 2048 pixels per side; increase resolution.");
+    }
+
+    public static void clearClientMaps() { activeMaps.clear(); }
 
     public static void triggerBiomeMap(ServerPlayer ep, int x, int z, int range, int res, int grid, MapCompleteCallback call) {
         generateMap(new WorldBiomes(ep.level()), ep, System.currentTimeMillis(), x, z, range, res, grid, false, call);
@@ -139,16 +163,13 @@ public class BiomeMapCommand {
     }*/
 
     private static void generateMap(BiomeProvider bp, ServerPlayer ep, long start, int x, int z, int range, int res, int grid, boolean fullGrid, MapCompleteCallback callback) {
+        validateMapSize(range, res);
         int hash = rand.nextInt();
 
         ResourceKey<Level> dim = ep.level().dimension();
         var biomeRegistry = ep.level().registryAccess().lookupOrThrow(Registries.BIOME);
-        if (DragonAPI.isSinglePlayer()) {
-            startCollecting(hash, bp.getName(), dim, x, z, range, res, grid, fullGrid);
-        } else {
-            /*todo fix packets needing dimension to be an int, find a way to convert dims to ints?*/
-            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGSTART.ordinal(), ep, bp.getName(), hash, dim.hashCode(), x, z, range, res, grid, fullGrid ? 1 : 0);
-        }
+        // The dimension slot is reserved; the receiver uses its synchronized current dimension.
+        ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGSTART.ordinal(), ep, bp.getName(), hash, 0, x, z, range, res, grid, fullGrid ? 1 : 0);
 
         ArrayList<Integer> dat = new ArrayList<>();
         dat.add(hash);
@@ -163,22 +184,14 @@ public class BiomeMapCommand {
                 }
 //                ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, hash, dx, dz, b.biomeID);
                 n++;
-                if (DragonAPI.isSinglePlayer()) {
-                    addBiomePoint(hash, dx, dz, biomeId);
-                } else {
-                    dat.add(dx);
-                    dat.add(dz);
-                    dat.add(biomeId);
-                }
+                dat.add(dx);
+                dat.add(dz);
+                dat.add(biomeId);
                 if (n >= PACKET_COMPILE) {
-                    if (DragonAPI.isSinglePlayer()) {
-
-                    } else {
-                        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, dat);
-                        n = 0;
-                        dat.clear();
-                        dat.add(hash);
-                    }
+                    ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, dat);
+                    n = 0;
+                    dat.clear();
+                    dat.add(hash);
                 }
             }
         }
@@ -186,32 +199,17 @@ public class BiomeMapCommand {
         if (dat.size() > 1) {
             //pad to fit normal packet size expectation
             int m = (dat.size() - 1) / 3;
-            Biome biome = bp.getBiome(x, z);
-            int biomeId = biomeRegistry.getId(biome);
-            if (DragonAPI.isSinglePlayer()) {
-                if (biomeId >= 0)
-                    addBiomePoint(hash, x, z, biomeId);
-            } else {
-                for (int i = m; i < PACKET_COMPILE; i++) {
-                    dat.add(x);
-                    dat.add(z);
-                    dat.add(biomeId);
-                }
-                ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, dat);
-                n = 0;
-                dat.clear();
-                dat.add(hash);
+            for (int i = m; i < PACKET_COMPILE; i++) {
+                dat.add(x - range);
+                dat.add(z - range);
+                dat.add(biomeRegistry.getId(bp.getBiome(x - range, z - range)));
             }
+            ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, dat);
         }
         if (callback != null) {
             callback.onComplete();
-            callback = null;
         }
-        if (DragonAPI.isSinglePlayer()) {
-            finishCollectingAndMakeImage(hash);
-        } else {
-            ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGEND.ordinal(), ep, hash);
-        }
+        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGEND.ordinal(), ep, hash);
     }
 
     private static Object[] getPlayer(CommandSourceStack ics, String[] args) throws CommandSyntaxException {
@@ -229,6 +227,8 @@ public class BiomeMapCommand {
     }
 
     public static void startCollecting(int hash, String world, ResourceKey<Level> dim, int x, int z, int range, int res, int grid, boolean fullGrid) {
+        validateMapSize(range, res);
+        if (activeMaps.size() >= 16) throw new IllegalStateException("Too many unfinished biome maps");
         BiomeMap map = new BiomeMap(world, dim, x, z, range, res, grid, fullGrid);
         activeMaps.put(hash, map);
     }
@@ -283,37 +283,31 @@ public class BiomeMapCommand {
 
             @Override
             public String getName() {
-                return world.getLevelData().toString();//todo.getWorldName() + "/[" + world.getSaveHandler().getWorldDirectoryName() + "]";
+                return world.getServer().getWorldData().getLevelName();
             }
 
         }
 
-/*    private static class SeedBiomes implements BiomeProvider {
-
+    private static final class SeedBiomes implements BiomeProvider {
         private final long seed;
-        private final WorldChunkManager world;
+        private final net.minecraft.world.level.biome.BiomeResolver resolver;
 
-        private SeedBiomes(long seed) {
+        private SeedBiomes(net.minecraft.server.level.ServerLevel world, long seed) {
             this.seed = seed;
-            world = new WorldChunkManager(seed, LevelType.DEFAULT);
-        }
-		*//*
-		@Override
-		public String getFileName(long seed, String name, int x, int z, int range, int res, int grid, boolean fullGrid) {
-			return "BiomeMap/Forced/"+worldName+"; "+x+", "+z+" ("+sr+"x"+sr+"; [R="+res+" b-px, G="+grid+"-"+fullGrid+"]).png";
-		}*//*
-
-        @Override
-        public Biome getBiome(int x, int z) {
-            return world.getBiomeGenAt(x, z).biomeID;
+            var generator = world.getChunkSource().getGenerator();
+            var settings = generator instanceof net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator noise
+                    ? noise.generatorSettings().value()
+                    : world.registryAccess().lookupOrThrow(Registries.NOISE_SETTINGS)
+                            .getOrThrow(net.minecraft.world.level.levelgen.NoiseGeneratorSettings.OVERWORLD).value();
+            var random = net.minecraft.world.level.levelgen.RandomState.create(world.registryAccess().lookupOrThrow(Registries.NOISE), seed, settings);
+            resolver = generator.getBiomeSource().createCachingResolver(random);
         }
 
         @Override
-        public String getName() {
-            return "SEED=" + seed;
-        }
-
-    }*/
+        public Biome getBiome(int x, int z) { return resolver.getNoiseBiome(x >> 2, 25, z >> 2).value(); }
+        @Override
+        public String getName() { return "SEED=" + seed; }
+    }
 
     private static class BiomeMap extends MapOutput<Integer> {
 
@@ -394,8 +388,9 @@ public class BiomeMapCommand {
         if (b == null)
             return 0x000000; //should never happen
 
-        if (b instanceof CustomMapColorBiome)
-            return ((CustomMapColorBiome) b).getMapColor(reika.dragonapi.client.ClientEnvironment.level(), x, z);
+        var level = reika.dragonapi.client.ClientEnvironment.level();
+        CustomMapColorBiome custom = customColors.get(b);
+        if (custom != null) return custom.getMapColor(level, x, z);
 
         /*boolean mutate = b instanceof BiomeGenMutated;
         if (mutate) {

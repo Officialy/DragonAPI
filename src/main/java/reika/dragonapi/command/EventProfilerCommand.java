@@ -16,38 +16,43 @@ import java.util.Locale;
 public class EventProfilerCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("profileevent").executes((context) -> {
+        dispatcher.register(Commands.literal("profileevent")
+                .requires(Commands.hasPermission(Commands.LEVEL_ADMINS))
+                .then(Commands.literal("disable").executes(context -> processCommand(context.getSource(), new String[]{"disable"})))
+                .then(Commands.literal("display").executes(context -> processCommand(context.getSource(), new String[]{"display"})))
+                .then(Commands.literal("enable").then(Commands.argument("event", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .executes(context -> processCommand(context.getSource(), new String[]{"enable", com.mojang.brigadier.arguments.StringArgumentType.getString(context, "event")})))));
+    }
 
-            String[] args = {"display"};
-            return processCommand(context.getSource(), args);
-        }));
+    private static void feedback(CommandSourceStack source, String text) {
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(text), false);
     }
 
     public static int processCommand(CommandSourceStack sourceStack, String[] args) throws CommandSyntaxException {
         if (args.length < 1) {
-            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "Wrong number of arguments. Specify 'disable', 'enable', or 'display'.");
+            feedback(sourceStack, ChatFormatting.RED + "Wrong number of arguments. Specify 'disable', 'enable', or 'display'.");
             return 0;
         }
         switch (args[0].toLowerCase(Locale.ENGLISH)) {
             case "disable" -> {
                 EventProfiler.finishProfiling();
-                ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.GREEN + "Profiling finished.");
+                feedback(sourceStack, ChatFormatting.GREEN + "Profiling finished.");
             }
             case "enable" -> {
                 if (args.length < 2) {
-                    ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "You must specify an event type (class)!");
+                    feedback(sourceStack, ChatFormatting.RED + "You must specify an event type (class)!");
                     return 0;
                 }
                 EventProfiler.ProfileStartStatus st = EventProfiler.startProfiling(args[1]);
                 switch (st) {
                     case SUCCESS ->
-                            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.GREEN + "Profiling started for events of type " + args[1]);
+                            feedback(sourceStack, ChatFormatting.GREEN + "Profiling started for events of type " + args[1]);
                     case ALREADYRUNNING ->
-                            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "Profiling already running!");
+                            feedback(sourceStack, ChatFormatting.RED + "Profiling already running!");
                     case NOSUCHCLASS ->
-                            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "No such class '" + args[1] + "'!");
+                            feedback(sourceStack, ChatFormatting.RED + "No such class '" + args[1] + "'!");
                     case NOTANEVENT ->
-                            ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "Class '" + args[1] + "' does not extend Event!");
+                            feedback(sourceStack, ChatFormatting.RED + "Class '" + args[1] + "' does not extend Event!");
                 }
             }
             case "display" -> {
@@ -57,19 +62,19 @@ public class EventProfilerCommand {
                 long total = EventProfiler.getTotalProfilingTime();
                 String totalt = String.format("%.6f", total / 1000000D);
                 String desc = "Profiling data for event type " + type + " contains " + li.size() + " handlers across " + fires + " event fires, total time " + totalt + " ms:";
-                ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), desc);
+                feedback(sourceStack, desc);
                 DragonAPI.LOGGER.info(desc);
                 for (EventProfiler.EventProfile g : li) {
                     long time = g.getAverageTime();
                     String s = ReikaStringParser.padToLength("'" + g.identifier + "'", 60, " ");
-                    double percent = g.getTotalTime() * 100D / total;
-                    String sg = String.format("Handler %s - Average Time Per Fire: %7.3f microseconds (%2.3f%s)", s, time / 1000D, percent, "%%");
-                    ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), sg);
+                    double percent = total == 0 ? 0 : g.getTotalTime() * 100D / total;
+                    String sg = String.format("Handler %s - Average Time Per Fire: %7.3f microseconds (%2.3f%s)", s, time / 1000D, percent, "%");
+                    feedback(sourceStack, sg);
                     DragonAPI.LOGGER.info(sg);
                 }
             }
             default ->
-                    ReikaChatHelper.sendChatToPlayer(sourceStack.getPlayerOrException(), ChatFormatting.RED + "Invalid argument. Specify 'disable', 'enable', or 'display'.");
+                    feedback(sourceStack, ChatFormatting.RED + "Invalid argument. Specify 'disable', 'enable', or 'display'.");
         }
         return 1;
 

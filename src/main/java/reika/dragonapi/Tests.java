@@ -25,7 +25,7 @@ import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.instantiable.effects.StringParticleFX;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 
-@EventBusSubscriber(modid = "DragonAPI")
+@EventBusSubscriber(modid = DragonAPI.MODID)
 public class Tests {
 
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, DragonAPI.MODID);
@@ -33,10 +33,6 @@ public class Tests {
     // 1.21.5: Item.Properties needs setId() before Item.<init> dereferences it via effectiveDescriptionId().
     public static final DeferredHolder<Item, Item> TEST_ITEM = ITEMS.register("test_item",
             rl -> new ItemTest(new Item.Properties().setId(ResourceKey.create(Registries.ITEM, rl))));
-    public static void runTests() {
-
-    }
-
     public static class ItemTest extends Item {
 
         public ItemTest(Properties p_41383_) {
@@ -45,10 +41,13 @@ public class Tests {
 
         @Override
         public InteractionResult use(Level level, Player player, InteractionHand hand) {
+            if (net.neoforged.fml.loading.FMLEnvironment.isProduction() || !level.isClientSide())
+                return InteractionResult.PASS;
             if (!player.isShiftKeyDown()) {
                 PopupWriter.instance().addMessage("Popup test with a super duper extra fancy long message, to test spacing!");
             } else if (player.isShiftKeyDown()) {
-                PopupWriter.list.remove(0);
+                if (!PopupWriter.list.isEmpty())
+                    PopupWriter.list.remove(0);
             }
 
             return InteractionResult.PASS;

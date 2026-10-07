@@ -23,13 +23,10 @@ public class DynamicDirectResource extends DirectResource {
     }
 
     @Override
-    protected InputStream calcStream() {
-        try {
-            return asset.getData();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    protected InputStream calcStream() throws IOException {
+        InputStream stream = asset.getData();
+        if (stream == null) throw new java.io.FileNotFoundException(asset.reference + ":" + asset.path);
+        return stream;
     }
 
 }

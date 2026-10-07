@@ -55,10 +55,12 @@ public class ReikaModel extends ModifiedPlayerModel {
 		this.back = root.getChild("back");
 		this.back2 = root.getChild("back2");
 		this.back3 = root.getChild("back3");
+		// Only additional anatomy belongs in this layer; the vanilla renderer owns the player body.
+		for (ModelPart part : new ModelPart[]{head, hat, body, leftArm, rightArm, leftLeg, rightLeg, tail, tail2, tail3}) part.visible = false;
 	}
 
 	public static LayerDefinition createBodyLayer() {
-		MeshDefinition meshdefinition = new MeshDefinition();
+		MeshDefinition meshdefinition = net.minecraft.client.model.HumanoidModel.createMesh(CubeDeformation.NONE, 0);
 		PartDefinition partdefinition = meshdefinition.getRoot();
 
 		partdefinition.addOrReplaceChild("hornR", CubeListBuilder.create().texOffs(32, 12).mirror().addBox(HORN_X - 2F, HORN_Y, HORN_Z, 2, 1, 3), PartPose.ZERO);
@@ -87,6 +89,11 @@ public class ReikaModel extends ModifiedPlayerModel {
 	@Override
 	public Identifier getTexture() {
 		return Identifier.fromNamespaceAndPath(DragonAPI.MODID, "textures/reika_tex.png");
+	}
+
+	public void submitBodyParts(PoseStack stack, net.minecraft.client.renderer.SubmitNodeCollector collector, AvatarRenderState state) {
+		collector.submitModel(this, state, stack, renderType(getTexture()), 15728880,
+				net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 0);
 	}
 
 	@Override
@@ -153,6 +160,8 @@ public class ReikaModel extends ModifiedPlayerModel {
 
 		this.compensateAngles(ep.ageInTicks);
 
+		hornL.y = hornR.y = ep.isCrouching ? 5 : 4;
+		for (ModelPart part : new ModelPart[]{back, back2, back3, wingL, wingR}) part.z = -0.672F;
 		hornL.xRot = pc;
 		//hornR.yRot = yawBody / (180F / (float)Math.PI);
 		hornR.xRot = pc;

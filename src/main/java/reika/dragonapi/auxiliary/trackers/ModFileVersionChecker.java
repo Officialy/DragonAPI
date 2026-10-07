@@ -33,6 +33,7 @@ public class ModFileVersionChecker {
 
     @SubscribeEvent
     public static void dispatch(ClientLoginEvent evt) {
+        if (!reika.dragonapi.DragonOptions.FILEHASH.getState()) return;
         for (String mod : data.keySet()) {
             String s = mod+":"+data.get(mod);
             ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.FILEMATCH.ordinal(), PacketTarget.server, s);
@@ -40,6 +41,7 @@ public class ModFileVersionChecker {
     }
 
 	public void checkFiles(ServerPlayer ep, String s) {
+        if (!reika.dragonapi.DragonOptions.FILEHASH.getState()) return;
 		String[] parts = s != null ? s.split(":", 2) : new String[0];
 		if (parts.length != 2) {
 			this.kick(ep, parts.length > 0 ? parts[0] : "<unknown>", "<malformed>", null);

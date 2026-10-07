@@ -11,6 +11,11 @@ package reika.dragonapi.interfaces.blockentity;
 
 public interface ThermalTile {
 
+    /** Some machine families implement thermal state only for particular variants. */
+    default boolean hasTemperature() {
+        return true;
+    }
+
     int getTemperature();
 
     void setTemperature(int temp);

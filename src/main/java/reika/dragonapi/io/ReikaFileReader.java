@@ -400,7 +400,17 @@ public class ReikaFileReader {
 
 	public static InputStream getFileInsideJar(File f, String name) {
 		try {
-			return getFileInsideJar(new JarFile(f), name);
+			JarFile jar = new JarFile(f);
+            InputStream entry = getFileInsideJar(jar, name);
+            if (entry == null) {
+                jar.close();
+                return null;
+            }
+            return new FilterInputStream(entry) {
+                @Override public void close() throws IOException {
+                    try { super.close(); } finally { jar.close(); }
+                }
+            };
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
@@ -409,7 +419,8 @@ public class ReikaFileReader {
 
 	public static InputStream getFileInsideJar(JarFile jar, String name) {
 		try {
-			return jar.getInputStream(jar.getEntry(name));
+			var entry = jar.getEntry(name);
+            return entry != null ? jar.getInputStream(entry) : null;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
@@ -437,7 +448,13 @@ public class ReikaFileReader {
 	}
 
 	public static void copyFile(File in, File out, int size) throws FileReadException, FileWriteException, FileNotFoundException {
-		copyFile(new FileInputStream(in), new FileOutputStream(out), size, null);
+		try (InputStream input = new FileInputStream(in)) {
+            copyFile(input, new FileOutputStream(out), size, null);
+        } catch (FileNotFoundException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new FileReadException(e);
+        }
 	}
 
 	/**
@@ -474,8 +491,7 @@ public class ReikaFileReader {
 			throw Throwables.propagate(e);
 		} finally {
 			try {
-				in.close();
-				out.close();
+				try { in.close(); } finally { out.close(); }
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

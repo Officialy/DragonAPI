@@ -114,7 +114,8 @@ public class CurvedTrajectory {
         public Trail copy() {
             Trail t = new Trail(position, seed, null);
             t.velocity.inclination = velocity.inclination;
-            t.velocity.rotation = velocity.magnitude;
+            t.velocity.rotation = velocity.rotation;
+            t.velocity.magnitude = velocity.magnitude;
             t.targetPhi = targetPhi;
             t.targetTheta = targetTheta;
             return t;

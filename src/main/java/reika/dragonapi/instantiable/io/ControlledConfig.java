@@ -92,6 +92,10 @@ public class ControlledConfig {
     protected Object[] controls;
     protected int[] otherIDs;
 
+    private final Map<Integer, net.neoforged.neoforge.common.ModConfigSpec.ConfigValue<?>> modernValues = new HashMap<>();
+    private final Map<Integer, net.neoforged.neoforge.common.ModConfigSpec> modernSpecs = new HashMap<>();
+    private boolean modernRegistered;
+
     private final HashMap<SegmentedConfigList, String> specialFiles = new HashMap<>();
     private final MultiMap<String, SegmentedConfigList> specialConfigs = new MultiMap<>();
     private final HashMap<String, HashMap<String, String>> extraFiles = new HashMap<>();
@@ -228,7 +232,8 @@ public class ControlledConfig {
     }
 
     public final Object getControl(int i) {
-        return controls[i];
+        var value = modernValues.get(i);
+        return value != null && modernSpecs.get(i).isLoaded() ? fromToml(value.get(), controls[i]) : controls[i];
     }
 
     public int getOtherID(int i) {
@@ -335,8 +340,78 @@ public class ControlledConfig {
     public final void initProps() { //preinit event used to be here
         if (configFile == null)
             throw new MisuseException("Error loading "+configMod.getDisplayName()+": You must load a config file before reading it!");
+        // Keep an exact migration reference before the legacy parser normalizes the file.
+        if (configFile.exists()) {
+            java.nio.file.Path backup = configFile.toPath().resolveSibling(configFile.getName() + ".pre-toml");
+            try {
+                if (!java.nio.file.Files.exists(backup)) java.nio.file.Files.copy(configFile.toPath(), backup);
+            } catch (IOException e) {
+                throw new RegistrationException(configMod, "Could not preserve legacy config before migration: " + e.getMessage());
+            }
+        }
         config = new Configuration(configFile);
         this.load();
+        registerModernSpecs();
+    }
+
+    /** Imports the existing .cfg once as TOML defaults. Existing files and segmented data are retained. */
+    private void registerModernSpecs() {
+        if (modernRegistered) return;
+        modernRegistered = true;
+        for (boolean client : new boolean[] {true, false}) {
+            var builder = new net.neoforged.neoforge.common.ModConfigSpec.Builder();
+            Map<Integer, net.neoforged.neoforge.common.ModConfigSpec.ConfigValue<?>> group = new HashMap<>();
+            for (int i = 0; i < optionList.length; i++) {
+                ConfigList option = optionList[i];
+                boolean userOwned = option instanceof UserSpecificConfig user && user.isUserSpecific();
+                if (userOwned != client || controls[i] == null || !option.shouldLoad() || option.isEnforcingDefaults()) continue;
+                Object initial = controls[i];
+                group.put(i, builder.comment("Legacy option: " + option.getLabel())
+                        .define(List.of(getCategory(option), option.getLabel()), toToml(initial), value -> validModernValue(option, value, initial)));
+            }
+            Map<DataElement<?>, net.neoforged.neoforge.common.ModConfigSpec.ConfigValue<?>> extra = new HashMap<>();
+            if (!client) for (var category : additionalOptions.values()) for (DataElement<?> element : category.values()) {
+                if (element.data != null) extra.put(element, builder.define(List.of(element.category, element.name), toToml(element.data),
+                        value -> sameType(value, element.data)));
+            }
+            if (group.isEmpty() && extra.isEmpty()) continue;
+            var spec = builder.build();
+            group.forEach((id, value) -> { modernValues.put(id, value); modernSpecs.put(id, spec); });
+            extra.forEach((element, value) -> element.modern = () -> spec.isLoaded() ? fromToml(value.get(), element.data) : element.data);
+            configMod.getModContainer().registerConfig(client ? net.neoforged.fml.config.ModConfig.Type.CLIENT : net.neoforged.fml.config.ModConfig.Type.SYNCED,
+                    spec, configMod.getModId() + (client ? "-client-options.toml" : "-synced-options.toml"));
+        }
+    }
+
+    private static Object toToml(Object value) {
+        if (value instanceof Float number) return number.doubleValue();
+        if (value instanceof int[] array) return Arrays.stream(array).boxed().toList();
+        if (value instanceof String[] array) return Arrays.asList(array);
+        return value;
+    }
+
+    private static Object fromToml(Object value, Object legacy) {
+        if (legacy instanceof Float && value instanceof Number number) return number.floatValue();
+        if (legacy instanceof Integer && value instanceof Number number) return number.intValue();
+        if (legacy instanceof int[] && value instanceof List<?> list) return list.stream().mapToInt(v -> ((Number)v).intValue()).toArray();
+        if (legacy instanceof String[] && value instanceof List<?> list) return list.toArray(String[]::new);
+        return value;
+    }
+
+    private static boolean sameType(Object value, Object initial) {
+        if (initial instanceof int[]) return value instanceof List<?> list && list.stream().allMatch(v -> v instanceof Integer);
+        if (initial instanceof String[]) return value instanceof List<?> list && list.stream().allMatch(v -> v instanceof String);
+        if (initial instanceof Float) return value instanceof Number number && Float.isFinite(number.floatValue());
+        return value != null && initial.getClass().isInstance(value);
+    }
+
+    private static boolean validModernValue(ConfigList option, Object value, Object initial) {
+        if (!sameType(value, initial)) return false;
+        if (!(option instanceof BoundedConfig bounded)) return true;
+        Property.Type type = initial instanceof Boolean ? Property.Type.BOOLEAN : initial instanceof Integer ? Property.Type.INTEGER : initial instanceof Number ? Property.Type.DOUBLE : Property.Type.STRING;
+        Property property = value instanceof List<?> list ? new Property(option.getLabel(), list.stream().map(String::valueOf).toArray(String[]::new), type)
+                : new Property(option.getLabel(), String.valueOf(value), type);
+        return bounded.isValueValid(property);
     }
 
     public final void load() {
@@ -784,6 +859,7 @@ public class ControlledConfig {
     protected static final class DataElement<C> implements Comparable<DataElement<C>> {
 
         private C data;
+        private java.util.function.Supplier<Object> modern;
         public final String category;
         public final String name;
         private final ControlledConfig parent;
@@ -825,7 +901,7 @@ public class ControlledConfig {
         }
 
         public C getData() {
-            return data;
+            return modern == null ? data : (C)modern.get();
         }
 
         @Override

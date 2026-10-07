@@ -23,13 +23,15 @@ public class LuaGetPlacer extends LuaMethod {
 	@Override
 	protected Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
 		BlockEntityBase tile = (BlockEntityBase)te;
-		Player ep = tile.getPlacer();
-		return new Object[]{ep.getName(), ep.getUUID()};
+		if (args.length != 0) throw new LuaMethodException("getPlacer takes no arguments");
+		String name = tile.getPlacerName();
+		var uuid = tile.getPlacerID();
+		return new Object[]{name == null || name.isEmpty() ? null : name, uuid == null ? null : uuid.toString()};
 	}
 
 	@Override
 	public String getDocumentation() {
-		return "Returns the player who placed the machine.\nArgs: None\nReturns: [Name, UUID]";
+		return "Returns the player who placed the machine.\nArgs: None\nReturns: [Name, UUID string]; absent information is nil, offline placers remain available";
 	}
 
 	@Override

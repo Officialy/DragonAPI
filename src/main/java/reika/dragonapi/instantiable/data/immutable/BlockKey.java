@@ -21,7 +21,7 @@ import java.util.Objects;
 public final class BlockKey implements BlockCheck, Comparable<BlockKey> {
 
     public static final BlockKey AIR = new BlockKey(Blocks.AIR.defaultBlockState());
-    public BlockState blockID;
+    public final BlockState blockID;
 
     public BlockKey(Block b) {
         this(b.defaultBlockState());
@@ -34,16 +34,17 @@ public final class BlockKey implements BlockCheck, Comparable<BlockKey> {
     }
 
     public BlockKey(ItemStack is) {
-        this(Block.byItem(is.getItem()).defaultBlockState());
-        if (is.getItem() == null)
-            throw new MisuseException("Cannot create a BlockKey from a null item!");
-        Block b = Block.byItem(is.getItem());
-        if (b == null)
+        this(blockFromItem(is));
+    }
+
+    private static Block blockFromItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof net.minecraft.world.item.BlockItem item))
             throw new MisuseException("Cannot create a BlockKey with an item with no block!");
+        return item.getBlock();
     }
 
     public BlockKey(TileEnum m) {
-        blockID = m.getBlockState();
+        this(m.getBlockState());
     }
 
     public static BlockKey getAt(BlockGetter world, BlockPos pos) {
@@ -66,7 +67,7 @@ public final class BlockKey implements BlockCheck, Comparable<BlockKey> {
 
     @Override
     public String toString() {
-        return Objects.requireNonNull(BuiltInRegistries.BLOCK.getKey(blockID.getBlock()).getNamespace()).toLowerCase(Locale.ROOT);
+        return blockID.toString();
     }
 
     public ItemStack asItemStack() {
@@ -100,18 +101,18 @@ public final class BlockKey implements BlockCheck, Comparable<BlockKey> {
     }
 
 
-/*  todo  public void saveAdditional(String tag, CompoundTag NBT) {
-        CompoundTag dat = new CompoundTag();
-        dat.putString("id", Block.blockRegistry.getNameForObject(blockID));
-        NBT.put(tag, dat);
+    public void saveAdditional(String label, CompoundTag tag) {
+        tag.put(label, BlockState.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, blockID).getOrThrow());
     }
 
-    public static BlockKey load(String s, CompoundTag tag) {
-        CompoundTag dat = tag.getCompoundOrEmpty(s);
-        String id = dat.getStringOr("id", "");
-        BlockState b = Strings.isNullOrEmpty(id) ? null : Block.getBlockFromName(id);
-        return b != null ? new BlockKey(b) : null;
-    }*/
+    public static BlockKey load(String label, CompoundTag tag) {
+        if (!tag.contains(label)) return null;
+        var saved = tag.getCompoundOrEmpty(label);
+        var id = net.minecraft.resources.Identifier.tryParse(saved.getStringOr("id", ""));
+        if (id == null || BuiltInRegistries.BLOCK.getOptional(id).isEmpty()) return null;
+        // 26.3 uses id/properties; an old id-only entry naturally decodes to the default state.
+        return BlockState.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, saved).result().map(BlockKey::new).orElse(null);
+    }
 
     @Override
     public boolean match(BlockCheck bc) {

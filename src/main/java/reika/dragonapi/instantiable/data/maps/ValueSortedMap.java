@@ -16,14 +16,14 @@ import java.util.Map.Entry;
 
 public class ValueSortedMap<K, V> {
 
-	private final HashMap<K, V> raw;
-	private final TreeMap<K, V> data;
+	private final LinkedHashMap<K, V> raw;
+	private final LinkedHashMap<K, V> data;
 
 	private Comparator<V> comparator;
 
 	public ValueSortedMap() {
-		raw = new HashMap();
-		data = new TreeMap(new ValueComparator());
+		raw = new LinkedHashMap<>();
+		data = new LinkedHashMap<>();
 	}
 
 	public ValueSortedMap(Map<K, V> data) {
@@ -31,8 +31,9 @@ public class ValueSortedMap<K, V> {
 		this.putAll(data);
 	}
 
-	public ValueSortedMap setComparator(Comparator<V> c) {
+	public ValueSortedMap<K, V> setComparator(Comparator<V> c) {
 		comparator = c;
+		this.rebuildData();
 		return this;
 	}
 
@@ -75,7 +76,10 @@ public class ValueSortedMap<K, V> {
 
 	private void rebuildData() {
 		data.clear();
-		data.putAll(raw);
+		List<Entry<K, V>> entries = new ArrayList<>(raw.entrySet());
+		entries.sort((a, b) -> this.compareValues(a.getValue(), b.getValue()));
+		for (Entry<K, V> entry : entries)
+			data.put(entry.getKey(), entry.getValue());
 	}
 
 	public void clear() {
@@ -92,15 +96,15 @@ public class ValueSortedMap<K, V> {
 	}
 
 	public Set<Entry<K, V>> entrySet() {
-		return Collections.unmodifiableSet(data.entrySet());
+		return Collections.unmodifiableMap(data).entrySet();
 	}
 
 	public K getFirstKey() {
-		return this.isEmpty() ? null : data.firstEntry().getKey();
+		return this.isEmpty() ? null : data.entrySet().iterator().next().getKey();
 	}
 
 	public V getFirst() {
-		return this.isEmpty() ? null : data.firstEntry().getValue();
+		return this.isEmpty() ? null : data.entrySet().iterator().next().getValue();
 	}
 
 	@Override
@@ -108,17 +112,9 @@ public class ValueSortedMap<K, V> {
 		return raw.toString();
 	}
 
-	private class ValueComparator implements Comparator<V> {
-
-		private ValueComparator() {
-
-		}
-
-		@Override
-		public int compare(V o1, V o2) {
-			return comparator != null ? comparator.compare(o1, o2) : ((Comparable<V>)raw.get(o1)).compareTo(raw.get(o2));
-		}
-
+	@SuppressWarnings("unchecked")
+	private int compareValues(V a, V b) {
+		return comparator != null ? comparator.compare(a, b) : ((Comparable<? super V>) a).compareTo(b);
 	}
 
 }

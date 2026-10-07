@@ -136,7 +136,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public BlockEntity getBlockEntity() {
-        return this.getBlockEntity(null);
+        return this.getBlockEntity(getWorld());
     }
 
     public BlockEntity getBlockEntity(BlockGetter call) {
@@ -210,22 +210,31 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         return new WorldLocation(world, new BlockPos(pos.getX(), pos.getY(), pos.getZ()));
     }
 
-    public Level getWorld() {
-        if (isRemote) {
-            this.initClientWorld();
-            return clientWorld;
-        }
-        var server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            Level level = server.getLevel(dimension);
-            if (level != null)
-                return level;
-        }
-        return clientLevel();
+    /** Resolve using an authoritative logical-side context. A missing dimension never falls back to another world. */
+    public Level getWorld(Level context) {
+        if (context == null) return null;
+        return context.isClientSide() ? (context.dimension().equals(dimension) ? context : null) : getWorld(context.getServer());
     }
 
-    private void initClientWorld() {
-        if (clientWorld == null) clientWorld = clientLevel();
+    public Level getWorld(net.minecraft.server.MinecraftServer server) {
+        return server == null ? null : server.getLevel(dimension);
+    }
+
+    /** Compatibility entry point for older callers. New code should supply its level or server. */
+    public Level getWorld() {
+        if (isRemote) {
+            Level current = clientLevel();
+            return current != null && current.dimension().equals(dimension) ? current : null;
+        }
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null && server.isSameThread()) return getWorld(server);
+        Level current = clientLevel();
+        return current != null && current.dimension().equals(dimension) ? current : null;
+    }
+
+    public net.minecraft.world.level.block.entity.BlockEntity getBlockEntity(Level context) {
+        Level world = getWorld(context);
+        return world != null && world.hasChunkAt(pos) ? world.getBlockEntity(pos) : null;
     }
 
     /** Naming ClientLevel here would make the dedicated server fail to load WorldLocation itself,

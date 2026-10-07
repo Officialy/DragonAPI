@@ -9,7 +9,7 @@ import net.neoforged.neoforge.transfer.item.ResourceHandlerSlot;
 import net.neoforged.neoforge.transfer.transaction.Transaction;
 
 /**
- * 1.21.9: the legacy {@code net.neoforged.neoforge.items.ItemStackHandler} (and the whole
+ * In 26.3, the legacy {@code net.neoforged.neoforge.items.ItemStackHandler} (and the whole
  * {@code IItemHandler} family) was deprecated for removal. The official replacement is
  * {@link ItemStacksResourceHandler}, but its API is meaningfully different:
  *
@@ -51,6 +51,16 @@ public class ManagedItemHandler extends ItemStacksResourceHandler {
         super(stacks);
     }
 
+    @Override
+    public void deserialize(net.minecraft.world.level.storage.ValueInput input) {
+        var loaded = input.read(VALUE_IO_KEY, codec);
+        for (int slot = 0; slot < size(); slot++) {
+            ItemStack stack = loaded.isPresent() && slot < loaded.get().size() ? loaded.get().get(slot) : ItemStack.EMPTY;
+            reika.dragonapi.interfaces.LegacyItemData.migrate(stack);
+            stacks.set(slot, stack);
+        }
+    }
+
     /* ----------------------------------------------------------------------- */
     /* Legacy IItemHandler-style API: call sites in BEs, containers, GUIs etc. */
     /* ----------------------------------------------------------------------- */
@@ -62,11 +72,16 @@ public class ManagedItemHandler extends ItemStacksResourceHandler {
 
     /**
      * Legacy alias for {@code new ItemStack(getResource(i), getAmountAsInt(i))}; returns a
-     * <strong>live, mutable copy</strong> snapshot of the slot's contents. Mutating the
+     * <strong>detached</strong> snapshot of the slot's contents. Mutating the
      * returned stack does NOT write back — use {@link #setStackInSlot} or {@link #set}.
      */
     public ItemStack getStackInSlot(int slot) {
         return getResource(slot).toStack(getAmountAsInt(slot));
+    }
+
+    /** Container adapters require the backing stack; transfer readers should use the snapshot method. */
+    public ItemStack getLiveStack(int slot) {
+        return stacks.get(slot);
     }
 
     /**

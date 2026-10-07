@@ -11,7 +11,8 @@ package reika.dragonapi.extras;
 
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.libraries.java.ReikaStringParser;
-import reika.dragonapi.libraries.java.SemanticVersionParser;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import net.neoforged.fml.ModList;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,21 +79,30 @@ public class ModVersion implements Comparable<ModVersion> {
 	};
 	public final int majorVersion;
 	public final String subVersion;
+	private final String artifactVersion;
 
 	private ModVersion(int major) {
 		this(major, '\0');
 	}
 
 	private ModVersion(int major, char minor) {
+		artifactVersion = null;
 		majorVersion = major;
 		subVersion = minor == '\0' ? "" : Character.toString(minor).toLowerCase(Locale.ENGLISH);
+	}
+
+	private ModVersion(String version) {
+		artifactVersion = version;
+		String[] numbers = version.split("[.\\-+]", 3);
+		majorVersion = Integer.parseInt(numbers[0]);
+		subVersion = numbers[1];
 	}
 
 	public static ModVersion getFromString(String s) {
 		if (s == null || s.isBlank())
 			return error;
 		s = s.trim();
-		if (s.startsWith("$") || s.startsWith("@"))
+		if (s.equals("Source Code") || s.startsWith("$") || s.startsWith("@"))
 			return source;
 		if (s.contains("URL TIMEOUT"))
 			return timeout;
@@ -101,6 +111,8 @@ public class ModVersion implements Comparable<ModVersion> {
 		if (s.isEmpty())
 			return error;
 		try {
+			if (s.matches("[0-9]+\\.[0-9]+(?:\\.[0-9]+)*(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?"))
+				return new ModVersion(s);
 			char c = s.charAt(s.length() - 1);
 			if (Character.isDigit(c))
 				return new ModVersion(Integer.parseInt(s));
@@ -115,8 +127,6 @@ public class ModVersion implements Comparable<ModVersion> {
 	 * Not for setting ModContainer data; only use this during construction to pass to FML @Mod!
 	 */
 	public static ModVersion readFromJar(ZipFile jar, String innerName) {
-		if (isProduction())
-			return source;
 		Properties p = new Properties();
 		String path = ReikaStringParser.stripSpaces("version_" + ReikaStringParser.stripSpaces(innerName + ".properties"));
 		try {
@@ -139,45 +149,26 @@ public class ModVersion implements Comparable<ModVersion> {
 	}
 
 	public static ModVersion readFromFile(DragonAPIMod mod) {
-		if (isProduction())
-			return source;
-		Properties p = new Properties();
-		String path = ReikaStringParser.stripSpaces("version_" + ReikaStringParser.stripSpaces(mod.getTechnicalName().toLowerCase(Locale.ENGLISH)) + ".properties");
-//		try {
-//			InputStream stream = ModVersion.class.getClassLoader().getResourceAsStream(path);
-//			if (stream == null) {
-//				throw new FileNotFoundException("Version file for " + mod.getDisplayName() + " is missing!");
-//			}
-//			p.load(stream);
-//			String mj = p.getProperty("Major");
-//			String mn = p.getProperty("Minor");
-//			if (mj == null || mn == null || mj.equals("null") || mn.equals("null") || mj.isEmpty() || mn.isEmpty())
-//				throw new InstallationException(mod, "The version file was either damaged, overwritten, or is missing!");
-//			return getFromString(mj + mn);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			throw new InstallationException(mod, "The version file was either damaged, overwritten, or is missing!");
-//		}
-		return getFromString("0a");
+		// NeoForge metadata describes the artifact actually loaded, including patch and prerelease versions.
+		var container = ModList.get().getModContainerById(mod.getModId());
+		if (container.isPresent())
+			return getFromString(container.get().getModInfo().getVersion().toString());
+		return isProduction() ? error : source;
 	}
 
 	public static ModVersion fromSemanticVersion(String s) {
-		SemanticVersionParser.SemanticVersion sm = SemanticVersionParser.getVersion(s);
-		int[] ver = sm.versions();
-		int major = ver.length > 0 ? ver[0] : 1 ;
-		int minor = ver.length > 1 ? ver[1] : 1;
-		return new ModVersion(major, Character.toChars('a' - 1 + minor)[0]);
+		return getFromString(s);
 	}
 
 	@Override
 	public int hashCode() {
-		return (majorVersion << 16) | (subVersion.isEmpty() ? 0 : subVersion.charAt(0));
+		return !verify() ? System.identityHashCode(this) : java.util.Objects.hash(majorVersion, subVersion, artifactVersion);
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof ModVersion m) {
-			return m.majorVersion == majorVersion && m.subVersion.equals(subVersion);
+			return verify() && m.verify() && m.majorVersion == majorVersion && m.subVersion.equals(subVersion) && java.util.Objects.equals(m.artifactVersion, artifactVersion);
 		}
 		return false;
 	}
@@ -192,7 +183,7 @@ public class ModVersion implements Comparable<ModVersion> {
 
 	@Override
 	public String toString() {
-		return "v" + majorVersion + subVersion;
+		return artifactVersion != null ? artifactVersion : "v" + majorVersion + subVersion;
 	}
 
 	private int getSubVersionIndex() {
@@ -201,14 +192,17 @@ public class ModVersion implements Comparable<ModVersion> {
 
 	@Override
 	public int compareTo(ModVersion v) {
-		return 32 * (majorVersion - v.majorVersion) + (this.getSubVersionIndex() - v.getSubVersionIndex());
+		if (artifactVersion != null || v.artifactVersion != null)
+			return new DefaultArtifactVersion(toSemanticVersion()).compareTo(new DefaultArtifactVersion(v.toSemanticVersion()));
+		int major = Integer.compare(majorVersion, v.majorVersion);
+		return major != 0 ? major : Integer.compare(getSubVersionIndex(), v.getSubVersionIndex());
 	}
 
 	public boolean isNewerMinorVersion(ModVersion v) {
-		return v.majorVersion == majorVersion && v.getSubVersionIndex() < this.getSubVersionIndex();
+		return v.majorVersion == majorVersion && compareTo(v) > 0;
 	}
 
 	public String toSemanticVersion() {
-		return String.format("%d.%d", majorVersion, 1 + subVersion.charAt(0) - 'a');
+		return artifactVersion != null ? artifactVersion : majorVersion + "." + (subVersion.isEmpty() ? 0 : 1 + getSubVersionIndex());
 	}
 }

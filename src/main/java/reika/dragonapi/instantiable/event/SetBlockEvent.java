@@ -40,7 +40,7 @@ public abstract class SetBlockEvent extends WorldPositionEvent {
         super(ch.getLevel(), new BlockPos(ch.getPos().x() * 16 + x, y, ch.getPos().z() * 16 + z));
         chunk = ch;
         chunkLocation = new ChunkPos(ch.getPos().x(), ch.getPos().z());
-        isWorldgen = true;// todo !ReikaWorldHelper.isChunkPastCompletelyFinishedGenerating(world, ch.getPos().x(), ch.getPos().z());
+        isWorldgen = !ch.getPersistedStatus().isOrAfter(net.minecraft.world.level.chunk.status.ChunkStatus.FULL);
     }
 
     public static class Pre extends SetBlockEvent {

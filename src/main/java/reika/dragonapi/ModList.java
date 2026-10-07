@@ -151,17 +151,13 @@ public enum ModList implements ModEntry, Dependency {
 		blockClasses = blocks;
 		if (condition) {
 			ReikaJavaLibrary.pConsole("DRAGONAPI: " + this + " detected in the MC installation. Adjusting behavior accordingly.");
-		} else
-			//todo remove comment for this
-			// ReikaJavaLibrary.pConsole("DRAGONAPI: " + this + " not detected in the MC installation. No special action taken.");
+            ReikaJavaLibrary.pConsole("DRAGONAPI: Attempting to load data from " + this);
+            if (blocks == null)
+                ReikaJavaLibrary.pConsole("DRAGONAPI: No block class declared for " + this + ". This may be intentional.");
+            if (items == null)
+                ReikaJavaLibrary.pConsole("DRAGONAPI: No item class declared for " + this + ". This may be intentional.");
+        }
 
-			if (condition) {
-				ReikaJavaLibrary.pConsole("DRAGONAPI: Attempting to load data from " + this);
-				if (blocks == null)
-					ReikaJavaLibrary.pConsole("DRAGONAPI: Could not block class for " + this + ": Specified class was null. This may not be an error.");
-				if (items == null)
-					ReikaJavaLibrary.pConsole("DRAGONAPI: Could not item class for " + this + ": Specified class was null. This may not be an error.");
-			}
 	}
 
 	ModList(String label, String modClass) {

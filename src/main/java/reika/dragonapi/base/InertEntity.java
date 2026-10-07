@@ -108,7 +108,7 @@ public abstract class InertEntity extends Entity {
 
     
     protected SoundEvent getSwimSplashSound() {
-        return SoundEvent.createVariableRangeEvent(Identifier.parse(""));
+        return net.minecraft.sounds.SoundEvents.GENERIC_SPLASH;
     }
 
     

@@ -24,7 +24,7 @@ public class MultiBlockBlueprint {
 	public final int xSize;
 	public final int ySize;
 	public final int zSize;
-	private final List<Integer> overrides = new ArrayList<>();
+	private final List<Block> overrides = new ArrayList<>();
 	protected Block[][][] IDs;
 
 	public MultiBlockBlueprint(int x, int y, int z) {
@@ -78,8 +78,13 @@ public class MultiBlockBlueprint {
 		return overrides.contains(b);
 	}
 
+	/** Accepts a current runtime registry id; persisted legacy numeric ids must be migrated first. */
 	public MultiBlockBlueprint addOverwriteableID(int id) {
-		overrides.add(id);
+		return this.addOverwriteableBlock(net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(id));
+	}
+
+	public MultiBlockBlueprint addOverwriteableBlock(Block block) {
+		overrides.add(java.util.Objects.requireNonNull(block));
 		return this;
 	}
 

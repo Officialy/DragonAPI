@@ -17,21 +17,21 @@ import java.util.Map;
 
 public class GlowLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 
-    private static final Map<String, RenderType> RENDER_TYPES = new HashMap<>();
-
     public GlowLayer(RenderLayerParent<AvatarRenderState, PlayerModel> pRenderer) {
         super(pRenderer);
     }
 
     @Override
     public void submit(PoseStack pMatrixStack, SubmitNodeCollector pBuffer, int pPackedLight, AvatarRenderState pLivingEntity, float pNetHeadYaw, float pHeadPitch) {
-        // TODO 1.21+: Port to SubmitNodeCollector
+        var level = net.minecraft.client.Minecraft.getInstance().level;
+        if (level == null || pLivingEntity.isInvisible || pLivingEntity.isSpectator) return;
+        var entity = level.getEntity(pLivingEntity.id);
+        if (entity == null) return;
+        Identifier texture = PlayerSpecificRenderer.instance.getGlowTexture(entity.getUUID());
+        if (texture == null) return;
+        pBuffer.submitModel(getParentModel(), pLivingEntity, pMatrixStack,
+                RenderTypes.entityTranslucentEmissive(texture), 15728880,
+                net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 0);
     }
 
-    private static RenderType getRenderType(String texture) {
-        return RENDER_TYPES.computeIfAbsent(texture, t -> {
-            Identifier loc = Identifier.fromNamespaceAndPath(DragonAPI.MODID, "textures/entity/glow/" + t + ".png");
-            return RenderTypes.entityTranslucentEmissive(loc);
-        });
-    }
 }

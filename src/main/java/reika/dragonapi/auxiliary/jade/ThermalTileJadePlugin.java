@@ -58,7 +58,7 @@ public class ThermalTileJadePlugin implements IWailaPlugin {
 
         @Override
         public void appendServerData(CompoundTag data, BlockAccessor accessor) {
-            if (accessor.getBlockEntity() instanceof ThermalTile t)
+            if (accessor.getBlockEntity() instanceof ThermalTile t && t.hasTemperature())
                 data.putInt(TAG, t.getTemperature());
         }
 

@@ -81,18 +81,12 @@ public class EntityListCommand {
 
     private static ArrayList<String> getData(Player ep, Dist side) {
         ArrayList<String> li = new ArrayList<>();
-        String sd = ReikaStringParser.capFirstChar(side.name());
-//    todo    for (Class c : ((Map<Class, String>)EntityList.classToStringMapping).keySet()) {
-//            String s = (String)EntityList.classToStringMapping.get(c);
-//            if (s == null)
-//                s = "[NO NAME]";
-//            else if (s.isEmpty())
-//                s = "[EMPTY STRING]";
-//            Integer id = (Integer)EntityList.stringToIDMapping.get(s);
-//            String sid = id != null ? String.valueOf(id) : "[NO ID]";
-//            String loc = ReikaEntityHelper.getEntityDisplayName(s);
-//            li.add(String.format("%s - '%s': Class = %s; ID = %s; Name = '%s'", sd, s, c.getName(), sid, loc));
-//        }
+        var registry = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE;
+        for (var type : registry) {
+            li.add(String.format("%s - '%s': ID = %d; Name = '%s'; Category = %s",
+                    side.name(), registry.getKey(type), registry.getId(type), type.getDescription().getString(), type.getCategory()));
+        }
+        li.sort(String::compareTo);
         return li;
     }
 }

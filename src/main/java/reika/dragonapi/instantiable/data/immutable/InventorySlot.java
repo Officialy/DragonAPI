@@ -27,17 +27,21 @@ public record InventorySlot(Container inventory, int slot) {
         is.shrink(ret);
         if (is.getCount() <= 0)
             inventory.setItem(slot, ItemStack.EMPTY);
+        else
+            inventory.setChanged();
         return ret;
     }
 
     public int increment(int amt) {
-        ItemStack is = this.getStack();
-        int max = Math.min(is.getMaxStackSize(), inventory.getMaxStackSize());
-        int ret = Math.min(amt, max - is.getCount());
-        is.setCount(is.getCount() + ret);
-        if (is.getCount() <= 0)
-            inventory.setItem(slot, ItemStack.EMPTY);
-        return ret;
+        ItemStack stack = this.getStack();
+        if (stack.isEmpty() || amt <= 0) return 0;
+        int max = Math.min(stack.getMaxStackSize(), inventory.getMaxStackSize());
+        int added = Math.min(amt, Math.max(0, max - stack.getCount()));
+        if (added > 0) {
+            stack.grow(added);
+            inventory.setChanged();
+        }
+        return added;
     }
 
     public ItemStack setSlot(ItemStack is) {

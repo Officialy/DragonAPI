@@ -23,7 +23,11 @@ import reika.dragonapi.libraries.io.NBTCompat;
 
 public final class KeyedItemStack implements Comparable<KeyedItemStack> {
 
+    private static final com.google.common.collect.Interner<ComponentOrder> COMPONENT_ORDERS =
+            com.google.common.collect.Interners.newWeakInterner();
+    private static final java.util.concurrent.atomic.AtomicLong NEXT_COMPONENT_ORDER = new java.util.concurrent.atomic.AtomicLong();
     private final ItemStack item;
+    private final ComponentOrder componentOrder;
     private final boolean[] enabledCriteria = new boolean[Criteria.list.length];
     private boolean lock = false;
     private boolean simpleHash = false;
@@ -43,6 +47,9 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         if (is == null || is.getItem() == null)
             throw new MisuseException("You cannot key a null itemstack!");
         item = is.copy();
+        componentOrder = COMPONENT_ORDERS.intern(new ComponentOrder(
+                net.minecraft.core.component.DataComponentMap.builder().addAll(item.getComponents()).build(),
+                NEXT_COMPONENT_ORDER.getAndIncrement()));
         for (int i = 0; i < enabledCriteria.length; i++)
             enabledCriteria[i] = Criteria.list[i].defaultState;
     }
@@ -55,7 +62,8 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         boolean ignore = NBTCompat.getBoolean(nbt, "ignorenbt", false);
         boolean sized = NBTCompat.getBoolean(nbt, "sized", false);
         boolean simple = NBTCompat.getBoolean(nbt, "simplehash", false);
-        return new KeyedItemStack(ItemStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(NbtOps.INSTANCE) : NbtOps.INSTANCE, nbt).result().orElse(ItemStack.EMPTY)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple);
+        return new KeyedItemStack(ItemStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(NbtOps.INSTANCE) : NbtOps.INSTANCE, nbt).result().orElse(ItemStack.EMPTY)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple)
+                .setIgnoreMetadata(NBTCompat.getBoolean(nbt, "ignoremeta", false));
     }
 
     public KeyedItemStack setSized(boolean size) {
@@ -84,23 +92,19 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
 
     @Override
     public int hashCode() {
-        if (simpleHash)
-            return item.getItem().hashCode();
-        int hash = 0;
-        for (int i = 0; i < Criteria.list.length; i++) {
-            Criteria c = Criteria.list[i];
-            if (enabledCriteria[i])
-                hash += c.hash(this) << i;
-        }
-        return hash;
+        // Item-only hashing remains compatible with legacy simpleHash callers.
+        return item.getItem().hashCode();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof KeyedItemStack ks) {
-            return this.match(ks, false);
-        }
-        return false;
+        return o instanceof KeyedItemStack ks && java.util.Arrays.equals(enabledCriteria, ks.enabledCriteria)
+                && this.match(ks, false);
+    }
+
+    /** Matching may deliberately ignore criteria; it is not a collection equality relation. */
+    public boolean matches(KeyedItemStack ks) {
+        return this.match(ks, false);
     }
 
     public boolean exactMatch(KeyedItemStack ks) {
@@ -171,7 +175,7 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     public boolean contains(KeyedItemStack ks) {
-        if (!this.exactMatch(ks) && this.equals(ks)) {
+        if (!this.exactMatch(ks) && this.matches(ks)) {
             boolean flag = true;
             for (int i = 0; i < Criteria.list.length; i++) {
                 Criteria c = Criteria.list[i];
@@ -185,8 +189,39 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
 
     @Override
     public int compareTo(KeyedItemStack o) {
-        //return ReikaItemHelper.comparator.compare(item, o.item);
-        return 1; //- TODO compareto?
+        int result = this.getCriteriaFlags().compareTo(o.getCriteriaFlags());
+        if (result != 0) return result;
+        if (enabledCriteria[Criteria.ID.ordinal()]) {
+            result = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item.getItem())
+                    .compareTo(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(o.item.getItem()));
+            if (result != 0) return result;
+        }
+        if (enabledCriteria[Criteria.METADATA.ordinal()]) {
+            result = Integer.compare(item.getDamageValue(), o.item.getDamageValue());
+            if (result != 0) return result;
+        }
+        if (enabledCriteria[Criteria.SIZE.ordinal()]) {
+            result = Integer.compare(item.getCount(), o.item.getCount());
+            if (result != 0) return result;
+        }
+        if (enabledCriteria[Criteria.NBT.ordinal()] && !componentOrder.components().equals(o.componentOrder.components()))
+            return Long.compare(componentOrder.order(), o.componentOrder.order());
+        return 0;
+    }
+
+    /** Native components include transient values without a persistence codec. Intern immutable
+     * snapshots to give their equality classes a stable order for the lifetime of live keys.
+     * This ordering is process-local; it is not a persisted id or a world-generation seed. */
+    private record ComponentOrder(net.minecraft.core.component.DataComponentMap components, long order) {
+        @Override public boolean equals(Object other) {
+            return other instanceof ComponentOrder value && components.equals(value.components);
+        }
+        @Override public int hashCode() { return components.hashCode(); }
+    }
+
+    public KeyedItemStack setIgnoreMetadata(boolean ignore) {
+        if (!lock) enabledCriteria[Criteria.METADATA.ordinal()] = !ignore;
+        return this;
     }
 
     public String getDisplayName() {
@@ -233,7 +268,7 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
                 case SIZE:
                     return k1.item.getCount() == k2.item.getCount();
                 case NBT: //components only; size is its own criterion (ItemStack.matches also compared counts)
-                    return ItemStack.isSameItemSameComponents(k1.item, k2.item);
+                    return k1.componentOrder.components().equals(k2.componentOrder.components());
             }
             return false;
         }

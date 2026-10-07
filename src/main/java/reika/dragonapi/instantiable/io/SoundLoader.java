@@ -71,7 +71,7 @@ public class SoundLoader {
     private void registerSound(SoundEnum e, SoundResource sr) {
         Identifier p = e.getPath();
         boolean stream = e instanceof StreamableSound && ((StreamableSound) e).isStreamed();
-//        DirectResourceManager.getInstance().registerCustomPath(p, e.getCategory(), stream);
+DirectResourceManager.getInstance().registerCustomPath(p, e.getCategory(), stream);
         this.onRegister(e, p);
         if (e.preload()) {
             try {
@@ -102,7 +102,7 @@ public class SoundLoader {
 
         private SoundResource(SoundEnum s) {
             sound = s;
-            reference = FMLEnvironment.getDist() == Dist.CLIENT ? getReference(s) : null;
+            reference = getReference(s);
         }
 
         private static Identifier getReference(SoundEnum s) {

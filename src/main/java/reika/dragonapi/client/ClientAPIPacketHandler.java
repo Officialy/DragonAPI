@@ -96,8 +96,9 @@ public final class ClientAPIPacketHandler {
                 }
             }
             case GUIRELOAD -> {
-//                if (Minecraft.getInstance().screen != null)
-//                    Minecraft.getInstance().screen.initGui();
+                var minecraft = Minecraft.getInstance();
+                var screen = minecraft.gui.screen();
+                if (screen != null) screen.resize(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
             }
             case POPUP -> {
                 if (data.length > 0 && sg != null)

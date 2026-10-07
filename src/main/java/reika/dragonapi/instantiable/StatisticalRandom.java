@@ -49,6 +49,10 @@ public class StatisticalRandom<K> {
         this.setNBTConverter((ReikaNBTHelper.NBTIO<K>) new ReikaNBTHelper.EnumNBTConverter((Class<? extends Enum>) set));
     }
 
+    public void addOption(K value) { options.add(value); }
+
+    public void removeOption(K value) { options.remove(value); }
+
     public void setNBTConverter(ReikaNBTHelper.NBTIO<K> c) {
         this.converter = c;
     }

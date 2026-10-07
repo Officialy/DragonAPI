@@ -373,21 +373,33 @@ public class ReikaRecipeHelper {
     *     @return the input itemstack, or empty if no recipe exists
     */
    public static ItemStack getFurnaceInput(ItemStack out) {
-//   todo    FurnaceRecipes.smelting().getSmeltingList();
-//       for (Object o : m.keySet()) {
-//           ItemStack in = (ItemStack) o;
-//           if (ReikaItemHelper.matchStacks(FurnaceRecipes.smelting().getSmeltingResult(in), out)) {
-//               return in;
-//           }
-//       }
+       var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+       var recipes = server != null && server.isSameThread() ? server.getRecipeManager().recipeMap()
+               : net.neoforged.fml.loading.FMLEnvironment.getDist().isClient() ? reika.dragonapi.client.SyncedRecipeLookup.recipes() : null;
+       return getFurnaceInput(recipes, out);
+   }
+
+   public static ItemStack getFurnaceInput(net.minecraft.world.item.crafting.RecipeMap recipes, ItemStack out) {
+       if (recipes == null || out == null || out.isEmpty()) return ItemStack.EMPTY;
+       for (var holder : recipes.byType(net.minecraft.world.item.crafting.RecipeType.SMELTING)) {
+           var recipe = holder.value();
+           if (ItemStack.isSameItemSameComponents(recipe.assemble(new net.minecraft.world.item.crafting.SingleRecipeInput(ItemStack.EMPTY)), out))
+               return recipe.input().items().findFirst().map(h -> h.value().getDefaultInstance()).orElse(ItemStack.EMPTY);
+       }
        return ItemStack.EMPTY;
    }
 
-   /**
-    * Adds a smelting recipe. Args; Item in, item out, xp
-    */
+   /** Runtime recipe mutation was removed. Use the datagen overload so reloads preserve the recipe. */
+   @Deprecated(forRemoval = true)
    public static void addSmelting(ItemStack in, ItemStack out, float xp) {
-//    todo    FurnaceRecipes.smelting().func_151394_a(in, out, xp);
+       throw new UnsupportedOperationException("Register smelting with a RecipeOutput during datagen, or supply a datapack recipe");
+   }
+
+   public static void addSmelting(net.minecraft.data.recipes.RecipeOutput output, net.minecraft.resources.ResourceKey<Recipe<?>> id,
+           net.minecraft.world.item.crafting.Ingredient input, net.minecraft.world.item.ItemStackTemplate result, float xp) {
+       output.accept(id, new net.minecraft.world.item.crafting.SmeltingRecipe(
+               new Recipe.CommonInfo(false), new net.minecraft.world.item.crafting.AbstractCookingRecipe.CookingBookInfo(net.minecraft.world.item.crafting.CookingBookCategory.MISC, ""),
+               input, result, xp, 200), null);
    }
 
    public static boolean replaceIngredientInRecipe(ItemStack ingredient, Object replacement, Recipe<?> ir) {

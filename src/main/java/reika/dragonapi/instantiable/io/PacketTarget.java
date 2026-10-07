@@ -43,7 +43,7 @@ public abstract class PacketTarget {
     public static final class OtherPlayersTarget extends CompoundPlayerTarget {
 
         public OtherPlayersTarget(Player ep, double r) {
-            super(ep.level().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getEntityCenteredAABB(ep, r))); //todo check if this works
+            super(ep.level().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getEntityCenteredAABB(ep, r), other -> !other.getUUID().equals(ep.getUUID())));
         }
 
     }

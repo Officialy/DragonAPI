@@ -47,10 +47,8 @@ public abstract class BlockEntityRenderBase<TE extends BlockEntity> implements B
     }
 
     @Override
-    public void submit(BlockEntityRenderState blockEntityRenderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState cameraRenderState) {
-        // This method needs to be implemented by subclasses
-        // For now, we'll provide a default implementation that does nothing
-    }
+    public abstract void submit(BlockEntityRenderState blockEntityRenderState, PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector, CameraRenderState cameraRenderState);
 
     public final boolean isValidMachineRenderPass(BlockEntityBase te) {
 //     todo   if (!te.isInWorld() || StructureRenderer.isRenderingTiles())

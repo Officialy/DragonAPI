@@ -24,15 +24,16 @@ public class LuaGetSlot extends LuaMethod {
 
 	@Override
 	protected Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
-		int slot = ((Double)args[0]).intValue();
+		if (args.length != 1) throw new LuaMethodException("Expected one zero-based inventory slot");
+		int slot = LuaArguments.integer(args[0], "slot", 0, ((Container)te).getContainerSize() - 1);
 		Container ii = (Container)te;
 		ItemStack is = ii.getItem(slot);
-		if (is == null)
-			return null;
+		if (is.isEmpty())
+			return new Object[]{"Empty"};
 		Object[] o = new Object[4];
-		o[0] = is.getItem().toString();
+		o[0] = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(is.getItem()).toString();
 		o[1] = is.getCount();
-		o[2] = is.getDisplayName();
+		o[2] = is.getDisplayName().getString();
 		CustomData cd = is.get(DataComponents.CUSTOM_DATA);
 		o[3] = cd != null ? cd.copyTag().toString() : null;
 		return o;
@@ -40,12 +41,12 @@ public class LuaGetSlot extends LuaMethod {
 
 	@Override
 	public String getDocumentation() {
-		return "Returns the inventory slot contents.\nArgs: None\nReturns: \"Empty\" if empty, otherwise [itemID, getCount(), displayName]";
+		return "Returns the inventory slot contents.\nArgs: zero-based slot\nReturns: \"Empty\" if empty, otherwise [registry name, count, displayName, custom data or nil]";
 	}
 
 	@Override
 	public String getArgsAsString() {
-		return "";
+		return "int slot";
 	}
 
 	@Override

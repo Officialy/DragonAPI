@@ -846,9 +846,8 @@ public class BlockArray implements Iterable<BlockPos> {
         }
     }
 
-    public StructuredBlockArray offset(int x, int y, int z) {
-        this.offset(new BlockPos(x, y, z));
-        return null;
+    public BlockArray offset(int x, int y, int z) {
+        return this.offset(new BlockPos(x, y, z));
     }
 
     public final int sink(Level world) {
@@ -938,8 +937,9 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
     public boolean addIfClear(Level world, BlockPos pos) {
-        Block id = world.getBlockState(pos).getBlock();
-        if (id == Blocks.AIR) {
+        var state = world.getBlockState(pos);
+        Block id = state.getBlock();
+        if (state.isAir() || (state.getFluidState().isEmpty() && state.getCollisionShape(world, pos).isEmpty())) {
             this.addBlockCoordinate(pos);
             return true;
         }
@@ -948,8 +948,7 @@ public class BlockArray implements Iterable<BlockPos> {
 //            return true;
 //        }
         if (id instanceof SemiTransparent b) {
-            if (b.isOpaque())
-                return false;
+            return !b.isOpaque();
         }
         //if (!id.isOpaqueCube()) //do not block but do not add
         //    return true;
@@ -1023,7 +1022,7 @@ public class BlockArray implements Iterable<BlockPos> {
         if (refWorld != null) {
             for (int i = 0; i < this.getSize(); i++) {
                 BlockPos c = this.getNthBlock(i);
-                refWorld.getBlockState(c).getBlock();
+                refWorld.setBlock(c, b.defaultBlockState(), 3);
             }
         } else {
             throw new MisuseException("Cannot apply operations to a null world!");
@@ -1119,7 +1118,7 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
     public void intersectWith(BlockArray b) {
-        Iterator<BlockPos> it = blocks.iterator();
+        Iterator<BlockPos> it = this.iterator();
         while (it.hasNext()) {
             BlockPos c = it.next();
             if (!b.keys.contains(c)) {
@@ -1131,9 +1130,7 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
     public void unifyWith(BlockArray b) {
-        for (BlockPos c : b.blocks) {
-            this.addKey(c);
-        }
+        this.addAll(b);
         this.resetLimits();
     }
 
@@ -1154,7 +1151,7 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
     public void sortBlocksByDistance(BlockPos loc) {
-        // this.sort(new InwardsComparator(loc));
+        this.sort(Comparator.<BlockPos>comparingDouble(pos -> -pos.distSqr(loc)).thenComparing(BlockPos::compareTo));
     }
 
     public void sort(Comparator<BlockPos> comparator) {
@@ -1224,7 +1221,7 @@ public class BlockArray implements Iterable<BlockPos> {
             }
         }
         for (BlockPos c : set) {
-            this.addKey(c);
+            this.addBlockCoordinate(c);
         }
     }
 
@@ -1322,6 +1319,7 @@ public class BlockArray implements Iterable<BlockPos> {
     private final class BlockArrayIterator implements Iterator<BlockPos> {
 
         private int index;
+        private BlockPos lastReturned;
 
         private BlockArrayIterator() {
 
@@ -1329,19 +1327,24 @@ public class BlockArray implements Iterable<BlockPos> {
 
         @Override
         public boolean hasNext() {
-            return blocks.size() > index + 1;
+            return index < blocks.size();
         }
 
         @Override
         public BlockPos next() {
-            BlockPos c = blocks.get(index);
-            index++;
-            return c;
+            if (!this.hasNext())
+                throw new NoSuchElementException();
+            lastReturned = blocks.get(index++);
+            return lastReturned;
         }
 
         @Override
         public void remove() {
-            BlockArray.this.remove(index);
+            if (lastReturned == null)
+                throw new IllegalStateException("next() must precede remove()");
+            BlockArray.this.remove(lastReturned);
+            index--;
+            lastReturned = null;
         }
 
     }

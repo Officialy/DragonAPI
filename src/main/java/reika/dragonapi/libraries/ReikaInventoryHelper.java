@@ -790,18 +790,7 @@ public class ReikaInventoryHelper {
      * Fill-in so one does not need to constantly rewrite the Inventory method
      */
     public static ItemStack decrStackSize(ManagedItemHandler ii, int slot, int decr) {
-        if (!ii.getStackInSlot(slot).isEmpty()) {
-            if (ii.getStackInSlot(slot).getCount() <= decr) {
-                ItemStack itemstack = ii.getStackInSlot(slot);
-                ii.setStackInSlot(slot, ItemStack.EMPTY);
-                return itemstack;
-            }
-            ItemStack itemstack1 = ii.getStackInSlot(slot).split(decr);
-            if (ii.getStackInSlot(slot).getCount() == 0)
-                ii.setStackInSlot(slot, ItemStack.EMPTY);
-            return itemstack1;
-        } else
-            return ItemStack.EMPTY;
+        return ii.extractItem(slot, decr, false);
     }
 
     public static int locateIDInInventory(Item id, Inventory ii) {

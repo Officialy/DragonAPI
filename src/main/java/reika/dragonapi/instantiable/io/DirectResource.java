@@ -25,41 +25,31 @@ public class DirectResource extends Resource {
     private byte[] data;
 
     public DirectResource(String path) {
-        super(null, null); //todo null for now to compile
+        super(reika.dragonapi.io.DirectResourceManager.getInstance().sourcePack(), () -> openPath(path));
         this.path = path;
     }
 
     @Override
-    public InputStream open() {
-        if (cacheData) {
-            //ReikaJavaLibrary.pConsole("Loading "+path+", data="+data);
-            if (data == null) {
-                try (InputStream st = this.calcStream()) {
-                    if (st == null)
-                        throw new RuntimeException("Resource not found at " + path);
-                    data = ReikaJavaLibrary.streamToBytes(st);
-				} catch (IOException e) {
-					throw new IllegalStateException("Could not load resource " + path, e);
-				}
-            }
-            //ReikaJavaLibrary.pConsole("Loaded cache for "+path+", data="+data);
-            return new ByteArrayInputStream(data);
-        } else {
-            //ReikaJavaLibrary.pConsole("Skipped cache for "+path);
-            return this.calcStream();
+    public synchronized InputStream open() throws IOException {
+        if (!cacheData) return this.calcStream();
+        if (data == null) {
+            try (InputStream stream = this.calcStream()) { data = stream.readAllBytes(); }
         }
+        return new ByteArrayInputStream(data);
     }
 
-    protected InputStream calcStream() {
-        File f = new File(path);
-        if (f.exists()) {
-            try {
-                return new FileInputStream(f);
-            } catch (FileNotFoundException e) {
-                return null;
-            }
-        } else
-            return DragonAPI.class.getClassLoader().getResourceAsStream(path);
+    public synchronized void clearCache() { data = null; }
+
+    private static InputStream openPath(String path) throws IOException {
+        File file = new File(path);
+        if (file.isFile()) return new FileInputStream(file);
+        InputStream stream = DragonAPI.class.getClassLoader().getResourceAsStream(path);
+        if (stream == null) throw new FileNotFoundException(path);
+        return stream;
+    }
+
+    protected InputStream calcStream() throws IOException {
+        return openPath(path);
     }
 
 }

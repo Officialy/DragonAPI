@@ -23,12 +23,11 @@ public class WeightedRandom<V> {
     private boolean isDynamic = false;
 
     public double addEntry(V obj, double weight) {
-        if (weight < 0)
+        if (!Double.isFinite(weight) || weight < 0)
             throw new MisuseException("You cannot have an entry with a negative weight!");
         data.put(obj, weight);
-        this.weightSum += weight;
-        this.maxWeight = Math.max(this.maxWeight, weight);
-        this.isDynamic |= obj instanceof DynamicWeight;
+        if (weighted != null) weighted.addOption(obj);
+        this.recalculateWeights();
         return this.weightSum;
     }
 
@@ -37,9 +36,10 @@ public class WeightedRandom<V> {
     }
 
     public double remove(V val) {
-        double ret = data.remove(val);
-        this.weightSum -= ret;
-        return ret;
+        Double ret = data.remove(val);
+        if (weighted != null) weighted.removeOption(val);
+        this.recalculateWeights();
+        return ret != null ? ret : 0;
     }
 
     public V getRandomEntry() {
@@ -50,7 +50,7 @@ public class WeightedRandom<V> {
         double p = 0;
         for (V obj : data.keySet()) {
             p += this.getWeight(obj);
-            if (d <= p) {
+            if (d < p) {
                 return obj;
             }
         }
@@ -63,7 +63,7 @@ public class WeightedRandom<V> {
         double p = 0;
         for (V obj : data.keySet()) {
             p += this.getWeight(obj);
-            if (d <= p) {
+            if (d < p) {
                 return obj;
             }
         }
@@ -126,6 +126,19 @@ public class WeightedRandom<V> {
         this.data.clear();
         this.maxWeight = 0;
         this.weightSum = 0;
+        this.isDynamic = false;
+        this.weighted = null;
+    }
+
+    private void recalculateWeights() {
+        weightSum = 0;
+        maxWeight = 0;
+        isDynamic = false;
+        for (var entry : data.entrySet()) {
+            weightSum += entry.getValue();
+            maxWeight = Math.max(maxWeight, entry.getValue());
+            isDynamic |= entry.getKey() instanceof DynamicWeight;
+        }
     }
 
     public static class InvertedWeightedRandom<V> {
@@ -235,6 +248,7 @@ public class WeightedRandom<V> {
         nbt.putDouble("total", weightSum);
         nbt.putDouble("max", maxWeight);
         nbt.putBoolean("dynamic", isDynamic);
+        tag.put(s, nbt);
     }
 
     public void load(String s, CompoundTag tag, ObjectToNBTSerializer<V> serializer) {
@@ -247,11 +261,10 @@ public class WeightedRandom<V> {
             CompoundTag e = (CompoundTag) o;
             V key = serializer.construct(e.getCompoundOrEmpty("key"));
             double wt = e.getDoubleOr("weight", 0);
-            this.data.put(key, wt);
+            this.addEntry(key, wt);
         }
-        this.weightSum = data.getDoubleOr("total", 0);
-        this.maxWeight = data.getDoubleOr("max", 0);
-        this.isDynamic = data.getBooleanOr("dynamic", false);
+        // Derive aggregate state from entries rather than trusting redundant saved totals.
+        this.recalculateWeights();
     }
 
     public void setHistorical() {

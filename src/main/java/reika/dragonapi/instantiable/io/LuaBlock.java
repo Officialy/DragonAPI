@@ -679,12 +679,11 @@ public abstract class LuaBlock {
 
         @Override
         public int compare(String o1, String o2) {
-            if (o1.equals("type"))
-                return Integer.MIN_VALUE;
-            else if (o2.equals("type"))
-                return Integer.MAX_VALUE;
-            else
-                return o1.compareToIgnoreCase(o2);
+            if (o1.equals(o2)) return 0;
+            if (o1.equals("type")) return -1;
+            if (o2.equals("type")) return 1;
+            int result = o1.compareToIgnoreCase(o2);
+            return result != 0 ? result : o1.compareTo(o2);
         }
 
     }

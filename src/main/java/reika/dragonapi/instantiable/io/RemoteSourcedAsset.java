@@ -45,7 +45,7 @@ public class RemoteSourcedAsset {
             return new FileInputStream(f);
         } else {
             DragonAPI.LOGGER.error("Could not find main resource for asset " + reference + "/" + path + "!");
-            InputStream in = ClientEnvironment.resourceStream(Identifier.fromNamespaceAndPath(reference, fall)); //todo attempt for getting resource inputstream from pack
+            InputStream in = this.resourceStream(fall); //todo attempt for getting resource inputstream from pack
             if (in != null)
                 return in;
             DragonAPI.LOGGER.error("Could not find ANY resource for asset " + reference + "/" + path + "!");
@@ -54,7 +54,15 @@ public class RemoteSourcedAsset {
     }
 
     private InputStream getPrimary() throws IOException {
-        return ClientEnvironment.resourceStream(Identifier.fromNamespaceAndPath(reference, path)); //todo attempt for getting resource inputstream from pack
+        return this.resourceStream(path);
+    }
+
+    private InputStream resourceStream(String resourcePath) throws IOException {
+        if (net.neoforged.fml.loading.FMLEnvironment.getDist().isClient() && ClientEnvironment.hasGameInstance()) {
+            InputStream in = ClientEnvironment.resourceStream(Identifier.fromNamespaceAndPath(reference, resourcePath));
+            if (in != null) return in;
+        }
+        return DragonAPI.class.getClassLoader().getResourceAsStream("assets/" + reference + "/" + resourcePath);
     }
 
     public void load() {

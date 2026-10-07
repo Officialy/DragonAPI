@@ -19,7 +19,7 @@ public enum PacketTypes {
     PREFIXED(),
     POS(),
     FULLSOUND(),
-    // 26.1: dedicated type for {@link reika.dragonapi.instantiable.io.SyncPacket} (BlockEntityBase's
+    // 26.3: dedicated type for {@link reika.dragonapi.instantiable.io.SyncPacket} (BlockEntityBase's
     // periodic full-BE-NBT sync, post-tick-20). Wire format: BlockPos (long) + varInt typeId + NBT.
     // Previously SyncPacket co-opted {@link #SYNC}, but the SYNC handler reads UTF-name + 3×int,
     // which silently corrupted every periodic sync — client tanks never updated, fluid never
@@ -28,7 +28,12 @@ public enum PacketTypes {
     BE_NBT_SYNC();
 
     public static PacketTypes getPacketType(int type) {
-        return PacketTypes.values()[type];
+        if (type < 0 || type >= values().length) throw new IllegalArgumentException("Invalid packet type: " + type);
+        return values()[type];
+    }
+
+    public boolean isClientboundOnly() {
+        return this == SYNC || this == TANK || this == BE_NBT_SYNC || this == SOUND || this == FULLSOUND;
     }
 
     public boolean hasCoordinates() {

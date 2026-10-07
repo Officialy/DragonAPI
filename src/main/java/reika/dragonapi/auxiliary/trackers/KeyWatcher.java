@@ -1,26 +1,11 @@
 package reika.dragonapi.auxiliary.trackers;
 
-import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
- import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import reika.dragonapi.APIPacketHandler;
-import reika.dragonapi.DragonAPI;
 import reika.dragonapi.base.DragonAPIMod;
 import reika.dragonapi.exception.InstallationException;
-import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.maps.PlayerMap;
-import reika.dragonapi.instantiable.event.RawKeyPressEvent;
-import reika.dragonapi.instantiable.io.oldforge.Property;
 import reika.dragonapi.interfaces.configuration.StringConfig;
-import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -46,42 +31,49 @@ public class KeyWatcher {
         keyStates.get(key).updateKey(ep, press);
     }
 
+    public void clear(Player player) { for (KeyState state : keyStates.values()) state.data.remove(player.getUUID()); }
+    public void clear() { for (KeyState state : keyStates.values()) state.data.clear(); }
+
     public enum Key {
-        JUMP(),
-        SNEAK(),
-        FORWARD(),
-        BACK(),
-        LEFT(),
-        RIGHT(),
-        INVENTORY(),
-        DROPITEM(),
-        ATTACK(),
-        USE(),
-        CHAT(),
-        LSHIFT(),
-        LCTRL(),
-        LALT(),
-        PGUP(),
-        PGDN(),
-        TAB(),
-        TILDE(),
-        BACKSPACE(),
-        HOME(),
-        END(),
-        INSERT(),
-        DELETE(),
-        ENTER(),
-        MINUS(),
-        PLUS(),
-        PRTSCRN(),
-        PAUSE();
+        JUMP(0),
+        SNEAK(1),
+        FORWARD(2),
+        BACK(3),
+        LEFT(4),
+        RIGHT(5),
+        INVENTORY(6),
+        DROPITEM(7),
+        ATTACK(8),
+        USE(9),
+        CHAT(10),
+        LSHIFT(11),
+        LCTRL(12),
+        LALT(13),
+        PGUP(14),
+        PGDN(15),
+        TAB(16),
+        TILDE(17),
+        BACKSPACE(18),
+        HOME(19),
+        END(20),
+        INSERT(21),
+        DELETE(22),
+        ENTER(23),
+        MINUS(24),
+        PLUS(25),
+        PRTSCRN(26),
+        PAUSE(27);
 
         public static final Key[] keyList = values();
+        public final int wireId;
+        Key(int wireId) { this.wireId = wireId; }
+        public static Key fromWireId(int id) {
+            for (Key key : keyList) if (key.wireId == id) return key;
+            throw new IllegalArgumentException("Unknown key id: " + id);
+        }
 
         public static Key readFromConfig(DragonAPIMod mod, StringConfig cfg) {
-            if (!(cfg instanceof Property))
-                throw new MisuseException(mod, "Cannot read a key from a non-string config!");
-            String s = cfg.getString().toUpperCase(Locale.ENGLISH);
+            String s = cfg.getString().trim().toUpperCase(Locale.ROOT);
             try {
                 return Key.valueOf(s);
             }
@@ -92,148 +84,30 @@ public class KeyWatcher {
     }
 
     
-    private enum Keys {
-        JUMP(Minecraft.getInstance().options.keyJump),
-        SNEAK(Minecraft.getInstance().options.keyShift),
-        FOWARD(Minecraft.getInstance().options.keyUp),
-        BACK(Minecraft.getInstance().options.keyDown),
-        LEFT(Minecraft.getInstance().options.keyLeft),
-        RIGHT(Minecraft.getInstance().options.keyRight),
-        INVENTORY(Minecraft.getInstance().options.keyInventory),
-        DROPITEM(Minecraft.getInstance().options.keyDrop),
-        ATTACK(Minecraft.getInstance().options.keyAttack),
-        USE(Minecraft.getInstance().options.keyUse),
-        CHAT(Minecraft.getInstance().options.keyChat),
-        LSHIFT(isCtrlSneak() ? getLCtrl() : InputConstants.KEY_LSHIFT),
-        LCTRL(isCtrlSneak() ? InputConstants.KEY_LSHIFT : getLCtrl()), //swap them
-        PGUP(InputConstants.KEY_PAGEUP),
-        PGDN(InputConstants.KEY_PAGEDOWN),
-        TAB(InputConstants.KEY_TAB),
-        TILDE(InputConstants.KEY_GRAVE), //Not on Euro InputConstantss
-        BACKSPACE(InputConstants.KEY_BACKSPACE),
-        HOME(InputConstants.KEY_HOME),
-        END(InputConstants.KEY_END),
-        INSERT(InputConstants.KEY_INSERT),
-        DELETE(InputConstants.KEY_DELETE),
-        ENTER(InputConstants.KEY_RETURN),
-        MINUS(InputConstants.KEY_MINUS),
-        PLUS(InputConstants.KEY_EQUALS),
-        PRTSCRN(InputConstants.KEY_PRINTSCREEN), //no idea how common this one is
-        PAUSE(InputConstants.KEY_PAUSE);
-
-        private KeyMapping key;
-        private int keyInt;
-
-        public static final Keys[] keyList = values();
-
-        Keys(KeyMapping key) {
-            this.key = key;
-        }
-
-        Keys(int key) {
-            keyInt = key;
-        }
-
-        public boolean pollKey() {
-            return key != null ? key.isDown() : InputConstants.isKeyDown(keyInt);
-        }
-
-        public int keyID() {
-            return key != null ? key.getKey().getValue() : keyInt;
-        }
-
-        public Key getServerKey() {
-            return Key.keyList[this.ordinal()];
-        }
-
-        private void sendPacket() {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream(8);
-            DataOutputStream data = new DataOutputStream(bytes);
-            boolean flag = false;
-            try {
-                data.writeInt(APIPacketHandler.PacketIDs.KEYUPDATE.ordinal());
-                data.writeInt(this.ordinal());
-                data.writeInt(this.pollKey() ? 1 : 0);
-                flag = true;
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if (flag)
-                ReikaPacketHelper.sendRawPacket(DragonAPI.packetChannel, bytes);
-            else
-                DragonAPI.LOGGER.info("Could not send key "+this+" packet, as it was malformed.");
-        }
-
-        private static int getLCtrl() {
-            return /*Minecraft.getInstance().isisRunningOnMac ? InputConstants.KEY_LMETA :*/ InputConstants.KEY_LCONTROL;
-        }
-
-        private static boolean isCtrlSneak() {
-            return Minecraft.getInstance().options.keyShift.getKey().getValue() == getLCtrl();
-        }
-    }
-
     private static class KeyState {
 
-        private final PlayerMap<Boolean> data = new PlayerMap<>();
+        private final java.util.concurrent.ConcurrentMap<java.util.UUID, Boolean> data = new java.util.concurrent.ConcurrentHashMap<>();
 
         public boolean getKeyState(Player ep) {
-            return data.containsKey(ep) && data.get(ep);
+            return Boolean.TRUE.equals(data.get(ep.getUUID()));
         }
 
         public void updateKey(Player ep, boolean key) {
-            data.put(ep, key);
+            data.put(ep.getUUID(), key);
         }
     }
 
     
+    /** Compatibility ticker; client implementation is isolated from shared key state. */
     public static class KeyTicker implements TickRegistry.TickHandler {
-
         public static final KeyTicker instance = new KeyTicker();
-        private final EnumMap<Keys, Boolean> keyStates = new EnumMap<Keys, Boolean>(Keys.class);
-
-        private KeyTicker() {
-
+        private KeyTicker() {}
+        @Override public void tick(TickRegistry.TickType type, Object... data) {
+            if (net.neoforged.fml.loading.FMLEnvironment.getDist().isClient())
+                reika.dragonapi.client.ClientKeyWatcher.tick();
         }
-
-        @Override
-        public void tick(TickRegistry.TickType type, Object... tickData) {
-
-            Player ep = Minecraft.getInstance().player;
-            if (ep != null) {
-                for (int i = 0; i < Keys.keyList.length; i++) {
-                    Keys key = Keys.keyList[i];
-                    boolean wasPressed = keyStates.containsKey(key) && keyStates.get(key);
-                    boolean isPressed = key.pollKey();
-                    if (wasPressed != isPressed) {
-                        keyStates.put(key, isPressed);
-                        key.sendPacket();
-                        KeyWatcher.instance.setKey(ep, key.getServerKey(), isPressed);
-                        NeoForge.EVENT_BUS.post(new RawKeyPressEvent(key.getServerKey(), ep));
-                    }
-                }
-            }
-
-        }
-
-        @Override
-        public EnumSet<TickRegistry.TickType> getType() {
-            return EnumSet.of(TickRegistry.TickType.CLIENT);
-        }
-
-        @Override
-        public String getLabel() {
-            return "KeyWatcher";
-        }
-
-        @Override
-        public boolean canFire(TickRegistry.Phase p) {
-            return p == TickRegistry.Phase.START;
-        }
-
+        @Override public EnumSet<TickRegistry.TickType> getType() { return EnumSet.of(TickRegistry.TickType.CLIENT); }
+        @Override public String getLabel() { return "KeyWatcher"; }
+        @Override public boolean canFire(TickRegistry.Phase phase) { return phase == TickRegistry.Phase.START; }
     }
 }
-
-

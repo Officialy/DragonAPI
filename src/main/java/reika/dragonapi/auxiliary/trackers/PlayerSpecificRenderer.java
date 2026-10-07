@@ -89,7 +89,11 @@ public final class PlayerSpecificRenderer {
    }
 
    private void registerGlow(UUID uuid, String s) {
-       glows.put(uuid, "/assets/dragonapi/" + s + ".png");
+       glows.put(uuid, "dragonapi:textures/" + s + ".png");
+   }
+
+   public void registerGlow(UUID uuid, net.minecraft.resources.Identifier texture) {
+       glows.put(Objects.requireNonNull(uuid), Objects.requireNonNull(texture).toString());
    }
 
    public void loadGlowFiles() {
@@ -111,7 +115,13 @@ public final class PlayerSpecificRenderer {
                        throw new FileNotFoundException();
                    BufferedImage im = ImageIO.read(img);
                    if (im != null) {
-                       customGlows.put(uid, "*" + img.getAbsolutePath());
+                       var textureId = net.minecraft.resources.Identifier.fromNamespaceAndPath(DragonAPI.MODID, "custom_glow/" + uid);
+                       try (var stream = java.nio.file.Files.newInputStream(img.toPath())) {
+                           var texture = new net.minecraft.client.renderer.texture.DynamicTexture(() -> "DragonAPI glow " + uid,
+                                   com.mojang.blaze3d.platform.NativeImage.read(stream));
+                           Minecraft.getInstance().getTextureManager().register(textureId, texture);
+                           customGlows.put(uid, textureId.toString());
+                       }
                    }
                } catch (Exception e) {
                    DragonAPI.LOGGER.error("Could not load glow render entry " + s, e);
@@ -127,7 +137,15 @@ public final class PlayerSpecificRenderer {
        return s;
    }
 
-   private void renderAdditionalObjects(PoseStack stack, Player ep, float ptick, SubmitNodeCollector collector) {
+   public net.minecraft.resources.Identifier getGlowTexture(UUID uuid) {
+       String custom = customGlows.get(uuid);
+       String path = custom != null ? custom : glows.get(uuid);
+       if (path == null) return null;
+       var id = net.minecraft.resources.Identifier.parse(path);
+       return custom != null || Minecraft.getInstance().getResourceManager().getResource(id).isPresent() ? id : null;
+   }
+
+   public void renderAdditionalObjects(PoseStack stack, Player ep, float ptick, SubmitNodeCollector collector) {
        if (DragonAPI.Reika_UUID.equals(ep.getUUID())) {
 //     todo       ReikaShader.instance.prepareRender(ep);
        }
@@ -305,24 +323,27 @@ public final class PlayerSpecificRenderer {
 
    }
 
-    private record PlayerModelRenderer(ModifiedPlayerModel model) implements PlayerRenderObj {
+    private record PlayerModelRenderer(ReikaModel model) implements PlayerRenderObj {
 
         public void extractRenderState(PoseStack stack, Player ep, float tick, PlayerRotationData dat, SubmitNodeCollector collector) {
+            if (ep == Minecraft.getInstance().player && !reika.dragonapi.libraries.ReikaPlayerAPI.isReika(ep)) return;
             if (ep != null) {
                 stack.pushPose();
+                stack.rotate(Axis.YP.rotationDegrees(180 - net.minecraft.util.Mth.rotLerp(tick, ep.yBodyRotO, ep.yBodyRot)));
                 stack.translate(0, 1.6, 0);
                 stack.scale(1, -1, 1);
                 if (ep.isCrouching()) {
                     stack.rotate(new Quaternionf(Axis.XP.rotationDegrees(22.5f)));
                     stack.translate(-0.02, 0.1, -0.05);
                 }
-                // 26.2: MultiBufferSource/renderBuffers() are gone — submit the body parts through the
-                // feature pipeline. Snapshot the transform so the deferred draw uses it after we pop.
-                PoseStack snap = new PoseStack();
-                snap.last().set(stack.last());
+                var state = new net.minecraft.client.renderer.entity.state.AvatarRenderState();
+                state.xRot = dat.interpPitch;
+                state.yRot = net.minecraft.util.Mth.wrapDegrees(dat.interpYawHead - ep.yBodyRot);
+                state.bodyRot = net.minecraft.util.Mth.rotLerp(tick, ep.yBodyRotO, ep.yBodyRot);
+                state.isCrouching = ep.isCrouching();
+                state.ageInTicks = ep.tickCount + tick;
+                model.submitBodyParts(stack, collector, state);
                 stack.popPose();
-                collector.submitCustomGeometry(snap, model.renderType(model.getTexture()), (pose, consumer) ->
-                        model.renderBodyParts(snap, consumer, 15728880, OverlayTexture.NO_OVERLAY, ep, tick));
             }
         }
 

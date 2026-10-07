@@ -106,9 +106,9 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
     private void addData(String key, Tag value, boolean force) {
         Tag prev = data.get(key);
         oldData.put(key, prev);
-        data.put(key, value);
+        data.put(key, value == null ? null : value.copy());
         if (force || !match(prev, value)) {
-            changes.put(key, value);
+            changes.put(key, value == null ? null : value.copy());
         }
     }
 
@@ -117,7 +117,11 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
     }
 
     private void populateFromStream(CompoundTag received) {
+        for (net.minecraft.nbt.Tag key : received.getListOrEmpty(REMOVED_KEYS)) {
+            data.put(key.asString().orElseThrow(), null);
+        }
         for (String name : received.keySet()) {
+            if (name.equals(REMOVED_KEYS)) continue;
             Tag tag = received.get(name);
             data.put(name, tag);
         }
@@ -142,14 +146,7 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
 
     @Override
     public void encode(FriendlyByteBuf buf) {
-        // 1.21.5 fix: must write the {@link ReikaPacketHelper.PacketObj} header (short handler-id
-        // + byte packet-type) AND the body inside a varInt-length frame, matching the
-        // {@code DataPacket} wire format the receiver's {@link ReikaPacketHelper.DataPacket#decode}
-        // expects. Without that, decode would interpret the first 2 bytes of {@link #pos}'s
-        // packed long as the handler id (= 0xFFFF for negative coords) and fall into the
-        // unknown-handler drop path, flooding the log on every per-tick BE sync. Body
-        // payload-routing is still TODO (APIPacketHandler's SYNC case has a different on-the-wire
-        // shape), but at minimum the bytes are now well-formed.
+        // Channel-bound packet type + framed body; the registered payload identifies the handler.
         super.encode(buf);
         dispatch = true;
         ByteBuf body = Unpooled.buffer();
@@ -197,14 +194,18 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
 
     // Handler migrated to payload version
 
+    public static final String REMOVED_KEYS = "dragonapi:removed_sync_keys";
+
     private void saveChanges(CompoundTag toSend) {
+        net.minecraft.nbt.ListTag removed = new net.minecraft.nbt.ListTag();
         for (String key : changes.keySet()) {
             Tag val = changes.get(key);
             if (val == null)
-                toSend.remove(key);
+                removed.add(net.minecraft.nbt.StringTag.valueOf(key));
             else
-                toSend.put(key, val);
+                toSend.put(key, val.copy());
         }
+        if (!removed.isEmpty()) toSend.put(REMOVED_KEYS, removed);
     }
 
     // Accessors for payload bridge

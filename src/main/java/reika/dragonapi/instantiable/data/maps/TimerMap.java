@@ -79,7 +79,7 @@ public class TimerMap<V> {
 	}
 
 	public int get(V val) {
-		return timer.get(val);
+		return timer.getOrDefault(val, 0);
 	}
 
 	@Override

@@ -68,6 +68,7 @@ public final class ClientEnvironment {
 
     /** Opens a resource from the *client* resource manager (assets), not the server's data packs. */
     public static java.io.InputStream resourceStream(net.minecraft.resources.Identifier id) throws java.io.IOException {
-        return Minecraft.getInstance().getResourceManager().getResource(id).get().open();
+        var resource = Minecraft.getInstance().getResourceManager().getResource(id);
+        return resource.isPresent() ? resource.get().open() : null;
     }
 }

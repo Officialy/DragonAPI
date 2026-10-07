@@ -49,7 +49,7 @@ public final class ItemHashMap<V> {
 		int s = ii.getSlots();
 		for (int i = 0; i < s; i++) {
 			ItemStack in = ii.getStackInSlot(i);
-			if (in != ItemStack.EMPTY) {
+			if (!in.isEmpty()) {
 				Integer has = map.get(in);
 				int amt = has != null ? has.intValue() : 0;
 				map.put(in, amt + in.getCount());
@@ -63,7 +63,7 @@ public final class ItemHashMap<V> {
 		int s = ii.getContainerSize();
 		for (int i = 0; i < s; i++) {
 			ItemStack in = ii.getItem(i);
-			if (in != ItemStack.EMPTY && !map.containsKey(in)) {
+			if (!in.isEmpty() && !map.containsKey(in)) {
 				map.put(in, i);
 			}
 		}
@@ -87,7 +87,13 @@ public final class ItemHashMap<V> {
 	}
 
 	public ItemHashMap<V> enableNBT() {
-		this.nbtEnabled = true;
+		if (!nbtEnabled) {
+            var existing = new HashMap<>(data);
+            data.clear();
+            nbtEnabled = true;
+            existing.forEach((key, value) -> data.put(this.createKey(key.asItemStack()), value));
+            modifiedKeys = true;
+        }
 		return this;
 	}
 
@@ -122,21 +128,18 @@ public final class ItemHashMap<V> {
 	}
 
 	private ItemKey createKey(ItemStack is) {
-		return this.nbtEnabled && !is.isEmpty() && !is.getComponentsPatch().isEmpty() ? new ComponentItemKey(is) : new ItemKey(is);
+		return this.nbtEnabled ? new ComponentItemKey(is) : new ItemKey(is);
 	}
 
 	private boolean containsKey(ItemKey is) {
 		return data.containsKey(is);
 	}
 
-	public int add(ItemStack is, int value) {
-		// Safe cast check or redesign needed, but for now keeping logic with suppression
-		@SuppressWarnings("unchecked")
-		ItemHashMap<Integer> intMap = (ItemHashMap<Integer>) this;
-		Integer get = intMap.get(is);
-		int has = get != null ? get.intValue() : 0;
-		int sum = has + value;
-		intMap.put(is, sum);
+	/** Integer accumulation is available only for an integer-valued map. */
+	public static int add(ItemHashMap<Integer> map, ItemStack is, int value) {
+		Integer previous = map.get(is);
+		int sum = (previous != null ? previous : 0) + value;
+		map.put(is, sum);
 		return sum;
 	}
 
@@ -192,7 +195,7 @@ public final class ItemHashMap<V> {
 		if (this.modifiedKeys || keyset == null) {
 			this.updateKeysets();
 		}
-		return Collections.unmodifiableCollection(keyset);
+		return keyset.stream().map(ItemStack::copy).toList();
 	}
 
 	public Collection<V> values() {
@@ -225,7 +228,10 @@ public final class ItemHashMap<V> {
 	}
 
 	public boolean removeValue(V value) {
-		return ReikaJavaLibrary.removeValuesFromMap(data, value);
+		if (oneWay) throw new UnsupportedOperationException("This map does not support removing values!");
+		boolean changed = ReikaJavaLibrary.removeValuesFromMap(data, value);
+		this.modifiedKeys |= changed;
+		return changed;
 	}
 
 	public void clear() {
@@ -239,7 +245,7 @@ public final class ItemHashMap<V> {
 		if (this.modifiedKeys || this.sorted == null) {
 			this.updateKeysets();
 		}
-		return Collections.unmodifiableList(sorted);
+		return sorted.stream().map(ItemStack::copy).toList();
 	}
 
 	public boolean isEmpty() {
@@ -252,11 +258,13 @@ public final class ItemHashMap<V> {
 		for (ItemKey is : this.data.keySet()) {
 			map.data.put(is, data.get(is));
 		}
+		map.nbtEnabled = nbtEnabled;
 		return map;
 	}
 
 	public void putAll(ItemHashMap<V> map) {
-		this.data.putAll(map.data);
+		for (var entry : map.data.entrySet())
+			this.put(this.createKey(entry.getKey().asItemStack()), entry.getValue());
 	}
 
 	private static final class ComponentItemKey extends ItemKey {
@@ -281,13 +289,7 @@ public final class ItemHashMap<V> {
 		@Override
 		public ItemStack asItemStack() {
 			ItemStack is = super.asItemStack();
-			// Apply components to the new stack
-			// We can't easily apply a patch to a new stack without using internal methods or creating it with the patch
-			// But for key retrieval, we can try to approximate or just return the base item if exact reconstruction is hard
-			// However, in 1.21, we can use the constructor that takes components if we had the full map
-			// For now, we'll return the base item. If we need the components, we'd need to store the full stack or reconstruct it.
-			// Given this is mostly for iteration/display, base item might be acceptable, but ideally we'd apply the patch.
-			// TODO: Find a way to apply DataComponentPatch to a fresh ItemStack if needed.
+			is.applyComponents(components);
 			return is; 
 		}
 
@@ -303,7 +305,7 @@ public final class ItemHashMap<V> {
 		public final Item itemID;
 
 		protected ItemKey(ItemStack is) {
-			if (is == ItemStack.EMPTY)
+			if (is == null || is.isEmpty())
 				throw new MisuseException("You cannot add a null itemstack to the map!");
 			itemID = is.getItem();
 		}
@@ -315,7 +317,7 @@ public final class ItemHashMap<V> {
 
 		@Override
 		public boolean equals(Object o) {
-			if (o instanceof ItemKey i) {
+			if (o instanceof ItemKey i && o.getClass() == getClass()) {
 				return i.itemID == itemID;
 			}
 			return false;

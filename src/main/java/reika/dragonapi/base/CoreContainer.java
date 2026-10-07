@@ -28,16 +28,21 @@ import java.util.*;
 
 public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerMenu {
 
-    private static final ChestBlockEntity fakeChest = new ChestBlockEntity(BlockPos.ZERO, Blocks.CHEST.defaultBlockState());
+    private final Slot invalidSlot = new Slot(new net.minecraft.world.SimpleContainer(1), 0, -20, -20) {
+        @Override public boolean mayPlace(ItemStack stack) { return false; }
+        @Override public boolean mayPickup(Player player) { return false; }
+        @Override public void set(ItemStack stack) { }
+        @Override public ItemStack remove(int amount) { return ItemStack.EMPTY; }
+    };
     public final T tile;
     /**
-     * 1.21.9: was {@code IItemHandler ii}. The legacy {@code IItemHandler} family is being
+     * 26.3: formerly {@code IItemHandler ii}. The legacy {@code IItemHandler} family is being
      * removed; we keep the same field name (and protected access — every subclass references
      * it directly) but switch the type to our {@link ManagedItemHandler} shim, resolved via
      * {@link HasItemHandler#getItemHandler()} on the tile.
      */
     protected final ManagedItemHandler ii;
-    private final ArrayList<InventorySlot> relaySlots = new ArrayList<>();
+    
     protected Inventory epInv;
     protected ItemStack[] oldInv;
     int posX;
@@ -61,7 +66,10 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     }
 
     public CoreContainer<T> addSlotRelay(Inventory inv, int slot) {
-        relaySlots.add(new InventorySlot(slot, inv));
+        if (slot < 0 || slot >= inv.getContainerSize())
+            throw new IllegalArgumentException("Invalid relay inventory slot " + slot);
+        if (super.findSlot(inv, slot).isEmpty())
+            this.addSlot(new Slot(inv, slot, -20, -20));
         return this;
     }
 
@@ -141,6 +149,8 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
 
     @Override
     public ItemStack quickMoveStack(Player player, int slot) {
+        if (slot < 0 || slot >= slots.size())
+            return ItemStack.EMPTY;
         Slot islot = slots.get(slot);
         if (!this.allowShiftClicking(player, slot, islot.getItem()))
             return ItemStack.EMPTY;
@@ -267,31 +277,17 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
     @Override //To avoid a couple crashes with some mods (or vanilla packet system) not checking array bounds
     public Slot getSlot(int index) {
         if (index >= slots.size() || index < 0) {
-            String o = "A mod tried to access an invalid slot " + index + " for BlockEntity " + tile + ".";
-            String o2 = "It is likely assuming the BlockEntity has an inventory when it does not.";
-            String o3 = "Check for any inventory-modifying mods and items you are carrying.";
-            String o4 = "Slot List = " + slots.size() + ": " + slots;
-            DragonAPI.LOGGER.info(o);
-            DragonAPI.LOGGER.info(o2);
-            DragonAPI.LOGGER.info(o3);
-            DragonAPI.LOGGER.info(o4);
-            DragonAPI.LOGGER.info("Stack Trace:");
-            Thread.dumpStack();
-            if (DragonOptions.CHATERRORS.getState()) {
-                ReikaChatHelper.write(o);
-                ReikaChatHelper.write(o2);
-                ReikaChatHelper.write(o3);
-                ReikaChatHelper.write(o4);
-            }
-            //Thread.dumpStack();
-            return new Slot(fakeChest, 0, -20, -20); //create new slot off screen; hacky fix, but should work
+            DragonAPI.LOGGER.warn("Invalid menu slot {} ({} registered slots) for {}", index, slots.size(), tile);
+            return invalidSlot;
         }
         return slots.get(index);
     }
 
     @Override
     public boolean stillValid(Player player) {
-        return !tile.isRemoved();
+        return !tile.isRemoved() && tile.getLevel() == player.level()
+                && player.level().getBlockEntity(tile.getBlockPos()) == tile
+                && (alwaysCan || this.isStandard8mReach(player));
     }
 
     protected void addSlot(int i, int x, int y) {
@@ -315,7 +311,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         //DragonAPI.LOGGER.info(ID, Dist.DEDICATED_SERVER);
 //        ItemStack is = super.slotClick(id, button, type, ep);
         if (ii != null && tile instanceof XPProducer) {
-            if (id < ii.getSlots()) {
+            if (id >= 0 && id < slots.size() && !(slots.get(id).container instanceof Inventory)) {
                 float xp = ((XPProducer) tile).getXP();
                 if (xp > 0) {
                     ep.giveExperiencePoints((int) xp); //todo might be levels
@@ -348,23 +344,14 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
 
     @Override
     public OptionalInt findSlot(Container container, int slot) {
-        OptionalInt s = super.findSlot(container, slot);
-        if (s == null) {
-            for (InventorySlot is : relaySlots) {
-                if (is.inventory() == ii && is.slot() == slot) {
-//                    return is.toSlot(-20, -20).getContainerSlot();
-                    return OptionalInt.of(is.toSlot(-20, -20).getSlotIndex());
-                }
-            }
-        }
-        return OptionalInt.empty();
+        return super.findSlot(container, slot);
     }
 
     private static class SlotComparator implements Comparator<Slot> {
 
         @Override
         public int compare(Slot o1, Slot o2) {
-            return o1.getSlotIndex() - o2.getSlotIndex();
+            return Integer.compare(o1.getSlotIndex(), o2.getSlotIndex());
         }
 
     }

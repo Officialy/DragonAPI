@@ -50,7 +50,7 @@ public class ReikaPlayerAPI {
     }
 
     public static void kickPlayer(ServerPlayer ep, String reason) {
-//todo        ep.playerNetServerHandler.kickPlayerFromServer(reason);
+        ep.connection.disconnect(net.minecraft.network.chat.Component.literal(reason));
     }
 
     private static boolean isAdmin(ServerLevel world, String name, UUID uuid) {
@@ -110,13 +110,13 @@ public class ReikaPlayerAPI {
             DragonAPI.LOGGER.error("Cannot check permissions of a null player!");
             return false;
         }
-        if (DragonAPI.isSinglePlayer())
+        if (world.getServer().isSingleplayer())
             return true;
         if (isAdmin(world, name, uuid) && DragonOptions.ADMINPERMBYPASS.getState())
             return true;
         FakePlayer fp = getFakePlayerByNameAndUUID(world, name, uuid);
-//        if (MinecraftServer.getServer().isBlockProtected(world, x, y, z, fp))
-//            return false;
+        if (!world.mayInteract(fp, new BlockPos(x, y, z)))
+            return false;
         BreakBlockEvent evt = new BreakBlockEvent(world, new BlockPos(x, y, z), id, fp);
         NeoForge.EVENT_BUS.post(evt);
         return !evt.isCanceled();

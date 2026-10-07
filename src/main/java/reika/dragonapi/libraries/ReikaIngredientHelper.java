@@ -7,13 +7,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.resources.Identifier;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,7 +23,7 @@ public class ReikaIngredientHelper {
     private static final int HARD_CAP_PER_INGREDIENT = 4096;
 
     // Cache to avoid re-expanding the same ingredient repeatedly
-    private static final Map<Ingredient, List<ItemStack>> EXPANSION_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Ingredient, List<ItemStack>> EXPANSION_CACHE = new LinkedHashMap<>(32, 0.75F, true);
 
     // Register your enumerators here (Potion variants, trims, your custom component variants, …)
     private static final List<ComponentEnumerator> ENUMERATORS = new ArrayList<>();
@@ -65,6 +62,15 @@ public class ReikaIngredientHelper {
     public static boolean ingredientsEquivalentDeep(Ingredient a,
                                                     Ingredient b,
                                                     RegistryAccess registries) {
+        // A finite sample cannot prove equivalence of arbitrary component predicates.
+        // Compare the serialized predicate when custom implementations use identity equality.
+        if (!a.isSimple() || !b.isSimple()) {
+            if (a.equals(b)) return true;
+            var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, registries);
+            var left = Ingredient.CODEC.encodeStart(ops, a).result();
+            var right = Ingredient.CODEC.encodeStart(ops, b).result();
+            return left.isPresent() && right.isPresent() && left.get().equals(right.get());
+        }
         List<ItemStack> la = expandIngredient(a, registries);
         List<ItemStack> lb = expandIngredient(b, registries);
 
@@ -84,33 +90,30 @@ public class ReikaIngredientHelper {
     // Expansion
     // ─────────────────────────────────────────────────────────────────────────────
 
-    private static List<ItemStack> expandIngredient(Ingredient ing, RegistryAccess registries) {
-        return EXPANSION_CACHE.computeIfAbsent(ing, i -> {
-            Set<Fingerprint> seen = new HashSet<>();
-            List<ItemStack> out = new ArrayList<>();
+    /** Reloads must discard representatives built from the old tag contents. */
+    public static synchronized void clearCache() {
+        EXPANSION_CACHE.clear();
+    }
 
-            ICustomIngredient custom = ing.getCustomIngredient();
-            if (custom != null) {
-                // We only get Items, no pre-built stacks -> make default stacks and fan out through enumerators.
-                custom.items().forEach(holder -> {
-                    Item item = holder.value();
-                    addExpandedVariants(ing, item, out, seen);
-                });
-            } else {
-                // Vanilla: we need to brute-force through the registry and pick everything that passes test()
-                for (Item item : BuiltInRegistries.ITEM) {
-                    if (out.size() >= HARD_CAP_PER_INGREDIENT)
-                        break;
-                    addExpandedVariants(ing, item, out, seen);
-                }
-            }
-
-            // Final safety cap
-            if (out.size() > HARD_CAP_PER_INGREDIENT) {
-                return out.subList(0, HARD_CAP_PER_INGREDIENT);
-            }
-            return List.copyOf(out);
-        });
+    private static synchronized List<ItemStack> expandIngredient(Ingredient ing, RegistryAccess registries) {
+        List<ItemStack> cached = EXPANSION_CACHE.get(ing);
+        if (cached != null) return cached;
+        Set<Fingerprint> seen = new HashSet<>();
+        List<ItemStack> out = new ArrayList<>();
+        try (Stream<Holder<Item>> items = ing.items()) {
+            var iterator = items.iterator();
+            while (iterator.hasNext() && out.size() < HARD_CAP_PER_INGREDIENT)
+                addExpandedVariants(ing, iterator.next().value(), out, seen);
+        }
+        List<ItemStack> result = List.copyOf(out);
+        EXPANSION_CACHE.put(ing, result);
+        int retained = EXPANSION_CACHE.values().stream().mapToInt(List::size).sum();
+        var iterator = EXPANSION_CACHE.entrySet().iterator();
+        while (EXPANSION_CACHE.size() > 256 || retained > 16384) {
+            retained -= iterator.next().getValue().size();
+            iterator.remove();
+        }
+        return result;
     }
 
     private static void addExpandedVariants(Ingredient ing, Item item, List<ItemStack> out, Set<Fingerprint> seen) {

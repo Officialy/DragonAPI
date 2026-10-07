@@ -54,22 +54,22 @@ public class SingleSound implements SoundEnum {
 
     @Override
     public void playSound(Level world, BlockPos pos, float volume, float pitch) {
-
+        ReikaSoundHelper.playSound(this, world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, volume, pitch);
     }
 
     @Override
     public void playSound(Entity e, float volume, float pitch) {
-
+        ReikaSoundHelper.playSound(this, e.level(), e, volume, pitch);
     }
 
     @Override
     public void playSound(Level world, BlockPos pos, float volume, float pitch, boolean attenuate) {
-
+        ReikaSoundHelper.playSound(this, world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, volume, pitch, attenuate);
     }
 
     @Override
     public void playSoundNoAttenuation(Level world, BlockPos pos, float volume, float pitch, int range) {
-
+        reika.dragonapi.libraries.io.ReikaPacketHelper.sendSoundPacket(this, world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, volume, pitch, false, range);
     }
 
     @Override

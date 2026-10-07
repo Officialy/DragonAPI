@@ -396,36 +396,31 @@ public class CommandableUpdateChecker {
 
     public static class CheckerDisableCommand {
 
-        public void processCommand(CommandDispatcher<CommandSourceStack> dispatcher, String[] args) {
-            dispatcher.register(Commands.literal("checker").executes((context) -> {
-                if (args.length == 2) {
-                    String action = args[0];
-                    String name = args[1].toLowerCase(Locale.ENGLISH);
-                    DragonAPIMod mod = instance.modNames.get(name);
-                    if (mod != null) {
-                        if (action.equals("disable")) {
-                            instance.setChecker(mod, false);
-                            String sg = ChatFormatting.BLUE + "Update checker for " + mod.getDisplayName() + " disabled.";
-                            ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
-                        } else if (action.equals("enable")) {
-                            instance.setChecker(mod, true);
-                            String sg = ChatFormatting.BLUE + "Update checker for " + mod.getDisplayName() + " enabled.";
-                            ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
-                        } else {
-                            String sg = ChatFormatting.RED + "Invalid argument '" + action + "'.";
-                            ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
-                        }
-                    } else {
-                        String sg = ChatFormatting.RED + "Mod '" + name + "' not found.";
-                        ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
-                    }
-                } else {
-                    String sg = ChatFormatting.RED + "Invalid arguments.";
-                    ReikaChatHelper.sendChatToPlayer(context.getSource().getPlayerOrException(), sg);
-                }
-                return 1;
-            }));
+        public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+            var root = Commands.literal("checker").requires(Commands.hasPermission(Commands.LEVEL_ADMINS));
+            for (boolean enabled : new boolean[]{true, false}) {
+                root.then(Commands.literal(enabled ? "enable" : "disable")
+                        .then(Commands.argument("mod", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(instance.modNames.keySet(), builder))
+                                .executes(context -> {
+                                    String name = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "mod").toLowerCase(Locale.ROOT);
+                                    DragonAPIMod mod = instance.modNames.get(name);
+                                    if (mod == null || !instance.latestVersions.containsKey(mod)) {
+                                        context.getSource().sendFailure(net.minecraft.network.chat.Component.literal("No initialized update checker for '" + name + "'."));
+                                        return 0;
+                                    }
+                                    instance.setChecker(mod, enabled);
+                                    instance.overrides.put(mod, enabled);
+                                    context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("Update checker for " + mod.getDisplayName() + (enabled ? " enabled." : " disabled.")), false);
+                                    return 1;
+                                })));
+            }
+            dispatcher.register(root);
         }
+
+        /** Compatibility entry point; arguments now come from the registered Brigadier tree. */
+        public void processCommand(CommandDispatcher<CommandSourceStack> dispatcher, String[] args) { register(dispatcher); }
+
     }
         private static class UpdateChecker implements ConnectionErrorHandler, DataFetcher {
 

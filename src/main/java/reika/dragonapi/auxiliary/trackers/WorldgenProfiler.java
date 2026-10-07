@@ -19,7 +19,7 @@ import java.util.List;
 public class WorldgenProfiler {
 
     private static ResourceKey<Level> currentProfilingDimension;
-    private static Level currentProfilingLevel;
+    private static java.lang.ref.WeakReference<Level> currentProfilingLevel = new java.lang.ref.WeakReference<>(null);
     private static boolean enableProfiling;
     private static final HashMap<ProfileKey, GeneratorProfile> profileData = new HashMap<>();
     private static final ArrayList<GeneratorProfile> profileDataDisplay = new ArrayList<>();
@@ -45,7 +45,7 @@ public class WorldgenProfiler {
             InitProfile.instance.reset();
             //totalProfiledTime = 0;
             currentProfilingDimension = world.dimension();
-            currentProfilingLevel = world;
+            currentProfilingLevel = new java.lang.ref.WeakReference<>(world);
             EventProfiler.finishProfiling();
 //    todo        EventProfiler.startProfiling(ReplaceBiomeBlocks.class);
             return true;
@@ -57,6 +57,7 @@ public class WorldgenProfiler {
             enableProfiling = false;
             EventProfiler.finishProfiling();
         }
+        currentProfilingLevel.clear();
     }
 
     private static void buildDisplay() {
@@ -107,7 +108,7 @@ public class WorldgenProfiler {
     }
 
     public static Level getLevel() {
-        return currentProfilingLevel;
+        return currentProfilingLevel.get();
     }
 
     public static void startChunk(int cx, int cz) {

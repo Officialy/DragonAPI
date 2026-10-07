@@ -105,16 +105,17 @@ public abstract class DragonAPIMod {
 
 	protected final void basicSetup() {
 		checkFinalPreload(this);
-//todo		CommandableUpdateChecker.instance.registerMod(this);
-
-//	todo	fileHash = this.isSource() ? "Source" : ReikaFileReader.getHash(this.getModFile(), ReikaFileReader.HashType.SHA256);
-//		if (this.requireSameFilesOnClientAndServer() && DragonOptions.COMMON.FILEHASH.get())
-//		ModFileVersionChecker.instance.addMod(this);
-	}
-
-/*	protected File getModFile() {
-		return this.getModContainer().getSource();
-	}*/
+        var path = this.getModContainer().getModInfo().getOwningFile().getFile().getFilePath();
+        fileHash = this.isSource() || !java.nio.file.Files.isRegularFile(path) ? "Source"
+                : reika.dragonapi.io.ReikaFileReader.getHash(path.toFile(), reika.dragonapi.io.ReikaFileReader.HashType.SHA256);
+        if (this.requireSameFilesOnClientAndServer())
+            reika.dragonapi.auxiliary.trackers.ModFileVersionChecker.instance.addMod(this);
+        // Version checks are registered for explicitly supported endpoints. The inherited 1.7.10
+        // version server has no verified 26.3 feed and must not be queried during mod construction.
+        String url = this.getUpdateCheckURL();
+        if (url != null && !url.equals(reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker.reikaURL))
+            reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker.instance.registerMod(this);
+    }
 
 	public abstract String getDisplayName();
 

@@ -159,6 +159,8 @@ public enum ModOreList implements OreType {
     }
 
     public static void initializeAll() {
+        oreMappings.clear();
+        oreNames.clear();
 //        if (!DragonAPI.canLoadHandlers())
 //            throw new MisuseException("Initialized registry enum too early! Wait until postInit!");
         for (int i = 0; i < oreList.length; i++) {
@@ -184,6 +186,7 @@ public enum ModOreList implements OreType {
 		 */
         DragonAPI.LOGGER.info("Loading ore type "+this);
         ores.clear();
+        perName.clear();
 		for (String label : oreLabel) {
 			oreNames.put(label, this);
 			ArrayList<ItemStack> toadd = new ArrayList<>();
@@ -272,7 +275,7 @@ public enum ModOreList implements OreType {
     }
 
     public static ModOreList getModOreFromOre(ItemStack is) {
-        if (is == null || is.getItem() == null)
+        if (is == null || is.isEmpty())
             return null;
 //  todo      if (ReikaItemHelper.matchStackWithBlock(is, MekanismHandler.getInstance().oreID))
 //            return MekanismHandler.getInstance().getModOre(is.getItem(), is.getItemDamage());
@@ -401,17 +404,28 @@ public enum ModOreList implements OreType {
 
     public boolean canGenerateIn(Block b) {
         for (OreLocation loc : this.getOreLocations())
-            if (loc.genBlock == b)
+            if (loc.genBlock == b || loc == OreLocation.OVERWORLD && (b.defaultBlockState().is(net.neoforged.neoforge.common.Tags.Blocks.ORE_BEARING_GROUND_STONE)
+                    || b.defaultBlockState().is(net.neoforged.neoforge.common.Tags.Blocks.ORE_BEARING_GROUND_DEEPSLATE))
+                    || loc == OreLocation.NETHER && b.defaultBlockState().is(net.neoforged.neoforge.common.Tags.Blocks.ORE_BEARING_GROUND_NETHERRACK))
                 return true;
         return false;
     }
 
     public Collection<ItemStack> getGennableIn(Block b) {
-        for (ItemStack is : ores) {
-            Block ore = Block.byItem(is.getItem());
-            //TODO incomplete abandoned method
-        }
-        return null;
+        var host = b.defaultBlockState();
+        var ground = host.is(net.neoforged.neoforge.common.Tags.Blocks.ORE_BEARING_GROUND_DEEPSLATE)
+                ? net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_DEEPSLATE
+                : host.is(net.neoforged.neoforge.common.Tags.Blocks.ORE_BEARING_GROUND_STONE)
+                ? net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_STONE
+                : host.is(net.neoforged.neoforge.common.Tags.Blocks.ORE_BEARING_GROUND_NETHERRACK)
+                ? net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_NETHERRACK : null;
+        return ores.stream().filter(stack -> {
+            var state = ((net.minecraft.world.item.BlockItem) stack.getItem()).getBlock().defaultBlockState();
+            boolean classified = state.is(net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_STONE)
+                    || state.is(net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_DEEPSLATE)
+                    || state.is(net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_NETHERRACK);
+            return classified ? ground != null && state.is(ground) : this.canGenerateIn(b);
+        }).map(ItemStack::copy).toList();
     }
 
     @Override
@@ -424,22 +438,14 @@ public enum ModOreList implements OreType {
     }
 
     public static ModList getOreModFromItemStack(ItemStack is) {
-//   todo     if (ReikaBlockHelper.isOre(is)) {
-//            if (ReikaItemHelper.isBlock(is)) {
-//                Block b = Block.getBlockFromItem(is.getItem());
-//                UniqueIdentifier dat = GameRegistry.findUniqueIdentifierFor(b);
-//                if (dat != null) {
-//                    String modName = dat.name;
-//                    String id = dat.modId;
-//                    ModList mod = ModList.getModFromID(id);
-//                    return mod;
-//                }
-//            }
-//            else {
-//                DragonAPI.LOGGER.error("\t"+is+" is not an ore block, but was registered as an ore block! This is a bug in its parent mod!");
-//            }
-//        }
-        return null;
+        if (is == null || is.isEmpty()) return null;
+        boolean ore = is.is(net.neoforged.neoforge.common.Tags.Items.ORES) || getModOreFromOre(is) != null;
+        if (!ore) return null;
+        if (!(is.getItem() instanceof net.minecraft.world.item.BlockItem item)) {
+            DragonAPI.LOGGER.error("{} is registered as an ore but is not a block item", is);
+            return null;
+        }
+        return ModList.getModFromID(BuiltInRegistries.BLOCK.getKey(item.getBlock()).getNamespace());
     }
 
     public static boolean isModOreType(String s) {

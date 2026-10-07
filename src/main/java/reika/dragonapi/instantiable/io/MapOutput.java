@@ -118,7 +118,7 @@ public abstract class MapOutput<V> {
     }
 
     private String getFilepath() {
-        String ret = this.getClass().getSimpleName() + "/" + worldName + "/DIM" + dimensionID + "/";
+        String ret = this.getClass().getSimpleName() + "/" + worldName.replaceAll("[^a-zA-Z0-9_ .-]", "_") + "/DIM_" + dimensionID.identifier().toString().replace(':', '_') + "/";
         if (worldName.contains("SEED=")) {
             ret = this.getClass().getSimpleName() + "/Forced/" + worldName + "; ";
         }

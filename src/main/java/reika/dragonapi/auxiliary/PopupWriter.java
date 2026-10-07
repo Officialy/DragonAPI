@@ -133,7 +133,7 @@ public class PopupWriter extends Screen {
             int sw = w - 25;
 
             List<FormattedCharSequence> linesList = fr.split(FormattedText.of(s.text), sw);
-            int h = 7 + linesList.size() * fr.lineHeight;
+            int h = Math.max(48, 7 + linesList.size() * fr.lineHeight);
 
             int sz = 24;
             int dx = x + w - sz;
@@ -151,14 +151,9 @@ public class PopupWriter extends Screen {
                 textY += fr.lineHeight;
             }
 
-            // 26.1: the legacy immediate-mode GL11 / RenderSystem.bindTexture path is gone, and we
-            // never had matching texture assets for the warning icon / close button anyway. Draw
-            // a coloured-rect + glyph fallback that still gives the close button a visible hit
-            // region (buttonX/Y/Size below feed the click handler).
-            // Warning icon: amber square with "!" glyph.
-            ReikaGuiAPI.instance.drawRect(gui, dx, dy, dx + sz, dy + sz, 0xffd29b1f, false);
-            gui.text(fr, "!", dx + (sz / 2) - 2, dy + (sz / 2) - 4, 0xff202020, false);
-
+            gui.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(DragonAPI.MODID, "textures/gui/warning.png"),
+                    dx, dy, 0, 0, sz, sz, 48, 48, 48, 48);
             // Close button — grey square with "X" glyph.
             sz = 16;
             dx = x + w - sz - 4;
@@ -221,7 +216,7 @@ public class PopupWriter extends Screen {
 
             public Warning(String text, int width) {
                 this.text = text;
-                this.width = Math.min(300, width);
+                this.width = Math.clamp(width, 96, 300);
             }
 
             private static int calcMinSizeForText(String s) { //at w=192, 74 chars becomes 4 lines, or about 18 chars a line (1 char = 11px); ideally keep line count <= 6

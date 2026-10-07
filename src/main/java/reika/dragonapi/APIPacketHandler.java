@@ -68,6 +68,7 @@ public class APIPacketHandler implements PacketHandler {
             DragonAPI.LOGGER.error("Cannot handle a packet without both packet data and a level");
             return;
         }
+        if (!world.isClientSide() && packet.getType().isClientboundOnly()) return;
         DataInputStream inputStream = packet.getDataIn();
 
         int control;
@@ -217,11 +218,11 @@ public class APIPacketHandler implements PacketHandler {
                                 new FriendlyByteBuf(Unpooled.wrappedBuffer(body));
                         try {
                             BlockPos pos = bbuf.readBlockPos();
-                            bbuf.readVarInt(); // typeId — unused for now, kept for forward compat
+                            int typeId = bbuf.readVarInt();
                             CompoundTag nbt = bbuf.readNbt();
                             if (nbt != null) {
                                 BlockEntity te = world.getBlockEntity(pos);
-                                if (te instanceof BlockEntityBase beb) {
+                                if (te instanceof BlockEntityBase beb && net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(te.getType()) == typeId) {
                                     beb.applySyncTag(nbt);
                                 } else if (te == null) {
                                     // Common case during chunk-edge resync; not worth a log line.
@@ -233,6 +234,8 @@ public class APIPacketHandler implements PacketHandler {
                             }
                         } catch (Exception decodeErr) {
                             DragonAPI.LOGGER.error("Failed to decode BE_NBT_SYNC payload", decodeErr);
+                        } finally {
+                            bbuf.release();
                         }
                     } else {
                         DragonAPI.LOGGER.error("BE_NBT_SYNC dispatched on non-DataPacket {}", packet);
@@ -252,6 +255,12 @@ public class APIPacketHandler implements PacketHandler {
             e.printStackTrace();
             return;
         }
+        if (pack == null) return;
+        boolean serverCommand = switch (pack) {
+            case KEYUPDATE, TILESYNC, PLAYERDATSYNCREQ_CLIENT, PLAYERKICK, ITEMDROPPERREQUEST, FILEMATCH, GETLATENCY, ENTITYVERIFY -> true;
+            default -> false;
+        };
+        if (serverCommand == world.isClientSide()) return;
         try {
             switch (pack) {
                 case BLOCKUPDATE:
@@ -313,12 +322,14 @@ public class APIPacketHandler implements PacketHandler {
                         DragonAPI.LOGGER.error("Caught key packet for key #" + ordinal + " (use=" + used + "), yet no such key exists. Packet=" + packet);
                         break;
                     }
-                    KeyWatcher.Key key = KeyWatcher.Key.keyList[ordinal];
+                    KeyWatcher.Key key = KeyWatcher.Key.fromWireId(ordinal);
                     KeyWatcher.instance.setKey(ep, key, used);
                     NeoForge.EVENT_BUS.post(new RawKeyPressEvent(key, ep));
                     break;
                 case TILESYNC:
-                    BlockEntity te = world.getBlockEntity(new BlockPos(x, y, z));
+                    BlockPos requested = new BlockPos(x, y, z);
+                    if (!reika.dragonapi.libraries.io.PacketValidation.canRequestSync(ep, world, requested)) return;
+                    BlockEntity te = world.getBlockEntity(requested);
                     if (te instanceof BlockEntityBase tile && !world.isClientSide()) {
                         tile.syncAllData(data[0] > 0);
                     }
@@ -409,7 +420,7 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case ITEMDROPPERREQUEST: {
                     Entity e = world.getEntity(data[0]);
-                    if (e instanceof ItemEntity) {
+                    if (e instanceof ItemEntity && ep.distanceToSqr(e) <= 128 * 128) {
                         var entityOutput = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, world.registryAccess());
                         e.saveWithoutId(entityOutput);
                         var entityNBT = entityOutput.buildResult();
@@ -424,7 +435,7 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 }
                 case PLAYERINTERACT:
-                    if (data[4] >= 0 && data[4] < PlayerInteractEventClient.Result.values().length)
+                    if (data[3] >= -1 && data[3] <= 5 && data[4] >= 0 && data[4] < PlayerInteractEventClient.Result.values().length)
                         NeoForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEventClient.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
                     break;
                 case BIOMEPNGSTART:

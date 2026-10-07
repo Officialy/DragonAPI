@@ -15,12 +15,12 @@ import reika.dragonapi.interfaces.registry.Dependency;
 
 public enum PowerTypes implements Dependency {
 
-    RF(),
-    FE(),
+    RF(true),
+    FE(true),
 //    EU("ic2.api.energy.tile.IEnergyTile", "ic2.api.item.IElectricItem"),
     ROTARYCRAFT("reika.rotarycraft.api.power.ShaftMachine"),
     PNEUMATIC("pneumaticCraft.api.blockentity.IPneumaticMachine"),
-    HYDRAULIC(),
+    HYDRAULIC(false), // The Hydraulicraft API has not landed in the 26.3 dependency set.
     // 1.21.5: the old forge:steam fluid-tag emptiness probe (TagManager) was removed; steam power is
     // provided by RotaryCraft itself, so treat it as always available.
     STEAM(true),

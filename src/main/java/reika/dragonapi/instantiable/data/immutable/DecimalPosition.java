@@ -11,6 +11,7 @@ package reika.dragonapi.instantiable.data.immutable;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
+import reika.dragonapi.libraries.registry.ReikaItemHelper;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
@@ -244,20 +245,22 @@ public record DecimalPosition(double xCoord, double yCoord,
 
     public void dropItem(Level world, ItemStack is, double vscale) {
         if (world != null && !world.isClientSide()) {
-            //ReikaItemHelper.dropItem(world, xCoord + rand.nextDouble(), yCoord + rand.nextDouble(), zCoord + rand.nextDouble(), is, vscale);
+            ReikaItemHelper.dropItem(world, xCoord + rand.nextDouble(), yCoord + rand.nextDouble(), zCoord + rand.nextDouble(), is, vscale);
         }
     }
 
     public boolean setBlock(Level world, Block b) {
-        return this.setBlock(world, b);
+        return world.setBlock(this.getCoordinate(), b.defaultBlockState(), 3);
     }
 
     public boolean setBlock(Level world, ItemStack is) {
-        return this.setBlock(world, Block.byItem(is.getItem()));
+        if (is.isEmpty() || !(is.getItem() instanceof net.minecraft.world.item.BlockItem item))
+            return false;
+        return this.setBlock(world, item.getBlock());
     }
 
     public DecimalPosition negate() {
-        return new DecimalPosition(xCoord, yCoord, zCoord);
+        return new DecimalPosition(-xCoord, -yCoord, -zCoord);
     }
 
     public DecimalPosition to2D() {
@@ -277,7 +280,9 @@ public record DecimalPosition(double xCoord, double yCoord,
 
     public AABB getAABB(double radius) {
         //return AABB.of(new BoundingBox(xCoord - radius, yCoord - radius, zCoord - radius, xCoord + radius, yCoord + radius, zCoord + radius));
-        return AABB.of(new BoundingBox(1, 1, 1, 1, 1, 1));
+        if (!Double.isFinite(radius) || radius < 0)
+            throw new IllegalArgumentException("Radius must be finite and non-negative");
+        return new AABB(xCoord - radius, yCoord - radius, zCoord - radius, xCoord + radius, yCoord + radius, zCoord + radius);
     }
 
     @Override

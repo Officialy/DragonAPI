@@ -80,7 +80,7 @@ public enum ModWoodList implements TreeType {
     ROWAN(ModList.WITCHERY, 		0x374633, 0x9E774D, 7, 12, "LOG", "LEAVES", "SAPLING",  VarType.INSTANCE),
     HAWTHORNE(ModList.WITCHERY, 	0x656566, 0xC3EEC3, 10, 16, "LOG", "LEAVES", "SAPLING",  VarType.INSTANCE),
     ALDER(ModList.WITCHERY, 		0x52544C, 0xC3D562, 6, 10, "LOG", "LEAVES", "SAPLING",  VarType.INSTANCE),
-    LIGHTED(ModList.CHROMATICRAFT,	0xA05F36, 0xFFD793, 10, 14, "GLOWLOG", "GLOWLEAF", "GLOWSAPLING",  VarType.INSTANCE),
+    LIGHTED(ModList.CHROMATICRAFT,	0xA05F36, 0xFFD793, 10, 14, "glow_log", "glowing_leaves", "glow_sapling", VarType.REGISTRY),
     SLIME(ModList.TINKERER,			0x68FF7A, 0x8EFFE1, 12, 15, "slimeGel", "slimeLeaves", "slimeSapling", VarType.INSTANCE),
     TAINTED(ModList.FORBIDDENMAGIC,	0x40374B, 0x530D7B,	7, 12, "taintLog", "taintLeaves", "taintSapling", VarType.INSTANCE),
     PINKBIRCH(ModList.SATISFORESTRY,0xE5E4DB, 0xF795B5, 6, 20, "LOG", "LEAVES", "SAPLING",VarType.INSTANCE),
@@ -121,6 +121,8 @@ public enum ModWoodList implements TreeType {
     private Class containerClass;
 
     private boolean exists = false;
+    private final boolean registryLookup;
+    private final String registryLog, registryLeaf, registrySapling;
 
     public static final ModWoodList[] woodList = values();
 
@@ -134,6 +136,10 @@ public enum ModWoodList implements TreeType {
         //if (!DragonAPI.canLoadHandlers())
         //    throw new MisuseException("Accessed registry enum too early! Wait until postInit!");
         mod = req;
+        registryLookup = type == VarType.REGISTRY;
+        registryLog = blockVar;
+        registryLeaf = leafVar;
+        registrySapling = saplingVar;
         leafColor = leafcolor;
         logColor = color;
         bounds = BlockBox.origin().expand(w, h, w);
@@ -141,10 +147,10 @@ public enum ModWoodList implements TreeType {
             DragonAPI.LOGGER.info("DRAGONAPI: Not loading "+this.getLabel()+": Mod not present.");
             return;
         }
-        Class cl = req.getBlockClass();
+        Class cl = type == VarType.REGISTRY ? null : req.getBlockClass();
         //DragonAPI.LOGGER.info("DRAGONAPI: Attempting to load "+this.getLabel()+". Data parameters:");
         //DragonAPI.LOGGER.info(cl+", "+blockVar+", "+leafVar+", "+saplingVar+", "+type);
-        if (cl == null) {
+        if (cl == null && type != VarType.REGISTRY) {
             DragonAPI.LOGGER.error("Error loading wood "+this.getLabel()+": Empty block class");
             return;
         }
@@ -186,9 +192,9 @@ public enum ModWoodList implements TreeType {
                     idsapling = sapling_b;
                 }
                 case REGISTRY -> {
-                    Block wood_b = BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath(mod.modid, blockVar));
-                    Block leaf_b = BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath(mod.modid, leafVar)); //todo check if this this is correct
-                    Block sapling_b = saplingVar == null ? null : BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath(mod.modid, saplingVar));
+                    Block wood_b = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, blockVar)).orElse(null);
+                    Block leaf_b = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, leafVar)).orElse(null); //todo check if this this is correct
+                    Block sapling_b = saplingVar == null ? null : BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, saplingVar)).orElse(null);
                     if (wood_b == null || leaf_b == null || (saplingVar != null && sapling_b == null)) {
                         DragonAPI.LOGGER.error("Error loading " + this.getLabel() + ": Block not instantiated!");
                         return;
@@ -288,7 +294,22 @@ public enum ModWoodList implements TreeType {
     }
 
     public boolean exists() {
-        return exists && this.getParentMod().isLoaded();
+        if (!exists && registryLookup && mod.isLoaded()) {
+            var log = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, registryLog));
+            var leaf = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, registryLeaf));
+            var sapling = registrySapling != null ? BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, registrySapling)) : Optional.<Block>empty();
+            if (log.isPresent() && leaf.isPresent() && (registrySapling == null || sapling.isPresent())) {
+                blockID = log.get(); leafID = leaf.get(); saplingID = sapling.orElse(null); exists = true;
+                logMappings.put(blockID, this); leafMappings.put(leafID, this);
+                if (saplingID != null) saplingMappings.put(saplingID, this);
+                modMappings.addValue(mod, this);
+            }
+        }
+        return exists && mod.isLoaded();
+    }
+
+    private static void refreshRegistryWoods() {
+        for (ModWoodList wood : woodList) if (wood.registryLookup) wood.exists();
     }
 
     public BlockKey getItem() {
@@ -337,12 +358,22 @@ public enum ModWoodList implements TreeType {
 
     @Override
     public Block getPlankID() {
-        return null; //todo fix null
+        if (!this.exists()) return null;
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return null; // Recipe-derived associations require the loaded server data.
+        var level = server.overworld();
+        var input = net.minecraft.world.item.crafting.CraftingInput.of(1, 1, List.of(new ItemStack(blockID)));
+        return level.recipeAccess().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING, input, level)
+                .map(recipe -> recipe.value().assemble(input))
+                .filter(stack -> !stack.isEmpty() && stack.is(net.minecraft.tags.ItemTags.PLANKS)
+                        && stack.getItem() instanceof net.minecraft.world.item.BlockItem)
+                .map(stack -> ((net.minecraft.world.item.BlockItem)stack.getItem()).getBlock()).orElse(null);
     }
 
 
     public static ModWoodList getModWood(Block id) {
-        return logMappings.get(id);
+        refreshRegistryWoods();
+        return id != null ? logMappings.get(id) : null;
     }
 
     public static ModWoodList getModWood(ItemStack block) {
@@ -350,7 +381,8 @@ public enum ModWoodList implements TreeType {
     }
 
     public static ModWoodList getModWoodFromSapling(Block id) {
-        return saplingMappings.get(id);
+        refreshRegistryWoods();
+        return id != null ? saplingMappings.get(id) : null;
     }
 
     public static ModWoodList getModWoodFromSapling(ItemStack block) {
@@ -362,7 +394,8 @@ public enum ModWoodList implements TreeType {
     }
 
     public static ModWoodList getModWoodFromLeaf(Block id) {
-        return leafMappings.get(id);
+        refreshRegistryWoods();
+        return id != null ? leafMappings.get(id) : null;
     }
 
     public static boolean isModWood(ItemStack block) {
@@ -416,11 +449,9 @@ public enum ModWoodList implements TreeType {
     }
 
     public static ModWoodList getRandomWood(Random rand) {
-        ModWoodList wood = woodList[rand.nextInt(woodList.length)];
-        while (!wood.exists) {
-            wood = woodList[rand.nextInt(woodList.length)];
-        }
-        return wood;
+        List<ModWoodList> available = Arrays.stream(woodList).filter(ModWoodList::exists).toList();
+        if (available.isEmpty()) throw new IllegalStateException("No modded woods are available");
+        return available.get(rand.nextInt(available.size()));
     }
 
     public boolean isRareTree() {
@@ -445,13 +476,15 @@ public enum ModWoodList implements TreeType {
 
     @Override
     public boolean canBePlacedSideways() {
-        return false;
+        return this.exists() && blockID.defaultBlockState().hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS);
     }
 
     public boolean isNaturalLeaf(Level world, BlockPos pos) {
         if (this.getParentMod() == ModList.BOP || this.getParentMod() == ModList.THAUMCRAFT || this.getParentMod() == ModList.NATURA || this.getParentMod() == ModList.TWILIGHT)
             return true;
-        return world.getBlockState(pos).getMapColor(world, pos).equals(MapColor.PLANT);// == Material.LEAVES; //todo fix this leaf check
+        var state = world.getBlockState(pos);
+        return state.is(leafID) && (!state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.PERSISTENT)
+                || !state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.PERSISTENT));
     }
 
     @Override
@@ -460,6 +493,7 @@ public enum ModWoodList implements TreeType {
     }
 
     public static Collection<ModWoodList> getAllWoodsByMod(ModList mod) {
+        refreshRegistryWoods();
         return modMappings.get(mod);
     }
 
@@ -481,6 +515,8 @@ public enum ModWoodList implements TreeType {
                 Block id = w.blockID;
                 Block leaf = w.leafID;
                 Block sapling = w.saplingID;
+                logMappings.put(id, w);
+                leafMappings.put(leaf, w);
                 if (sapling != null)
                     saplingMappings.put(sapling, w);
 

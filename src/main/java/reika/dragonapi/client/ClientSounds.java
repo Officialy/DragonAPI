@@ -1,7 +1,8 @@
 package reika.dragonapi.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 
@@ -23,21 +24,32 @@ public final class ClientSounds {
         float v = vol * s.getModulatedVolume();
         if (v <= 0)
             return;
-        // playLocalSound builds a PositionedSoundInstance internally, which is the only thing that
-        // can reach AbstractSoundInstance's package-private fields and so get 3D panning right.
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level != null)
-            level.playLocalSound(x, y, z, s.getSoundEvent(), s.getCategory(), v, pitch, attenuate);
+        play(s.getSoundEvent(), s.getCategory(), x, y, z, v, pitch, attenuate);
     }
 
     public static void play(SoundEvent snd, double x, double y, double z, float vol, float pitch, boolean attenuate) {
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level != null)
-            level.playLocalSound(x, y, z, snd, SoundSource.AMBIENT, vol, pitch, attenuate);
+        play(snd, SoundSource.AMBIENT, x, y, z, vol, pitch, attenuate);
+    }
+
+    private static void play(SoundEvent sound, SoundSource source, double x, double y, double z,
+            float volume, float pitch, boolean attenuate) {
+        if (Minecraft.getInstance().level == null)
+            return;
+        // The boolean on Level.playLocalSound is distance DELAY, not attenuation. Construct
+        // the spatial instance explicitly so attenuated and global sounds both obey the caller.
+        Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(sound.location(),
+                source, volume, pitch, SoundInstance.createUnseededRandom(), false, 0,
+                attenuate ? SoundInstance.Attenuation.LINEAR : SoundInstance.Attenuation.NONE,
+                x, y, z, false));
     }
 
     /** True once the sound engine exists. Kept here so DirectResourceManager -- which the dedicated
      *  server registers as a reload listener -- never names SoundManager itself. */
+    public static void reloadResources() {
+        var minecraft = Minecraft.getInstance();
+        minecraft.execute(minecraft::reloadResourcePacks);
+    }
+
     public static boolean hasSoundManager() {
         return Minecraft.getInstance().getSoundManager() != null;
     }

@@ -255,21 +255,25 @@ public class FilledBlockArray extends StructuredBlockArray {
 	public void remove(BlockPos pos) {
 		super.remove(pos);
 		data.remove(pos);
+        placementOverrides.remove(pos);
 	}
 
 	@Override
-	public StructuredBlockArray offset(int x, int y, int z) {
-		super.offset(x, y, z);
-		HashMap<BlockPos, BlockCheck> map = new HashMap<>();
-		for (Entry<BlockPos, BlockCheck> e : data.entrySet()) {
-			BlockPos key = e.getKey();
-			map.put(new BlockPos(key.getX() + x, key.getY() + y, key.getZ() + z), e.getValue());
-		}
-		data.clear();
-		data.putAll(map);
-		this.recalcLimits();
-		return this;
-	}
+    public FilledBlockArray offset(int x, int y, int z) {
+        return this.offset(new BlockPos(x, y, z));
+    }
+
+    @Override
+    public FilledBlockArray offset(BlockPos offset) {
+        super.offset(offset);
+        HashMap<BlockPos, BlockCheck> shifted = new HashMap<>();
+        data.forEach((position, check) -> shifted.put(position.offset(offset), check));
+        data.clear(); data.putAll(shifted);
+        HashMap<BlockPos, BlockKey> shiftedOverrides = new HashMap<>();
+        placementOverrides.forEach((position, key) -> shiftedOverrides.put(position.offset(offset), key));
+        placementOverrides.clear(); placementOverrides.putAll(shiftedOverrides);
+        return this;
+    }
 
 	public void populateBlockData() {
 		for (int i = 0; i < this.getSize(); i++) {
@@ -302,6 +306,7 @@ public class FilledBlockArray extends StructuredBlockArray {
 			BlockPos c = e.getKey();
 			b.data.put(new BlockPos(-c.getX(), c.getY(), c.getZ()), e.getValue());
 		}
+        placementOverrides.forEach((position, key) -> b.placementOverrides.put(new BlockPos(-position.getX(), position.getY(), position.getZ()), key));
 		return b;
 	}
 
@@ -312,6 +317,7 @@ public class FilledBlockArray extends StructuredBlockArray {
 			BlockPos c = e.getKey();
 			b.data.put(new BlockPos(c.getX(), c.getY(), -c.getZ()), e.getValue());
 		}
+        placementOverrides.forEach((position, key) -> b.placementOverrides.put(new BlockPos(position.getX(), position.getY(), -position.getZ()), key));
 		return b;
 	}
 
@@ -319,6 +325,7 @@ public class FilledBlockArray extends StructuredBlockArray {
 	public void clear() {
 		super.clear();
 		data.clear();
+        placementOverrides.clear();
 	}
 
 	public Collection<BlockPos> getAllLocationsOf(BlockCheck key) {

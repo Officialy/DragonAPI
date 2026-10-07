@@ -268,7 +268,10 @@ public record Coordinate(int xCoord, int yCoord, int zCoord) implements Location
 
     @Override
     public int compareTo(Coordinate o) {
-        return Integer.compare(this.hashCode(), o.hashCode());
+        int result = Integer.compare(xCoord, o.xCoord);
+        if (result == 0) result = Integer.compare(yCoord, o.yCoord);
+        if (result == 0) result = Integer.compare(zCoord, o.zCoord);
+        return result;
     }
 
     public record DistanceComparator(Coordinate target, boolean taxicab) implements Comparator<Coordinate> {

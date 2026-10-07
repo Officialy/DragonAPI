@@ -74,18 +74,27 @@ public class DragonAPI extends DragonAPIMod {
         LOGGER.warn("****************************************");
         NeoForge.EVENT_BUS.register(this);
         instance = this;
+        config = new ControlledConfig(this, DragonOptions.optionList, null);
+        config.loadSubfolderedConfigFile();
+        config.initProps();
+        ReikaPacketHelper.registerPacketHandler(instance, packetChannel, new APIPacketHandler());
+        if (FMLEnvironment.getDist().isClient()) reika.dragonapi.client.SyncedRecipeLookup.register();
 
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(reika.dragonapi.io.DirectResourceManager::addPack);
         ChunkManager.register(modEventBus);
         reika.dragonapi.modinteract.AEHooks.init(modEventBus);
+        //1.7.10 DragonAPIInit.load: PeripheralHandlerRelay.registerCCHandler() when ComputerCraft was loaded
+        reika.dragonapi.modinteract.CCHooks.init(modEventBus);
         modEventBus.addListener(this::clientSetup);
 
         // Guarded: RegisterRenderPipelinesEvent is a client-only event class, so even referencing
         // the listener would classload it on a dedicated server.
         if (FMLEnvironment.getDist().isClient())
-        //1.7.10 DragonAPIInit.load: PeripheralHandlerRelay.registerCCHandler() when ComputerCraft was loaded
-        reika.dragonapi.modinteract.CCHooks.init(modEventBus);
+        {
             reika.dragonapi.extras.shader.DragonShaderPipelines.register(modEventBus);
+            reika.dragonapi.client.ClientRendering.register(modEventBus);
+        }
 //        modEventBus.addListener(ReikaParticleTypes::registerParticleFactories);
 //        modEventBus.addListener(this::serverStarting);
 //        modEventBus.addListener(this::serverStarted);
@@ -112,7 +121,7 @@ public class DragonAPI extends DragonAPIMod {
 
     /** On a dedicated server there is no client game directory; fall back to the run directory. */
     public static File getMinecraftDirectory() {
-        return FMLEnvironment.getDist().isClient()
+        return FMLEnvironment.getDist().isClient() && reika.dragonapi.client.ClientEnvironment.hasGameInstance()
                 ? reika.dragonapi.client.ClientEnvironment.gameDirectory()
                 : new File(".");
     }
@@ -136,8 +145,7 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     public static boolean isSinglePlayer() {
-//        DragonAPI.LOGGER.info("The side is" + getSide() + "Am I a dedicated server?" + FMLEnvironment.getDist().isDedicatedServer());
-        return false;//getSide() == Dist.DEDICATED_SERVER && !FMLEnvironment.getDist().isDedicatedServer();
+        return isSinglePlayerFromClient();
     }
 
     public static long getLaunchTime() {
@@ -169,20 +177,23 @@ public class DragonAPI extends DragonAPIMod {
             Thread.dumpStack();
     }
 
+    @SubscribeEvent
+    public void updateOreCatalogue(net.neoforged.neoforge.event.DefaultDataComponentsBoundEvent event) {
+        if (event.shouldUpdateStaticData()) reika.dragonapi.modregistry.ModOreList.initializeAll();
+    }
+
     public void commonSetup(final FMLCommonSetupEvent evt) {
         instance.startTiming(LoadProfiler.LoadPhase.LOAD);
 
-        config = new ControlledConfig(this, DragonOptions.optionList, null);
-        config.loadSubfolderedConfigFile();
-        config.initProps();
+
 
         // instance.loadHandlers(); // Method removed - handlers are loaded automatically
-        Tests.runTests();
+        this.basicSetup();
 
         TickRegistry.instance.registerTickHandler(PlayerChunkTracker.instance);
         TickRegistry.instance.registerTickHandler(ProgressiveRecursiveBreaker.instance);
         TickRegistry.instance.registerTickHandler(reika.dragonapi.auxiliary.trackers.TickScheduler.instance);
-        ReikaPacketHelper.registerPacketHandler(instance, packetChannel, new APIPacketHandler());
+
 
         PatreonController.instance.registerMod("Reika", PatreonController.reikaURL);
 
@@ -192,6 +203,7 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     public void clientSetup(final FMLClientSetupEvent evt) {
+        evt.enqueueWork(() -> TickRegistry.instance.registerTickHandler(reika.dragonapi.auxiliary.trackers.KeyWatcher.KeyTicker.instance));
         RemoteAssetLoader.instance.checkAndStartDownloads();
         CommandDispatcher<CommandSourceStack> commandDispatcher = ClientCommandHandler.getDispatcher();
         // ReikaRenderDispatcher.init();
@@ -211,6 +223,7 @@ public class DragonAPI extends DragonAPIMod {
         TestControlCommand.register(commandDispatcher);
         BiomeMapCommand.register(commandDispatcher);
         EventProfilerCommand.register(commandDispatcher);
+        CommandableUpdateChecker.CheckerDisableCommand.register(commandDispatcher);
     }
 
     public String getModAuthorName() {

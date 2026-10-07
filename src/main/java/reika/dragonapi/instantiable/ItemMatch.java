@@ -80,7 +80,7 @@ public class ItemMatch {
     }
 
     public ItemMatch addItem(KeyedItemStack ks) {
-        ks = ks.setSimpleHash(true).setIgnoreNBT(!ks.getItemStack().has(DataComponents.CUSTOM_DATA)).lock();
+        ks = ks.setSimpleHash(true).setIgnoreNBT(ks.getItemStack().getComponentsPatch().isEmpty()).lock();
         items.add(ks);
         //if (FMLEnvironment.getDist() == Dist.CLIENT)
         ItemStack is2 = ks.getItemStack();
@@ -97,7 +97,7 @@ public class ItemMatch {
 		}
 		return false;
 		 */
-        return is != null && items.contains(new KeyedItemStack(is).setSimpleHash(true));
+        return is != null && !is.isEmpty() && items.stream().anyMatch(key -> key.match(is));
     }
 
     public Set<KeyedItemStack> getItemList() {

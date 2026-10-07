@@ -9,6 +9,13 @@ dependencies {
     // Dependencies unique to DragonAPI
 }
 
+neoForge {
+    unitTest {
+        enable()
+        testedMod = mods.named(project.mod_id).get()
+    }
+}
+
 tasks.named('test', Test).configure {
     useJUnitPlatform()
 }

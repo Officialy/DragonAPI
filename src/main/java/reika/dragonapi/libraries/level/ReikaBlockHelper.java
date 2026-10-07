@@ -177,9 +177,10 @@ public class ReikaBlockHelper {
     }
 
     public static boolean isUnbreakable(Level world, BlockPos pos, Block id, Player ep) {
-//        if (id.getBlockHardness(world, pos) < 0 || (ep != null && id.getPlayerRelativeBlockHardness(ep, world, pos) < 0))
-//            return true; todo if block is unbreakable
-        return id instanceof SemiUnbreakable && ((SemiUnbreakable) id).isUnbreakable(world, pos);
+        BlockState state = world.getBlockState(pos);
+        if (state.getBlock() != id) state = id.defaultBlockState();
+        return state.getDestroySpeed(world, pos) < 0
+                || (id instanceof SemiUnbreakable block && block.isUnbreakable(world, pos));
     }
 
 
