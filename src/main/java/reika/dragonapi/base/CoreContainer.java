@@ -76,7 +76,12 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         System.arraycopy(inv, 0, oldInv, 0, oldInv.length);
     }
 
+    /** Menu index of the first player-inventory slot, or -1 before addPlayerInventory. */
+    private int playerInventoryStart = -1;
+
     protected void addPlayerInventoryWithOffset(Inventory inv, int dx, int dy) {
+        if (playerInventoryStart < 0)
+            playerInventoryStart = slots.size();
         for (int i = 0; i < 3; i++) {
             for (int k = 0; k < 9; k++) {
                 this.addSlot(new Slot(inv, k + i * 9 + 9, dx + 8 + k * 18, dy + 84 + i * 18));
@@ -147,6 +152,12 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         if (!(tile instanceof Container))
             return ItemStack.EMPTY;
         int invsize = ((Container) tile).getContainerSize();
+        // A menu may show fewer machine slots than the inventory holds (auto crafter: 54 slots, 18-36
+        // shown); counting by inventory size then took player slots for machine ones and shift-clicked
+        // them the wrong way. Machine slots stop where the player inventory starts.
+        int machineSlots = playerInventoryStart >= 0 && !(tile instanceof MultiPageInventory)
+                ? Math.min(invsize, playerInventoryStart) : invsize;
+        invsize = machineSlots;
         int base = 0;
         if (tile instanceof MultiPageInventory mp) {
             invsize = mp.getSlotsOnPage(mp.getCurrentPage());
@@ -197,7 +208,7 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
                 return is;
             } else {
                 List<Slot> list = this.getOrderedSlotList();
-                for (int i = base; i < ((Container) tile).getContainerSize() && i < list.size() && is.getCount() > 0; i++) {
+                for (int i = base; i < machineSlots && i < list.size() && is.getCount() > 0; i++) {
                     Slot toSlot = list.get(i);
                     int lim = ((Container) tile).getMaxStackSize();
                     //DragonAPI.LOGGER.info(i+" "+toSlot+":"+toSlot.getSlotIndex()+" E ["+base+", "+((Container)tile).getSizeInventory()+") > "+toSlot.isItemValid(is), Dist.DEDICATED_SERVER);

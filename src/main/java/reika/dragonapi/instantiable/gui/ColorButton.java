@@ -46,7 +46,13 @@ public class ColorButton extends Button {
     /** Draw a Gui Button with an image background. Args: id, x, y, width, height, color*/
     public ColorButton(int par1, int par2, int par3, int par4, int par5, int par9)
     {
-        super(new Builder(Component.literal(""), b -> {}).pos(par2, par3).size(par4, par5));
+        this(par1, par2, par3, par4, par5, par9, b -> {});
+    }
+
+    /** As above, routing a click to {@code onPress}; 1.7.10 reached the screen's actionPerformed by button id. */
+    public ColorButton(int par1, int par2, int par3, int par4, int par5, int par9, OnPress onPress)
+    {
+        super(new Builder(Component.literal(""), onPress).pos(par2, par3).size(par4, par5));
 //        enable = true;
         visible = true;
 //        id = par1;
