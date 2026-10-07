@@ -61,6 +61,7 @@ import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.java.ReikaReflectionHelper;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
+import reika.dragonapi.modinteract.lua.LuaMethod;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -91,6 +92,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     private boolean redstoneInput;
 
     private final RedstoneTracker comparatorTracker = new RedstoneTracker();
+    /** DragonAPI CCCompat's peripheral for this block entity; typed Object so CC-less installs never resolve it. */
+    private Object computerPeripheral;
     private final SyncPacket syncTag;
 
     /**
@@ -813,6 +816,41 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     public final boolean isDirectlyAdjacent(int x, int y, int z) {
         return Math.abs(x - worldPosition.getX()) + Math.abs(y - worldPosition.getY()) + Math.abs(z - worldPosition.getZ()) == 1;
+    }
+
+    /**
+     * ComputerCraft peripheral type: 1.7.10 {@code TileEntityBase.getType()}, renamed because {@link BlockEntity#getType()}
+     * is the BlockEntityType. 1.7.10 cut the "TileEntity" prefix off the class name; ported classes are mostly
+     * "BlockEntity"-prefixed now, so either affix is cut and scripts written against 1.7.10 type names keep working.
+     * The OpenComputers component name was the same string.
+     */
+    public String getPeripheralType() {
+        String name = this.getClass().getSimpleName();
+        for (String affix : new String[]{"TileEntity", "BlockEntity"}) {
+            if (name.startsWith(affix) && name.length() > affix.length())
+                return name.substring(affix.length());
+            if (name.endsWith(affix) && name.length() > affix.length())
+                return name.substring(0, name.length()-affix.length());
+        }
+        return name;
+    }
+
+    /**
+     * 1.7.10 {@code getMethodNames()}: every registered {@link LuaMethod} valid for this block entity, in the order a
+     * computer's method indices refer to. Exposed to ComputerCraft by {@link reika.dragonapi.modinteract.CCHooks}.
+     */
+    public final LuaMethod[] getLuaMethods() {
+        return LuaMethod.getMethodsFor(this);
+    }
+
+    /** DragonAPI internal: the cached ComputerCraft peripheral (see {@code CCCompat}); null until a computer asks. */
+    public final Object getComputerPeripheral() {
+        return computerPeripheral;
+    }
+
+    /** DragonAPI internal: see {@link #getComputerPeripheral()}. */
+    public final void setComputerPeripheral(Object peripheral) {
+        computerPeripheral = peripheral;
     }
 
     private BlockEntity getCachedTE(Direction dir) {

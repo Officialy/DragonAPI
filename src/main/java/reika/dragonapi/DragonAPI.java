@@ -83,6 +83,8 @@ public class DragonAPI extends DragonAPIMod {
         // Guarded: RegisterRenderPipelinesEvent is a client-only event class, so even referencing
         // the listener would classload it on a dedicated server.
         if (FMLEnvironment.getDist().isClient())
+        //1.7.10 DragonAPIInit.load: PeripheralHandlerRelay.registerCCHandler() when ComputerCraft was loaded
+        reika.dragonapi.modinteract.CCHooks.init(modEventBus);
             reika.dragonapi.extras.shader.DragonShaderPipelines.register(modEventBus);
 //        modEventBus.addListener(ReikaParticleTypes::registerParticleFactories);
 //        modEventBus.addListener(this::serverStarting);

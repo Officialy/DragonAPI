@@ -13,20 +13,28 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.neoforged.neoforgespi.language.ModFileScanData;
+
+import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
-import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 
 public abstract class LuaMethod {
 
 	public final String displayName;
 	private final Class requiredClass;
 
-	private static final HashMap<MethodKey, LuaMethod> methods = new HashMap();
+	//mods construct on parallel loader threads, each registering its own methods
+	private static final Map<MethodKey, LuaMethod> methods = new ConcurrentHashMap<>();
 
 	/*
 	private static final LuaMethod tanks = new LuaGetTanks();
@@ -70,10 +78,8 @@ public abstract class LuaMethod {
 		requiredClass = requiredParent;
 
 		MethodKey mk = this.getKey();
-		if (methods.containsKey(mk))
+		if (methods.putIfAbsent(mk, this) != null)
 			throw new IllegalArgumentException("This method is a duplicate of one that already exists!");
-		else
-			methods.put(mk, this);
 	}
 
 	public static final Collection<LuaMethod> getMethods() {
@@ -88,28 +94,51 @@ public abstract class LuaMethod {
 		return methods.size();
 	}
 
-/*todo	@ModDependent(ModList.COMPUTERCRAFT)
-	public static Object[] invokeCC(LuaMethod m, BlockEntity te, Object[] args) throws LuaException, InterruptedException {
-		try {
-			return m.invoke(te, args);
-		}
-		catch (LuaMethodException e) {
-			throw new LuaException(e.getMessage());
-		}
+	/**
+	 * Runs {@code m} against {@code te}. 1.7.10 had one entry point per computer mod ({@code invokeCC} wrapping a
+	 * {@link LuaMethodException} into a ComputerCraft {@code LuaException}, {@code invokeOC} into a RuntimeException);
+	 * the ComputerCraft translation now lives in {@link reika.dragonapi.modinteract.CCCompat}, which is only loaded when
+	 * CC: Tweaked is, so this half stays free of computer-mod types.
+	 * <p>OPENCOMPUTERS-PORT: {@code invokeOC} (LuaMethodException/InterruptedException -> RuntimeException) returns
+	 * with an OpenComputers 26.3 build; OC has none.
+	 */
+	public static Object[] call(LuaMethod m, BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException {
+		return m.invoke(te, args);
 	}
 
-	@ModDependent(ModList.OPENCOMPUTERS)
-	public static Object[] invokeOC(LuaMethod m, BlockEntity te, Object[] args) throws RuntimeException {
-		try {
-			return m.invoke(te, args);
+	/**
+	 * Every registered method valid for {@code te}, in the stable order a peripheral's method indices refer to. Where
+	 * two mods register the same name for classes this block entity both extends (getTemperature, getName), only the
+	 * one bound to the more specific class is kept, since a computer can only call a name once.
+	 */
+	public static LuaMethod[] getMethodsFor(BlockEntity te) {
+		HashMap<String, LuaMethod> byName = new HashMap<>();
+		for (LuaMethod l : methods.values()) {
+			if (!l.isValidFor(te))
+				continue;
+			LuaMethod prev = byName.get(l.displayName);
+			if (prev == null || prev.isLessSpecificThan(l))
+				byName.put(l.displayName, l);
 		}
-		catch (LuaMethodException e) {
-			throw new RuntimeException(e);
-		}
-		catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}*/
+		ArrayList<LuaMethod> li = new ArrayList<>(byName.values());
+		li.sort(Comparator.comparing((LuaMethod l) -> l.displayName));
+		return li.toArray(new LuaMethod[0]);
+	}
+
+	private boolean isLessSpecificThan(LuaMethod other) {
+		if (requiredClass == other.requiredClass)
+			return false;
+		if (requiredClass == null)
+			return true;
+		if (other.requiredClass == null)
+			return false;
+		if (requiredClass.isAssignableFrom(other.requiredClass))
+			return true;
+		if (other.requiredClass.isAssignableFrom(requiredClass))
+			return false;
+		//unrelated interfaces/classes: deterministic tie-break
+		return requiredClass.getName().compareTo(other.requiredClass.getName()) > 0;
+	}
 
 	protected abstract Object[] invoke(BlockEntity te, Object[] args) throws LuaMethodException, InterruptedException;
 
@@ -151,29 +180,56 @@ public abstract class LuaMethod {
 		return new MethodKey(this);
 	}
 
+	/**
+	 * Instantiates (and so registers) every concrete LuaMethod in {@code folder}. 1.7.10 walked the classpath; under
+	 * FML's module layer that finds nothing outside a dev run, so this reads NeoForge's mod file scan data instead,
+	 * which lists every class of every loaded mod in dev and production alike.
+	 */
 	public static void registerMethods(String folder) {
-		try {
-			for (Class c : ReikaJavaLibrary.getAllClassesFromPackage(folder, LuaMethod.class, true, true)) {
+		String prefix = folder.endsWith(".") ? folder : folder+".";
+		ArrayList<String> names = new ArrayList<>();
+		for (ModFileScanData data : net.neoforged.fml.ModList.get().getAllScanData()) {
+			for (ModFileScanData.ClassData cd : data.getClasses()) {
+				String name = cd.clazz().getClassName();
+				if (name.startsWith(prefix) && !name.contains("$"))
+					names.add(name);
+			}
+		}
+		Collections.sort(names);
+		int before = methods.size();
+		for (String name : names) {
+			try {
+				Class<?> c = Class.forName(name, false, LuaMethod.class.getClassLoader());
+				if (!LuaMethod.class.isAssignableFrom(c) || Modifier.isAbstract(c.getModifiers()) || c.isAnnotationPresent(Deprecated.class))
+					continue;
 				if (c.isAnnotationPresent(ModTileDependent.class)) {
-					String[] vals = ((ModTileDependent)c.getAnnotation(ModTileDependent.class)).value();
-					for (String s : vals) {
-//				todo		if (!ReikaASMHelper.checkForClass(s)) {
-//							continue;
-//						}
+					boolean present = true;
+					for (String s : c.getAnnotation(ModTileDependent.class).value()) {
+						if (!classExists(s)) {
+							present = false;
+							break;
+						}
 					}
+					if (!present)
+						continue;
 				}
 				if (c.isAnnotationPresent(ModDependentMethod.class)) {
-					ModList mod = ((ModDependentMethod)c.getAnnotation(ModDependentMethod.class)).value();
+					ModList mod = c.getAnnotation(ModDependentMethod.class).value();
 					if (!mod.isLoaded()) {
 						continue;
 					}
 				}
-				c.newInstance();
+				c.getDeclaredConstructor().newInstance();
+			}
+			catch (ReflectiveOperationException | LinkageError e) {
+				throw new RuntimeException("Could not load LuaMethod "+name+"!", e);
 			}
 		}
-		catch (Exception e) {
-			throw new RuntimeException("Could not load LuaMethods!", e);
-		}
+		DragonAPI.LOGGER.info("Registered {} LuaMethods from {} ({} total).", methods.size()-before, folder, methods.size());
+	}
+
+	private static boolean classExists(String name) {
+		return LuaMethod.class.getClassLoader().getResource(name.replace('.', '/')+".class") != null;
 	}
 
 	/** Without "( )" */

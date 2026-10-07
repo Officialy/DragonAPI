@@ -98,7 +98,7 @@ public enum ModList implements ModEntry, Dependency {
 	BLUEPOWER("bluepower", "com.bluepowermod.init.BPBlocks", "com.bluepowermod.init.BPItems"),
 	COLORLIGHT("easycoloredlights"),
 	ENDERIO("EnderIO", "crazypants.enderio.EnderIO"),
-	COMPUTERCRAFT("ComputerCraft", "dan200.ComputerCraft"),
+	COMPUTERCRAFT("computercraft"), //CC: Tweaked mod id (1.7.10 was "ComputerCraft", dan200.ComputerCraft)
 	ROUTER("RouterReborn", "router.reborn.RouterReborn"),
 	PNEUMATICRAFT("PneumaticCraft", "pneumaticCraft.common.block.Blockss", "pneumaticCraft.common.item.Itemss"),
 	PROJECTE("ProjectE", "moze_intel.projecte.gameObjs.ObjHandler"),

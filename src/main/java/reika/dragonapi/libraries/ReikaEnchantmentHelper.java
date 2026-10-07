@@ -172,4 +172,39 @@ public class ReikaEnchantmentHelper {
 
     }
 
+
+    /**
+     * 1.7.10 vanilla enchantment ids (the Enchantment.enchantmentsList index), read from the decompiled 1.7.10
+     * Enchantment class, for scripts and data written against numeric ids. Enchantments are registry entries now.
+     */
+    private static final Map<Integer, ResourceKey<Enchantment>> LEGACY_IDS = Map.ofEntries(
+            Map.entry(0, net.minecraft.world.item.enchantment.Enchantments.PROTECTION),
+            Map.entry(1, net.minecraft.world.item.enchantment.Enchantments.FIRE_PROTECTION),
+            Map.entry(2, net.minecraft.world.item.enchantment.Enchantments.FEATHER_FALLING),
+            Map.entry(3, net.minecraft.world.item.enchantment.Enchantments.BLAST_PROTECTION),
+            Map.entry(4, net.minecraft.world.item.enchantment.Enchantments.PROJECTILE_PROTECTION),
+            Map.entry(5, net.minecraft.world.item.enchantment.Enchantments.RESPIRATION),
+            Map.entry(6, net.minecraft.world.item.enchantment.Enchantments.AQUA_AFFINITY),
+            Map.entry(7, net.minecraft.world.item.enchantment.Enchantments.THORNS),
+            Map.entry(16, net.minecraft.world.item.enchantment.Enchantments.SHARPNESS),
+            Map.entry(17, net.minecraft.world.item.enchantment.Enchantments.SMITE),
+            Map.entry(18, net.minecraft.world.item.enchantment.Enchantments.BANE_OF_ARTHROPODS),
+            Map.entry(19, net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK),
+            Map.entry(20, net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT),
+            Map.entry(21, net.minecraft.world.item.enchantment.Enchantments.LOOTING),
+            Map.entry(32, net.minecraft.world.item.enchantment.Enchantments.EFFICIENCY),
+            Map.entry(33, net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH),
+            Map.entry(34, net.minecraft.world.item.enchantment.Enchantments.UNBREAKING),
+            Map.entry(35, net.minecraft.world.item.enchantment.Enchantments.FORTUNE),
+            Map.entry(48, net.minecraft.world.item.enchantment.Enchantments.POWER),
+            Map.entry(49, net.minecraft.world.item.enchantment.Enchantments.PUNCH),
+            Map.entry(50, net.minecraft.world.item.enchantment.Enchantments.FLAME),
+            Map.entry(51, net.minecraft.world.item.enchantment.Enchantments.INFINITY),
+            Map.entry(61, net.minecraft.world.item.enchantment.Enchantments.LUCK_OF_THE_SEA),
+            Map.entry(62, net.minecraft.world.item.enchantment.Enchantments.LURE));
+
+    /** The enchantment a 1.7.10 numeric id named, or null if it named none (or a mod's long-gone one). */
+    public static ResourceKey<Enchantment> getLegacyEnchantment(int id) {
+        return LEGACY_IDS.get(id);
+    }
 }

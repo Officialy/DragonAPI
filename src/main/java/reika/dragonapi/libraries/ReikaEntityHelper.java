@@ -501,6 +501,23 @@ public class ReikaEntityHelper {
         return !(target.level() instanceof ServerLevel sl) || sl.isPvpAllowed();
     }
 
+
+    /** 1.7.10: the creeper's saved "Fuse" tag, i.e. its fuse length (maxSwell has no getter). */
+    public static int getCreeperFuse(net.minecraft.world.entity.monster.Creeper e) {
+        var out = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, e.registryAccess());
+        e.saveWithoutId(out);
+        return out.buildResult().getShortOr("Fuse", (short)30);
+    }
+
+    /** 1.7.10 read the saved "powered" tag. */
+    public static boolean isCreeperCharged(net.minecraft.world.entity.monster.Creeper e) {
+        return e.isPowered();
+    }
+
+    /** 1.7.10 read the saved "Anger" tag (> 0). */
+    public static boolean isPigZombieAngry(ZombifiedPiglin e) {
+        return e.isAngry();
+    }
 }
 
 

@@ -16,7 +16,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
 import org.jspecify.annotations.Nullable;
 
-@LuaMethod.ModTileDependent(value = {"cofh.api.energy.IEnergyProvider", "cofh.api.energy.IEnergyReceiver"})
+//1.7.10 was @ModTileDependent on CoFH IEnergyProvider/IEnergyReceiver; now read through the always-present NeoForge energy capability
 public class LuaGetStoredRF extends LuaMethod {
 
 	public LuaGetStoredRF() {
