@@ -259,3 +259,64 @@ Retain original reference sources. A new marker, an exception, or deletion is no
 full behavior port. In particular, do not follow the audit's blanket deletion recommendations or add
 unsupported registrations merely to silence a finding. Low-priority/raw-type/logging clusters remain
 review leads rather than individually reproduced bugs; this pass does not certify them all.
+
+
+## Extended audit implementation — 2026-10-08
+
+Implemented the five recommended priority groups against the generated Minecraft 26.3.0.51-beta
+and cached NeoForge sources. Historical findings above describe the pre-repair source. This pass
+repairs confirmed behavior; it does not certify every one of the audit's 170 numbered entries.
+
+| Group | Result | Regression evidence |
+| --- | --- | --- |
+| Positions and structures | DecimalPosition performs real block placement/item drops and fractional negate/radius math. BlockArray mutates/clears the world, visits its last entry, removes the returned iterator entry and orders distance as the original inward comparator did. Structured counts use block identity across properties; removal, offsets and flips preserve subclass data. Filled arrays also preserve placement overrides, including world-free layouts. Blueprints store Blocks; the legacy integer overload explicitly means the current registry runtime ID. | Unit empty/single/multiple iterators, exhaustion/removal/distance and decimal math; server placement, drops, structured state variants, blueprint overwrites, offsets/mirrors and full BlockState codec round trips. |
+| Persistence and collection identity | WeightedRandom attaches its tag, derives totals from loaded entries, handles replacement/removal/clear and updates historical options. ImmutableItemStack returns copies and hashes item/components independently of count. KeyedItemStack equality includes matching criteria; explicit matches/match methods provide fuzzy matching. Component ordering uses weakly interned component snapshots, including transient components, without requiring serialization. ItemMatch and the grinder's locked-seed checks use the intended predicate. ItemHashMap reconstructs patches and has symmetric key equality, defensive views, consistent clone/mode behavior and a typed integer accumulation helper. Coordinate ordering is lexicographic; its seeded hash is unchanged. Lua/ValueSortedMap comparator contracts and missing TimerMap values are corrected. | Weighted persistence/dynamic/history/zero-boundary tests; coordinate hash collision and unchanged seed hash; value-sort ties/custom comparator; server count/component identity, transient components, iteration/clone, strict ordering and fuzzy matching. |
+| Menus and inventory | CoreContainer relay slots are real hidden menu slots with valid backing indices. Native findSlot retains menu indices. Fallback slots are per-menu, empty and noninteractive. Reach requires the same level, the current live tile and normal eight-block range unless deliberately overridden. Invalid clicks/transfers are rejected; DummyContainer is valid for its slotless contract. InventorySlot marks partial mutations dirty and prevents negative/full-slot growth. | Real engine menu GameTest covering relay identity/menu index, fallback behavior, reach override and removed tiles. |
+| Availability and catalogues | RF/FE use native NeoForge availability; Hydraulic remains unavailable until its integration exists. Current Chroma glow log/leaves/sapling identifiers populate and lazily refresh the wood maps. Random wood selection has a finite available set; axis and natural-leaf queries use actual state properties. Planks require a real loaded crafting recipe yielding a plank block. Ore ownership filters actual ores before identifying a loaded owner; generation variants use native stone/deepslate/netherrack tags and original fallback locations. Catalogue reload runs after DefaultDataComponentsBoundEvent, avoiding the earlier tag event's unbound component defaults. | Server RF/FE and ore filtering/tag variants; menu test also verifies current Chroma wood mappings/axis support when loaded. |
+| Resources, sound and lifecycle | DirectResourceManager registers an owned native client pack with full identifiers, real namespaces/listing, correct missing-resource behavior, valid source-pack metadata and reload invalidation. Filesystem/classpath/dynamic resources retain their sources; sound registration and SingleSound playback use the working paths with normal data-generated sound definitions. Jar-entry streams close their owned jar, copy paths close inputs on output-open failure, and both copy streams close even on a close failure. Basic setup computes/registers packaged hashes; FILEHASH controls checking after config loads. Client resource/preview calls have explicit physical-client contracts. BlockEntityRenderBase.submit is abstract; accepted renderers already implement it. Additional fixes preserve velocity copies, exclude the source player from OtherPlayersTarget, use Direction inside client interaction events and keep the registered debug item side-safe. | Server owned-resource metadata/listing/cache invalidation and missing-resource checks; dedicated startup and all accepted family sources compile. Native client pack reload verification is recorded below after completion. |
+
+The final unit/server command was:
+
+```powershell
+.\gradlew.bat :DragonAPI:test :RotaryCraft:test :ReactorCraft:test :TestInstance:runGameTest -PgameTestSelector=rotarycraft:dragonapi_* -PexcludeExternalMods --console=plain
+```
+
+It passed: **57 unit tests** (DragonAPI 20, RotaryCraft 32, ReactorCraft 5), zero failures/errors/skips,
+and **all 11 required dedicated-server GameTests**, with the active family modules compiled. Log:
+`../dragonapi-extended-validation.log` (BUILD SUCCESSFUL, 46 seconds). These are focused contracts,
+not complete gameplay coverage of the family.
+
+### Remaining boundaries
+
+- No verified 26.3 version feed is configured. The inherited obsolete HTTP feed remains gated;
+  custom supported endpoints can register. Computing artifact hashes does not establish a valid feed.
+- No accepted Hydraulic integration or verified replacement for the historical Pneumatic probe exists.
+  Neither is reported available by inventing a class name or enabling an unsupported power system.
+- Glow-wood plank lookup has no accepted species-specific crafting recipe to resolve yet. The helper
+  queries actual loaded recipes; it does not fabricate a plank association. Legacy wood integrations
+  still need full subsystem ports against their target APIs.
+- ItemHashMap integer accumulation is now `ItemHashMap.add(ItemHashMap<Integer>, ItemStack, int)`.
+  The excluded pristine Chroma crafter's old instance call must migrate when that file is fully ported.
+  Other excluded heterogeneous KeyedItemStack consumers must adopt explicit fuzzy predicates as needed.
+- The old world-only InertEntity constructor, dormant typed payload/CompoundSyncPacket drafts,
+  historical block hooks, tier resources, dispatcher/particle engines, missing integrations and the
+  audit's low-priority raw-type/logging clusters remain tracked port work. Active code was not excluded
+  to produce a passing result, and preserved original implementation/reference information was retained.
+- Five invalid original RotaryCraft PNGs still require verified original artwork. This pass has not
+  invented substitutes. Physical input, human visual quality and shader-pack compatibility are not
+  implied by automated client checks.
+
+
+### Extended client verification
+
+The opt-in TestInstance fixture ran via `:TestInstance:runClient --init-script
+build/dragonapi-audit-client.init.gradle` in the copied `build/dragonapi-client-audit` save. It registered
+a temporary namespaced filesystem asset, awaited Minecraft.reloadResourcePacks, then read the exact
+bytes through Minecraft's actual resource manager and verified sourcePackId=dragonapi/direct_assets.
+It also verified current Chroma glow-wood mappings/axis support, real server jump press/release decoding,
+text-particle extraction, player-model submission and a fresh biome PNG. Temporary assets were removed.
+`../dragonapi-extended-client.log` contains DRAGONAPI_AUDIT_CLIENT_PASS and BUILD SUCCESSFUL (1m 57s).
+
+This fixture remains inert without dragonapi.auditClient. The log still includes the five known invalid
+original RotaryCraft textures, background Chroma 4x4 puzzle-generation timeout and Windows counter
+lookup errors; passing these targeted assertions does not imply those unrelated findings are repaired.

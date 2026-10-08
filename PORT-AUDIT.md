@@ -3,6 +3,11 @@
 _Complete. Source tree: `DragonAPI/src/main/java/reika/dragonapi` (654 `.java` files, all scanned)._
 _Scope: (1) porting errors (stale 1.7.10 / removed 26.2 APIs, stubs), (2) bad modern-modding practice, (3) standards gaps._
 
+**Implementation status (2026-10-08):** This is the historical findings ledger. Confirmed priority
+repairs, corrections to disputed findings, regression results and remaining port boundaries are
+recorded in [PORT-AUDIT-REVIEW.md](PORT-AUDIT-REVIEW.md), including the extended implementation section.
+An original finding below is not evidence that its old implementation remains present.
+
 ## Legend
 - **CRITICAL** — dead feature / silently wrong behaviour / hard-rule violation (unsanctioned stub)
 - **HIGH** — crash-class, behaviour regression, thread-safety, or side-unsafe code
