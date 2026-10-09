@@ -2,12 +2,17 @@ package reika.dragonapi.extras;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FireBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import reika.dragonapi.libraries.level.LegacyFlammabilityTags;
 
 import java.util.HashMap;
+import java.util.function.Predicate;
 
 public class BlockProperties {
-    /** A catalogue of all flammable blocks by ID. */
-    private static final HashMap<Block, Boolean> flammableArray = new HashMap();
+    /** Live native fire data and reloadable legacy exceptions, rather than a frozen block list. */
+    private static volatile Predicate<BlockState> flammablePolicy;
 
     /** A catalogue of all soft (replaceable, like water, tall grass, etc) blocks by ID. */
     private static final HashMap<Block, Boolean> softBlocksArray = new HashMap();
@@ -82,25 +87,14 @@ public class BlockProperties {
     }
 
     public static void setFlammable() {
-//        flammableArray.put(Blocks.PLANKS, true);
-//        flammableArray.put(Blocks.LOG, true);
-//        flammableArray.put(Blocks.LOG2, true);
-//        flammableArray.put(Blocks.LEAVES, true);
-//        flammableArray.put(Blocks.LEAVES2, true);
-        flammableArray.put(Blocks.NOTE_BLOCK, true);
-        flammableArray.put(Blocks.TALL_GRASS, true);
-        flammableArray.put(Blocks.DEAD_BUSH, true);
-//        flammableArray.put(Blocks.WOOL, true);
-        flammableArray.put(Blocks.TNT, true);
-        flammableArray.put(Blocks.BOOKSHELF, true);
-        flammableArray.put(Blocks.OAK_STAIRS, true);
-        flammableArray.put(Blocks.JUKEBOX, true);
-        flammableArray.put(Blocks.VINE, true);
-//        flammableArray.put(Blocks.WOODEN_SLAB, true);
-//        flammableArray.put(Blocks.DOUBLE_WOODEN_SLAB, true);
-        flammableArray.put(Blocks.SPRUCE_STAIRS, true);
-        flammableArray.put(Blocks.BIRCH_STAIRS, true);
-        flammableArray.put(Blocks.JUNGLE_STAIRS, true);
+        // A world-free catalogue cannot call contextual block overrides. This is the same
+        // native table used by NeoForge's default getFlammability implementation, and querying
+        // it live includes modern species without declaring fireproof Nether planks flammable.
+        FireBlock fire = (FireBlock)Blocks.FIRE;
+        flammablePolicy = state -> fire.getBurnOdds(state) > 0
+                || (!state.hasProperty(BlockStateProperties.WATERLOGGED)
+                    || !state.getValue(BlockStateProperties.WATERLOGGED))
+                    && state.is(LegacyFlammabilityTags.FLAMMABLE);
     }
 
     static {
@@ -110,7 +104,12 @@ public class BlockProperties {
     }
 
     public static boolean isFlammable(Block b) {
-        return flammableArray.containsKey(b) && flammableArray.get(b);
+        return isFlammable(b.defaultBlockState());
+    }
+
+    /** State-aware catalogue query; tag membership is resolved again after every reload. */
+    public static boolean isFlammable(BlockState state) {
+        return flammablePolicy.test(state);
     }
 
     public static boolean isSoft(Block b) {

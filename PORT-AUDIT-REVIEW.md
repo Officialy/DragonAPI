@@ -587,3 +587,24 @@ All 88 family unit tests and all 33 native DragonAPI tests pass in build/tree-de
 (1m 38s); all accepted consumers compile. Normal Play argument hashes match the previous checkpoint
 and automated checks remain disabled there. This completed batch is included in the local checkpoint.
 D23 is next; D36 wood associations and actual remote-client/shader acceptance remain open.
+
+## Live common-material flammability — D23, 2026-10-09
+
+Resolved finding 1.18 against the original de1bcf1f catalogue and actual 26.3 FireBlock/NeoForge
+sources. The block-only catalogue lacked common wood/leaves/wool/slabs. The world helper already
+consulted the contextual hook, but passed a dry default state, defeating waterlogging. It now
+uses the actual state through both hook and fallback, retaining original UP-face and chest/trapdoor
+exceptions. The catalogue queries native fire data live, covering modern species, doubled wooden
+slabs and every wool colour/shape while respecting fireproof Nether wood. Public initialization
+remains functional. Note block and jukebox retain their original classifications through the
+generated reloadable dragonapi:legacy_flammable tag; native fire spread odds are unchanged.
+
+Three new units and seven native fixtures cover common/state-sensitive catalogue data, generated
+exceptions, native tag-reload apply/restoration, temperature ignition, the public laser beam and
+ReactorCraft graphite/plasma. Tag tests validate rebinding rather than claiming an entire resource
+pack reload. All 91 family units (47 + 33 + 8 + 3), 38 native DragonAPI tests and two ReactorCraft
+consumer tests pass. Datagen and packaged-tag inspection pass; normal Play argument hashes match
+the previous checkpoint and automated checks remain disabled. Logs: build/flammability-datagen.log,
+build/flammability-validation.log (3m 16s), build/flammability-reactor-validation.log (38s).
+Full contract: docs/block-flammability-port.md. This batch is included in the local checkpoint.
+D24 dye-cache identity/reloads and actual remote-client/shader acceptance remain open.

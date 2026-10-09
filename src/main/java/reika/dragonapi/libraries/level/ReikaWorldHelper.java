@@ -279,14 +279,15 @@ public class ReikaWorldHelper {
     }
 
     public static boolean flammable(BlockGetter world, BlockPos pos) {
-        Block b = world.getBlockState(pos).getBlock();
+        BlockState state = world.getBlockState(pos);
+        Block b = state.getBlock();
         if (b == Blocks.AIR)
             return false;
         if (b instanceof TrapDoorBlock || b == Blocks.CHEST)
             return false;
-        if (b.getFlammability(b.defaultBlockState(), world, pos, Direction.UP) > 0)
+        if (state.getFlammability(world, pos, Direction.UP) > 0)
             return true;
-        return BlockProperties.isFlammable(b);
+        return BlockProperties.isFlammable(state);
     }
 
     public static boolean flammable(Block id) {
