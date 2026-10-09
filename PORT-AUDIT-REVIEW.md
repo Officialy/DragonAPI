@@ -542,3 +542,27 @@ water/turbine/gear/railgun/dropper/resource/tracking checks. Logs: build/block-a
 (1m 50s) and build/block-array-client-final.log (1m 41s). Normal Play launch arguments remain
 unchanged. D20 and previous pending repairs are included in the requested local checkpoint;
 remote-client and actual shader/LOD acceptance remain separate open tasks.
+
+## Recursive breaker fluid identity and shared server sounds — D21, 2026-10-09
+
+Confirmed findings 1.12/1.13 against the original breaker and actual 26.3 Level/ServerLevel sources.
+Property collections are not fluid identity; playLocalSound still has an empty server base method.
+The breaker now uses the captured actual state, standalone fluid identity and water tags, retaining
+source/flowing water versus other-liquid sounds and treating waterlogged solids as solids. Native
+server broadcast reaches the initiating player and nearby observers, preserves state-aware break
+sound parameters and respects native range/dimension filtering and NeoForge sound hooks.
+
+Accepted caller review also confirmed the shared sound helpers' server no-op, including finding
+1.14. Block break/step/place, explicit block, normal ambient and entity overloads now retain local
+client playback and use native server broadcasts. Removed/replacement block fallback, positions,
+categories, explicit/default volume/pitch and local distance-delay semantics are retained.
+
+Nine new native tests, covering fourteen shared helper overloads and actual player connections,
+pass alongside all previous DragonAPI tests: 27/27. Family unit suites remain 85/85. Log:
+build/recursive-breaker-validation.log (1m 7s). All fifteen accepted wand tests and the cliff
+transparification test pass in build/recursive-breaker-wand-callers.log (2m 16s) and
+build/recursive-breaker-cliff-caller.log (39s). The isolated client audit passes in
+build/recursive-breaker-client.log (1m 42s), including local/decoded-server sound-engine checks
+and all previous water/turbine/gear/railgun/dropper checks. Normal Play argument hashes remain
+unchanged. Full source/caller contract: docs/recursive-breaker-port.md. This completed batch is
+included in the local checkpoint; D22 and remote-client/shader acceptance remain open.

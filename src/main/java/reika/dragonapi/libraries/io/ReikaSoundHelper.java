@@ -37,50 +37,66 @@ public class ReikaSoundHelper {
     }
 
     public static void playBreakSound(Level world, int x, int y, int z, Block b) {
-        SoundType s = b.defaultBlockState().getSoundType();
+        SoundType s = getSoundType(world, new BlockPos(x, y, z), b);
         SoundEvent f = s.getBreakSound();
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, f, SoundSource.BLOCKS, s.getVolume(), s.getPitch(), false);
+        playLocalOrBroadcast(world, x + 0.5, y + 0.5, z + 0.5, f, SoundSource.BLOCKS, s.getVolume(), s.getPitch(), false);
     }
 
     public static void playStepSound(Level world, int x, int y, int z, Block b) {
-        SoundEvent s = b.defaultBlockState().getSoundType().getStepSound();
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, 1, 1, false);
+        SoundEvent s = getSoundType(world, new BlockPos(x, y, z), b).getStepSound();
+        playLocalOrBroadcast(world, x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, 1, 1, false);
     }
 
     public static void playPlaceSound(Level world, int x, int y, int z, Block b) {
-        SoundEvent s = b.defaultBlockState().getSoundType().getPlaceSound();
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, 1, 1, false);
+        SoundEvent s = getSoundType(world, new BlockPos(x, y, z), b).getPlaceSound();
+        playLocalOrBroadcast(world, x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, 1, 1, false);
     }
 
     public static void playBreakSound(Level world, int x, int y, int z, Block b, float vol, float pitch) {
-        SoundEvent s = b.defaultBlockState().getSoundType().getBreakSound();
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, 1 * vol, 1 * pitch, false);
+        SoundEvent s = getSoundType(world, new BlockPos(x, y, z), b).getBreakSound();
+        playLocalOrBroadcast(world, x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, vol, pitch, false);
     }
 
     public static void playStepSound(Level world, int x, int y, int z, Block b, float vol, float pitch) {
-        SoundEvent s = b.defaultBlockState().getSoundType().getStepSound();
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, 1 * vol, 1 * pitch, false);
+        SoundEvent s = getSoundType(world, new BlockPos(x, y, z), b).getStepSound();
+        playLocalOrBroadcast(world, x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, vol, pitch, false);
     }
 
     public static void playPlaceSound(Level world, int x, int y, int z, Block b, float vol, float pitch) {
-        SoundEvent s = b.defaultBlockState().getSoundType().getPlaceSound();
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, 1 * vol, 1 * pitch, false);
+        SoundEvent s = getSoundType(world, new BlockPos(x, y, z), b).getPlaceSound();
+        playLocalOrBroadcast(world, x + 0.5, y + 0.5, z + 0.5, s, SoundSource.BLOCKS, vol, pitch, false);
     }
 
     public static void playSoundAtBlock(Level world, int x, int y, int z, SoundEvent snd, float vol, float pit) {
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, snd, SoundSource.BLOCKS, vol, pit, false);
+        playLocalOrBroadcast(world, x + 0.5, y + 0.5, z + 0.5, snd, SoundSource.BLOCKS, vol, pit, false);
     }
 
     public static void playSoundAtBlock(Level world, BlockPos pos, SoundEvent snd, float vol, float pit) {
-        world.playLocalSound(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, snd, SoundSource.BLOCKS, vol, pit, false);
+        playSoundAtBlock(world, pos.getX(), pos.getY(), pos.getZ(), snd, vol, pit);
     }
 
     public static void playSoundAtBlock(Level world, int x, int y, int z, SoundEvent snd) {
-        world.playLocalSound(x + 0.5, y + 0.5, z + 0.5, snd, SoundSource.BLOCKS, 1, 1, false);
+        playSoundAtBlock(world, x, y, z, snd, 1, 1);
     }
 
     public static void playSoundAtBlock(Level world, BlockPos pos, SoundEvent snd) {
-        world.playLocalSound(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, snd, SoundSource.BLOCKS, 1, 1, false);
+        playSoundAtBlock(world, pos, snd, 1, 1);
+    }
+
+    private static SoundType getSoundType(Level world, BlockPos pos, Block block) {
+        var state = world.getBlockState(pos);
+        // Callers may name the old block after removal or the replacement before placement.
+        if (!state.is(block)) state = block.defaultBlockState();
+        return state.getSoundType(world, pos, null);
+    }
+
+    private static void playLocalOrBroadcast(Level world, double x, double y, double z, SoundEvent sound,
+            SoundSource source, float volume, float pitch, boolean distanceDelay) {
+        if (world.isClientSide()) {
+            world.playLocalSound(x, y, z, sound, source, volume, pitch, distanceDelay);
+        } else {
+            world.playSound(null, x, y, z, sound, source, volume, pitch);
+        }
     }
 
     public static void playSound(SoundEnum s, Level world, Entity e, float vol, float pitch) {
@@ -140,7 +156,7 @@ public class ReikaSoundHelper {
     }
 
     public static void playNormalClientSound(Level world, double x, double y, double z, SoundEvent name, float vol, float pitch, boolean flag) {
-        world.playLocalSound(x, y, z, name, SoundSource.AMBIENT, vol, pitch, flag);
+        playLocalOrBroadcast(world, x, y, z, name, SoundSource.AMBIENT, vol, pitch, flag);
     }
 
     public static void broadcastSound(SoundEnum s, float vol, float pitch) {
@@ -166,7 +182,7 @@ public class ReikaSoundHelper {
     }
 
     public static void playSoundAtEntity(Level world, Entity e, SoundEvent snd, float vol, float p) {
-        world.playLocalSound(e.getX(), e.getY(), e.getZ(), snd, SoundSource.AMBIENT, vol, p, false);
+        playLocalOrBroadcast(world, e.getX(), e.getY(), e.getZ(), snd, SoundSource.AMBIENT, vol, p, false);
     }
 
     public static void playSoundFromServer(Level world, double x, double y, double z, Identifier loc, float vol, float pitch, boolean scale) {

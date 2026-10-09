@@ -8,11 +8,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -29,7 +31,6 @@ import reika.dragonapi.interfaces.block.MachineRegistryBlock;
 import reika.dragonapi.interfaces.registry.TreeType;
 import reika.dragonapi.libraries.ReikaInventoryHelper;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
-import reika.dragonapi.libraries.io.ReikaSoundHelper;
 import reika.dragonapi.libraries.level.ReikaBlockHelper;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
@@ -365,7 +366,8 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
         }
 
         private void dropBlock(Level world, BlockPos pos) {
-            Block id = world.getBlockState(pos).getBlock();
+            BlockState state = world.getBlockState(pos);
+            Block id = state.getBlock();
 
             boolean pass = !doBreak || passThrough.contains(BlockKey.getAt(world, pos));
             if (!pass && id != Blocks.AIR) {
@@ -410,15 +412,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
                         }
                     }
                 }
-                if (ReikaBlockHelper.isLiquid(id.defaultBlockState())) {
-                    if (id.defaultBlockState().getProperties() == Blocks.WATER.defaultBlockState().getProperties()) {
-                        world.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), SoundEvents.GENERIC_SWIM, SoundSource.BLOCKS, 1, 1, false);
-                    } else {
-                        world.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), SoundEvents.GHAST_SHOOT, SoundSource.BLOCKS, 1, 1, false);
-                    }
-                } else {
-                    ReikaSoundHelper.playBreakSound(world, pos.getX(), pos.getY(), pos.getZ(), id);
-                }
+                this.playBreakSound(world, pos, state);
             }
             if (call != null)
                 call.onPreBreak(this, world, pos, id);
@@ -431,6 +425,19 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
             }
             if (call != null)
                 call.onPostBreak(this, world, pos, id);
+        }
+
+        private void playBreakSound(Level world, BlockPos pos, BlockState state) {
+            var fluid = state.getFluidState();
+            // A contained fluid does not turn a waterlogged solid into a liquid block.
+            if (!fluid.isEmpty() && fluid.createLegacyBlock().getBlock() == state.getBlock()) {
+                var sound = fluid.is(FluidTags.WATER) ? SoundEvents.GENERIC_SWIM : SoundEvents.GHAST_SHOOT;
+                world.playSound(null, pos, sound, SoundSource.BLOCKS, 1, 1);
+            } else {
+                var sound = state.getSoundType(world, pos, player);
+                // Server broadcasts include the initiating player and retain NeoForge sound hooks.
+                world.playSound(null, pos, sound.getBreakSound(), SoundSource.BLOCKS, sound.getVolume(), sound.getPitch());
+            }
         }
     }
 }
