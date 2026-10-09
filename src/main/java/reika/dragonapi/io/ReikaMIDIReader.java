@@ -9,500 +9,281 @@
  ******************************************************************************/
 package reika.dragonapi.io;
 
-import com.google.common.base.Throwables;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.MusicScore;
 import reika.dragonapi.libraries.mathsci.ReikaMusicHelper.MusicKey;
 
 import javax.sound.midi.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.TreeMap;
+import java.io.*;
+import java.util.*;
 
 public final class ReikaMIDIReader {
+    public static final int NOTE_ON = 0x90;
+    public static final int NOTE_OFF = 0x80;
+    public static final int INSTRU_CHANGE = 0xC0;
+    public static final int TEMPO = 0x51;
+    public static final String[] NOTE_NAMES = {"C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"};
+    public static final int MIDI_C5 = 60;
 
-	public static final int NOTE_ON = 0x90;
-	public static final int NOTE_OFF = 0x80;
-	public static final int INSTRU_CHANGE = 0xC0;
-	public static final int TEMPO = 0x51;
-	public static final String[] NOTE_NAMES = {"F#", "G", "G#", "A", "Bb", "B", "C", "C#", "D", "Eb", "E", "F"};
-	public static final int MIDI_C5 = 60;
+    // Original score units are 5 ms. Existing consumers apply their own speed/length scaling.
+    private static final double MICROS_PER_SCORE_TICK = 5000;
+    private static final int DEFAULT_TEMPO = 500000;
 
-	private ReikaMIDIReader() {
-		throw new RuntimeException("The class " + this.getClass() + " cannot be instantiated!");
-	}
+    private ReikaMIDIReader() {}
 
-	public static Sequence getMIDIFromFile(Class root, String path) {
-		DragonAPI.LOGGER.info("Reading MIDI at " + path);
-		try (InputStream input = root.getResourceAsStream(path)) {
-			if (input == null) {
-				DragonAPI.LOGGER.error("File at " + path + " not found. Aborting.");
-				return null;
-			}
-			return readMIDIFromFile(input);
-		} catch (IOException e) {
-			DragonAPI.LOGGER.error("MIDI File at " + path + " unreadable.");
-		} catch (InvalidMidiDataException e) {
-			DragonAPI.LOGGER.error("MIDI File at " + path + " invalid.");
-		}
-		return null;
-	}
-
-	public static Sequence getMIDIFromFile(File f) {
-		String path = ReikaFileReader.getRealPath(f);
-		if (!f.exists()) {
-			DragonAPI.LOGGER.error("File at " + path + " not found. Aborting.");
-			return null;
-		}
-		try {
-			return getMIDIFromFile(new FileInputStream(f));
-		} catch (IOException e) {
-			DragonAPI.LOGGER.error("MIDI File at " + path + " unreadable.");
-		} catch (InvalidMidiDataException e) {
-			DragonAPI.LOGGER.error("MIDI File at " + path + " invalid.");
-		}
-		return null;
-	}
-
-	public static Sequence getMIDIFromFile(InputStream in) throws IOException, InvalidMidiDataException {
-		try (in) {
-			return readMIDIFromFile(in);
-		}
-	}
-
-	private static Sequence readMIDIFromFile(InputStream in) throws IOException, InvalidMidiDataException {
-		return MidiSystem.getSequence(in);
-	}
-
-	/**
-	 * Reads a parameter from a MIDI Sequence. Args: Sequence, channel (1-16), time, task (0 = note, 1 = voice, 2 = volume)
-	 *//*
-	public static int readMIDI(Sequence seq, int channel, int time, int task) {
-		int voice = -1;
-		int note = -1;
-		int vol = -1;
-		/*1 4/4 bar = 1920 ticks
-		 1 MC tick = 1 32nd; 2 MC tick = 1 16th; 4 MC tick = 1 8th; 8 MC tick = 1 qtr; 16 MC = 1 half; 32 MC tick = 1 whole = 1920
-		32 = 1920
-		1 MC tick = 60 MIDI ticks
-	 *//*
-		time *= 60;
-		time += 120;
-		Track[] tr = seq.getTracks();
-		if (channel >= tr.length)
-			return 0;
-        //for (int k = 0; k < tr.length; k++) {
-        	int t = ReikaMathLibrary.extrema(time, tr[channel].size(), "min");
-        	for (int i = 0; i < t; i++) {
-        		MidiEvent event = tr[channel].get(i);
-        		MidiMessage msg = event.getMessage();
-        		byte[] data = msg.getMessage();
-        		//DragonAPI.LOGGER.info(data[0]+256);
-        		if (data[0]/16 == INSTRU_CHANGE) {
-        			voice = data[1]%16;
-        		}
-        	}
-        	int step = -1;
-        	for (int i = 0; i < tr[channel].size(); i++) {
-        		if (tr[channel].get(i).getTick() == time)
-        			step = i;
-        	}
-        	if (step != -1) {
-	        	MidiEvent event = tr[channel].get(step);
-	            MidiMessage msg = event.getMessage();
-	            if (msg instanceof ShortMessage) {
-	                ShortMessage sm = (ShortMessage) msg;
-	                if (sm.getCommand() == NOTE_ON) {
-	                	//DragonAPI.LOGGER.info(channel+" @  "+tr[channel].get(step).getTick()+"  for  "+time);
-	                    int key = sm.getData1();
-	                    int octave = (key / 12)-1;
-	                    while (octave > 5)
-	                    	octave -= 5;
-	                    note = (key%12);
-	                    if (octave == 5 && note != 0)
-	                    	octave = 0;
-	                    note += 12*octave;
-	                    vol = sm.getData2();
-	                }
-	            }
-        	}
-        if (!(voice == -1 && note == -1))
-        ;//DragonAPI.LOGGER.info(note);
-        //DragonAPI.LOGGER.info("Channel "+channel+" has "+voice+" playing "+note+" @ "+tr[channel].get(step).getTick()/60);
-        switch (task) {
-        case 0:
-        	return note;
-        case 1:
-        	return voice;
-        case 2:
-        	return vol;
-        default:
-        	return 0;
+    public static Sequence getMIDIFromFile(Class<?> root, String path) {
+        DragonAPI.LOGGER.info("Reading MIDI at {}", path);
+        try (InputStream input = root.getResourceAsStream(path)) {
+            if (input == null) {
+                DragonAPI.LOGGER.error("File at {} not found. Aborting.", path);
+                return null;
+            }
+            return MidiSystem.getSequence(input);
+        } catch (IOException | InvalidMidiDataException error) {
+            DragonAPI.LOGGER.error("MIDI file at {} unreadable or invalid", path, error);
+            return null;
         }
     }
 
-	public static int getTrackLength(Sequence seq, int channel) {
-		if (seq == null)
-			return 0;
-		Track[] tr = seq.getTracks();
-		if (channel >= tr.length)
-			return 0;
-		return 1+(int)(tr[channel].get(tr[channel].size()-1).getTick()/60);
+    public static Sequence getMIDIFromFile(File file) {
+        try {
+            return getMIDIFromFile(new FileInputStream(file));
+        } catch (IOException | InvalidMidiDataException error) {
+            DragonAPI.LOGGER.error("MIDI file at {} unreadable or invalid", file, error);
+            return null;
+        }
     }
 
-	public static boolean hasNoteOn(Sequence seq, int channel, int time) {
-		Track[] tr = seq.getTracks();
-		if (channel >= tr.length)
-			return false;
-		time *= 60;
-		time += 120;
-    	int step = -1;
-    	for (int i = 0; i < tr[channel].size(); i++) {
-    		if (tr[channel].get(i).getTick() == time)
-    			step = i;
-    	}
-    	if (step != -1) {
-        	MidiEvent event = tr[channel].get(step);
-            MidiMessage msg = event.getMessage();
-            if (msg instanceof ShortMessage) {
-                ShortMessage sm = (ShortMessage) msg;
-                if (sm.getCommand() == NOTE_ON)
-                	return true;
+    /** Takes ownership of and closes the supplied stream, including on parse failure. */
+    public static Sequence getMIDIFromFile(InputStream input) throws IOException, InvalidMidiDataException {
+        try (input) {
+            return MidiSystem.getSequence(input);
+        }
+    }
+
+    /**
+     * Legacy track-indexed query on the original 60-MIDI-tick grid, with a 120-tick lead-in.
+     * task 0 returns the original folded pitch, 1 the channel program, 2 the attack velocity.
+     * A valid track with no matching attack returns -1 for pitch/velocity; invalid tracks return 0.
+     */
+    public static int readMIDI(Sequence sequence, int track, int time, int task) {
+        if (!validTrack(sequence, track)) return 0;
+        long tick = (long) time * 60 + 120;
+        int[] programs = new int[16];
+        Arrays.fill(programs, -1);
+        int voice = -1, note = -1, velocity = -1;
+        for (MidiEvent event : orderedEvents(sequence)) {
+            if (event.getTick() > tick) break;
+            if (event.getMessage() instanceof ShortMessage message) {
+                if (message.getCommand() == INSTRU_CHANGE) programs[message.getChannel()] = message.getData1();
             }
-    	}
-    	return false;
-	}*/
-	public static void debugMIDI(Sequence sequence) {
-		if (sequence == null) {
-			DragonAPI.LOGGER.error("Debugged MIDI is null!");
-			return;
-		}
-		int trackNumber = 0;
-		for (Track track : sequence.getTracks()) {
-			trackNumber++;
-			System.out.println("Track " + trackNumber + ": size = " + track.size());
-			System.out.println();
-			for (int i = 0; i < track.size(); i++) {
-				MidiEvent event = track.get(i);
-				System.out.print("@" + event.getTick() + " ");
-				MidiMessage message = event.getMessage();
-				if (message instanceof ShortMessage sm) {
-					System.out.print("Channel: " + sm.getChannel() + " ");
-					if (sm.getCommand() == NOTE_ON) {
-						int key = sm.getData1();
-						int octave = (key / 12) - 1;
-						int note = key % 12;
-						String noteName = NOTE_NAMES[note];
-						int velocity = sm.getData2();
-						System.out.println("Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity);
-					} else if (sm.getCommand() == NOTE_OFF) {
-						int key = sm.getData1();
-						int octave = (key / 12) - 1;
-						int note = key % 12;
-						String noteName = NOTE_NAMES[note];
-						int velocity = sm.getData2();
-						System.out.println("Note off, " + noteName + octave + " key=" + key + " velocity: " + velocity);
-					} else if (sm.getCommand() == INSTRU_CHANGE) {
-						System.out.println("Instrument change " + sm.getCommand());
-					} else
-						System.out.println("Command:" + sm.getCommand());
-				} else
-					System.out.println("Other message: " + message.getClass());
-			}
-			System.out.println();
-		}
-	}
+        }
+        Track selected = sequence.getTracks()[track];
+        for (int i = 0; i < selected.size(); i++) {
+            MidiEvent event = selected.get(i);
+            if (event.getTick() > tick) break;
+            if (event.getMessage() instanceof ShortMessage message) {
+                voice = programs[message.getChannel()];
+                if (event.getTick() == tick && isAttack(message)) {
+                    int octave = message.getData1() / 12 - 1;
+                    while (octave > 5) octave -= 5;
+                    note = message.getData1() % 12;
+                    if (octave == 5 && note != 0) octave = 0;
+                    note += 12 * octave;
+                    velocity = message.getData2();
+                }
+            }
+        }
+        return switch (task) { case 0 -> note; case 1 -> voice; case 2 -> velocity; default -> 0; };
+    }
 
-	public static int getMidiLength(Sequence seq) {
-		return getSequenceLength(seq);
-	}
+    public static int getTrackLength(Sequence sequence, int track) {
+        return validTrack(sequence, track) ? checkedTick(sequence.getTracks()[track].ticks() / 60 + 1) : 0;
+    }
 
-	private static int getSequenceLength(Sequence seq) {
-		if (seq == null)
-			return 0;
-		Track[] tr = seq.getTracks();
-		int length = 0;
-		for (int i = 0; i < tr.length; i++) {
-			if (tr[i].size() > length)
-				length = tr[i].size();
-		}
-		return length;
-	}
+    public static boolean hasNoteOn(Sequence sequence, int track, int time) {
+        if (!validTrack(sequence, track)) return false;
+        long tick = (long) time * 60 + 120;
+        Track selected = sequence.getTracks()[track];
+        for (int i = 0; i < selected.size(); i++) {
+            MidiEvent event = selected.get(i);
+            if (event.getTick() > tick) break;
+            if (event.getTick() == tick && event.getMessage() instanceof ShortMessage message && isAttack(message)) return true;
+        }
+        return false;
+    }
 
-	public static int MIDITickToMCTick(Sequence seq, long ti, float bpm) {
-		return (int) (ti * getMillisPerTick(seq, bpm) / 5F);
-	}
+    private static boolean validTrack(Sequence sequence, int track) {
+        return sequence != null && track >= 0 && track < sequence.getTracks().length;
+    }
 
-	public static long MCTickToMIDITick(Sequence seq, int ti, float bpm) {
-		return (long) (ti / getMillisPerTick(seq, bpm) * 5F);
-	}
+    public static void debugMIDI(Sequence sequence) {
+        if (sequence == null) {
+            DragonAPI.LOGGER.error("Debugged MIDI is null!");
+            return;
+        }
+        int trackNumber = 0;
+        for (Track track : sequence.getTracks()) {
+            DragonAPI.LOGGER.info("Track {}: size = {}", ++trackNumber, track.size());
+            for (int i = 0; i < track.size(); i++) {
+                MidiEvent event = track.get(i);
+                if (event.getMessage() instanceof ShortMessage message) {
+                    int pitch = message.getData1();
+                    DragonAPI.LOGGER.info("@{} channel {} command {}: {}{} key={} value={}", event.getTick(),
+                            message.getChannel(), message.getCommand(), NOTE_NAMES[pitch % 12], pitch / 12 - 1,
+                            pitch, message.getData2());
+                } else DragonAPI.LOGGER.info("@{} {}", event.getTick(), event.getMessage().getClass().getSimpleName());
+            }
+        }
+    }
 
-	private static float getMillisPerTick(Sequence seq, float bpm) {
-		//bpm = 90; //why does this not work when dynamic??
-		return 60000F / (seq.getResolution() * bpm);//1/1.2333F;
-	}
+    /** Original API: largest track event count, including its end-of-track event; not duration. */
+    public static int getMidiLength(Sequence sequence) {
+        if (sequence == null) return 0;
+        int length = 0;
+        for (Track track : sequence.getTracks()) length = Math.max(length, track.size());
+        return length;
+    }
 
-	private static long getMIDITickLength(Sequence seq) {
-		if (seq == null)
-			return 0;
-		Track[] tr = seq.getTracks();
-		long length = 0;
-		for (int i = 0; i < tr.length; i++) {
-			if (tr[i].size() > length)
-				length = tr[i].ticks();
-		}
-		return length;
-	}
+    /** Original 5 ms score units; these are not native 50 ms game ticks. */
+    public static int MIDITickToMCTick(Sequence sequence, long tick, float bpm) {
+        return checkedTick(tick * microsPerTick(sequence, bpm) / MICROS_PER_SCORE_TICK);
+    }
 
-	private static int getMCTickLength(Sequence seq) {
-		return MIDITickToMCTick(seq, getMIDITickLength(seq), 90);
-	}
+    public static long MCTickToMIDITick(Sequence sequence, int tick, float bpm) {
+        if (tick < 0) throw new IllegalArgumentException("Negative score time");
+        double micros = microsPerTick(sequence, bpm);
+        return sequence.getDivisionType() == Sequence.PPQ
+                ? (long) (tick * MICROS_PER_SCORE_TICK * sequence.getResolution() * (double) bpm / 60000000D)
+                : (long) (tick * MICROS_PER_SCORE_TICK / micros);
+    }
 
-	public static int[][][] readMIDIFileToArray(Sequence seq) {
-		//debugMIDI(seq);
-		if (seq == null) {
-			DragonAPI.LOGGER.error("Sequence is empty!");
-			return new int[0][64][3];
-		}
-		int[][][] data = new int[getMCTickLength(seq)][64][3];
-		int[][] dataline = new int[16][3];
-		int time;
-		int vol = 0;
-		int voice = 0;
-		int note = 0;
-		int instru = 0;
-		int channel;
-		int tempo = 120;
-		Track[] tr = seq.getTracks();
-		for (int i = 0; i < tr.length; i++) {
-			for (int j = 0; j < tr[i].size(); j++) {
-				MidiEvent event = tr[i].get(j);
-				time = MIDITickToMCTick(seq, event.getTick(), tempo);
-				//DragonAPI.LOGGER.info(event.getTick()+" midi to "+time+" MC, out of length "+getSequenceLength(seq)+" ("+getSequenceLength(seq)/20F+") s");
-				MidiMessage message = event.getMessage();
-				if (message instanceof ShortMessage sm) {
-					channel = i - 1;
-					if (channel == -1) {
-						throw new RuntimeException("Invalid MIDI has notes in the tempo track (track 0)!");
-					}
-					switch (sm.getCommand()) {
-						case NOTE_ON:
-							int key = sm.getData1();
-							int octave = (key / 12) - 1;
-							int relnote = key % 12;
-							note = key - 24;
-							vol = sm.getData2();
-							voice = instru;
-							int a = 0;
-							dataline[channel][0] = getNoteblockFromGM(voice);
-							if (dataline[channel][0] == 2)
-								a = 12;
-							if (dataline[channel][0] == 3)
-								a = -12;
-							dataline[channel][1] = note + a;
-							dataline[channel][2] = vol;
-							break;
-						case NOTE_OFF:
-							break;
-						case INSTRU_CHANGE:
-							instru = sm.getData1();
-							break;
-					}
-					if (dataline[channel][0] != 0 && sm.getCommand() == NOTE_ON) {
-						//DragonAPI.LOGGER.info("Event "+sm.getCommand()+" at time: "+time+"; Channel "+channel+": "+dataline[channel][0]+"  "+dataline[channel][1]+"  "+dataline[channel][2]);
-						for (int k = 0; k < 16; k++) {
-							System.arraycopy(dataline[k], 0, data[time][k], 0, 3);
-						}
-					}
-				} else if (message instanceof MetaMessage mm) {
-					byte[] bytes = mm.getData();
-					int val = (bytes[0] & 0xff) << 16 | (bytes[1] & 0xff) << 8 | (bytes[2] & 0xff);
-					if (mm.getType() == TEMPO) {
-						tempo = 60000000 / val;
-					}
-				}
-			}
-		}
-		return data;
-	}
+    private static double microsPerTick(Sequence sequence, float bpm) {
+        if (!(bpm > 0) || !Float.isFinite(bpm)) throw new IllegalArgumentException("Tempo must be finite and positive");
+        return sequence.getDivisionType() == Sequence.PPQ ? 60000000D / (sequence.getResolution() * (double) bpm)
+                : 1000000D / (framesPerSecond(sequence) * sequence.getResolution());
+    }
 
-	public static MusicScore readMIDIFileToScore(Sequence seq, boolean readPercussion) {
-		//debugMIDI(seq);
-		MusicScore data = new MusicScore(16);
-		if (seq == null) {
-			DragonAPI.LOGGER.error("Sequence is empty!");
-			return data;
-		}
-		int key = 0;
-		int instru = 0;
-		int channel;
-		int tempo = 120;
-		Track[] tr = seq.getTracks();
-		ArrayList<NoteData>[] rawNotes = new ArrayList[16];
-		for (int i = 0; i < 16; i++) {
-			rawNotes[i] = new ArrayList<>();
-		}
-		MIDINote[][] lastOn = new MIDINote[16][256];
-		HashSet<Integer> activeChannels = new HashSet();
-		TreeMap<Long, Integer> tempoCurve = new TreeMap();
-		tempoCurve.put(0L, tempo);
-		for (int i = 0; i < tr.length; i++) {
-			for (int j = 0; j < tr[i].size(); j++) {
-				MidiEvent event = tr[i].get(j);
-				long tick = event.getTick();
-				//DragonAPI.LOGGER.info(tick+" midi to "+time+" MC, out of length "+getSequenceLength(seq)+" ("+getSequenceLength(seq)/20F+") s");
-				MidiMessage message = event.getMessage();
-				if (message instanceof ShortMessage sm) {
-					channel = sm.getChannel();//i-1;
-					//if (channel == 0) {
-					//	throw new RuntimeException("Invalid MIDI has notes in the tempo track (track 0)!");
-					//}
-					if (channel == 9 && !readPercussion) { //skip percussion
-						continue;
-					}
-					if (channel >= 16) {
-						throw new RuntimeException("Invalid MIDI has more than 16 tracks!?!");
-					}
-					activeChannels.add(channel);
-					//ReikaJavaLibrary.pConsole(sm.getCommand()+" on channel "+channel+" @ "+time);
-					switch (sm.getCommand()) {
-						case NOTE_ON:
-							key = sm.getData1();
-							int vol = sm.getData2();
-							if (lastOn[channel][key] != null) {
-								DragonAPI.LOGGER.info("WARNING: MIDI has stacked notes on channel " + (channel + 1) + " note " + key + " @ " + tick + "! This will cause truncation!");
-							}
-							lastOn[channel][key] = new MIDINote(tick, key, instru, vol);
-							//ReikaJavaLibrary.pConsole("ON: "+key+" @ "+time+": "+lastOn[channel][key]);
-							break;
-						case NOTE_OFF:
-							key = sm.getData1(); //so turns off the right note
-							break;
-						case INSTRU_CHANGE:
-							instru = sm.getData1();
-							break;
-					}
-					//ReikaJavaLibrary.pConsole("OFF: "+key+" @ "+time+": "+lastOn[channel][key], sm.getCommand() == NOTE_OFF);
-					if (lastOn[channel][key] != null && sm.getCommand() == NOTE_OFF) {
-						MIDINote m = lastOn[channel][key];
-						MusicKey note = MusicKey.getKeyFromMIDI(key);
+    private static double framesPerSecond(Sequence sequence) {
+        return sequence.getDivisionType() == Sequence.SMPTE_30DROP ? 30000D / 1001 : sequence.getDivisionType();
+    }
 
-						//data.addNote(m.timeOn, channel, note, m.voice, m.velocity, len, channel == 9);
-						rawNotes[channel].add(new NoteData(tick, m));
+    /**
+     * Original array shape [score time][64][instrument, pitch, velocity]. MIDI channels occupy
+     * slots 0..15; the other slots remain reserved. A channel/time cell can retain only the last
+     * attack of a chord. Use fillToScore for polyphony. Unsupported GM voices remain silent.
+     */
+    public static int[][][] readMIDIFileToArray(Sequence sequence) {
+        if (sequence == null) return new int[0][64][3];
+        List<MidiEvent> events = orderedEvents(sequence);
+        Timeline timeline = new Timeline(sequence, events);
+        int[][][] result = new int[Math.addExact(timeline.time(sequence.getTickLength()), 1)][64][3];
+        int[] programs = new int[16];
+        for (MidiEvent event : events) {
+            if (!(event.getMessage() instanceof ShortMessage message)) continue;
+            int channel = message.getChannel();
+            if (message.getCommand() == INSTRU_CHANGE) programs[channel] = message.getData1();
+            else if (isAttack(message)) {
+                int instrument = getNoteblockFromGM(programs[channel]);
+                if (instrument == 0) continue;
+                int pitch = message.getData1() - 24 + (instrument == 2 ? 12 : instrument == 3 ? -12 : 0);
+                int[] cell = result[timeline.time(event.getTick())][channel];
+                cell[0] = instrument;
+                cell[1] = pitch;
+                cell[2] = message.getData2();
+            }
+        }
+        return result;
+    }
 
-						//ReikaJavaLibrary.pConsole(m);
-						//ReikaJavaLibrary.pConsole("Note "+note+" on channel "+channel+" @ "+time+" (event time="+event.getTick()+")");
-						//ReikaJavaLibrary.pConsole("Note "+note+" on channel "+channel+" ("+m+"), tick off="+time+"/tick_"+event.getTick()+", length = "+len);
-						lastOn[channel][key] = null;
-					}
-				} else if (message instanceof MetaMessage mm) {
-					byte[] bytes = mm.getData();
-					if (bytes.length == 3) {
-						int val = (bytes[0] & 0xff) << 16 | (bytes[1] & 0xff) << 8 | (bytes[2] & 0xff);
-						if (mm.getType() == TEMPO) {
-							tempo = 60000000 / val;
-							//ReikaJavaLibrary.pConsole("changing tempo @ tick "+tick+" to "+tempo);
-							tempoCurve.put(tick, tempo);
-						}
-					}
-				}
-			}
-		}
+    public static MusicScore readMIDIFileToScore(Sequence sequence, boolean readPercussion) {
+        MusicScore result = new MusicScore(16);
+        if (sequence == null) return result;
+        List<MidiEvent> events = orderedEvents(sequence);
+        Timeline timeline = new Timeline(sequence, events);
+        int[] programs = new int[16];
+        // FIFO pairing retains repeated, overlapping attacks of the same pitch.
+        Map<Integer, ArrayDeque<Attack>> active = new HashMap<>();
+        for (MidiEvent event : events) {
+            if (!(event.getMessage() instanceof ShortMessage message)) continue;
+            int channel = message.getChannel();
+            if (channel == 9 && !readPercussion) continue;
+            int identity = channel * 128 + message.getData1();
+            if (message.getCommand() == INSTRU_CHANGE) programs[channel] = message.getData1();
+            else if (isAttack(message)) {
+                active.computeIfAbsent(identity, ignored -> new ArrayDeque<>()).addLast(
+                        new Attack(event.getTick(), message.getData1(), programs[channel], message.getData2()));
+            } else if (message.getCommand() == NOTE_OFF || message.getCommand() == NOTE_ON) {
+                ArrayDeque<Attack> notes = active.get(identity);
+                if (notes != null && !notes.isEmpty()) addNote(result, timeline, channel, notes.removeFirst(), event.getTick());
+            }
+        }
+        // Unterminated notes sound through the end of the sequence rather than disappearing.
+        active.forEach((identity, notes) -> notes.forEach(note -> addNote(result, timeline, identity / 128, note, sequence.getTickLength())));
+        return result;
+    }
 
-		for (int i = 0; i < 16; i++) {
-			ArrayList<NoteData> li = rawNotes[i];
-			if (!li.isEmpty()) {
-				for (NoteData n : li) {
-					int timeOn = getTimeAtTick(seq, tempoCurve, n.tickOn);
-					int timeOff = getTimeAtTick(seq, tempoCurve, n.tickOff);
-					MusicKey note = MusicKey.getKeyFromMIDI(n.pitch);
-					if (note == null)
-						DragonAPI.LOGGER.info("WARNING: MIDI has note out of range (> C8): " + n);
-					else
-						data.addNote(timeOn, i, note, n.voice, n.velocity, timeOff - timeOn, i == 9);
-				}
-			}
-		}
+    private static void addNote(MusicScore result, Timeline timeline, int channel, Attack attack, long end) {
+        MusicKey key = MusicKey.getKeyFromMIDI(attack.pitch());
+        if (key == null) {
+            DragonAPI.LOGGER.warn("MIDI pitch {} is outside MusicKey's supported range", attack.pitch());
+            return;
+        }
+        int start = timeline.time(attack.tick());
+        result.addNote(start, channel, key, attack.voice(), attack.velocity(), timeline.time(end) - start, channel == 9);
+    }
 
-		//ReikaJavaLibrary.pConsole(activeChannels);
-		return data;
-	}
+    private static boolean isAttack(ShortMessage message) {
+        return message.getCommand() == NOTE_ON && message.getData2() > 0;
+    }
 
-	private static int getTimeAtTick(Sequence seq, TreeMap<Long, Integer> tempos, long tick) {
-		Entry<Long, Integer> e2 = tempos.floorEntry(tick);
-		long ticks = tick - e2.getKey();
-		int tempo = e2.getValue();
-		int mcticks = MIDITickToMCTick(seq, ticks, tempo);
-		Entry<Long, Integer> e1 = tempos.lowerEntry(e2.getKey());
-		while (e1 != null) {
-			ticks = e2.getKey() - e1.getKey();
-			tempo = e1.getValue();
-			mcticks += MIDITickToMCTick(seq, ticks, tempo);
-			e2 = e1;
-			e1 = tempos.lowerEntry(e1.getKey());
-		}
-		return mcticks;
-	}
+    private static List<MidiEvent> orderedEvents(Sequence sequence) {
+        List<MidiEvent> result = new ArrayList<>();
+        for (Track track : sequence.getTracks()) for (int i = 0; i < track.size(); i++) result.add(track.get(i));
+        // Stable sort: equal-tick events retain track order and order inside each track.
+        result.sort(Comparator.comparingLong(MidiEvent::getTick));
+        return result;
+    }
 
-	public static int getNoteblockFromGM(int v) {
-		switch (v) {
-			case 0:
-				return 1;
-			case 32:
-				return 2;
-			case 18:
-				return 3;
-		}
-		return 0;
-	}
+    private static int checkedTick(double tick) {
+        if (!Double.isFinite(tick) || tick < 0 || tick > Integer.MAX_VALUE) throw new IllegalArgumentException("MIDI time exceeds score range: " + tick);
+        return (int) tick;
+    }
 
-	private static class MIDINote {
+    private record Attack(long tick, int pitch, int voice, int velocity) {}
+    private record TempoPoint(double micros, int microsPerQuarter) {}
 
-		public final long tickOn;
-		public final int pitch;
-		public final int voice;
-		public final int velocity;
+    private static final class Timeline {
+        private final Sequence sequence;
+        private final TreeMap<Long, TempoPoint> tempos = new TreeMap<>();
 
-		protected MIDINote(MIDINote m) {
-			this(m.tickOn, m.pitch, m.voice, m.velocity);
-		}
+        private Timeline(Sequence sequence, List<MidiEvent> events) {
+            this.sequence = sequence;
+            tempos.put(0L, new TempoPoint(0, DEFAULT_TEMPO));
+            if (sequence.getDivisionType() != Sequence.PPQ) return;
+            for (MidiEvent event : events) {
+                if (!(event.getMessage() instanceof MetaMessage message) || message.getType() != TEMPO) continue;
+                byte[] bytes = message.getData();
+                if (bytes.length != 3) continue;
+                int value = (bytes[0] & 255) << 16 | (bytes[1] & 255) << 8 | bytes[2] & 255;
+                if (value == 0) continue;
+                var previous = tempos.floorEntry(event.getTick());
+                double micros = previous.getValue().micros() + (event.getTick() - previous.getKey())
+                        * (double) previous.getValue().microsPerQuarter() / sequence.getResolution();
+                tempos.put(event.getTick(), new TempoPoint(micros, value));
+            }
+        }
 
-		protected MIDINote(long tk, int key, int inst, int vol) {
-			tickOn = tk;
-			pitch = key;
-			velocity = vol;
-			voice = inst;
-		}
+        private int time(long tick) {
+            if (sequence.getDivisionType() != Sequence.PPQ)
+                return checkedTick(tick * 1000000D / (framesPerSecond(sequence) * sequence.getResolution()) / MICROS_PER_SCORE_TICK);
+            var tempo = tempos.floorEntry(tick);
+            return checkedTick((tempo.getValue().micros() + (tick - tempo.getKey())
+                    * (double) tempo.getValue().microsPerQuarter() / sequence.getResolution()) / MICROS_PER_SCORE_TICK);
+        }
+    }
 
-		@Override
-		public String toString() {
-			return String.format("Tick: %d, P:%d, Vel:%d, Voice:%d", tickOn, pitch, velocity, voice);
-		}
-
-	}
-
-	private static class NoteData extends MIDINote {
-
-		public final long tickOff;
-
-		protected NoteData(long tk, MIDINote start) {
-			super(start);
-			tickOff = tk;
-		}
-
-		public long length() {
-			return tickOff - tickOn;
-		}
-
-		@Override
-		public String toString() {
-			return super.toString() + " Tick Off: " + tickOff + " (len = " + this.length() + ")";
-		}
-
-	}
+    public static int getNoteblockFromGM(int voice) {
+        return switch (voice) { case 0 -> 1; case 32 -> 2; case 18 -> 3; default -> 0; };
+    }
 }

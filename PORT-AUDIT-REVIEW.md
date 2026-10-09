@@ -632,3 +632,29 @@ They do not claim a full resource-pack reload, real remote connection or broad e
 network acceptance. Packaged classes and normal Play's audit-off/no-quickplay snapshot run
 are verified in build/dye-cache-final-verification.json. Full contract: docs/dye-cache-port.md.
 D24 is included in the local checkpoint; D25 MIDI consumers are next.
+
+
+## MIDI import and music consumers — D25, 2026-10-09
+
+Finding 3.39 and the commented reader methods/raw MIDI collections are resolved against
+DragonAPI de1bcf1f and RotaryCraft b2288638. Restored legacy track/grid queries retain their
+original contracts. Score/array imports share a chronological tempo timeline, retain
+channel programs and velocities, pair overlapping and velocity-zero releases, support
+SMPTE frame timing and safely handle short/invalid tempo metadata. Original 5 ms units,
+GM instrument/pitch mapping and consumer scaling remain explicit and unchanged.
+
+MusicScore writes chords into their channel compounds and reads actual native compound
+lists, derives caches from notes, preserves independent copies, updates edit/transpose
+metadata and merges grid-aligned chords. RotaryCraft's disk consumer again restores original
+notes/rest offsets, MIDI import clears previous music and all 49 piano IDs reach GuiMusic.
+The six original instrument choices initialize with the restored plank icon.
+
+Seventeen new units pass with all 109 affected-module units (67 DragonAPI, 34 RotaryCraft,
+8 ReactorCraft; build/midi-validation.log, 1m 4s). Native MusicClientChecks verifies every
+key, black precedence, non-left/outside rejection, original texture and highlighted GUI
+geometry through the actual client. The full separate audit passes in 3m 24s, including
+existing GPU/water/input/resource/model checks (build/midi-client-validation.log).
+The callback fixture records IDs before packet sending; audible playback/music delivery,
+remote sessions and excluded Chroma music subsystems are not claimed. Packaged classes
+and normal Play's unchanged argument hashes are verified. Contract: docs/midi-score-port.md.
+D25 is locally checkpointed; D26 TileEntityCache subtype review is next.

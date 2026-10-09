@@ -23,19 +23,17 @@ public final class MIDIInterface {
         midi = ReikaMIDIReader.getMIDIFromFile(f);
     }
 
-    public MIDIInterface(Class root, String path) {
+    public MIDIInterface(Class<?> root, String path) {
         midi = ReikaMIDIReader.getMIDIFromFile(root, path);
     }
-	/*
-	/** Returns the note at the given track and time. Args: Track, Time *//*
-	public int getNoteAtTrackAndTime(int track, int time) {/*
-		int a = ReikaMIDIReader.readMIDI(midi, track, time, 0);
-		if (a != 0 && a != -1)
-		;//ReikaJavaLibrary.pConsole(time+" @ "+a);
-		return a;*//*
-		//return ReikaMIDIReader.getMidiNoteAtChannelAndTime(midi, time, track);
-		return 0;
-	}*/
+    /** Track indices and the original 60-tick grid/120-tick lead-in are retained. */
+    public int getNoteAtTrackAndTime(int track, int time) {
+        return ReikaMIDIReader.readMIDI(midi, track, time, 0);
+    }
+
+    public MIDIInterface(Sequence sequence) {
+        midi = sequence;
+    }
 
     public void debug() {
         ReikaMIDIReader.debugMIDI(midi);

@@ -19,14 +19,11 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-// Removed IForgeGuiGraphics and ScreenUtils - no longer exist in NeoForge
 
 import net.minecraft.client.Minecraft;
 import reika.dragonapi.libraries.rendering.ReikaGuiAPI;
 
 
-// 26.2: was mis-ported as `extends Gui` (the HUD) purely for a super(Minecraft) call it never used.
-// Gui's ctor is now (Minecraft, Hud, GuiRenderState); this keyboard widget needs none of that.
 public class PianoKeyboard {
 
     public final int guiX;
@@ -100,15 +97,15 @@ public class PianoKeyboard {
         return shapeList[i % shapeList.length];
     }
 
-    public void mouseClicked(double x, double y, int button) {
-        // 1.21.5: AbstractWidget#mouseClicked now takes a MouseButtonEvent + double-click flag.
+    public boolean mouseClicked(double x, double y, int button) {
         MouseButtonEvent event = new MouseButtonEvent(x, y, new MouseButtonInfo(button, 0));
         for (PianoKey key : keyList) {
             if (key.mouseClicked(event, false)) {
                 guiInstance.onKeyPressed(key);
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     public void drawKeys(GuiGraphicsExtractor stack) {
@@ -127,12 +124,14 @@ public class PianoKeyboard {
 
     public static class PianoKey extends Button {
 
+        public final int note;
         public final KeyShape hitbox;
         private int alpha = 0;
         private final MusicGui guiInstance;
 
         public PianoKey(int note, int x, int y, KeyShape shape, MusicGui gui) {
-            super(new Builder(Component.literal(""), b -> {}).pos(x, y).size(0, 0)); //todo i think note as an id of sorts
+            super(new Builder(Component.empty(), b -> {}).pos(x, y).size(shape == KeyShape.BLACK ? 4 : 8, 35));
+            this.note = note;
             hitbox = shape;
             guiInstance = gui;
         }
@@ -170,7 +169,7 @@ public class PianoKeyboard {
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
             double x = event.x();
             double y = event.y();
-            int button = event.button();
+            if (!active || !visible || event.button() != 0) return false;
             ReikaGuiAPI api = ReikaGuiAPI.instance;
             boolean flag = false;
             switch (hitbox) {
