@@ -14,6 +14,8 @@ import reika.dragonapi.interfaces.BlockCheck;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.function.Function;
+import reika.dragonapi.exception.MisuseException;
 
 public class StructuredBlockArray extends BlockArray {
 
@@ -74,7 +76,16 @@ public class StructuredBlockArray extends BlockArray {
     protected final boolean addBlockCoordinate(BlockPos pos, BlockKey state) {
         if (overflow || this.hasBlock(pos))
             return false;
-        super.addBlockCoordinate(pos);
+        if (!super.addBlockCoordinate(pos))
+            return false;
+        data.put(pos.immutable(), state);
+        return true;
+    }
+
+    /** Keeps coordinate membership and the representative state consistent on replacements. */
+    protected final boolean putBlockKey(BlockPos pos, BlockKey state) {
+        if (!this.hasBlock(pos) && !super.addBlockCoordinate(pos))
+            return false;
         data.put(pos.immutable(), state);
         return true;
     }
@@ -167,17 +178,26 @@ public class StructuredBlockArray extends BlockArray {
 
     @Override
     public void copyTo(BlockArray copy) {
+        if (copy == this)
+            return;
         super.copyTo(copy);
-        if (copy instanceof StructuredBlockArray) {
-            ((StructuredBlockArray)copy).data.putAll(data);
+        if (copy instanceof StructuredBlockArray target) {
+            target.data.clear();
+            target.data.putAll(data);
         }
     }
 
     @Override
     public void addAll(BlockArray arr) {
-        super.addAll(arr);
-        if (arr instanceof StructuredBlockArray) {
-            data.putAll(((StructuredBlockArray)arr).data);
+        for (BlockPos position : arr) {
+            BlockKey key;
+            if (arr instanceof StructuredBlockArray source)
+                key = source.getBlockKeyAt(position.getX(), position.getY(), position.getZ());
+            else if (world != null)
+                key = BlockKey.getAt(world, position);
+            else
+                throw new MisuseException("A world-free structured array can only merge declared block states");
+            this.putBlockKey(position, key);
         }
     }
 
@@ -197,28 +217,22 @@ public class StructuredBlockArray extends BlockArray {
         return map;
     }
 
-//   todo @Override
-//    public BlockArray rotate90Degrees(int ox, int oz, boolean left) {
-//        StructuredBlockArray b = (StructuredBlockArray)super.rotate90Degrees(ox, oz, left);
-//        for (BlockPos c : data.keySet()) {
-//            BlockKey bc = data.get(c);
-//            BlockPos c2 = c.rotate90About(ox, oz, left);
-//            b.addBlockCoordinate(c2, bc);
-//        }
-//        return b;
-//    }
-//
-// todo   @Override
-//    public BlockArray rotate180Degrees(int ox, int oz) {
-//        StructuredBlockArray b = (StructuredBlockArray)super.rotate180Degrees(ox, oz);
-//        for (BlockPos c : data.keySet()) {
-//            BlockKey bc = data.get(c);
-//            BlockPos c2 = c.rotate180About(ox, oz);
-//
-//            b.addBlockCoordinate(c2, bc);
-//        }
-//        return b;
-//    }
+    @Override
+    protected StructuredBlockArray transform(Function<BlockPos, BlockPos> transform) {
+        StructuredBlockArray result = (StructuredBlockArray)super.transform(transform);
+        data.forEach((position, key) -> result.data.put(transform.apply(position).immutable(), key));
+        return result;
+    }
+
+    @Override
+    public StructuredBlockArray rotate90Degrees(int ox, int oz, boolean left) {
+        return (StructuredBlockArray)super.rotate90Degrees(ox, oz, left);
+    }
+
+    @Override
+    public StructuredBlockArray rotate180Degrees(int ox, int oz) {
+        return (StructuredBlockArray)super.rotate180Degrees(ox, oz);
+    }
 
     @Override
     public void clear() {
@@ -227,24 +241,12 @@ public class StructuredBlockArray extends BlockArray {
     }
 
     @Override
-    public BlockArray flipX() {
-        StructuredBlockArray b = (StructuredBlockArray)this.instantiate();
-        for (BlockPos c : data.keySet()) {
-            BlockKey bc = data.get(c);
-            BlockPos c2 = new BlockPos(-c.getX(), c.getY(), c.getZ());
-            b.addBlockCoordinate(c2, bc);
-        }
-        return b;
+    public StructuredBlockArray flipX() {
+        return (StructuredBlockArray)super.flipX();
     }
 
     @Override
-    public BlockArray flipZ() {
-        StructuredBlockArray b = (StructuredBlockArray)this.instantiate();
-        for (BlockPos c : data.keySet()) {
-            BlockKey bc = data.get(c);
-            BlockPos c2 = new BlockPos(c.getX(), c.getY(), -c.getZ());
-            b.addBlockCoordinate(c2, bc);
-        }
-        return b;
+    public StructuredBlockArray flipZ() {
+        return (StructuredBlockArray)super.flipZ();
     }
 }

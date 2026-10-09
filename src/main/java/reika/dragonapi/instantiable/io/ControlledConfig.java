@@ -27,7 +27,8 @@ import reika.dragonapi.libraries.java.ReikaStringParser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.lang.reflect.Field;
 import java.util.*;
 public class ControlledConfig {
@@ -81,7 +82,9 @@ public class ControlledConfig {
 
     private Configuration config;
 
-    private int readID;
+    private static final String RESET_CATEGORY = "Control";
+    private static final String RESET_PROPERTY = "Config ID - Edit to have your config auto-deleted";
+    private final Integer configVersion;
     protected File configFile;
 
     public final DragonAPIMod configMod;
@@ -106,9 +109,24 @@ public class ControlledConfig {
     private final ArrayList<String> queuedExceptions = new ArrayList<>();
 
     public ControlledConfig(DragonAPIMod mod, ConfigList[] option, IDRegistry[] id) {
+        this(mod, option, id, null);
+    }
+
+    /**
+     * Opts into the original format-ID contract for the legacy migration file. A changed ID
+     * archives that file and regenerates its defaults; registered TOML values remain authoritative.
+     * The ID describes a config format, not the mod or Minecraft release number.
+     */
+    public ControlledConfig(DragonAPIMod mod, ConfigList[] option, IDRegistry[] id, int configVersion) {
+        this(mod, option, id, Integer.valueOf(configVersion));
+    }
+
+    private ControlledConfig(DragonAPIMod mod, ConfigList[] option, IDRegistry[] id, Integer configVersion) {
         if (mod == null)
             throw new MisuseException("You cannot create a config with a null mod!");
         configMod = mod;
+        this.configVersion = configVersion;
+        this.registerOrphanExclusion(RESET_CATEGORY);
         optionList = option;
         IDList = id;
         String n = ReikaStringParser.stripSpaces(mod.getDisplayName());
@@ -208,10 +226,6 @@ public class ControlledConfig {
         orphanExclusions.add(s.toLowerCase(Locale.ENGLISH));
     }
 
-    private final String getConfigPath() {
-        return ReikaFileReader.getFileNameNoExtension(configFile, true, true);//configFile.getAbsolutePath().substring(0, configFile.getAbsolutePath().length()-4);
-    }
-
     public final File getConfigFolder() {
         return configFile.getParentFile();
     }
@@ -241,42 +255,46 @@ public class ControlledConfig {
     }
 
     private boolean checkReset(Configuration config) {
-        //readID = config.get("Control", "Config ID - Edit to have your config auto-deleted", CURRENT_CONFIG_ID).getInt();
-        //return readID != CURRENT_CONFIG_ID;
-        return false;
+        if (configVersion == null)
+            return false; // Existing unversioned callers do not declare a reset policy.
+        // The integer overload silently repairs malformed values; validate the raw property first.
+        Property marker = config.get(RESET_CATEGORY, RESET_PROPERTY, Integer.toString(configVersion),
+                "Legacy config format ID. A mismatch archives and resets only this .cfg; TOML and segmented files are retained.", Type.INTEGER);
+        if (!marker.isIntValue())
+            throw new RegistrationException(configMod, "Invalid legacy config format ID in " + configFile + ": " + marker.getString());
+        return marker.getInt() != configVersion;
     }
 
+    /** Archives exact on-disk bytes and reloads legacy defaults; TOML and segmented files are retained. */
     protected final void resetConfigFile() {
-        String path = this.getConfigPath()+"_Old_Config_Backup.txt";
-        File backup = new File(path);
-        if (backup.exists())
-            backup.delete();
-        try {
-            DragonAPI.LOGGER.info(configMod.getDisplayName().toUpperCase()+": Writing Backup File to "+path);
-            DragonAPI.LOGGER.info(configMod.getDisplayName().toUpperCase()+": Use this to restore custom IDs if necessary.");
-            backup.createNewFile();
-            if (!backup.exists())
-                DragonAPI.LOGGER.error(configMod.getDisplayName().toUpperCase()+": Could not create backup file at "+path+"!");
-            else {
-                PrintWriter p = new PrintWriter(backup);
-                p.println("#####----------THESE ARE ALL THE OLD CONFIG SETTINGS YOU WERE USING----------#####");
-                p.println("#####---IF THEY DIFFER FROM THE DEFAULTS, YOU MUST RE-EDIT THE CONFIG FILE---#####");
-
-                p.close();
-            }
-        }
-        catch (IOException e) {
-            DragonAPI.LOGGER.error(configMod.getDisplayName().toUpperCase()+": Could not create backup file due to IOException!");
-            e.printStackTrace();
-        }
-        configFile.delete();
+        this.resetLegacyData();
+        this.loadConfig(false);
     }
 
-    private void versionCheck() { //pre init used to be here
+    private void resetLegacyData() {
+        if (config == null)
+            throw new MisuseException("You cannot reset a config before it is initialized!");
+        try {
+            Path source = configFile.toPath();
+            Path backup = source.resolveSibling(configFile.getName() + ".reset-backup-" + UUID.randomUUID());
+            if (!Files.isRegularFile(source))
+                throw new IOException("Legacy config is not a regular file: " + source);
+            Files.copy(source, backup); // Never replace a previous backup or delete the source.
+            DragonAPI.LOGGER.info("{}: Preserved legacy config before reset at {}", configMod.getDisplayName(), backup);
+        } catch (IOException e) {
+            throw new RegistrationException(configMod, "Could not preserve legacy config; reset aborted: " + configFile, e);
+        }
+        config.clear();
+        for (var category : additionalOptions.values())
+            for (DataElement<?> element : category.values())
+                element.restoreDefault();
+    }
+
+    private void versionCheck() {
         if (this.checkReset(config)) {
-            DragonAPI.LOGGER.info(configMod.getDisplayName().toUpperCase()+": Config File Format Changed. Resetting...");
-            this.resetConfigFile();
-            this.initProps();
+            DragonAPI.LOGGER.info("{}: Legacy config format ID changed; restoring .cfg defaults and retaining TOML settings.", configMod.getDisplayName());
+            this.resetLegacyData();
+            this.checkReset(config); // Install the current ID without recursively registering specs.
         }
     }
 
@@ -342,11 +360,16 @@ public class ControlledConfig {
             throw new MisuseException("Error loading "+configMod.getDisplayName()+": You must load a config file before reading it!");
         // Keep an exact migration reference before the legacy parser normalizes the file.
         if (configFile.exists()) {
-            java.nio.file.Path backup = configFile.toPath().resolveSibling(configFile.getName() + ".pre-toml");
+            Path backup = configFile.toPath().resolveSibling(configFile.getName() + ".pre-toml");
             try {
-                if (!java.nio.file.Files.exists(backup)) java.nio.file.Files.copy(configFile.toPath(), backup);
+                if (!Files.isRegularFile(configFile.toPath()))
+                    throw new IOException("Legacy config is not a regular file: " + configFile);
+                if (!Files.exists(backup))
+                    Files.copy(configFile.toPath(), backup);
+                else if (!Files.isRegularFile(backup))
+                    throw new IOException("Migration backup is not a regular file: " + backup);
             } catch (IOException e) {
-                throw new RegistrationException(configMod, "Could not preserve legacy config before migration: " + e.getMessage());
+                throw new RegistrationException(configMod, "Could not preserve legacy config before migration: " + configFile, e);
             }
         }
         config = new Configuration(configFile);
@@ -442,7 +465,13 @@ public class ControlledConfig {
     protected void afterInit() {}
 
     private void loadConfig() {
-        config.load();
+        this.loadConfig(true);
+    }
+
+    private void loadConfig(boolean readFile) {
+        if (readFile)
+            config.load();
+        this.versionCheck();
 
         this.stripOrhpanedEntries();
 
@@ -453,7 +482,12 @@ public class ControlledConfig {
             ConfigList cfg = optionList[i];
             String label = this.getLabel(cfg);
             if (cfg.shouldLoad()) {
-                controls[i] = this.loadValue(optionList[i]);
+                // Segmented values were just loaded from their own file. Reading the primary
+                // config here would replace them with defaults, including during a format reset.
+                if (!specialFiles.containsKey(cfg))
+                    controls[i] = this.loadValue(cfg);
+                else if (cfg.isEnforcingDefaults())
+                    controls[i] = this.getDefault(cfg);
             }
             else {
                 controls[i] = this.getDefault(optionList[i]);
@@ -500,7 +534,7 @@ public class ControlledConfig {
             else {
                 HashSet<String> entryNames = new HashSet();
                 for (String s2 : cat.getValues().keySet()) {
-                    if (!map.containsKey(s2)) {
+                    if (!map.containsKey(s2) && !(s1.equalsIgnoreCase(RESET_CATEGORY) && s2.equals(RESET_PROPERTY))) {
                         entryNames.add(s2);
                     }
                 }
@@ -859,6 +893,7 @@ public class ControlledConfig {
     protected static final class DataElement<C> implements Comparable<DataElement<C>> {
 
         private C data;
+        private final C defaultData;
         private java.util.function.Supplier<Object> modern;
         public final String category;
         public final String name;
@@ -870,7 +905,12 @@ public class ControlledConfig {
             category = c;
             name = n;
             this.data = default_;
+            this.defaultData = default_;
             index = idx;
+        }
+
+        private void restoreDefault() {
+            data = defaultData;
         }
 
         private Object load(Configuration config) {

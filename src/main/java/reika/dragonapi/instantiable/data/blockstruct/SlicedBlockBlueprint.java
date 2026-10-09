@@ -20,14 +20,15 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import reika.dragonapi.exception.MisuseException;
+import reika.dragonapi.interfaces.BlockCheck;
+import net.minecraft.world.item.ItemStack;
 import reika.dragonapi.instantiable.data.blockstruct.filledblockarray.BlockMatchFailCallback;
 import reika.dragonapi.instantiable.data.immutable.BlockKey;
 
 /**
- * 26.2 port: redesigned to be blockstate-native. Legacy DragonAPI stored a {@code Block}+int-metadata
- * per cell; the int metadata is gone, so mapped cells now hold a specific {@link BlockState} (exact match)
- * and anti-cells hold a {@link Block} (block-level "must not be"). The legacy {@code putInto(FilledBlockArray...)}
- * is dropped (FilledBlockArray.setBlock is not ported and no consumer uses it).
+ * 26.3 block-state blueprint with mapped, empty, ignored and forbidden-block cells.
+ * Retains the original checker (column across / row down) and importer (row left / column up)
+ * coordinate conventions, while supporting rectangular slices and every horizontal direction.
  */
 public class SlicedBlockBlueprint {
 
@@ -66,8 +67,8 @@ public class SlicedBlockBlueprint {
 			throw new MisuseException("Cannot register an empty slice!");
 		int l = array.length;
 		for (int i = 0; i < l; i++) {
-			if (array[i] == null)
-				throw new MisuseException("Slice rows cannot be null!");
+			if (array[i] == null || array[i].isEmpty())
+				throw new MisuseException("Slice rows cannot be null or empty!");
 			if (i > 0)
 				if (array[i].length() != array[i-1].length())
 					throw new MisuseException("You must only register properly shaped slices!");
@@ -132,33 +133,27 @@ public class SlicedBlockBlueprint {
 	}
 
 	public boolean checkAgainst(Level world, int x, int y, int z, int xref, int yref, Direction plane, int slice, BlockMatchFailCallback call) {
+		verifyHorizontal(plane);
 		BlockState[][] ids = slices.get(slice);
 		Block[][] antis = antiSlices.get(slice);
-		for (int i = 0; i < ids.length; i++) {
-			for (int k = 0; k < ids[i].length; k++) {
-				int dx = plane.getStepX() == 0 ? x-xref+i : x;
-				int dz = plane.getStepZ() == 0 ? z-xref+i : z;
-				int dy = y+yref-k;
-				BlockState id = ids[k][i];
-				BlockPos p = new BlockPos(dx, dy, dz);
-				BlockState id2 = world.getBlockState(p);
-				if (id == null) {
-					Block anti = antis[k][i];
-					if (anti != null && id2.is(anti)) {
-						if (call != null)
-							call.onBlockFailure(world, dx, dy, dz, BlockKey.AIR);
-						return false;
-					}
-				}
-				else {
-					if (id != id2) {
-						if (call != null)
-							call.onBlockFailure(world, dx, dy, dz, new BlockKey(id));
-						return false;
-					}
-				}
-			}
-		}
+        for (int column = 0; column < ids[0].length; column++) {
+            for (int row = 0; row < ids.length; row++) {
+                int dx = plane.getStepX() == 0 ? x - xref + column : x;
+                int dz = plane.getStepZ() == 0 ? z - xref + column : z;
+                int dy = y + yref - row;
+                BlockState expected = ids[row][column];
+                Block forbidden = antis[row][column];
+                BlockPos position = new BlockPos(dx, dy, dz);
+                BlockState actual = world.getBlockState(position);
+                BlockCheck check = expected != null ? new BlockKey(expected)
+                        : forbidden != null ? new ForbiddenBlockCheck(forbidden) : null;
+                if (check != null && !check.match(actual)) {
+                    if (call != null)
+                        call.onBlockFailure(world, dx, dy, dz, check);
+                    return false;
+                }
+            }
+        }
 		return true;
 	}
 
@@ -172,4 +167,45 @@ public class SlicedBlockBlueprint {
 		cp.antiMappings.putAll(antiMappings);
 		return cp;
 	}
+    /** Original import orientation: rows run left of the facing direction, columns run upward. */
+    public void putInto(FilledBlockArray array, int x, int y, int z, Direction direction) {
+        verifyHorizontal(direction);
+        Direction left = direction.getCounterClockWise();
+        for (int slice = 0; slice < slices.size(); slice++) {
+            BlockState[][] states = slices.get(slice);
+            Block[][] forbidden = antiSlices.get(slice);
+            for (int row = 0; row < states.length; row++) {
+                for (int column = 0; column < states[row].length; column++) {
+                    BlockPos position = new BlockPos(x, y + column, z)
+                            .relative(direction, slice).relative(left, row);
+                    if (states[row][column] != null)
+                        array.setBlock(position.getX(), position.getY(), position.getZ(), states[row][column]);
+                    else if (forbidden[row][column] != null)
+                        array.setBlock(position.getX(), position.getY(), position.getZ(), new ForbiddenBlockCheck(forbidden[row][column]));
+                }
+            }
+        }
+    }
+
+    private static void verifyHorizontal(Direction direction) {
+        if (direction == null || direction.getAxis() == Direction.Axis.Y)
+            throw new MisuseException("Sliced blueprints require a horizontal direction");
+    }
+
+    /** Anti-mappings constrain matching without erasing an already permitted existing block. */
+    private static final class ForbiddenBlockCheck implements BlockCheck {
+        private final Block forbidden;
+        private ForbiddenBlockCheck(Block forbidden) { this.forbidden = forbidden; }
+        public boolean match(BlockState state) { return !state.is(forbidden); }
+        public boolean matchInWorld(Level world, BlockPos position) { return this.match(world.getBlockState(position)); }
+        public boolean match(BlockCheck check) { return check instanceof ForbiddenBlockCheck other && forbidden == other.forbidden; }
+        public void place(Level world, BlockPos position, int flags) {
+            if (!this.matchInWorld(world, position))
+                world.setBlock(position, Blocks.AIR.defaultBlockState(), flags);
+        }
+        public ItemStack asItemStack() { return ItemStack.EMPTY; }
+        public ItemStack getDisplay() { return ItemStack.EMPTY; }
+        public BlockKey asBlockKey() { return BlockKey.AIR; }
+    }
+
 }

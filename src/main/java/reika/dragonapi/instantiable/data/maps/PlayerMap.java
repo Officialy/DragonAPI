@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 
 public class PlayerMap<V> {
 
-    private final HashMap<UUID, V> data = new HashMap();
+    private final HashMap<UUID, V> data = new HashMap<>();
 
     private static UUID getKey(Player ep) {
         return ep.getUUID();
@@ -59,8 +59,16 @@ public class PlayerMap<V> {
         return Collections.unmodifiableCollection(data.keySet());
     }
 
+    /** Looks up a canonical UUID string; absent or malformed identities have no entry. */
     public V get(String s) {
-        return data.get(s);
+        if (s == null)
+            return null;
+        try {
+            UUID id = UUID.fromString(s);
+            return id.toString().equalsIgnoreCase(s) ? data.get(id) : null;
+        } catch (IllegalArgumentException invalidId) {
+            return null;
+        }
     }
 
     @Override

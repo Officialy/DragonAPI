@@ -337,25 +337,22 @@ public class ReikaRecipeHelper {
            return null;
        }
        if (ire instanceof ShapedRecipe r) {
-           num = getRecipeIngredients(r).size();
            w = r.getWidth();
            h = r.getHeight();
-           for (int i = 0; i < getRecipeIngredients(r).size(); i++) {
-               Ingredient is = getRecipeIngredients(r).get(i);
-               isin[i] = getRecipeItemStack(is.items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)[i], client);
-           }
+           // Preserve empty cells and all native display choices, including component-bearing stacks.
+           var slots = r.getIngredients();
+           for (int i = 0; i < slots.size(); i++)
+               isin[i] = slots.get(i).map(ReikaRecipeHelper::ingredientDisplayStacks).orElse(null);
 
        } else if (ire instanceof ShapelessRecipe sr) {
            //DragonAPI.LOGGER.info(ire);
            for (int i = 0; i < getRecipeIngredients(sr).size(); i++) {
-               ItemStack is = getRecipeIngredients(sr).get(i).items().map(_h -> new ItemStack(_h)).toArray(ItemStack[]::new)[i]; //todo check array i
-               isin[i] = getRecipeItemStack(is, client);
+               isin[i] = ingredientDisplayStacks(getRecipeIngredients(sr).get(i));
            }
            w = getRecipeIngredients(sr).size() >= 3 ? 3 : getRecipeIngredients(sr).size();
            h = (getRecipeIngredients(sr).size() + 2) / 3;
-       } else if (ire instanceof SmeltingRecipe sr) {
-           ItemStack is = getRecipeOutput(sr);
-              isin[0] = getRecipeItemStack(is, client);
+       } else if (ire instanceof AbstractCookingRecipe sr) {
+              isin[0] = ingredientDisplayStacks(getRecipeIngredients(sr).getFirst());
               w = 1;
               h = 1;
        }
@@ -365,6 +362,14 @@ public class ReikaRecipeHelper {
        }
 
        return new RecipeCache(isin, w, h);
+   }
+
+   private static List<ItemStack> ingredientDisplayStacks(Ingredient ingredient) {
+       List<ItemStack> displays = ingredient.display().resolveForStacks(ContextMap.EMPTY);
+       // Native tag displays need a registry context; the already resolved Ingredient holders
+       // supply the same alternatives without consulting an integrated server or client class.
+       return displays.isEmpty() ? ingredient.items().map(ItemStack::new).toList()
+               : displays.stream().map(ItemStack::copy).toList();
    }
 
    /**

@@ -1142,6 +1142,14 @@ public class Configuration {
         }
     }
 
+    /** Clears parsed data for a deliberate reset; callers must preserve the file before saving. */
+    public void clear()
+    {
+        categories.clear();
+        children.clear();
+        changed = true;
+    }
+
     /**
      * Adds a comment to the specified ConfigCategory object
      *

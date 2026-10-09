@@ -2,13 +2,21 @@ package reika.dragonapi.instantiable.io;
 
 import com.google.common.base.Charsets;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.WeightedRandom;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.ReikaNBTHelper;
+import reika.dragonapi.libraries.ReikaEnchantmentHelper;
 import reika.dragonapi.libraries.java.ReikaASMHelper;
 import reika.dragonapi.libraries.java.ReikaStringParser;
 
@@ -50,6 +58,9 @@ public abstract class LuaBlock {
 
     private boolean isListEntry = false;
     private boolean isList = true;
+    // Explicitly written maps/lists retain their type, including empty and mixed containers.
+    // Parsed script blocks keep their existing inference rules.
+    private Boolean writtenList;
 
     private final HashMap<String, String> comments = new HashMap();
 
@@ -76,6 +87,8 @@ public abstract class LuaBlock {
     }
 
     public final boolean isList() {
+        if (writtenList != null)
+            return writtenList;
         return isList && !isRoot && !(data.isEmpty() && !children.isEmpty());
     }
 
@@ -308,40 +321,93 @@ public abstract class LuaBlock {
         }
 
         public void write(ItemStack is, boolean writeSize) {
-            this.putData("item_id", is.getItem().getDescriptionId());
+            this.putData("item_id", BuiltInRegistries.ITEM.getKey(is.getItem()).toString());
             if (writeSize)
                 this.putData("stack_size", String.valueOf(is.getCount()));
             this.putData("display_name", is.getDisplayName().getString());
-            LuaBlock nbt = is.has(DataComponents.CUSTOM_DATA) ? new NBTLuaBlock("nbt", this, tree, is.get(DataComponents.CUSTOM_DATA).copyTag(), true) : null;
+            if (is.has(DataComponents.CUSTOM_DATA))
+                new NBTLuaBlock("nbt", this, tree, is.get(DataComponents.CUSTOM_DATA).copyTag(), true);
+            var components = new LinkedHashMap<String, Object>();
+            writeEnchantments(components, "minecraft:enchantments", is.get(DataComponents.ENCHANTMENTS));
+            writeEnchantments(components, "minecraft:stored_enchantments", is.get(DataComponents.STORED_ENCHANTMENTS));
+            if (!components.isEmpty())
+                new BasicLuaBlock("components", this, tree).writeData(components);
+        }
+
+        private static void writeEnchantments(Map<String, Object> components, String name, ItemEnchantments enchants) {
+            if (enchants == null)
+                return;
+            var levels = new java.util.TreeMap<String, Integer>();
+            for (var entry : enchants.entrySet()) {
+                var key = entry.getKey().unwrapKey().orElseThrow(() ->
+                        new IllegalArgumentException("Cannot export an unregistered enchantment: " + entry.getKey()));
+                levels.put(key.identifier().toString(), entry.getIntValue());
+            }
+            components.put(name, levels);
         }
     }
 
     public static final class NBTLuaBlock extends LuaBlock {
 
         public NBTLuaBlock(String n, LuaBlock parent, LuaBlockDatabase db, CompoundTag tag, boolean parseEnchants) {
+            this(n, parent, db, tag, parseEnchants, null);
+        }
+
+        /** Explicit registry context supplies names for datapack/mod enchantments without an integrated server. */
+        public NBTLuaBlock(String n, LuaBlock parent, LuaBlockDatabase db, CompoundTag tag, boolean parseEnchants,
+                HolderLookup.Provider registries) {
             super(n, parent, db);
-            HashMap<String, ?> map = ReikaNBTHelper.readMapFromNBT(tag);
+            Map<String, Object> map = new LinkedHashMap<>(ReikaNBTHelper.readMapFromNBT(tag));
             if (parseEnchants)
-                map = this.parseEnchantments(map);
+                parseEnchantments(map, registries);
             this.writeData(map);
         }
 
-        private HashMap parseEnchantments(HashMap map) {
-            Object ench = map.remove("StoredEnchantments");
-            if (ench == null) {
-                ench = map.remove("ench");
-            }
-            if (ench instanceof ArrayList) {
-                ArrayList<String> li = new ArrayList();
-                ArrayList<HashMap> data = (ArrayList<HashMap>)ench;
-                for (HashMap<String, Short> in : data) {
-                    short lvl = in.get("lvl");
-                    short id = in.get("id");
-//        todo            li.add(Enchantment.enchantmentsList[id].getTranslatedName(lvl));
+        private static void parseEnchantments(Map<String, Object> map, HolderLookup.Provider registries) {
+            var display = new ArrayList<String>();
+            for (String name : List.of("StoredEnchantments", "ench", "Enchantments")) {
+                if (map.get(name) instanceof List<?> entries) {
+                    for (Object entry : entries) {
+                        if (entry instanceof Map<?, ?> enchant && enchant.get("lvl") instanceof Number level)
+                            display.add(enchantmentName(enchant.get("id"), level.intValue(), registries));
+                    }
                 }
-                map.put("Enchantments", li);
             }
-            return map;
+            if (map.get("components") instanceof Map<?, ?> components) {
+                for (String name : List.of("minecraft:enchantments", "minecraft:stored_enchantments")) {
+                    if (components.get(name) instanceof Map<?, ?> encoded) {
+                        // Earlier component formats nested the map under "levels"; 26.3 uses it directly.
+                        Map<?, ?> levels = encoded.get("levels") instanceof Map<?, ?> nested ? nested : encoded;
+                        for (var entry : levels.entrySet()) {
+                            if (entry.getValue() instanceof Number level)
+                                display.add(enchantmentName(entry.getKey(), level.intValue(), registries));
+                        }
+                    }
+                }
+            }
+            // Keep every original field/unknown ID/malformed entry. This is a derived readable view,
+            // never a destructive rewrite or a guess at an old mod's numeric registry assignment.
+            if (!display.isEmpty())
+                map.putIfAbsent(map.containsKey("Enchantments") ? "EnchantmentDisplay" : "Enchantments", display);
+        }
+
+        private static String enchantmentName(Object originalId, int level, HolderLookup.Provider registries) {
+            ResourceKey<Enchantment> key = null;
+            if (originalId instanceof Number id && id.doubleValue() == id.intValue())
+                key = ReikaEnchantmentHelper.getLegacyEnchantment(id.intValue());
+            else if (originalId instanceof String text) {
+                Identifier id = Identifier.tryParse(text);
+                if (id != null)
+                    key = ResourceKey.create(Registries.ENCHANTMENT, id);
+            }
+            if (key == null)
+                return "Unknown legacy enchantment " + originalId + " (level " + level + ")";
+            if (registries != null) {
+                var holder = registries.lookupOrThrow(Registries.ENCHANTMENT).get(key);
+                if (holder.isPresent())
+                    return Enchantment.getFullname(holder.get(), level).getString();
+            }
+            return key.identifier() + " (level " + level + ")";
         }
     }
 
@@ -501,6 +567,7 @@ public abstract class LuaBlock {
     }
 
     public void writeData(List li) {
+        writtenList = true;
         int idx = 0;
         for (Object o : li) {
             if (o instanceof Map) {
@@ -519,6 +586,7 @@ public abstract class LuaBlock {
     }
 
     public void writeData(Map<String, ?> map) {
+        writtenList = false;
         for (Entry<String, ?> e : map.entrySet()) {
             if (e.getValue() instanceof Map) {
                 LuaBlock child = new BasicLuaBlock(e.getKey(), this, tree);
@@ -537,6 +605,14 @@ public abstract class LuaBlock {
     public final List<Object> asList() {
         List<Object> ret = new ArrayList<>();
 
+        if (Boolean.TRUE.equals(writtenList)) {
+            for (int i = 0; i < data.size() + children.size(); i++) {
+                String key = String.valueOf(i);
+                ret.add(data.containsKey(key) ? this.parseObject(data.get(key)) : this.getObject(this.getChild(key)));
+            }
+            return ret;
+        }
+
         for (LuaBlock b : children.values()) {
             ret.add(this.getObject(b));
         }
@@ -545,6 +621,8 @@ public abstract class LuaBlock {
     }
 
     private Object getObject(LuaBlock b) {
+        if (b.writtenList != null)
+            return b.writtenList ? b.asList() : b.asHashMap();
         return b.isList() && b.data.size() == 1 && b.children.isEmpty() ? this.parseObject(b.data.values().iterator().next()) : b.isList() ? b.asList() : b.asHashMap();
     }
 
@@ -624,6 +702,25 @@ public abstract class LuaBlock {
         if (indent == 1) {
             String s = "{";
             li.add(s);
+        }
+        if (Boolean.TRUE.equals(writtenList)) {
+            for (int i = 0; i < data.size() + children.size(); i++) {
+                String key = String.valueOf(i);
+                if (data.containsKey(key)) {
+                    String value = data.get(key);
+                    li.add(pre + (this.isString(value) ? "\"" + value + "\"" : value));
+                }
+                else {
+                    LuaBlock child = this.getChild(key);
+                    String comment = comments.get(key);
+                    li.add(pre + "{" + (comment == null ? "" : " --" + comment));
+                    li.addAll(child.writeToStrings(indent + 1));
+                    li.add(pre + "}");
+                }
+            }
+            if (indent == 1)
+                li.add("}");
+            return li;
         }
         ArrayList<String> keys = new ArrayList<>(data.keySet());
         Collections.sort(keys, outputSorter);

@@ -1,5 +1,6 @@
 package reika.dragonapi.client;
 
+import reika.dragonapi.DragonAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -92,7 +93,13 @@ public final class ClientAPIPacketHandler {
                     break;
                 Entity e = world.getEntity(data[0]);
                 if (e instanceof ItemEntity) {
-                    e.getPersistentData().putString("dropper", sg);
+                    try {
+                        java.util.UUID id = java.util.UUID.fromString(sg);
+                        if (id.toString().equalsIgnoreCase(sg))
+                            e.getPersistentData().putString(reika.dragonapi.libraries.registry.ReikaItemHelper.DROPPER_TAG, id.toString());
+                    } catch (IllegalArgumentException invalidId) {
+                        DragonAPI.LOGGER.debug("Ignored invalid item-dropper identity: {}", sg);
+                    }
                 }
             }
             case GUIRELOAD -> {

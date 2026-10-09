@@ -320,3 +320,225 @@ text-particle extraction, player-model submission and a fresh biome PNG. Tempora
 This fixture remains inert without dragonapi.auditClient. The log still includes the five known invalid
 original RotaryCraft textures, background Chroma 4x4 puzzle-generation timeout and Windows counter
 lookup errors; passing these targeted assertions does not imply those unrelated findings are repaired.
+
+
+### 2026-10-08 — First project-backlog implementation batch
+
+N01: ITEMDROPPERREQUEST now requires a live, nonempty item in the requester's ServerLevel,
+loaded chunk, bounded distance and NeoForge's actual entity-tracking list. This is an informational
+read: tracking players need neither ownership nor a machine menu. Replies read the original
+`dropper` identity from `Entity.getPersistentData()` rather than searching serialized entity root
+NBT. Restored ReikaItemHelper getDropper/setDropper preserve the original UUID/player contract;
+getDropperId also supports offline credited players. Malformed, noncanonical identities are ignored
+on both server and client without changing the existing packet IDs or wire layout.
+
+N02: ReikaRFHelper no longer searches arbitrary foreign integer fields or private storage objects.
+Native SimpleEnergyHandler draining uses its public setter, preserving forced sapping and change
+notification. Other handlers extract through committed transactions; impossible extraction results
+roll back. Explicit, exact-type adapters support integrations with a deliberate forced-drain API
+and must report the amount removed and notify their own dirty state. The unsided and six face
+capabilities share one total budget and identity-based alias deduplication. Unknown restricted
+foreign buffers still need a verified explicit adapter; reflective mutation is not a substitute.
+
+N05: PlayerMap.get(String) resolves canonical UUID strings, including uppercase hex, to the UUID
+key already used by the map. Null, malformed/shortened UUID aliases and absent identities return
+null. Names are not silently converted into guessed identities.
+
+New tests cover UUID lookup/removal, forced draining, long-backed foreign stores, unrelated energy
+fields, committed/rolled-back extraction, explicit adapters and aliased capability budgets. The
+native dropper GameTest checks actual tracking, persistent and offline identities, malformed values,
+empty/removed entities and a stale tracker beyond the distance limit. Reactor turbine restoration
+and original sprite recovery are detailed in ReactorCraft/PORTING.md and RotaryCraft/docs/asset-recovery.md.
+
+Validation: 65 unit tests passed (DragonAPI 25, RotaryCraft 32, ReactorCraft 8), including the
+new UUID, forced/transactional/adapter/alias-budget and native turbine mesh tests. All 12 required
+`rotarycraft:dragonapi_*` dedicated GameTests passed. `build/backlog-first-validation.log` records
+BUILD SUCCESSFUL in 1m 45s with the active family compiled on Minecraft 26.3 / NeoForge 26.3.0.51-beta.
+
+The disposable native client passed in 2m 5s (`build/backlog-first-client.log`):
+TURBINE_AUDIT_CLIENT_PASS verifies registered normal stages 0–4/high-pressure stages 0–6, wear,
+formed flywheel/six-face caps, original texture decoding, per-type animation rates and callback
+correctness after the same state object is re-extracted. DROPPER_AUDIT_CLIENT_PASS verifies an
+actual client request/server reply/client decode for a tracked item credited to an offline UUID.
+Malformed client UUID aliases do not overwrite valid metadata. DRAGONAPI_AUDIT_CLIENT_PASS also
+retains the existing resource reload/key/text/player-render/biome-PNG checks. Recovered target,
+base railgun and molten-HSLA sprites decode natively; their earlier bad-PNG diagnostics are gone.
+
+The first client attempt stalled at the fixture's initial screen gate after resource reload; the
+opt-in fixture now disables focus-loss pausing and closes its initial vanilla PauseScreen. This
+handling affects only audit runs. The final passing run retains the known two unrecovered Rotary
+asset errors, other missing-model texture warnings, Chroma 4x4 puzzle timeout and Windows counter
+errors. Automated native geometry checks do not claim human visual or Iris/shader acceptance.
+
+Final ReactorCraft regression rerun after the per-type animation-rate changes: all 8 tests passed
+(`build/backlog-turbine-final-tests.log`, BUILD SUCCESSFUL in 20s).
+
+The maintained full checklist is `../PROJECT-BACKLOG.md`; N01/N02/N04/N05 are checked off,
+N03 remains partial, and N06/N07/N08 plus the wider dependency-ordered port work remain open.
+
+
+## 2026-10-08 — Second backlog batch: original assets and RayBlend completion
+
+Resolved N03's remaining source provenance: tungsten-alloy material is the original COMPACTS
+metadata 12, type 6 on sheet 0, hence items.png cell 108. The recovery script checks both original
+atlas hashes and verifies four sprites as exact 16x16 RGBA pixels. The zero-byte advancedgear PNG
+is preserved under RotaryCraft/reference/legacy-assets/, outside the atlas scan; worm gear, CVT,
+coil, high gear and creative coil retain generated special item models and original 3D geometry.
+The material's misleading original springtungsten name had caused a second mismatch: it was
+registered as a charged ItemCoil. Its unchanged ID now uses the original stackable crafting-material
+behavior. Full railgun sprite-group/projectile porting is tracked separately as RC19.
+
+N06 baseline: the native layout test reported 9 omitted rooms out of 240 planned rooms but passed.
+It now requires every authored profile, along with connected, correctly sized, nonuniform regions,
+original compactness caps, valid sudoku colours, cages, starting crystals and room/door geometry.
+Failed region attempts previously left cells removed from the remaining pool, and rejected full
+shapes were retried unchanged. New attempts return all owned cells and slots before reseeding;
+frontier weighting measures the region plus its candidate instead of the frontier itself.
+Insertion-ordered point collections avoid identity tie-breaking in colliding hash-map tree bins.
+Work is bounded at forty room attempts, eighty region attempts and eighty start candidates.
+Exhaustion throws for a new plan; it never admits a shortened authored progression.
+
+Layout version 1 is persisted in structure pieces and floor save/client tags, and participates in
+the plan cache key. Missing version fields mean legacy version 0. Existing floors and chunk-clipped
+pieces replay the old algorithm, including any rooms that were historically omitted. A recalculated
+live generator resolves the version of matching saved floors for solving/force-opening. Unsupported
+future versions are rejected rather than silently reinterpreted. The committed pre-fix implementation
+(ChromatiCraft 6e3638aaea2f82583d180548787bfcd91c9399a4) independently produced twelve golden plans;
+all matched legacy replay before those hashes were retained in the permanent regression suite.
+
+Validation: all 240 authored rooms in the original 36-layout seed matrix generate reproducibly;
+128 additional widely spaced seeds (including Long.MIN_VALUE/Long.MAX_VALUE) also complete and
+match their twins. All four native rayblend_* tests pass, including actual old/new piece and floor
+persistence, client-tag replay and existing puzzle-solving/reward behavior. The permanent unit
+suite passes 69 tests: DragonAPI 25, RotaryCraft 33, ReactorCraft 8, ChromatiCraft 3.
+Logs: build/backlog-rayblend-baseline.log, build/backlog-rayblend-ordered.log,
+build/backlog-rayblend-compatibility.log and build/backlog-second-units.log. The legacy compatibility
+fixture intentionally replays an old omitted 4x4 room; its historical diagnostic does not indicate
+failure of version 1. The independent comparison source/fixture was temporary under build/ and is
+not included in production sources or release jars.
+
+
+Final native client validation passed in 2m 1s (build/backlog-second-client.log).
+GEAR_ITEM_AUDIT_CLIENT_PASS resolves actual generated native item models and verifies original
+3D geometry for worm gear, CVT, coil, high gear and creative coil. It verifies the tungsten
+material's real reloaded components (stack size 64, no damage/charge) and absence of the empty
+advancedgear resource. The original four recovered sprites decode natively. TURBINE,
+DROPPER and DRAGONAPI_AUDIT_CLIENT_PASS retain the first batch's regression coverage.
+No corrupt-PNG error or new 4x4 generation failure appears in this client run. A full decode scan
+passes all 2179 RotaryCraft PNGs. Current RotaryCraft/ChromatiCraft jars contain neither the
+archived obsolete PNG nor temporary reference/test classes. Other missing-texture warnings and
+Windows OSHI/Perflib diagnostics remain; this does not claim actual Iris/Distant Horizons/shader
+acceptance. N03/N06 are closed in PROJECT-BACKLOG.md; N07/N08 and RC19 remain open.
+
+Git diff whitespace checks pass for the changed source and ledgers. The user's IDE-maintained
+.idea/workspace.xml still has its pre-existing/dynamically updated whitespace; it was not edited.
+This batch and the earlier first-batch changes remain uncommitted and unpushed.
+
+
+## 2026-10-08 — RC19 shared recipe-display regression and integration
+
+The full RotaryCraft railgun port exposed a current shared recipe display defect:
+ReikaRecipeHelper selected an ingredient-slot index inside each alternative array, collapsed
+empty shaped cells and lost component-bearing ingredient displays; cooking used the output as
+its input. The helper now retains shaped Optional cells and all alternatives, resolves native
+component-bearing slot displays, and falls back to already-resolved tag holders without requiring
+an integrated server on a remote client. Cooking displays use the actual ingredient. The railgun
+handbook reads the synced native recipe catalogue instead of its old empty list stub.
+
+Native regressions check all fifteen upgrade centers, typed and legacy tiers, empty cells,
+shapeless book ingredients and raw-iron cooking input. RC19's full suite passes 60/60 tests
+(build/railgun-gametest.log). Final family unit tests pass 69/69 including all 25 DragonAPI tests;
+the disposable native client resolves all sixteen actual railgun recipes and their prior-tier
+component-bearing inputs (build/railgun-final-validation.log, BUILD SUCCESSFUL in 1m 50s).
+Native projectile tracking, models and deferred rendering also pass. Datagen and packaged helper,
+railgun classes and assets pass verification; see build/railgun-artifact-verification.json and
+RotaryCraft/docs/railgun-port.md. This closes the display defect exercised by RC19, not every
+historical recipe-helper API or project-wide remote-client acceptance item. Actual remote-client
+reload/reconnect and Iris/Distant Horizons/shader validation remain open. Changes are uncommitted
+and unpushed, together with the preceding backlog batches.
+
+
+## Lua enchantment export — D18, 2026-10-09
+
+ItemStackLuaBlock exports the item registry identifier rather than a translation key. Applied
+and stored enchantments are exported separately under their native component names, with sorted
+registry identifiers and exact levels (including explicitly empty component maps). Custom data
+remains separate and the source stack is never changed. This repairs the missing enchantment
+information; it is not a claim that every unrelated item component now has a human Lua adapter.
+
+NBTLuaBlock derives readable enchantment details from old numeric IDs, namespaced list IDs,
+modern component maps and historical component maps nested under levels. Its explicit
+HolderLookup.Provider overload resolves actual registry names on either server or remote client;
+without a provider it prints canonical identities and levels. Numeric vanilla IDs use the
+existing source-backed 1.7.10 mapping. Unknown old mod IDs are identified as unknown and retained,
+never assigned a guessed modern identity. Applied and stored lists are both handled; malformed
+entries and every original field remain available. Parsing disabled means no derived display.
+
+Written map/list containers now carry an explicit type: empty maps/lists, singleton lists,
+mixed primitive/record lists and their ordering survive object export. Written lists also emit
+anonymous record entries in their original order in Lua text, instead of sorting numeric keys
+lexically or moving all records after scalar values. Existing parsed-script inference is retained.
+
+Five focused unit regressions pass. Native integration checks actual registered sword components,
+both enchantment kinds, registry ID/count/custom data, source conservation and original numeric-ID
+name resolution with an explicit level registry. All 13 DragonAPI native tests pass in
+build/lua-enchantment-native.log (46s); the module-family unit results total 74 (30 DragonAPI,
+33 RotaryCraft, 8 ReactorCraft, 3 ChromatiCraft). Initial family run:
+build/lua-enchantment-units.log; final DragonAPI/Reactor rerun: build/lua-enchantment-native.log.
+
+Final D18 unit/jar verification also passes in build/proxima-water-client-final.log; final family total 74/74. Final client water audit passes independently; see the 2026-10-09 ReactorCraft ledger and build/proxima-water-final-verification.json.
+
+## ControlledConfig format resets — D19, 2026-10-09
+
+Historical source at cc8a1c0b supplied the expected format ID in the constructor and checked its
+Control property before loading values. Later original source disabled that contract. The port's
+remaining reset implementation wrote an empty report and deleted the config even if preservation
+failed. The API now supports an explicit fourth constructor argument for the legacy format ID;
+existing unversioned callers are retained without assigning them a guessed policy.
+
+Initialization/reload checks the raw marker before validation, orphan cleanup or saving. Missing
+and matching markers retain custom values; malformed markers abort without rewriting the file.
+A mismatch preserves every on-disk byte in a unique sibling .reset-backup-UUID file before
+clearing parsed primary data and restoring original additional-option defaults. Existing backups
+are never replaced, and a failed copy aborts before mutation. Explicit protected resets regenerate
+the legacy config without recursive init or duplicate spec registration. The first .pre-toml
+backup is retained; non-file sources/backups fail before parser normalization. Control markers
+survive cleanup even when ordinary options share that category.
+
+Loaded ModConfigSpecs/TOML values remain authoritative. No TOML reset marker is invented, no
+registered spec is replaced and no TOML file is edited by the legacy reset. Segmented values
+retain their original separate-file authority: fixed the second primary read which previously
+overwrote them with defaults. Their normal legacy normalization/save behavior is retained.
+
+Seven focused regressions pass against the real legacy parser and loaded ModConfigSpec/TOML data.
+Family suites total 81/81 (37 DragonAPI, 33 RotaryCraft, 8 ReactorCraft, 3 ChromatiCraft); all
+13 native DragonAPI GameTests pass in build/config-reset-validation.log (1m 45s). The final
+Control-category edge case passes the full DragonAPI unit suite/jar in build/config-reset-final.log
+(20s). Full source contract and boundaries: docs/controlled-config-migration.md. Remote-client
+reload/reconnect remains N07. Work remains uncommitted and unpushed.
+
+## Block-array API restoration — D20, 2026-10-09
+
+Restored the deferred array rotation, material tally/filter, blueprint import and selected-NBT
+block-entity surface against de1bcf1f and current 26.3 sources. Coordinate-only rotations retain
+original state/check orientation; every position-indexed layer, including placement overrides,
+moves without reading destination blocks. Exact integer pivots, order, recalculated bounds,
+independent alternative containers, clear/copy/replacement/merge consistency and world-free
+declared layouts are covered. Material counts preserve actual components without changing
+display stacks, skip empty/unitemized/flowing block items and retain first-alternative semantics.
+
+Blueprint import supports all horizontal directions and retains anti-mapping constraints. The
+original import/checker reference conventions remain; rectangular checker indexing and invalid
+rows/directions are corrected without transposing existing definitions. Native entity checks
+capture copied selected fields, require exact state/class/field equality, preserve weak prototype
+references and overlay selected data through TagValueInput/loadWithComponents without clearing
+unselected inventory or relocating entities. Native source/flowing fluid family policies,
+standalone-fluid constraints and soft-space allowances are restored too. Full contract:
+docs/block-array-port.md.
+
+Four new unit regressions and five new GameTests pass. Final totals: 85/85 family unit tests
+(41 + 33 + 8 + 3), all 18 native DragonAPI tests, and the isolated client audit with existing
+water/turbine/gear/railgun/dropper/resource/tracking checks. Logs: build/block-array-validation.log
+(1m 50s) and build/block-array-client-final.log (1m 41s). Normal Play launch arguments remain
+unchanged. D20 and previous pending repairs are included in the requested local checkpoint;
+remote-client and actual shader/LOD acceptance remain separate open tasks.

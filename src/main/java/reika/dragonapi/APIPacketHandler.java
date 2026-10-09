@@ -1,5 +1,7 @@
 package reika.dragonapi;
 
+import reika.dragonapi.libraries.registry.ReikaItemHelper;
+
 import io.netty.buffer.Unpooled;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.client.Minecraft;
@@ -420,17 +422,12 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case ITEMDROPPERREQUEST: {
                     Entity e = world.getEntity(data[0]);
-                    if (e instanceof ItemEntity && ep.distanceToSqr(e) <= 128 * 128) {
-                        var entityOutput = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, world.registryAccess());
-                        e.saveWithoutId(entityOutput);
-                        var entityNBT = entityOutput.buildResult();
-                        if (entityNBT.contains("dropper")) {
-                            String s = entityNBT.getStringOr("dropper", "");
-                            //ReikaJavaLibrary.pConsole("Received request for Entity ID "+data[0]+"; response = '"+s+"'");
-                            if (!s.isEmpty()) {
-                                ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, PacketIDs.ITEMDROPPER.ordinal(), (ServerPlayer) ep, s, data[0]);
-                            }
-                        }
+                    if (e instanceof ItemEntity item
+                            && reika.dragonapi.libraries.io.PacketValidation.canRequestItemDropper(ep, world, item)) {
+                        String dropper = ReikaItemHelper.getDropperId(item);
+                        if (dropper != null)
+                            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel,
+                                    PacketIDs.ITEMDROPPER.ordinal(), (ServerPlayer) ep, dropper, item.getId());
                     }
                     break;
                 }

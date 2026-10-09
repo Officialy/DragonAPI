@@ -4,7 +4,18 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
+import java.lang.ref.WeakReference;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.FlowingFluid;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -14,21 +25,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.data.immutable.BlockKey;
 import reika.dragonapi.interfaces.BlockCheck;
+import reika.dragonapi.interfaces.registry.TileEnum;
+import reika.dragonapi.instantiable.data.maps.ItemHashMap;
+import reika.dragonapi.exception.MisuseException;
+import reika.dragonapi.libraries.ReikaNBTHelper;
+import reika.dragonapi.libraries.level.ReikaWorldHelper;
 
 /**
- * A {@link StructuredBlockArray} that additionally remembers a required {@link BlockCheck} at each
- * coordinate — the backbone of every multiblock structure definition (match a layout against the
- * world, place it, tally it). Ported to 26.2 on the fully-BlockState {@link BlockKey}/{@link BlockCheck}
- * APIs (the 1.7.10 original was block+metadata based).
- *
- * <p><b>Port note (deferred):</b> a few methods depend on helpers/features not yet ported and are left
- * out until they are — the fluid-check overloads ({@code ReikaFluidHelper}/{@code BlockFluidFinite}),
- * {@code tally()}/{@code count()} (old ItemStack-damage + BlockStairs logic), {@code rotate90Degrees}/
- * {@code rotate180Degrees} (the parent {@link StructuredBlockArray} still stubs its rotate methods),
- * {@code fillFrom} (SlicedBlockBlueprint), and the NBT-matching {@code BasicBlockEntityCheck} +
- * {@code setTile} overloads (26.2 BlockEntity save/load API; not used by the crystal-network/casting
- * structures, which place plain variant blocks). The core set/add/match/place/offset/flip/cut surface —
- * everything the structures on the current port path use — is fully ported.
+ * A declared 26.3 multiblock layout: coordinates, exact states, alternatives, fluid/empty
+ * constraints, selected block-entity NBT, placement overrides and material requirements.
+ * Coordinate transforms preserve the original state/check orientation; they do not rotate
+ * facing properties or reinterpret selected NBT.
  */
 public class FilledBlockArray extends StructuredBlockArray {
 
@@ -41,14 +48,27 @@ public class FilledBlockArray extends StructuredBlockArray {
 		super(world);
 	}
 
-	@Override
-	public void copyTo(BlockArray copy) {
-		super.copyTo(copy);
-		if (copy instanceof FilledBlockArray) {
-			((FilledBlockArray)copy).data.putAll(data);
-			((FilledBlockArray)copy).placementOverrides.putAll(placementOverrides);
-		}
-	}
+    @Override
+    public void copyTo(BlockArray copy) {
+        if (copy == this)
+            return;
+        super.copyTo(copy);
+        if (copy instanceof FilledBlockArray target) {
+            target.data.clear();
+            data.forEach((position, check) -> target.data.put(position, copyCheck(check)));
+            target.placementOverrides.clear();
+            target.placementOverrides.putAll(placementOverrides);
+        }
+    }
+
+    private static BlockCheck copyCheck(BlockCheck check) {
+        if (check instanceof MultiKey alternatives) {
+            MultiKey result = new MultiKey();
+            alternatives.keys.forEach(key -> result.add(copyCheck(key)));
+            return result;
+        }
+        return check;
+    }
 
 	public void loadBlock(int x, int y, int z) {
 		this.setBlock(x, y, z, world.getBlockState(new BlockPos(x, y, z)));
@@ -66,33 +86,66 @@ public class FilledBlockArray extends StructuredBlockArray {
 		this.setBlock(x, y, z, new BlockKey(state));
 	}
 
-	public void setBlock(int x, int y, int z, BlockCheck bk) {
-		super.addBlockCoordinate(new BlockPos(x, y, z), bk.asBlockKey());
-		data.put(new BlockPos(x, y, z), bk);
-	}
+    public void setBlock(int x, int y, int z, BlockCheck check) {
+        BlockPos position = new BlockPos(x, y, z);
+        if (super.putBlockKey(position, check.asBlockKey()))
+            data.put(position, check);
+    }
 
-	public void setEmpty(int x, int y, int z, boolean soft, boolean nonsolid, Block... exceptions) {
-		super.addBlockCoordinate(new BlockPos(x, y, z), BlockKey.AIR);
-		data.put(new BlockPos(x, y, z), new EmptyCheck(soft, nonsolid, exceptions));
-	}
+    public void setTile(int x, int y, int z, Block block, BlockEntity tile, String... tags) {
+        this.setTile(x, y, z, block.defaultBlockState(), tile, tags);
+    }
 
-	public void addEmpty(int x, int y, int z, boolean soft, boolean nonsolid, Block... exceptions) {
-		super.addBlockCoordinate(new BlockPos(x, y, z), BlockKey.AIR);
-		this.addBlockToCoord(new BlockPos(x, y, z), new EmptyCheck(soft, nonsolid, exceptions));
-	}
+    public void setTile(int x, int y, int z, BlockState state, BlockEntity tile, String... tags) {
+        HolderLookup.Provider registries = tile.getLevel() != null ? tile.getLevel().registryAccess()
+                : world != null ? world.registryAccess() : RegistryAccess.EMPTY;
+        this.setTile(x, y, z, state, tile, registries, tags);
+    }
 
-	public void addBlock(int x, int y, int z, Block id) {
-		this.addBlock(x, y, z, new BlockKey(id));
-	}
+    /** Explicit registry context supports detached prototypes and world-free layout construction. */
+    public void setTile(int x, int y, int z, BlockState state, BlockEntity tile, HolderLookup.Provider registries, String... tags) {
+        this.setBlock(x, y, z, new BasicBlockEntityCheck(state, tile, registries, tags));
+    }
 
-	public void addBlock(int x, int y, int z, BlockState state) {
-		this.addBlock(x, y, z, new BlockKey(state));
-	}
+    public void setTile(int x, int y, int z, TileEnum tile) {
+        this.setBlock(x, y, z, new BasicBlockEntityCheck(tile.getBlockState(), tile.getTEClass()));
+    }
 
-	public void addBlock(int x, int y, int z, BlockCheck b) {
-		super.addBlockCoordinate(new BlockPos(x, y, z), b.asBlockKey());
-		this.addBlockToCoord(new BlockPos(x, y, z), b);
-	}
+    public void setTile(int x, int y, int z, BlockState state, Class<? extends BlockEntity> tileClass) {
+        this.setBlock(x, y, z, new BasicBlockEntityCheck(state, tileClass));
+    }
+
+    public void setFluid(int x, int y, int z, Fluid fluid) {
+        this.setFluid(x, y, z, fluid, true, true);
+    }
+
+    public void setFluid(int x, int y, int z, Fluid fluid, boolean needSource, boolean allowSource) {
+        this.setBlock(x, y, z, new FluidCheck(fluid, needSource, allowSource));
+    }
+
+    public void setEmpty(int x, int y, int z, boolean soft, boolean nonsolid, Block... exceptions) {
+        this.setBlock(x, y, z, new EmptyCheck(soft, nonsolid, exceptions));
+    }
+
+    public void addEmpty(int x, int y, int z, boolean soft, boolean nonsolid, Block... exceptions) {
+        this.addBlock(x, y, z, new EmptyCheck(soft, nonsolid, exceptions));
+    }
+
+    public void addBlock(int x, int y, int z, Block block) {
+        this.addBlock(x, y, z, new BlockKey(block));
+    }
+
+    public void addBlock(int x, int y, int z, BlockState state) {
+        this.addBlock(x, y, z, new BlockKey(state));
+    }
+
+    public void addBlock(int x, int y, int z, BlockCheck check) {
+        BlockPos position = new BlockPos(x, y, z);
+        if (!this.hasBlock(position) && !super.putBlockKey(position, check.asBlockKey()))
+            return;
+        this.addBlockToCoord(position, check);
+        super.putBlockKey(position, data.get(position).asBlockKey());
+    }
 
 	private void addBlockToCoord(BlockPos c, BlockCheck bk) {
 		BlockCheck bc = data.get(c);
@@ -125,7 +178,7 @@ public class FilledBlockArray extends StructuredBlockArray {
 	@Override
 	public boolean addBlockCoordinate(BlockPos pos) {
 		if (super.addBlockCoordinate(pos)) {
-			data.put(pos, BlockKey.getAt(world, pos));
+			data.put(pos.immutable(), BlockKey.getAt(world, pos));
 			return true;
 		}
 		return false;
@@ -251,6 +304,41 @@ public class FilledBlockArray extends StructuredBlockArray {
 		return b instanceof BlockCheck.BlockEntityCheck ? ((BlockCheck.BlockEntityCheck)b).getBlockEntity() : null;
 	}
 
+    /** One required item per admitted coordinate; alternatives use their original first representative. */
+    public ItemHashMap<Integer> tally() {
+        return this.tally(null);
+    }
+
+    public ItemHashMap<Integer> tally(Function<BlockPos, Boolean> validity) {
+        ItemHashMap<Integer> result = new ItemHashMap<Integer>().enableNBT();
+        for (Entry<BlockPos, BlockCheck> entry : data.entrySet()) {
+            if (validity != null && !validity.apply(entry.getKey()))
+                continue;
+            ItemStack stack = entry.getValue().asItemStack();
+            if (!count(stack, entry.getValue().asBlockKey().blockID))
+                continue;
+            ItemStack key = stack.copyWithCount(1);
+            Integer previous = result.get(key);
+            result.put(key, previous == null ? 1 : previous + 1);
+        }
+        return result;
+    }
+
+    private static boolean count(ItemStack stack, BlockState state) {
+        if (stack == null || stack.isEmpty())
+            return false;
+        if (!(stack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem))
+            return true;
+        if (blockItem.getBlock().defaultBlockState().isAir())
+            return false;
+        FluidState fluid = state.getFluidState();
+        return fluid.isEmpty() || fluid.createLegacyBlock().getBlock() != state.getBlock() || fluid.isSource();
+    }
+
+    public void fillFrom(SlicedBlockBlueprint blueprint, int x, int y, int z, Direction direction) {
+        blueprint.putInto(this, x, y, z, direction);
+    }
+
 	@Override
 	public void remove(BlockPos pos) {
 		super.remove(pos);
@@ -292,34 +380,47 @@ public class FilledBlockArray extends StructuredBlockArray {
 		return new FilledBlockArray(world);
 	}
 
-	@Override
-	public void addAll(BlockArray arr) {
-		super.addAll(arr);
-		if (arr instanceof FilledBlockArray)
-			data.putAll(((FilledBlockArray)arr).data);
-	}
+    @Override
+    public void addAll(BlockArray arr) {
+        super.addAll(arr);
+        for (BlockPos position : arr) {
+            if (!this.hasBlock(position))
+                continue;
+            BlockCheck check = arr instanceof FilledBlockArray source ? source.data.get(position)
+                    : super.getBlockKeyAt(position.getX(), position.getY(), position.getZ());
+            data.put(position, copyCheck(check));
+            if (arr instanceof FilledBlockArray source && source.placementOverrides.containsKey(position))
+                placementOverrides.put(position, source.placementOverrides.get(position));
+        }
+    }
 
-	@Override
-	public BlockArray flipX() {
-		FilledBlockArray b = (FilledBlockArray)super.flipX();
-		for (Entry<BlockPos, BlockCheck> e : data.entrySet()) {
-			BlockPos c = e.getKey();
-			b.data.put(new BlockPos(-c.getX(), c.getY(), c.getZ()), e.getValue());
-		}
-        placementOverrides.forEach((position, key) -> b.placementOverrides.put(new BlockPos(-position.getX(), position.getY(), position.getZ()), key));
-		return b;
-	}
+    @Override
+    protected FilledBlockArray transform(Function<BlockPos, BlockPos> transform) {
+        FilledBlockArray result = (FilledBlockArray)super.transform(transform);
+        data.forEach((position, check) -> result.data.put(transform.apply(position).immutable(), copyCheck(check)));
+        placementOverrides.forEach((position, key) -> result.placementOverrides.put(transform.apply(position).immutable(), key));
+        return result;
+    }
 
-	@Override
-	public BlockArray flipZ() {
-		FilledBlockArray b = (FilledBlockArray)super.flipZ();
-		for (Entry<BlockPos, BlockCheck> e : data.entrySet()) {
-			BlockPos c = e.getKey();
-			b.data.put(new BlockPos(c.getX(), c.getY(), -c.getZ()), e.getValue());
-		}
-        placementOverrides.forEach((position, key) -> b.placementOverrides.put(new BlockPos(position.getX(), position.getY(), -position.getZ()), key));
-		return b;
-	}
+    @Override
+    public FilledBlockArray rotate90Degrees(int ox, int oz, boolean left) {
+        return (FilledBlockArray)super.rotate90Degrees(ox, oz, left);
+    }
+
+    @Override
+    public FilledBlockArray rotate180Degrees(int ox, int oz) {
+        return (FilledBlockArray)super.rotate180Degrees(ox, oz);
+    }
+
+    @Override
+    public FilledBlockArray flipX() {
+        return (FilledBlockArray)super.flipX();
+    }
+
+    @Override
+    public FilledBlockArray flipZ() {
+        return (FilledBlockArray)super.flipZ();
+    }
 
 	@Override
 	public void clear() {
@@ -339,7 +440,7 @@ public class FilledBlockArray extends StructuredBlockArray {
 
 	public boolean isSpaceEmpty(Level world, boolean allowSoft) {
 		for (BlockPos c : this.keySet()) {
-			if (!world.getBlockState(c).isAir())
+			if (!world.getBlockState(c).isAir() && !(allowSoft && ReikaWorldHelper.softBlocks(world, c)))
 				return false;
 		}
 		return true;
@@ -462,8 +563,11 @@ public class FilledBlockArray extends StructuredBlockArray {
 				return false;
 			if (b.isAir())
 				return true;
-			// The 1.7.10 "soft blocks" allowance is deferred (ReikaWorldHelper.softBlocks unported).
-            return allowNonSolid && world != null && b.getCollisionShape(world, pos).isEmpty();
+			if (allowSoft && (world != null ? ReikaWorldHelper.softBlocks(world, pos)
+                    : b.canBeReplaced() || !b.getFluidState().isEmpty() || ReikaWorldHelper.softBlocks(b.getBlock())))
+                return true;
+            return allowNonSolid && b.getCollisionShape(world != null ? world : net.minecraft.world.level.EmptyBlockGetter.INSTANCE,
+                    pos != null ? pos : BlockPos.ZERO).isEmpty();
         }
 
 		@Override
@@ -499,6 +603,103 @@ public class FilledBlockArray extends StructuredBlockArray {
 			return false;
 		}
 	}
+
+    /** Standalone fluid blocks only: waterlogged solids are not substitutes for an authored fluid cell. */
+    private static final class FluidCheck implements BlockCheck {
+        private final Fluid fluid;
+        private final boolean needsSourceBlock;
+        private final boolean allowSourceBlock;
+        private final BlockState placement;
+
+        private FluidCheck(Fluid fluid, boolean needSource, boolean allowSource) {
+            this.fluid = fluid instanceof FlowingFluid flowing ? flowing.getSource() : fluid;
+            needsSourceBlock = needSource;
+            allowSourceBlock = allowSource;
+            FluidState state = this.fluid.defaultFluidState();
+            if (!allowSource) {
+                if (!(this.fluid instanceof FlowingFluid flowing))
+                    throw new MisuseException("This fluid does not expose a flowing state: " + fluid);
+                state = flowing.getFlowing(7, false);
+            }
+            placement = state.createLegacyBlock();
+            if (state.isEmpty() || placement.isAir() || (allowSource && needSource && !state.isSource()))
+                throw new MisuseException("You cannot require a fluid without a placeable matching state: " + fluid);
+        }
+
+        public boolean match(BlockState state) {
+            FluidState actual = state.getFluidState();
+            return !actual.isEmpty() && actual.getType().isSame(fluid)
+                    && actual.createLegacyBlock().getBlock() == state.getBlock()
+                    && (allowSourceBlock ? !needsSourceBlock || actual.isSource() : !actual.isSource());
+        }
+        public boolean matchInWorld(Level world, BlockPos position) { return this.match(world.getBlockState(position)); }
+        public void place(Level world, BlockPos position, int flags) { world.setBlock(position, placement, flags); }
+        public ItemStack asItemStack() {
+            ItemStack bucket = new ItemStack(fluid.getBucket());
+            return bucket.isEmpty() ? this.asBlockKey().asItemStack() : bucket;
+        }
+        public ItemStack getDisplay() { return this.asItemStack(); }
+        public BlockKey asBlockKey() { return new BlockKey(placement); }
+        public boolean match(BlockCheck check) {
+            return check instanceof FluidCheck other && fluid.isSame(other.fluid)
+                    && needsSourceBlock == other.needsSourceBlock && allowSourceBlock == other.allowSourceBlock;
+        }
+    }
+
+    /** Exact entity class plus equality of the selected top-level NBT fields, as in the original API. */
+    public static final class BasicBlockEntityCheck implements BlockCheck.BlockEntityCheck {
+        private final BlockKey block;
+        private final Class<? extends BlockEntity> tileClass;
+        private final CompoundTag matchTag = new CompoundTag();
+        private WeakReference<BlockEntity> tileRef = new WeakReference<>(null);
+
+        public BasicBlockEntityCheck(BlockState state, Class<? extends BlockEntity> tileClass) {
+            block = new BlockKey(state);
+            this.tileClass = Objects.requireNonNull(tileClass);
+        }
+
+        public BasicBlockEntityCheck(BlockState state, BlockEntity tile, HolderLookup.Provider registries, String... tags) {
+            this(state, tile.getClass());
+            CompoundTag source = tile.saveWithFullMetadata(registries);
+            for (String key : tags) {
+                var value = source.get(key);
+                if (value != null)
+                    matchTag.put(key, value.copy());
+            }
+            tileRef = new WeakReference<>(tile);
+        }
+
+        public boolean match(BlockState state) { return block.match(state); }
+        public boolean matchInWorld(Level world, BlockPos position) {
+            if (!block.matchInWorld(world, position))
+                return false;
+            BlockEntity tile = world.getBlockEntity(position);
+            return tile != null && tile.getClass() == tileClass
+                    && ReikaNBTHelper.tagContains(tile.saveWithFullMetadata(world.registryAccess()), matchTag);
+        }
+        public void place(Level world, BlockPos position, int flags) {
+            block.place(world, position, flags);
+            BlockEntity tile = world.getBlockEntity(position);
+            if (tile != null && tile.getClass() == tileClass) {
+                CompoundTag existing = tile.saveWithoutMetadata(world.registryAccess());
+                for (String key : matchTag.keySet())
+                    existing.put(key, matchTag.get(key).copy());
+                try (var reporter = new ProblemReporter.ScopedCollector(tile.problemPath(), com.mojang.logging.LogUtils.getLogger())) {
+                    tile.loadWithComponents(TagValueInput.create(reporter, world.registryAccess(), existing));
+                }
+                tile.setChanged();
+            }
+        }
+        public ItemStack asItemStack() { return block.asItemStack(); }
+        public ItemStack getDisplay() { return this.asItemStack(); }
+        public BlockKey asBlockKey() { return block; }
+        public BlockEntity getBlockEntity() { return tileRef.get(); }
+        public boolean match(BlockCheck check) {
+            return check instanceof BasicBlockEntityCheck other && block.equals(other.block)
+                    && tileClass == other.tileClass && matchTag.equals(other.matchTag);
+        }
+        public String toString() { return block + "; " + tileClass.getName() + "; NBT " + matchTag; }
+    }
 
 	public interface BlockMatchFailCallback {
 

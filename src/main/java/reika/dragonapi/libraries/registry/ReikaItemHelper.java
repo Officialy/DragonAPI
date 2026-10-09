@@ -536,4 +536,26 @@ public class ReikaItemHelper {
 				Identifier.fromNamespaceAndPath("c", category + "s/" + material));
 	}
 
+
+    public static final String DROPPER_TAG = "dropper";
+
+    /** A validated persistent identity; the credited player need not be online. */
+    public static String getDropperId(ItemEntity item) {
+        String value = item.getPersistentData().getStringOr(DROPPER_TAG, "");
+        try {
+            UUID id = UUID.fromString(value);
+            return id.toString().equalsIgnoreCase(value) ? id.toString() : null;
+        } catch (IllegalArgumentException invalidId) {
+            return null;
+        }
+    }
+
+    public static Player getDropper(ItemEntity item) {
+        String id = getDropperId(item);
+        return id != null ? item.level().getPlayerByUUID(UUID.fromString(id)) : null;
+    }
+
+    public static void setDropper(ItemEntity item, Player player) {
+        item.getPersistentData().putString(DROPPER_TAG, player.getUUID().toString());
+    }
 }

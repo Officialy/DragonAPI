@@ -24,6 +24,7 @@ import reika.dragonapi.libraries.level.ReikaWorldHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class BlockArray implements Iterable<BlockPos> {
 
@@ -315,6 +316,7 @@ public class BlockArray implements Iterable<BlockPos> {
         blocks.clear();
         keys.clear();
         overflow = false;
+        this.resetLimits();
     }
 
     public final boolean isEmpty() {
@@ -898,20 +900,24 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
     public void copyTo(BlockArray copy) {
-        copy.refWorld = refWorld;
-        copy.overflow = overflow;
+        if (copy == this)
+            return;
+        this.copySettingsTo(copy);
         copy.blocks.clear();
         copy.blocks.addAll(blocks);
         copy.keys.clear();
         copy.keys.addAll(keys);
         copy.recalcLimits();
-		/*
-		copy.minX = minX;
-		copy.minY = minY;
-		copy.minZ = minZ;
-		copy.maxX = maxX;
-		copy.maxY = maxY;
-		copy.maxZ = maxZ;*/
+    }
+
+    private void copySettingsTo(BlockArray copy) {
+        copy.refWorld = refWorld;
+        copy.overflow = overflow;
+        copy.maxDepth = maxDepth;
+        copy.clampToChunkLoad = clampToChunkLoad;
+        copy.extraSpread = extraSpread;
+        copy.taxiCabDistance = taxiCabDistance;
+        copy.bounds = bounds;
     }
 
     public void addAll(BlockArray arr) {
@@ -1157,41 +1163,35 @@ public class BlockArray implements Iterable<BlockPos> {
     public void sort(Comparator<BlockPos> comparator) {
         Collections.sort(blocks, comparator);
     }
-//
-//    public BlockArray rotate90Degrees(int ox, int oz, boolean left) {
-//        BlockArray b = this.instantiate();
-//        for (BlockPos c : blocks) {
-//            BlockPos c2 = c.rotate90About(ox, oz, left);
-//            b.addBlockCoordinate(new BlockPos(c2.getX(), c2.getY(), c2.getZ()));
-//        }
-//        return b;
-//    }
-//
-//    public BlockArray rotate180Degrees(int ox, int oz) {
-//        BlockArray b = this.instantiate();
-//        for (BlockPos c : blocks) {
-//            BlockPos c2 = c.rotate180About(ox, oz);
-//            b.addBlockCoordinate(new BlockPos(c2.getX(), c2.getY(), c2.getZ()));
-//        }
-//        return b;
-//    }
+    /** Rotates coordinates only, retaining the original states/checks and insertion order. */
+    public BlockArray rotate90Degrees(int ox, int oz, boolean left) {
+        return this.transform(position -> {
+            int dx = position.getX() - ox;
+            int dz = position.getZ() - oz;
+            return new BlockPos(ox + (left ? dz : -dz), position.getY(), oz + (left ? -dx : dx));
+        });
+    }
+
+    public BlockArray rotate180Degrees(int ox, int oz) {
+        return this.transform(position -> new BlockPos(2 * ox - position.getX(), position.getY(), 2 * oz - position.getZ()));
+    }
 
     public BlockArray flipX() {
-        BlockArray b = this.instantiate();
-        for (BlockPos c : blocks) {
-            BlockPos c2 = new BlockPos(-c.getX(), c.getY(), c.getZ());
-            b.addBlockCoordinate(new BlockPos(c2.getX(), c2.getY(), c2.getZ()));
-        }
-        return b;
+        return this.transform(position -> new BlockPos(-position.getX(), position.getY(), position.getZ()));
     }
 
     public BlockArray flipZ() {
-        BlockArray b = this.instantiate();
-        for (BlockPos c : blocks) {
-            BlockPos c2 = new BlockPos(c.getX(), c.getY(), -c.getZ());
-            b.addBlockCoordinate(new BlockPos(c2.getX(), c2.getY(), c2.getZ()));
-        }
-        return b;
+        return this.transform(position -> new BlockPos(position.getX(), position.getY(), -position.getZ()));
+    }
+
+    /** Subclasses transform their declared data here instead of sampling the destination world. */
+    protected BlockArray transform(Function<BlockPos, BlockPos> transform) {
+        BlockArray result = this.instantiate();
+        this.copySettingsTo(result);
+        for (BlockPos position : blocks)
+            result.addKey(transform.apply(position).immutable());
+        result.recalcLimits();
+        return result;
     }
 
     public void expand(int amt, boolean rounded) {

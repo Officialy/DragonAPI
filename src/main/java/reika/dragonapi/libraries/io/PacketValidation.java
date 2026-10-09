@@ -28,6 +28,18 @@ public final class PacketValidation {
                 && player.distanceToSqr(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5) <= 64;
     }
 
+    /** Dropper metadata is readable by players already receiving this live item entity. */
+    public static boolean canRequestItemDropper(Player player, Level level,
+            net.minecraft.world.entity.item.ItemEntity item) {
+        return player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                && level instanceof net.minecraft.server.level.ServerLevel serverLevel
+                && player.level() == level && item != null && item.level() == level
+                && item.isAlive() && !item.isRemoved() && !item.getItem().isEmpty()
+                && level.getEntity(item.getId()) == item && level.hasChunkAt(item.blockPosition())
+                && player.distanceToSqr(item) <= 128 * 128
+                && serverLevel.getChunkSource().chunkMap.getPlayersWatching(item).contains(serverPlayer);
+    }
+
     public static boolean canRequestSync(Player player, Level level, BlockPos pos) {
         return !level.isClientSide() && player.level() == level && level.hasChunkAt(pos)
                 && player.distanceToSqr(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5) <= 128 * 128;
