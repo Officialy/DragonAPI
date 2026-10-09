@@ -608,3 +608,27 @@ the previous checkpoint and automated checks remain disabled. Logs: build/flamma
 build/flammability-validation.log (3m 16s), build/flammability-reactor-validation.log (38s).
 Full contract: docs/block-flammability-port.md. This batch is included in the local checkpoint.
 D24 dye-cache identity/reloads and actual remote-client/shader acceptance remain open.
+
+
+## Dye cache and resistor interaction — D24, 2026-10-09
+
+Finding 1.43 is resolved against DragonAPI de1bcf1f and ElectriCraft V31a 950badc.
+ReikaDyeHelper now maps all sixteen native colour tags to immutable item-identity lists,
+reads the actual typed DYE component without caching stack state, preserves multi-colour
+membership and original metadata/RGB/name contracts, and rebuilds on the root 26.3 tag
+event with the integrated-client static-data guard. Manual initialization is functional.
+
+The accepted ElectriCraft resistor branch is restored through native held-item interaction,
+with original band/facing/flip geometry, lime-to-GREEN mapping, rejected multiplier colours,
+server-only mutation, survival/creative/offhand handling, current recalculation and sync.
+The same obsolete method's motor upgrades retain 2/4/1000 A limits and reject duplicate or
+lower tiers; the existing transformer menu remains reachable. No authored recipes/data change.
+
+Four new units and six native tests pass: 51 DragonAPI + 33 RotaryCraft + 8 ReactorCraft
+units and all 19 ElectriCraft native tests (build/dye-cache-validation.log, 40s). Reload
+fixtures apply real tag bindings, exercise the server dye callback and registered client
+event listener, restore originals in finally, and cover 56 resistor orientation/band cases.
+They do not claim a full resource-pack reload, real remote connection or broad electricity
+network acceptance. Packaged classes and normal Play's audit-off/no-quickplay snapshot run
+are verified in build/dye-cache-final-verification.json. Full contract: docs/dye-cache-port.md.
+D24 is included in the local checkpoint; D25 MIDI consumers are next.

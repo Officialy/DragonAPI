@@ -1,6 +1,21 @@
 package reika.dragonapi.libraries.registry;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Locale;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import reika.dragonapi.DragonAPI;
 
 /**
@@ -29,10 +44,19 @@ public enum ReikaDyeHelper {
 
     public final int color;
     public final DyeColor dye;
+    public final String colorName;
+    public final String colorNameNoSpaces;
+    private static volatile Map<Item, List<ReikaDyeHelper>> itemColors;
 
     ReikaDyeHelper(int rgb, DyeColor dye) {
         this.color = rgb;
         this.dye = dye;
+        colorName = switch (dye) {
+            case LIGHT_GRAY -> "Light Gray";
+            case LIGHT_BLUE -> "Light Blue";
+            default -> name().charAt(0) + name().substring(1).toLowerCase(Locale.ROOT);
+        };
+        colorNameNoSpaces = colorName.replace(" ", "");
     }
 
     public int getColor() {
@@ -58,8 +82,69 @@ public enum ReikaDyeHelper {
         return null;
     }
 
-    /** Stub for legacy startup wiring; left empty until/unless dye-aware caching is needed. */
+    public static ReikaDyeHelper getByName(String name) {
+        return valueOf(name.toUpperCase(Locale.ROOT).replace(" ", ""));
+    }
+
+    /** Original dye damage order; native DyeColor IDs run in the opposite direction. */
+    public static ReikaDyeHelper getColorFromDamage(int damage) {
+        return damage >= 0 && damage < dyes.length ? dyes[damage] : BLACK;
+    }
+
+    public int getDamage() { return ordinal(); }
+    public int getWoolMeta() { return 15 - ordinal(); }
+    public ItemStack getStackOf() { return new ItemStack(Items.DYE.pick(dye)); }
+    public ItemStack getWoolStack() { return new ItemStack(Blocks.WOOL.pick(dye)); }
+    public String getOreDictName() { return "dye" + colorNameNoSpaces; }
+
+    public static boolean isDyeItem(ItemStack stack) {
+        return getColorsFromItem(stack) != null;
+    }
+
+    public static ReikaDyeHelper getColorFromItem(ItemStack stack) {
+        var colors = getColorsFromItem(stack);
+        return colors == null ? null : colors.iterator().next();
+    }
+
+    /** Typed DYE replaces legacy metadata; unrelated components and stack count do not affect tag identity. */
+    public static Collection<ReikaDyeHelper> getColorsFromItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return null;
+        var cache = itemColors;
+        if (cache == null) {
+            buildItemCache();
+            cache = itemColors;
+        }
+        List<ReikaDyeHelper> tagged = cache.getOrDefault(stack.getItem(), List.of());
+        DyeColor component = stack.get(DataComponents.DYE);
+        if (component == null) return tagged.isEmpty() ? null : tagged;
+        ReikaDyeHelper primary = getFromDye(component);
+        var result = new ArrayList<ReikaDyeHelper>();
+        result.add(primary);
+        for (var color : tagged) if (color != primary) result.add(color);
+        return List.copyOf(result);
+    }
+
+    /** Manual initialization remains supported; tag events supply the authoritative registry lookup. */
     public static void buildItemCache() {
-        DragonAPI.LOGGER.debug("Building dye item cache...");
+        buildItemCache(BuiltInRegistries.ITEM);
+    }
+
+    public static void onTagsUpdated(TagsUpdatedEvent event) {
+        if (event.shouldUpdateStaticData())
+            buildItemCache(event.getRegistries().lookupOrThrow(Registries.ITEM));
+    }
+
+    private static synchronized void buildItemCache(HolderLookup.RegistryLookup<Item> registry) {
+        var mutable = new IdentityHashMap<Item, List<ReikaDyeHelper>>();
+        for (var color : dyes) {
+            registry.get(color.dye.getTag()).ifPresent(tag -> {
+                for (var item : tag)
+                    mutable.computeIfAbsent(item.value(), ignored -> new ArrayList<>()).add(color);
+            });
+        }
+        var immutable = new IdentityHashMap<Item, List<ReikaDyeHelper>>();
+        mutable.forEach((item, colors) -> immutable.put(item, List.copyOf(colors)));
+        itemColors = java.util.Collections.unmodifiableMap(immutable);
+        DragonAPI.LOGGER.debug("Built dye item cache for {} tagged items", itemColors.size());
     }
 }

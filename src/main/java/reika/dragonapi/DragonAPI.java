@@ -73,6 +73,7 @@ public class DragonAPI extends DragonAPIMod {
         LOGGER.warn("DragonAPI Loading");
         LOGGER.warn("****************************************");
         NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.addListener(ReikaDyeHelper::onTagsUpdated);
         instance = this;
         config = new ControlledConfig(this, DragonOptions.optionList, null);
         config.loadSubfolderedConfigFile();
