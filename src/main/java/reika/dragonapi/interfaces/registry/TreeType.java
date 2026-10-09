@@ -23,4 +23,9 @@ public interface TreeType {
     BlockKey getBasicLeaf();
 
     BlockBox getTypicalMaximumSize();
+
+    /** Maximum breadth-first breaking waves; ordinary trees retain the original thirty-wave limit. */
+    default int getRecursiveBreakDepth() {
+        return 30;
+    }
 }

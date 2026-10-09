@@ -92,20 +92,7 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
 
         for (var state : log.getStateDefinition().getPossibleStates()) ids.add(new BlockKey(state));
         for (var state : leaf.getStateDefinition().getPossibleStates()) ids.add(new BlockKey(state));
-        int depth = 30;
-        // ModWoodList package doesn't exist - commenting out special tree depth handling
-        // TODO: Use Tags for wood types / logs & leaves, maybe some way to associate each log with their leaves? idk
-        /*
-        if (tree == ModWoodList.SEQUOIA)
-            depth = 350;
-        if (tree == ModWoodList.TWILIGHTOAK)
-            depth = 200;
-        if (tree == ModWoodList.DARKWOOD)
-            depth = 32;
-        if (tree == ModWoodList.GIANTPINKTREE)
-            depth = 180;
-        */
-        ProgressiveBreaker b = new ProgressiveBreaker(world, pos, depth, ids);
+        ProgressiveBreaker b = new ProgressiveBreaker(world, pos, tree.getRecursiveBreakDepth(), ids);
         b.extraSpread = true;
         b.bounds = tree.getTypicalMaximumSize().offset(pos);
         return b;

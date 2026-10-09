@@ -492,6 +492,17 @@ public enum ModWoodList implements TreeType {
         return bounds;
     }
 
+    @Override
+    public int getRecursiveBreakDepth() {
+        return switch (this) {
+            case SEQUOIA -> 350;
+            case TWILIGHTOAK -> 200;
+            case DARKWOOD -> 32;
+            case GIANTPINKTREE -> 180;
+            default -> TreeType.super.getRecursiveBreakDepth();
+        };
+    }
+
     public static Collection<ModWoodList> getAllWoodsByMod(ModList mod) {
         refreshRegistryWoods();
         return modMappings.get(mod);

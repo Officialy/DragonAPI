@@ -566,3 +566,24 @@ build/recursive-breaker-client.log (1m 42s), including local/decoded-server soun
 and all previous water/turbine/gear/railgun/dropper checks. Normal Play argument hashes remain
 unchanged. Full source/caller contract: docs/recursive-breaker-port.md. This completed batch is
 included in the local checkpoint; D22 and remote-client/shader acceptance remain open.
+
+## Original special-tree scan limits — D22, 2026-10-09
+
+Resolved finding 1.29: ModWoodList exists and compiles, so its four original depth rules must not
+remain commented out. TreeType now supplies the original thirty-wave default; ModWoodList
+overrides exactly Sequoia 350, Twilight Oak 200, Darkwood 32 and Giant Pink Tree 180. The tree
+factory consumes that policy while retaining its original per-tree spatial box, native log/leaf
+state matching, diagonal spread and explicit enqueueing. Similarly named Natura Darkwood,
+BOP Redwood and Pink Birch retain the ordinary limit. Original boxes remain unchanged.
+
+Three unit regressions cover every catalogue limit, inherited defaults and the four original
+boxes. Six native regressions exercise exact 30/32/180/200/350-wave boundaries, state variants,
+other species, one-shot completion and real supported ChromatiCraft glow-wood bounds/corner leaves.
+External optional forests are not installed or impersonated: wave fixtures delegate real catalogue
+policies through registered vanilla-state descriptors, while source boxes are verified separately.
+Full contract and validation boundary: docs/tree-breaker-port.md.
+
+All 88 family unit tests and all 33 native DragonAPI tests pass in build/tree-depth-validation.log
+(1m 38s); all accepted consumers compile. Normal Play argument hashes match the previous checkpoint
+and automated checks remain disabled there. This completed batch is included in the local checkpoint.
+D23 is next; D36 wood associations and actual remote-client/shader acceptance remain open.
