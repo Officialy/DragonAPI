@@ -761,3 +761,20 @@ audit passes artefact brightness/animation, blue puzzle water, 24 adjacency GUI 
 from the immutable snapshot, rendering, music, sound, input and resource checks:
 build/night-client-validation.log. D33 was compiled afterward, not claimed as a concrete
 client test. Details and acceptance limits: TestInstance/docs/overnight-2026-10-10.md.
+
+
+## Registered inert entity identities — D54, 2026-10-10
+
+Reviewed all direct and indirect InertEntity subclasses and the active source boundary.
+Every accepted consumer already supplies its actual EntityType; the unused world-only
+constructor assigning ARROW is removed. Excluded pristine legacy consumers remain intact
+and must acquire their own typed registration when fully ported. No universal placeholder
+entity type is introduced. Details: DragonAPI/docs/inert-entity-identity.md.
+
+The new native family fixture creates ten accepted inert types from their real registered
+factories and checks both runtime identity and native serialized ID. Full family DragonAPI
+regressions pass 46 cases, all affected units pass 127, and accepted class outputs pass
+across eight modules (build/inert-identity-final-validation.log). This is constructor/save
+identity coverage; per-entity gameplay, rendering, payloads and full persistence behavior
+retain their own acceptance requirements. The overnight handoff records nine completed
+backlog items and remaining priorities; unrelated worldgen/IDE changes remain uncommitted.
