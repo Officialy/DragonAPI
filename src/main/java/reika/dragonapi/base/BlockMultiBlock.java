@@ -27,7 +27,7 @@ import reika.dragonapi.instantiable.data.blockstruct.filledblockarray.BlockMatch
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
 /**
- * Multiblock casing base. State is modelled with blockstate properties in 26.2 — the formed/assembled
+ * Multiblock casing base. State is modelled with blockstate properties in 26.3 — the formed/assembled
  * state lives in {@link #FORMED}, and each concrete casing adds its own named variant property (an
  * {@code EnumProperty} of casing parts). Rendering uses block models / BER; the old IIcon sheet +
  * integer-metadata path is gone.
@@ -100,13 +100,8 @@ public abstract class BlockMultiBlock<R> extends Block {
 		return ret;
 	}
 
-	public boolean hasTileEntity(BlockState state) {
-		return false;
-	}
-
-	public BlockEntity createTileEntity(Level world, BlockState state) {
-		return null;
-	}
+	// Casings that host block entities implement native EntityBlock in their concrete class.
+	// The old hasTileEntity/createTileEntity methods were not native hooks and hid that contract.
 
 	// CHROMA-PORT: CustomCopyBehavior (allowCopy/getBlock/getMeta) removed — ChromatiCraft not in build.
 

@@ -718,3 +718,21 @@ restored missing accepted Chroma class outputs before family validation. Cannon 
 is isolated from power acquisition; complete powered-chain/GUI/audio acceptance remains
 separate. Details: DragonAPI/docs/inventory-empty-port.md. D17 player-to-chest transfer
 remains open; unique-stack counting does not implement it.
+
+
+## Native multiblock entity contract — D32, 2026-10-10
+
+Removed non-overriding hasTileEntity/createTileEntity hooks after reviewing all six accepted
+ReactorCraft casing families. Only turbine ELEMENT hosts an injector; other casings retain
+controller lookup without invented local entities. SteamInjector now validates the actual
+ELEMENT state, allowing native same-block part changes to remove its obsolete entity and
+lubricant capability. FORMED changes preserve the entity and tank, detached NBT retains
+contents, and restoring ELEMENT creates fresh storage. Two native regressions and all 127
+affected units pass (build/multiblock-contract-final.log, 45s). Native mismatch warning at
+variant transition accompanies expected cleanup; full assembly/teardown/drop/hardness
+acceptance is separate. Details: DragonAPI/docs/multiblock-entity-contract.md.
+
+D31 remains open: scalar metadata cannot describe actual 26.3 state properties; the accepted
+rift has a full-state getter but its shared interface still publishes a fake-zero metadata
+contract. Migrate the exported contract and actual callers deliberately, without inventing
+global integer state IDs or pretending a zero metadata value preserves variant behavior.
