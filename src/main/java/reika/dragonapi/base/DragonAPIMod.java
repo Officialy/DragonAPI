@@ -74,8 +74,18 @@ public abstract class DragonAPIMod {
 
 
 	public final ModContainer getModContainer() {
-//		return FMLLoader.instance.getModObjectList().inverse().get(this);
-		return ModList.get().getModContainerById(this.getModId()).get(); //todo this is probably fucked lmao
+		return requireModContainer(this.getModId(), this.getClass());
+	}
+
+	/** Resolve the real loader container, with registration context instead of an empty Optional failure. */
+	protected static ModContainer requireModContainer(String modId, Class<? extends DragonAPIMod> owner) {
+		String context = owner.getName() + " (mod ID '" + modId + "')";
+		ModList list = ModList.get();
+		if (list == null)
+			throw new IllegalStateException("NeoForge ModList is not initialized while resolving " + context);
+		return list.getModContainerById(modId).orElseThrow(() -> new IllegalStateException(
+				"No NeoForge ModContainer is registered for " + context
+				+ ". Check its @Mod ID and META-INF/neoforge.mods.toml registration."));
 	}
 
 	public abstract String getModId();

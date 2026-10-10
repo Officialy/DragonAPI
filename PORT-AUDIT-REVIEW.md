@@ -736,3 +736,28 @@ D31 remains open: scalar metadata cannot describe actual 26.3 state properties; 
 rift has a full-state getter but its shared interface still publishes a fake-zero metadata
 contract. Migrate the exported contract and actual callers deliberately, without inventing
 global integer state IDs or pretending a zero metadata value preserves variant behavior.
+
+
+## Replacement states, registrations and accepted client outputs — D33/D52, 2026-10-10
+
+Restored BlockReplaceOnBreak's original abstract replacement contract and explicit nested
+self policy using complete native states. The 26.3 player-removal lifecycle retains the
+original state/entity/tool for harvesting; no duplicate manual loot path is added. There
+are no accepted concrete consumers, so concrete gameplay/drop acceptance accompanies a
+future consumer rather than an invented production block. Details: replacement-on-break-port.md.
+
+DragonAPIMod now resolves the real loader container with class/ID/lifecycle/registration
+context in failures. One new native family fixture verifies all eight actual registered
+IDs and constructed base-mod instances, plus missing-ID diagnostics. The full family
+DragonAPI suite passes 45 cases; final affected units pass 127. Logs:
+build/registration-family-validation.log and build/final-source-and-launch-validation.log.
+
+An incomplete incremental ChromatiCraft output was reproduced despite successful compileJava.
+Root build configuration now compiles its full accepted slice when needed and verifies
+primary accepted class outputs before both client preparations. All eight guards pass
+(3,251 outputs); a disposable missing-output fixture is rejected without deleting real
+classes. Normal Play arguments retain their original SHA256 hashes. The isolated client
+audit passes artefact brightness/animation, blue puzzle water, 24 adjacency GUI models
+from the immutable snapshot, rendering, music, sound, input and resource checks:
+build/night-client-validation.log. D33 was compiled afterward, not claimed as a concrete
+client test. Details and acceptance limits: TestInstance/docs/overnight-2026-10-10.md.
