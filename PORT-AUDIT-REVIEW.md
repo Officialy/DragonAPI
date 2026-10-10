@@ -658,3 +658,25 @@ The callback fixture records IDs before packet sending; audible playback/music d
 remote sessions and excluded Chroma music subsystems are not claimed. Packaged classes
 and normal Play's unchanged argument hashes are verified. Contract: docs/midi-score-port.md.
 D25 is locally checkpointed; D26 TileEntityCache subtype review is next.
+
+
+## Typed tile caches and unresolved locations — D26/D27, 2026-10-10
+
+Original DragonAPI de1bcf1f cache/location contracts are retained with explicit Class<V>
+validation, class/interface support, atomic typed insertion and real NBT subtype filtering.
+Untyped location/value maps remain usable; NBT resolution fails before clearing an untyped
+cache. Reactor control rods, pebble beds and Chroma crystal-network/pylon caches use actual
+tokens. Malformed/missing/wrong-subtype entries cannot escape as a delayed caller-side cast.
+
+Chunk/move/copy identity works without a live level. WorldLocation retains no client Level,
+uses actual state properties and safe unresolved/read sentinels, restores loaded-chunk and
+sky queries, numeric/current dimension persistence and dimension-aware ordering/squares.
+Original face-hit identity and randomized item drops/velocity scaling are restored.
+
+Nine new units pass with all 118 affected-module units (76 DragonAPI, 34 RotaryCraft,
+8 ReactorCraft). Four native fixtures pass, including the actual CPU reload consumer,
+class/interface filtering, missing dimensions/chunks, state properties, face hits and drops.
+Crystal-network compilation passes. Logs: build/cache-location-validation.log (1m 2s),
+build/cache-location-native-final.log (40s). Contract: DragonAPI/docs/cache-location-port.md.
+No arbitrary LocationEntry serializer, real remote client or full reactor-network acceptance
+is claimed. Normal Play is separate. Completed work is locally checkpointed; D28/D29 are next.

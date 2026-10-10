@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NumericTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -27,6 +28,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import reika.dragonapi.interfaces.Location;
 import reika.dragonapi.libraries.ReikaAABBHelper;
 import reika.dragonapi.libraries.io.NBTCompat;
+import reika.dragonapi.libraries.registry.ReikaItemHelper;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 
@@ -38,8 +40,6 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
 
     private boolean isRemote = false;
 
-    private Level clientWorld;
-
     private final ResourceKey<Level> dimension;
 
     public WorldLocation(Level level, BlockPos position) {
@@ -47,15 +47,17 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         this.dimension = level.dimension();
         if (level.isClientSide()) {
             isRemote = true;
-            clientWorld = level;
         }
     }
 
     private WorldLocation(WorldLocation loc) {
-        pos = loc.pos;
+        this(loc, loc.pos);
+    }
+
+    private WorldLocation(WorldLocation loc, BlockPos position) {
+        pos = position.immutable();
         dimension = loc.dimension;
         isRemote = loc.isRemote;
-        clientWorld = loc.clientWorld;
     }
 
     public WorldLocation(BlockEntity te) {
@@ -67,7 +69,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public WorldLocation(Level world, HitResult hit) {
-        this(world, hit.getLocation().x(), hit.getLocation().y(), hit.getLocation().z());
+        this(world, hit instanceof BlockHitResult block ? block.getBlockPos() : BlockPos.containing(hit.getLocation()));
     }
 
     public WorldLocation(Level world, Vec3 vec) {
@@ -98,7 +100,7 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public WorldChunk getChunk() {
-        return new WorldChunk(getWorld(), pos.getX() >> 4, pos.getZ() >> 4);
+        return new WorldChunk(dimension, pos.getX() >> 4, pos.getZ() >> 4);
     }
 
     public ResourceKey<Level> getDimension() {
@@ -106,10 +108,14 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public Block getBlock() {
-        Level world = this.getWorld();
-        return world != null
-                ? world.getBlockState(new BlockPos(pos.getX(), pos.getY(), pos.getZ())).getBlock()
-                : null;
+        BlockState state = getBlockState(getWorld());
+        return state != null ? state.getBlock() : null;
+    }
+
+    /** Loaded-state lookup; missing dimensions/chunks are unresolved, not air. */
+    public BlockState getBlockState(Level context) {
+        Level world = getWorld(context);
+        return world != null && world.hasChunkAt(pos) ? world.getBlockState(pos) : null;
     }
 
     public void setBlock(Block b) {
@@ -124,11 +130,8 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public Block getBlock(BlockGetter world) {
-        return world != null
-                ? world.getBlockState(
-                                new BlockPos(pos.getX(), pos.getY(), pos.getZ()))
-                        .getBlock()
-                : null;
+        BlockState state = world instanceof Level level ? getBlockState(level) : world != null ? world.getBlockState(pos) : null;
+        return state != null ? state.getBlock() : null;
     }
 
     public boolean isEmpty() {
@@ -136,14 +139,12 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public BlockEntity getBlockEntity() {
-        return this.getBlockEntity(getWorld());
+        return getBlockEntity(getWorld());
     }
 
-    public BlockEntity getBlockEntity(BlockGetter call) {
-        BlockGetter world = call != null ? call : this.getWorld();
-        return world != null
-                ? world.getBlockEntity(new BlockPos(pos.getX(), pos.getY(), pos.getZ()))
-                : null;
+    public BlockEntity getBlockEntity(BlockGetter view) {
+        if (view == null) return getBlockEntity();
+        return view instanceof Level level ? getBlockEntity(level) : view.getBlockEntity(pos);
     }
 
     public int getRedstone() {
@@ -190,16 +191,13 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     public void dropItem(ItemStack is, double vscale) {
         Level world = this.getWorld();
         if (world != null && !world.isClientSide()) {
-            world.addFreshEntity(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), is)); // .dropItem(this.getWorld(),
-                                                         // pos.getX()+rand.nextDouble(),
-                                                         // pos.getY()+rand.nextDouble(),
-                                                         // pos.getZ()+rand.nextDouble(), is,
-                                                         // vscale); todo fix item dropping
+            ReikaItemHelper.dropItem(world, pos.getX() + world.getRandom().nextDouble(),
+                    pos.getY() + world.getRandom().nextDouble(), pos.getZ() + world.getRandom().nextDouble(), is, vscale);
         }
     }
 
     public WorldLocation move(int dx, int dy, int dz) {
-        return new WorldLocation(getWorld(), pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
+        return new WorldLocation(this, pos.offset(dx, dy, dz));
     }
 
     public WorldLocation move(Direction dir, int dist) {
@@ -260,12 +258,16 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         int x = NBTCompat.getInt(data, "x", 0);
         int y = NBTCompat.getInt(data, "y", 0);
         int z = NBTCompat.getInt(data, "z", 0);
-        String dim = NBTCompat.getString(data, "dim", "minecraft:overworld");
-        return new WorldLocation(
-                ResourceKey.create(Registries.DIMENSION, Identifier.tryParse(dim)),
-                x,
-                y,
-                z);
+        ResourceKey<Level> dimension;
+        if (data.get("dim") instanceof NumericTag) {
+            dimension = WorldChunk.dimensionKeyFromLegacyId(NBTCompat.getInt(data, "dim", 0));
+        } else {
+            String name = NBTCompat.getString(data, "dim", "minecraft:overworld");
+            Identifier id = Identifier.tryParse(name);
+            if (id == null) throw new IllegalArgumentException("Invalid location dimension: " + name);
+            dimension = ResourceKey.create(Registries.DIMENSION, id);
+        }
+        return new WorldLocation(dimension, x, y, z);
     }
 
     public static WorldLocation load(String tag, CompoundTag NBT) {
@@ -355,17 +357,19 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     private boolean isWithinSquare(Level dim, int x, int y, int z, int dx, int dy, int dz) {
-        return Math.abs(x - pos.getX()) <= dx
+        return dim != null && dimension.equals(dim.dimension()) && Math.abs(x - pos.getX()) <= dx
                 && Math.abs(y - pos.getY()) <= dy
                 && Math.abs(z - pos.getZ()) <= dz;
     }
 
     public BlockKey getBlockKey() {
-        return new BlockKey(this.getBlock().defaultBlockState());
+        BlockState state = getBlockState(getWorld());
+        return state != null ? new BlockKey(state) : null;
     }
 
     public BlockKey getBlockKey(Level world) {
-        return new BlockKey(this.getBlock(world).defaultBlockState());
+        BlockState state = getBlockState(world);
+        return state != null ? new BlockKey(state) : null;
     }
 
     public boolean isWithinDistOnAllCoords(WorldLocation loc, int radius) {
@@ -382,7 +386,21 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
     }
 
     public boolean canSeeTheSky() {
-        return this.getWorld().canSeeSky(new BlockPos(pos.getX(), pos.getY() + 1, pos.getZ()));
+        return canSeeTheSky(getWorld());
+    }
+
+    public boolean canSeeTheSky(Level context) {
+        Level world = getWorld(context);
+        return world != null && world.hasChunkAt(pos) && world.canSeeSky(pos.above());
+    }
+
+    public boolean isChunkLoaded() {
+        return isChunkLoaded(getWorld());
+    }
+
+    public boolean isChunkLoaded(Level context) {
+        Level world = getWorld(context);
+        return world != null && world.hasChunkAt(pos);
     }
 
     public WorldLocation to2D() {
@@ -393,14 +411,9 @@ public class WorldLocation implements Location, Comparable<WorldLocation> {
         return ReikaAABBHelper.getBlockAABB(new BlockPos(pos.getX(), pos.getY(), pos.getZ()));
     }
 
-    //    public boolean isChunkLoaded() {
-    //        return ReikaWorldHelper.isWorldLoaded(dimensionID) &&
-    // this.getWorld().getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
-    //    }
-
     @Override
     public int compareTo(WorldLocation o) {
-        int ret = Integer.compare(this.hashCode(), o.hashCode());
+        int ret = dimension.identifier().toString().compareTo(o.dimension.identifier().toString());
         if (ret != 0) return ret;
         ret = Integer.compare(pos.getX(), o.pos.getX());
         if (ret != 0) return ret;

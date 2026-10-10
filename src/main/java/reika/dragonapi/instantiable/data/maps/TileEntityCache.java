@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Objects;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -32,6 +33,17 @@ import reika.dragonapi.instantiable.data.maps.MultiMap.CollectionType;
 public final class TileEntityCache<V> {
 
 	private final Map<WorldLocation, V> data = new LinkedHashMap<>();
+    private final Class<V> valueType;
+
+    /** Untyped location/value maps remain supported; NBT resolution requires a runtime type. */
+    public TileEntityCache() {
+        valueType = null;
+    }
+
+    /** The token may be a block-entity class or an interface implemented by block entities. */
+    public TileEntityCache(Class<V> valueType) {
+        this.valueType = Objects.requireNonNull(valueType, "valueType");
+    }
 
 	public V put(Level level, int x, int y, int z, V value) {
 		return put(new WorldLocation(level, x, y, z), value);
@@ -42,7 +54,7 @@ public final class TileEntityCache<V> {
 	}
 
 	public V put(WorldLocation location, V value) {
-		return data.put(location, value);
+		return data.put(Objects.requireNonNull(location, "location"), valueType != null ? valueType.cast(value) : value);
 	}
 
 	public V put(V value) {
@@ -56,7 +68,9 @@ public final class TileEntityCache<V> {
 	}
 
 	public void putAll(TileEntityCache<V> other) {
-		data.putAll(other.data);
+		// Validate the entire source before mutating this cache.
+        if (valueType != null) other.data.values().forEach(valueType::cast);
+        data.putAll(other.data);
 	}
 
 	public V get(Level level, int x, int y, int z) {
@@ -152,25 +166,26 @@ public final class TileEntityCache<V> {
 
 	/** Resolve entries against the owning level when reading client synchronization data. */
 	public void readFromNBT(CompoundTag tag, Level level) {
-		data.clear();
-		ListTag locations = tag.getList("locs").orElse(new ListTag());
-		for (Tag value : locations) {
-			if (!(value instanceof CompoundTag entry)) {
-				continue;
-			}
-			WorldLocation location = WorldLocation.readTag(entry);
-			BlockEntity tile = location.getBlockEntity(level != null ? level : location.getWorld());
-			try {
-				@SuppressWarnings("unchecked")
-				V cast = (V) tile;
-				if (cast != null) {
-					data.put(location, cast);
-				}
-			} catch (ClassCastException ex) {
-				DragonAPI.LOGGER.error("Tried to load a TileEntityCache from invalid NBT at {}", location, ex);
-			}
-		}
-	}
+        if (valueType == null) {
+            throw new IllegalStateException("NBT block-entity resolution requires TileEntityCache(Class<V>)");
+        }
+        data.clear();
+        ListTag locations = tag.getListOrEmpty("locs");
+        for (Tag value : locations) {
+            if (!(value instanceof CompoundTag entry)) continue;
+            WorldLocation location;
+            try {
+                location = WorldLocation.readTag(entry);
+            } catch (IllegalArgumentException error) {
+                DragonAPI.LOGGER.warn("Skipping invalid TileEntityCache location {}", entry, error);
+                continue;
+            }
+            BlockEntity tile = level != null ? location.getBlockEntity(level) : location.getBlockEntity();
+            if (tile == null) continue;
+            if (valueType.isInstance(tile)) data.put(location, valueType.cast(tile));
+            else DragonAPI.LOGGER.warn("Skipping {} at {}: cache requires {}", tile.getClass().getName(), location, valueType.getName());
+        }
+    }
 
 	public MultiMap<V, WorldLocation> invert(CollectionType collectionType) {
 		MultiMap<V, WorldLocation> inverted = new MultiMap<>(collectionType);

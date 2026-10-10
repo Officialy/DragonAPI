@@ -13,7 +13,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import reika.dragonapi.libraries.io.NBTCompat;
 
 /**
- * Immutable chunk coordinate paired with its 26.2 dimension key.
+ * Immutable chunk coordinate paired with its 26.3 dimension key.
  */
 public record WorldChunk(ResourceKey<Level> dimension, ChunkPos chunk) {
 
