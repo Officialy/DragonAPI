@@ -141,22 +141,49 @@ public class WeightedRandom<V> {
         }
     }
 
+    /** Append-only weighted intervals. Repeated results retain separate intervals. */
     public static class InvertedWeightedRandom<V> {
-
-        private final Random rand = new Random();
-
-        private final NavigableMap<Double, V> data = new TreeMap<Double, V>();
+        private RandomSource rand = RandomSource.create();
+        private final NavigableMap<Double, V> data = new TreeMap<>();
         private double weightSum;
 
         public void addEntry(double weight, V result) {
-            weightSum += weight;
-            data.put(weightSum, result);
+            if (!Double.isFinite(weight) || weight < 0) {
+                throw new MisuseException("Weights must be finite and nonnegative");
+            }
+            if (weight == 0) return;
+            double total = weightSum + weight;
+            if (!Double.isFinite(total) || total <= weightSum) {
+                throw new MisuseException("Weight cannot be represented as a distinct finite interval");
+            }
+            data.put(total, result);
+            weightSum = total;
         }
 
         public V getRandomEntry() {
-            double value = rand.nextDouble() * this.weightSum;
-            //ReikaJavaLibrary.pConsole(value+" of "+this.data.toString());
-            return data.ceilingEntry(value).getValue();
+            if (data.isEmpty()) return null;
+            double value = rand.nextDouble() * weightSum;
+            // Intervals are [previous threshold, threshold): an exact boundary selects the next.
+            Map.Entry<Double, V> selected = data.higherEntry(value);
+            // Multiplication can round a legal near-one random value up to the total.
+            return (selected != null ? selected : data.lastEntry()).getValue();
+        }
+
+        public void setRNG(RandomSource random) {
+            rand = Objects.requireNonNull(random, "random");
+        }
+
+        public void setSeed(long seed) {
+            rand.setSeed(seed);
+        }
+
+        public double getTotalWeight() {
+            return weightSum;
+        }
+
+        public void clear() {
+            data.clear();
+            weightSum = 0;
         }
 
         public boolean isEmpty() {

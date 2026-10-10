@@ -680,3 +680,21 @@ Crystal-network compilation passes. Logs: build/cache-location-validation.log (1
 build/cache-location-native-final.log (40s). Contract: DragonAPI/docs/cache-location-port.md.
 No arbitrary LocationEntry serializer, real remote client or full reactor-network acceptance
 is claimed. Normal Play is separate. Completed work is locally checkpointed; D28/D29 are next.
+
+
+## HexGrid size semantics and inverted weighted selection — D28/D29, 2026-10-10
+
+HexGrid's suspected endpoint-size bug is not observable: lerp discards both size fields and
+uses the explicit output size. Original cube-space semantics remain, now documented and
+covered by mixed-size/reverse/zero-length/adjacency regressions. No physical-grid semantics
+are invented; deferred Chroma lore rendering remains open.
+
+InvertedWeightedRandom now uses RandomSource, handles empty and zero-mass pools, rejects
+invalid/unrepresentable weights before mutation, selects half-open intervals correctly and
+retains append-only duplicate results. Seed/RNG control and clear/reuse are functional.
+Original and current sources have no inverted persistence API or project consumers; main
+WeightedRandom NBT coverage is explicitly separate. No new persistence format is invented.
+
+Seven new regressions and all 125 affected-module units pass (83 DragonAPI, 34 RotaryCraft,
+8 ReactorCraft; build/hex-inverted-validation.log, 1m 4s). Contract and source evidence:
+DragonAPI/docs/hex-inverted-review.md. Completed work is locally checkpointed; D30 is next.

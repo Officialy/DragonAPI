@@ -30,7 +30,7 @@ import reika.dragonapi.libraries.mathsci.ReikaVectorHelper;
  */
 // DRAGONAPI-PORT: HexGrid's rendering half. V33a drew, per hex, a GL_LINE_LOOP outline at line width
 // 3 with texturing disabled, a filled triangle fan, and textured quads whose UVs came from a hex's
-// position within the grid's bounding box (see GridProperties). Restore these against the 26.2 submit
+// position within the grid's bounding box (see GridProperties). Restore these against the 26.3 submit
 // pipeline when the lore-book GUI is ported, and take the geometry from getHexLocation/hexSize as the
 // original did rather than re-deriving it.
 public class HexGrid {
@@ -325,7 +325,10 @@ public class HexGrid {
         }
     }
 
-	/** V33a hexLinedraw: the hexes a straight line between two cells passes through. */
+	/**
+     * V33a hexLinedraw in cube-coordinate space. The explicit size argument labels every
+     * result; endpoint size metadata does not participate in coordinate interpolation.
+     */
 	public static List<Hex> lineDraw(double size, Hex a, Hex b) {
 		int n = Hex.distance(size, a, b);
 		// The nudge avoids ties landing exactly on a cell boundary during rounding.
