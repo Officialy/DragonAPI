@@ -698,3 +698,23 @@ WeightedRandom NBT coverage is explicitly separate. No new persistence format is
 Seven new regressions and all 125 affected-module units pass (83 DragonAPI, 34 RotaryCraft,
 8 ReactorCraft; build/hex-inverted-validation.log, 1m 4s). Contract and source evidence:
 DragonAPI/docs/hex-inverted-review.md. Completed work is locally checkpointed; D30 is next.
+
+
+## Inventory and resource empty contracts — D30, 2026-10-10
+
+Legacy arrays and native inventories now handle null/EMPTY/zero-count slots consistently.
+Transactional full-fit insertion rolls back failure; administrative output writes retain
+actual per-item capacities; partial insertion conserves counts/components across slots.
+Snapshot-backed Container merges/decrements persist. Closing/draining use EMPTY, spills
+clear before spawning and cannot duplicate, and last-block selection retains its identity.
+Item Cannon consumption, original capacity gate/sound, target persistence and bottom-only
+extraction are restored through native inventories and capabilities. Resource Optional,
+IoSupplier and IOException contracts were reviewed and already behave correctly.
+
+Six new native fixtures and all 44 family-loaded DragonAPI cases pass, alongside 127 units
+(85 DragonAPI, 34 RotaryCraft, 8 ReactorCraft; build/inventory-family-full-compile.log, 1m 14s).
+RotaryCraft-only broad selection requires Chroma for the glow-tree case. A full compile
+restored missing accepted Chroma class outputs before family validation. Cannon transfer
+is isolated from power acquisition; complete powered-chain/GUI/audio acceptance remains
+separate. Details: DragonAPI/docs/inventory-empty-port.md. D17 player-to-chest transfer
+remains open; unique-stack counting does not implement it.

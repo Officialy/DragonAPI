@@ -127,6 +127,16 @@ public class ManagedItemHandler extends ItemStacksResourceHandler {
         return getCapacityAsInt(slot, ItemResource.EMPTY);
     }
 
+    /**
+     * Actual resource-specific slot limit for administrative writes, independent of insertion filters.
+     * Native getCapacityAsInt reports zero for invalid resources, which cannot implement the legacy
+     * overrideValid contract. This still honors subclasses' real getCapacity limits.
+     */
+    public int getSlotLimit(int slot, ItemStack stack) {
+        java.util.Objects.checkIndex(slot, size());
+        return getCapacity(slot, ItemResource.of(stack));
+    }
+
     /** Legacy alias for {@link #isValid}. */
     public boolean isItemValid(int slot, ItemStack stack) {
         return isValid(slot, ItemResource.of(stack));
