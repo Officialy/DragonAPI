@@ -5,6 +5,8 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.util.RandomSource;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.ModList;
@@ -15,7 +17,6 @@ import reika.dragonapi.interfaces.registry.OreType;
 import reika.dragonapi.libraries.java.ReikaArrayHelper;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
 import reika.dragonapi.libraries.level.ReikaBlockHelper;
-import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
 import java.util.*;
@@ -271,7 +272,19 @@ public enum ModOreList implements OreType {
     }
 
     public static ModOreList getModOreFromOre(Block b) {
-        return getModOreFromOre(new ItemStack(b, 1));
+        return b == null ? null : getModOreFromOre(new ItemStack(b));
+    }
+
+    public static ModOreList getModOreFromOre(BlockState state) {
+        return state == null ? null : getModOreFromOre(state.getBlock());
+    }
+
+    public static boolean isModOre(BlockState state) { return getModOreFromOre(state) != null; }
+
+    /** Common item tags classify every native state of each registered ore block. */
+    public List<BlockState> getOreStates() {
+        return ores.stream().map(WoodSpecies::stateOf).filter(Objects::nonNull)
+                .flatMap(state -> state.getBlock().getStateDefinition().getPossibleStates().stream()).distinct().toList();
     }
 
     public static ModOreList getModOreFromOre(ItemStack is) {
@@ -282,11 +295,14 @@ public enum ModOreList implements OreType {
         return oreMappings.get(is);
     }
 
-    public static ModOreList getEntryFromDamage(int dmg) {
-        if (ReikaMathLibrary.isValueInsideBoundsIncl(0, oreList.length-1, dmg))
-            return oreList[dmg];
-        return null;
+    /** Decode an old saved catalogue ordinal; this has never classified block/item damage. */
+    public static ModOreList getByLegacyOrdinal(int ordinal) {
+        return ordinal >= 0 && ordinal < oreList.length ? oreList[ordinal] : null;
     }
+
+    /** @deprecated Use state/item lookup for live ores, or getByLegacyOrdinal for old saved data. */
+    @Deprecated
+    public static ModOreList getEntryFromDamage(int damage) { return getByLegacyOrdinal(damage); }
 
     public String[] getOreDictNames() {
         String[] arr = new String[oreLabel.length];
@@ -327,7 +343,7 @@ public enum ModOreList implements OreType {
     public static ArrayList<ItemStack> getAllRegisteredOreBlocks() {
         ArrayList<ItemStack> li = new ArrayList<ItemStack>();
         for (ModOreList modOreList : oreList) {
-            li.addAll(modOreList.ores);
+            modOreList.ores.forEach(stack -> li.add(stack.copy()));
         }
         return li;
     }
@@ -335,19 +351,22 @@ public enum ModOreList implements OreType {
     public ItemStack getFirstOreBlock() {
         if (!this.existsInGame())
             return null;
-        return ores.get(0);
+        return ores.getFirst().copy();
     }
 
     public ItemStack getRandomOreBlock() {
         if (!this.existsInGame())
             return null;
-        int s = ores.size();
-        int index = new Random().nextInt(s);
-        return ores.get(index);
+        return ores.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(ores.size())).copy();
+    }
+
+    public ItemStack getRandomOreBlock(RandomSource random) {
+        Objects.requireNonNull(random);
+        return existsInGame() ? ores.get(random.nextInt(ores.size())).copy() : null;
     }
 
     public Collection<ItemStack> getAllOreBlocks() {
-        return Collections.unmodifiableCollection(ores);
+        return ores.stream().map(ItemStack::copy).toList();
     }
 
     public boolean existsInGame() {

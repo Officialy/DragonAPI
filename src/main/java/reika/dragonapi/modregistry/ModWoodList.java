@@ -6,14 +6,12 @@ import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
 import reika.dragonapi.instantiable.data.immutable.BlockBox;
 import reika.dragonapi.instantiable.data.immutable.BlockKey;
-import reika.dragonapi.instantiable.data.maps.BlockMap;
-import reika.dragonapi.instantiable.data.maps.MultiMap;
 import reika.dragonapi.interfaces.registry.TreeType;
 import reika.dragonapi.libraries.java.ReikaStringParser;
 
@@ -107,126 +105,112 @@ public enum ModWoodList implements TreeType {
     MARSHWOOD(ModList.EREBUS,		0x000000, 0x000000, 12, 14, "Marshwood_Log",	"Marshwood_Leaves",		"Marshwood_Sapling", VarType.INSTANCE);
 
     private final ModList mod;
-    private Block blockID = null;
-    private Block leafID = null;
-    private Block saplingID;
-
-    private boolean hasPlanks;
+    private final VarType lookupType;
+    private final String registryLog, registryLeaf, registrySapling;
+    private volatile WoodSpecies species;
+    private boolean attemptedReflection;
 
     public final int logColor;
     public final int leafColor;
     public final BlockBox bounds;
-
-    private String varName;
-    private Class containerClass;
-
-    private boolean exists = false;
-    private final boolean registryLookup;
-    private final String registryLog, registryLeaf, registrySapling;
-
     public static final ModWoodList[] woodList = values();
 
-    private static final BlockMap<ModWoodList> logMappings = new BlockMap<>();
-    private static final BlockMap<ModWoodList> leafMappings = new BlockMap<>();
-    private static final BlockMap<ModWoodList> saplingMappings = new BlockMap<>();
+    private record Index(Map<BlockState, ModWoodList> logs, Map<BlockState, ModWoodList> leaves,
+            Map<BlockState, ModWoodList> saplings) { }
+    private static volatile Index mappings = new Index(Map.of(), Map.of(), Map.of());
 
-    private static final MultiMap<ModList, ModWoodList> modMappings = new MultiMap<>(MultiMap.CollectionType.HASHSET);
-
-    ModWoodList(ModList req, int color, int leafcolor, int w, int h, String blockVar, String leafVar, String saplingVar, VarType type) {
-        //if (!DragonAPI.canLoadHandlers())
-        //    throw new MisuseException("Accessed registry enum too early! Wait until postInit!");
+    ModWoodList(ModList req, int color, int leafcolor, int w, int h, String blockVar,
+            String leafVar, String saplingVar, VarType type) {
         mod = req;
-        registryLookup = type == VarType.REGISTRY;
+        lookupType = type;
         registryLog = blockVar;
         registryLeaf = leafVar;
         registrySapling = saplingVar;
         leafColor = leafcolor;
         logColor = color;
         bounds = BlockBox.origin().expand(w, h, w);
-        if (!mod.isLoaded()) {
-            DragonAPI.LOGGER.info("DRAGONAPI: Not loading "+this.getLabel()+": Mod not present.");
-            return;
-        }
-        Class cl = type == VarType.REGISTRY ? null : req.getBlockClass();
-        //DragonAPI.LOGGER.info("DRAGONAPI: Attempting to load "+this.getLabel()+". Data parameters:");
-        //DragonAPI.LOGGER.info(cl+", "+blockVar+", "+leafVar+", "+saplingVar+", "+type);
-        if (cl == null && type != VarType.REGISTRY) {
-            DragonAPI.LOGGER.error("Error loading wood "+this.getLabel()+": Empty block class");
-            return;
-        }
-        if (blockVar == null || blockVar.isEmpty()) {
-            DragonAPI.LOGGER.error("Error loading wood "+this.getLabel()+": Empty variable name");
-            return;
-        }
-        if (leafVar == null || leafVar.isEmpty()) {
-            DragonAPI.LOGGER.error("Error loading leaves for wood "+this.getLabel()+": Empty variable name");
-            return;
-        }
-        try {
-            Block id;
-            Block idleaf;
-            Block idsapling;
-            switch (type) {
-                case ITEMSTACK -> {
-                    ItemStack wood = this.loadItemStack(cl, blockVar);
-                    ItemStack leaf = this.loadItemStack(cl, leafVar);
-                    ItemStack sapling = saplingVar == null ? null : this.loadItemStack(cl, saplingVar);
-                    if (wood == null || leaf == null || (saplingVar != null && sapling == null)) {
-                        DragonAPI.LOGGER.error("Error loading " + this.getLabel() + ": Block not instantiated!");
-                        return;
-                    }
-                    id = Block.byItem(wood.getItem());
-                    idleaf = Block.byItem(leaf.getItem());
-					idsapling = sapling != null ? Block.byItem(sapling.getItem()) : null;
-                }
-                case INSTANCE -> {
-                    Block wood_b = this.loadBlock(cl, blockVar);
-                    Block leaf_b = this.loadBlock(cl, leafVar);
-                    Block sapling_b = saplingVar == null ? null : this.loadBlock(cl, saplingVar);
-                    if (wood_b == null || leaf_b == null || (saplingVar != null && sapling_b == null)) {
-                        DragonAPI.LOGGER.error("Error loading " + this.getLabel() + ": Block not instantiated!");
-                        return;
-                    }
-                    id = wood_b;
-                    idleaf = leaf_b;
-                    idsapling = sapling_b;
-                }
-                case REGISTRY -> {
-                    Block wood_b = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, blockVar)).orElse(null);
-                    Block leaf_b = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, leafVar)).orElse(null); //todo check if this this is correct
-                    Block sapling_b = saplingVar == null ? null : BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, saplingVar)).orElse(null);
-                    if (wood_b == null || leaf_b == null || (saplingVar != null && sapling_b == null)) {
-                        DragonAPI.LOGGER.error("Error loading " + this.getLabel() + ": Block not instantiated!");
-                        return;
-                    }
-                    id = wood_b;
-                    idleaf = leaf_b;
-                    idsapling = sapling_b;
-                }
-                default -> {
-                    DragonAPI.LOGGER.error("Error loading wood " + this.getLabel());
-                    DragonAPI.LOGGER.error("Invalid variable type " + type);
-                    return;
-                }
+    }
+
+    /** Ports of shared-block species supply their complete state sets after block registration. */
+    public void registerSpecies(WoodSpecies association) {
+        Objects.requireNonNull(association);
+        if (!mod.isLoaded()) throw new IllegalStateException("Cannot associate an absent mod: " + mod);
+        synchronized (ModWoodList.class) {
+            var logs = new HashMap<BlockState, ModWoodList>();
+            var leaves = new HashMap<BlockState, ModWoodList>();
+            var saplings = new HashMap<BlockState, ModWoodList>();
+            for (var wood : woodList) {
+                var entry = wood == this ? association : wood.species;
+                if (entry == null) continue;
+                index(logs, entry.logs(), wood);
+                index(leaves, entry.leaves(), wood);
+                index(saplings, entry.saplings(), wood);
             }
-            blockID = id;
-            leafID = idleaf;
-            saplingID = idsapling;
-            DragonAPI.LOGGER.info("Successfully loaded wood "+this.getLabel());
-            exists = true;
-        } catch (SecurityException | IllegalArgumentException | NullPointerException | ReflectiveOperationException e) {
-            DragonAPI.LOGGER.error("Error loading wood "+this.getLabel());
-            e.printStackTrace();
+            species = association;
+            mappings = new Index(Map.copyOf(logs), Map.copyOf(leaves), Map.copyOf(saplings));
         }
     }
 
-    private ItemStack loadItemStack(Class cl, String field) throws ReflectiveOperationException {
+    private static void index(Map<BlockState, ModWoodList> into, List<BlockState> states, ModWoodList wood) {
+        for (var state : states) {
+            var previous = into.putIfAbsent(state, wood);
+            if (previous != null && previous != wood)
+                throw new IllegalArgumentException("Ambiguous wood state " + state + ": " + previous.name() + " / " + wood.name());
+        }
+    }
+
+    private void resolve() {
+        if (species != null || !mod.isLoaded() || registryLog == null || registryLeaf == null) return;
+        try {
+            Block log, leaf, sapling;
+            if (lookupType == VarType.REGISTRY) {
+                log = registered(registryLog);
+                leaf = registered(registryLeaf);
+                sapling = registrySapling == null ? null : registered(registrySapling);
+            } else {
+                if (attemptedReflection) return;
+                attemptedReflection = true;
+                // Legacy field names are retained as an adapter for distinct-block integrations.
+                // Shared metadata blocks require registerSpecies from their modern port: assigning
+                // every state to each old name would silently turn one species into another.
+                for (var other : woodList) {
+                    if (other != this && other.mod == mod && (Objects.equals(other.registryLog, registryLog)
+                            || Objects.equals(other.registryLeaf, registryLeaf)
+                            || registrySapling != null && Objects.equals(other.registrySapling, registrySapling))) {
+                        DragonAPI.LOGGER.debug("{} requires an explicit state association from its port", getLabel());
+                        return;
+                    }
+                }
+                var type = mod.getBlockClass();
+                if (type == null) return;
+                if (lookupType == VarType.ITEMSTACK) {
+                    registerSpecies(WoodSpecies.ofItems(loadItemStack(type, registryLog), loadItemStack(type, registryLeaf),
+                            registrySapling == null ? null : loadItemStack(type, registrySapling), this == LIGHTED));
+                    return;
+                } else {
+                    log = loadBlock(type, registryLog);
+                    leaf = loadBlock(type, registryLeaf);
+                    sapling = registrySapling == null ? null : loadBlock(type, registrySapling);
+                }
+            }
+            if (log != null && leaf != null && (registrySapling == null || sapling != null))
+                registerSpecies(WoodSpecies.ofBlocks(log, leaf, sapling, this == LIGHTED));
+        } catch (ReflectiveOperationException | IllegalArgumentException | SecurityException error) {
+            DragonAPI.LOGGER.error("Could not associate {}", getLabel(), error);
+        }
+    }
+
+    private Block registered(String path) {
+        return BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, path)).orElse(null);
+    }
+
+    private ItemStack loadItemStack(Class<?> cl, String field) throws ReflectiveOperationException {
         Object ins = this.getFieldInstance();
         Field f = cl.getField(field);
         return (ItemStack) f.get(ins);
     }
 
-    private Block loadBlock(Class cl, String field) throws ReflectiveOperationException {
+    private Block loadBlock(Class<?> cl, String field) throws ReflectiveOperationException {
         switch (mod) {
             case CHROMATICRAFT, SATISFORESTRY -> {
                 Field f = cl.getField(field);
@@ -253,7 +237,7 @@ public enum ModWoodList implements TreeType {
 
     private Object getFieldInstance() throws ReflectiveOperationException {
         if (mod == ModList.WITCHERY) {
-            Class c = Class.forName("com.emoniph.witchery.Witchery");
+            Class<?> c = Class.forName("com.emoniph.witchery.Witchery");
             Field f = c.getField("Blocks");
             return f.get(null);
         }
@@ -262,99 +246,44 @@ public enum ModWoodList implements TreeType {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(this.getName());
-        sb.append(" from ");
-        sb.append(mod);
-        if (exists) {
-            sb.append(" (LOG "+blockID+";");
-            sb.append(" ");
-            sb.append("LEAF "+leafID+";");
-            if (saplingID != null) {
-                sb.append(" ");
-                sb.append("SAPLING "+saplingID);
-            }
-            sb.append(")");
-        }
-        else {
-            sb.append(" (Not loaded)");
-        }
-        return sb.toString();
+        return getBasicInfo() + (species == null ? " (Not loaded)"
+                : " (LOG " + species.logs() + "; LEAF " + species.leaves() + "; SAPLING " + species.saplings() + ")");
     }
 
-    public String getBasicInfo() {
-        String sb = this.getName() +
-                " from " +
-                mod;
-        return sb;
-    }
+    public String getBasicInfo() { return getName() + " from " + mod; }
+    public String getLabel() { return name() + " from " + mod; }
+    public String getName() { return ReikaStringParser.capFirstChar(name()); }
+    public ModList getParentMod() { return mod; }
 
-    public String getLabel() {
-        return this.name()+" from "+this.getParentMod();
-    }
-
+    @Override
     public boolean exists() {
-        if (!exists && registryLookup && mod.isLoaded()) {
-            var log = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, registryLog));
-            var leaf = BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, registryLeaf));
-            var sapling = registrySapling != null ? BuiltInRegistries.BLOCK.getOptional(Identifier.fromNamespaceAndPath(mod.modid, registrySapling)) : Optional.<Block>empty();
-            if (log.isPresent() && leaf.isPresent() && (registrySapling == null || sapling.isPresent())) {
-                blockID = log.get(); leafID = leaf.get(); saplingID = sapling.orElse(null); exists = true;
-                logMappings.put(blockID, this); leafMappings.put(leafID, this);
-                if (saplingID != null) saplingMappings.put(saplingID, this);
-                modMappings.addValue(mod, this);
-            }
-        }
-        return exists && mod.isLoaded();
+        resolve();
+        return species != null && mod.isLoaded();
     }
 
-    private static void refreshRegistryWoods() {
-        for (ModWoodList wood : woodList) if (wood.registryLookup) wood.exists();
+    private WoodSpecies requiredSpecies() {
+        if (!exists()) throw new IllegalStateException(getLabel() + " has no registered state association");
+        return species;
     }
 
-    public BlockKey getItem() {
-        return new BlockKey(blockID);
+    private static void refreshWoods() {
+        for (var wood : woodList) wood.resolve();
     }
 
-    public BlockKey getLogItemWithOffset(int i) {
-        return new BlockKey(blockID);
-    }
+    @Override public BlockKey getItem() { return getLogItemWithOffset(0); }
 
-//    public boolean isLogBlock(ItemStack block) {
-//        if (blockMeta == null)
-//            return false;
-//        if (this == SEQUOIA) {
-//            return Block.byItem(block.getItem()) == blockID;
-//        }
-//        for (int i = 0; i < blockMeta.length; i++) {
-//            if (ReikaItemHelper.matchStacks(block, this.getLogItemWithOffset(i)))
-//                return true;
-//        }
-//        return false;
-//    }
-
-    public Block getBlock() {
-        return blockID;
+    /** The offset is an index into the declared log states, never an item damage value. */
+    public BlockKey getLogItemWithOffset(int index) { return new BlockKey(requiredSpecies().logs().get(index)); }
+    public boolean isLogBlock(ItemStack stack) { return getModWood(stack) == this; }
+    public Block getBlock() { return getLogID(); }
+    @Override public Block getLogID() { return exists() ? species.logs().getFirst().getBlock() : null; }
+    @Override public Block getLeafID() { return exists() ? species.leaves().getFirst().getBlock() : null; }
+    @Override public Block getSaplingID() {
+        return exists() && !species.saplings().isEmpty() ? species.saplings().getFirst().getBlock() : null;
     }
-
-    public String getName() {
-        return ReikaStringParser.capFirstChar(this.name());
-    }
-
-    @Override
-    public Block getLogID() {
-        return blockID;
-    }
-
-    @Override
-    public Block getLeafID() {
-        return leafID;
-    }
-
-    @Override
-    public Block getSaplingID() {
-        return saplingID;
-    }
+    @Override public List<BlockState> getLogStates() { return exists() ? species.logs() : List.of(); }
+    @Override public List<BlockState> getLeafStates() { return exists() ? species.leaves() : List.of(); }
+    public List<BlockState> getSaplingStates() { return exists() ? species.saplings() : List.of(); }
 
     @Override
     public Block getPlankID() {
@@ -362,7 +291,9 @@ public enum ModWoodList implements TreeType {
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server == null) return null; // Recipe-derived associations require the loaded server data.
         var level = server.overworld();
-        var input = net.minecraft.world.item.crafting.CraftingInput.of(1, 1, List.of(new ItemStack(blockID)));
+        var logs = requiredSpecies().logItems();
+        if (logs.isEmpty()) return null;
+        var input = net.minecraft.world.item.crafting.CraftingInput.of(1, 1, List.of(logs.getFirst()));
         return level.recipeAccess().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING, input, level)
                 .map(recipe -> recipe.value().assemble(input))
                 .filter(stack -> !stack.isEmpty() && stack.is(net.minecraft.tags.ItemTags.PLANKS)
@@ -371,81 +302,58 @@ public enum ModWoodList implements TreeType {
     }
 
 
-    public static ModWoodList getModWood(Block id) {
-        refreshRegistryWoods();
-        return id != null ? logMappings.get(id) : null;
+    public static ModWoodList getModWood(BlockState state) {
+        refreshWoods();
+        return state == null ? null : mappings.logs().get(state);
+    }
+    public static ModWoodList getModWood(Block block) { refreshWoods(); return unique(block, mappings.logs()); }
+    public static ModWoodList getModWood(ItemStack stack) { return getModWood(WoodSpecies.stateOf(stack)); }
+    public static ModWoodList getModWoodFromLeaf(BlockState state) {
+        refreshWoods();
+        return state == null ? null : mappings.leaves().get(state);
+    }
+    public static ModWoodList getModWoodFromLeaf(Block block) { refreshWoods(); return unique(block, mappings.leaves()); }
+    public static ModWoodList getModWoodFromLeaf(ItemStack stack) { return getModWoodFromLeaf(WoodSpecies.stateOf(stack)); }
+    public static ModWoodList getModWoodFromSapling(BlockState state) {
+        refreshWoods();
+        return state == null ? null : mappings.saplings().get(state);
+    }
+    public static ModWoodList getModWoodFromSapling(Block block) { refreshWoods(); return unique(block, mappings.saplings()); }
+    public static ModWoodList getModWoodFromSapling(ItemStack stack) { return getModWoodFromSapling(WoodSpecies.stateOf(stack)); }
+
+    /** A block-only query is ambiguous when a modern integration shares it between species. */
+    private static ModWoodList unique(Block block, Map<BlockState, ModWoodList> mappings) {
+        if (block == null) return null;
+        ModWoodList found = null;
+        for (var entry : mappings.entrySet()) {
+            if (!entry.getKey().is(block)) continue;
+            if (found != null && found != entry.getValue()) return null;
+            found = entry.getValue();
+        }
+        return found;
     }
 
-    public static ModWoodList getModWood(ItemStack block) {
-        return getModWood(Block.byItem(block.getItem()));
-    }
-
-    public static ModWoodList getModWoodFromSapling(Block id) {
-        refreshRegistryWoods();
-        return id != null ? saplingMappings.get(id) : null;
-    }
-
-    public static ModWoodList getModWoodFromSapling(ItemStack block) {
-        return getModWoodFromSapling(Block.byItem(block.getItem()));
-    }
-
-    public static ModWoodList getModWoodFromLeaf(ItemStack block) {
-        return getModWoodFromLeaf(Block.byItem(block.getItem()));
-    }
-
-    public static ModWoodList getModWoodFromLeaf(Block id) {
-        refreshRegistryWoods();
-        return id != null ? leafMappings.get(id) : null;
-    }
-
-    public static boolean isModWood(ItemStack block) {
-        return getModWood(block) != null;
-    }
-
-    public static boolean isModWood(Block id) {
-        return getModWood(id) != null;
-    }
-
-    public static boolean isModLeaf(Block id) {
-        return getModWoodFromLeaf(id) != null;
-    }
-
-    public static boolean isModLeaf(ItemStack block) {
-        return getModWoodFromLeaf(block) != null;
-    }
-
-    public static boolean isModSapling(ItemStack block) {
-        return getModWoodFromSapling(block) != null;
-    }
-
-    public static boolean isModSapling(Block id) {
-        return getModWoodFromSapling(id) != null;
-    }
-
+    public static boolean isModWood(ItemStack stack) { return getModWood(stack) != null; }
+    public static boolean isModWood(Block block) { return getModWood(block) != null; }
+    public static boolean isModWood(BlockState state) { return getModWood(state) != null; }
+    public static boolean isModLeaf(ItemStack stack) { return getModWoodFromLeaf(stack) != null; }
+    public static boolean isModLeaf(Block block) { return getModWoodFromLeaf(block) != null; }
+    public static boolean isModLeaf(BlockState state) { return getModWoodFromLeaf(state) != null; }
+    public static boolean isModSapling(ItemStack stack) { return getModWoodFromSapling(stack) != null; }
+    public static boolean isModSapling(Block block) { return getModWoodFromSapling(block) != null; }
+    public static boolean isModSapling(BlockState state) { return getModWoodFromSapling(state) != null; }
 
     public FallingBlockEntity getFallingBlock(Level world, int x, int y, int z) {
-        FallingBlockEntity e = FallingBlockEntity.fall(world, new BlockPos(x, y, z), blockID.defaultBlockState());
-        return e;
+        return FallingBlockEntity.fall(world, new BlockPos(x, y, z), getItem().blockID);
     }
-
-    public BlockKey getBasicLeaf() {
-        return new BlockKey(leafID);
-    }
-
-    public ArrayList<ItemStack> getAllLeaves() {
-        ArrayList<ItemStack> li = new ArrayList<>();
-//        for (int i = 0; i < leafMeta.length; i++) { //todo meta
-            li.add(new ItemStack(leafID, 1));
-//        }
-        return li;
-    }
-
+    @Override public BlockKey getBasicLeaf() { return new BlockKey(requiredSpecies().leaves().getFirst()); }
+    public ArrayList<ItemStack> getAllLeaves() { return new ArrayList<>(requiredSpecies().leafItems()); }
+    public List<ItemStack> getAllLogItems() { return requiredSpecies().logItems(); }
+    public List<ItemStack> getAllSaplings() { return requiredSpecies().saplingItems(); }
     public ItemStack getCorrespondingSapling() {
-        return saplingID == null ? null : new ItemStack(saplingID, 1);
-    }
-
-    public ModList getParentMod() {
-        return mod;
+        if (!exists()) return null;
+        var saplings = species.saplingItems();
+        return saplings.isEmpty() ? null : saplings.getFirst();
     }
 
     public static ModWoodList getRandomWood(Random rand) {
@@ -470,22 +378,14 @@ public enum ModWoodList implements TreeType {
         return this == TRANSFORMATION;
     }
 
-//    public boolean canBePlacedSideways() {
-//        return this.getLogMetadatas().size() == 3;
-//    }
-
     @Override
     public boolean canBePlacedSideways() {
-        return this.exists() && blockID.defaultBlockState().hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS);
+        return getLogStates().stream().anyMatch(state -> state.hasProperty(
+                net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS));
     }
 
-    public boolean isNaturalLeaf(Level world, BlockPos pos) {
-        if (this.getParentMod() == ModList.BOP || this.getParentMod() == ModList.THAUMCRAFT || this.getParentMod() == ModList.NATURA || this.getParentMod() == ModList.TWILIGHT)
-            return true;
-        var state = world.getBlockState(pos);
-        return state.is(leafID) && (!state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.PERSISTENT)
-                || !state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.PERSISTENT));
-    }
+    public boolean isNaturalLeaf(Level world, BlockPos pos) { return isNaturalLeaf(world.getBlockState(pos)); }
+    public boolean isNaturalLeaf(BlockState state) { return exists() && species.isNaturalLeaf(state); }
 
     @Override
     public BlockBox getTypicalMaximumSize() {
@@ -504,8 +404,8 @@ public enum ModWoodList implements TreeType {
     }
 
     public static Collection<ModWoodList> getAllWoodsByMod(ModList mod) {
-        refreshRegistryWoods();
-        return modMappings.get(mod);
+        refreshWoods();
+        return Arrays.stream(woodList).filter(wood -> wood.mod == mod && wood.exists()).toList();
     }
 
     public enum VarType {
@@ -520,19 +420,4 @@ public enum ModWoodList implements TreeType {
         }
     }
 
-    static {
-        for (ModWoodList w : woodList) {
-            if (w.exists()) {
-                Block id = w.blockID;
-                Block leaf = w.leafID;
-                Block sapling = w.saplingID;
-                logMappings.put(id, w);
-                leafMappings.put(leaf, w);
-                if (sapling != null)
-                    saplingMappings.put(sapling, w);
-
-                modMappings.addValue(w.mod, w);
-            }
-        }
-    }
 }

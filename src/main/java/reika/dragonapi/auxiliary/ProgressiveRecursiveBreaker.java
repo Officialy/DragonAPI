@@ -85,13 +85,10 @@ public class ProgressiveRecursiveBreaker implements TickRegistry.TickHandler {
     public ProgressiveBreaker getTreeBreaker(Level world, BlockPos pos, TreeType tree) {
         if (world.isClientSide())
             return null;
-        Block log = tree.getLogID();
-        Block leaf = tree.getLeafID();
-
         ArrayList<BlockKey> ids = new ArrayList<>();
 
-        for (var state : log.getStateDefinition().getPossibleStates()) ids.add(new BlockKey(state));
-        for (var state : leaf.getStateDefinition().getPossibleStates()) ids.add(new BlockKey(state));
+        for (var state : tree.getLogStates()) ids.add(new BlockKey(state));
+        for (var state : tree.getLeafStates()) ids.add(new BlockKey(state));
         ProgressiveBreaker b = new ProgressiveBreaker(world, pos, tree.getRecursiveBreakDepth(), ids);
         b.extraSpread = true;
         b.bounds = tree.getTypicalMaximumSize().offset(pos);
