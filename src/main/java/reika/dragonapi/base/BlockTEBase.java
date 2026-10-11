@@ -3,8 +3,6 @@ package reika.dragonapi.base;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -18,12 +16,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.redstone.Orientation;
-import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.util.Mth;
 import reika.dragonapi.interfaces.blockentity.ConditionBreakDropsInventory;
+import reika.dragonapi.interfaces.block.SemiUnbreakable;
 import reika.dragonapi.libraries.ReikaDirectionHelper;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
-public abstract class BlockTEBase extends Block implements EntityBlock {
+public abstract class BlockTEBase extends Block implements EntityBlock, SemiUnbreakable {
 
     public BlockTEBase(Properties properties) {
         super(properties);
@@ -39,13 +38,17 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
         }
     }
 
-/*    @Override
-    public final float getBlockHardness(Level world, BlockPos pos) {
-        BlockEntity te = world.getBlockEntity(pos);
-        if (te instanceof BlockEntityBase && ((BlockEntityBase) te).isUnMineable())
-            return -1;
-        return blockHardness;
-    }*/
+    @Override
+    protected float getDestroyProgress(BlockState state, Player player, BlockGetter level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof BlockEntityBase tile && tile.isUnMineable())
+            return 0;
+        return super.getDestroyProgress(state, player, level, pos);
+    }
+
+    @Override
+    public boolean isUnbreakable(Level world, BlockPos pos) {
+        return world.getBlockEntity(pos) instanceof BlockEntityBase tile && tile.isUnMineable();
+    }
 
     @Override
     public void neighborChanged(BlockState pState, Level world, BlockPos pos, Block pBlock, Orientation pFromPos, boolean pIsMoving) {
@@ -70,24 +73,18 @@ public abstract class BlockTEBase extends Block implements EntityBlock {
         }
     }
 
-    // 1.21.5: removed the unconditional {@code te.syncAllData(true)} that previously fired on
-    // every right-click — for pipes / shafts that's an expensive {@code markAndNotifyBlock} +
-    // ClientboundBlockEntityDataPacket dispatch per click, and spamming right-click on a pipe
-    // was dropping the client to 0 FPS. BEs that mutate state on interaction (gearbox
-    // lubricant fill, music box disc, splitter bedrock upgrade, etc.) already call
-    // {@code syncAllData} themselves from their concrete useItemOn handlers, so the forced
-    // sync here was redundant for the meaningful cases and pure cost for everything else.
-
-
-/*    @Override
-    public final boolean hasComparatorInputOverride() {
+    // Menu slots/data and tile sync tags deliver their own updates. Mutating interactions
+    // synchronize in their concrete handlers; passive clicks do not broadcast full tile NBT.
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
         return true;
     }
 
     @Override
-    public final int getComparatorInputOverride(Level world, BlockPos pos, int par5) {
-        return ((BlockEntityBase) world.getBlockEntity(pos)).getComparatorOverride();
-    }*/
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+        return level.getBlockEntity(pos) instanceof BlockEntityBase tile
+                ? Mth.clamp(tile.getComparatorOverride(), 0, 15) : 0;
+    }
 
     @Override
     public boolean canEntityDestroy(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {

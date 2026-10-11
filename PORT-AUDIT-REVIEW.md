@@ -893,3 +893,42 @@ Contract: DragonAPI/docs/bounded-callback-search-crash.md. Evidence/checkpoint s
 TestInstance/docs/callback-search-crash-2026-10-11.md. Only this fix, fixtures and
 notes are checkpointed; other pending changes are retained. Normal Play argument
 hashes match. No live-client or optional-mod claim is made. Nothing is pushed.
+
+
+## Shared machine-block mining/comparator/menu contract — D35, 2026-10-11
+
+Original BlockTEBase/TileEntityBase source contracts restore contextual no_mine
+protection through native mining progress and shared SemiUnbreakable queries.
+The saved key remains; initial/delta sync carry it. Changed attached-server flags
+require the owning thread and dispatch one native delta, while unchanged setters
+dispatch nothing. Native saved loads retain protection; clearing restores the exact
+ordinary/configured mining result. The pending Rotary PIPEHARDNESS implementation
+is incorporated with native zero/nonzero/live/clamp checks and a protection guard
+before instant mining. This supersedes the earlier compile-only pipe validation.
+
+getComparatorOverride again exposes the existing eight-tick server sample. Native
+shared block outputs clamp it to 0..15 on every face, with zero for absent tiles.
+Changed samples notify ordinary neighbors and native comparators behind a solid
+conductor, replacing a duplicate ordinary notification. Existing specialized block
+overrides remain authoritative; runtime caches are recomputed after load.
+
+Rotary empty-hand interaction now reaches the common original machine actions/menu
+logic with EMPTY, preserving concrete handlers and access/crouch checks. Passive
+failure becomes PASS. Native Blast Furnace opening delivers current inventory,
+progress and temperature, and subsequent data updates reach the same connection.
+NeoForge full-width DataSlot payloads and vanilla packets are observed; menu opening
+and passive pipe clicks do not broadcast redundant full tile NBT. Existing menu
+slots/data, periodic IO/Fractionator tags and explicit Reactor CPU view payloads
+make the removed blanket click sync unnecessary for this shared contract.
+
+All six focused native fixtures and the final 65-test DragonAPI native suite pass;
+all 141 units pass (93 DA + 34 RC + 8 ReC + 6 Chroma). Four mod-family consumers,
+actual comparator transitions, saved flags, native flag packets, worker rejection,
+live pipe settings and real menu connection updates are exercised. Eight guards
+verify 3,265 accepted outputs; DA/RC production jars build. Logs:
+build/machine-block-focused-validation.log and machine-block-family-validation.log.
+Contract/source pin: DragonAPI/docs/machine-block-contract-port.md. Full evidence:
+TestInstance/docs/machine-block-contract-2026-10-11.md. Normal Play hashes match.
+Native headless mocks are not authenticated remote-client or graphical acceptance.
+This batch and the related pending pipe implementation are checkpointed; other
+rift/worldgen/compatibility/launcher/IDE changes remain separate. Nothing is pushed.

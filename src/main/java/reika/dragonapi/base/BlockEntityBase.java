@@ -125,6 +125,11 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
 
     public abstract int getRedstoneOverride();
 
+    /** The comparator value sampled by the shared server lifecycle every eight ticks. */
+    public final int getComparatorOverride() {
+        return comparatorTracker.getValue();
+    }
+
     public final boolean hasRedstoneSignal() {
         return redstoneInput;
     }
@@ -575,11 +580,13 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     protected void writeSyncTag(CompoundTag tag) {
         tag.putBoolean("lastredstone", lastRedstone);
         tag.putBoolean("thisredstone", redstoneInput);
+        tag.putBoolean("no_mine", unmineable);
     }
 
     protected void readSyncTag(CompoundTag tag) {
         lastRedstone = NBTCompat.getBoolean(tag, "lastredstone", false);
         redstoneInput = NBTCompat.getBoolean(tag, "thisredstone", false);
+        unmineable = NBTCompat.getBoolean(tag, "no_mine", unmineable);
     }
 
     /**
@@ -674,7 +681,13 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
     }
 
     public final void setUnmineable(boolean nomine) {
+        if (unmineable == nomine)
+            return;
+        if (level instanceof ServerLevel serverLevel && !serverLevel.getServer().isSameThread())
+            throw new IllegalStateException("Mining protection must be changed on the owning server thread");
         unmineable = nomine;
+        if (level != null && !level.isClientSide())
+            this.syncAllData(false);
     }
 
     public final boolean isInWorld() {

@@ -1,7 +1,6 @@
 package reika.dragonapi.instantiable;
 
 import reika.dragonapi.base.BlockEntityBase;
-import reika.dragonapi.libraries.level.ReikaWorldHelper;
 
 public class RedstoneTracker {
 
@@ -11,9 +10,8 @@ public class RedstoneTracker {
         int last = value;
         value = te.getRedstoneOverride();
         if (last != value) {
-            //ReikaJavaLibrary.pConsole(last+" > "+value);
             te.triggerBlockUpdate();
-            ReikaWorldHelper.causeAdjacentUpdates(te.getLevel(), te.getBlockPos());
+            te.getLevel().updateNeighbourForOutputSignal(te.getBlockPos(), te.getBlockState().getBlock());
         }
     }
 
