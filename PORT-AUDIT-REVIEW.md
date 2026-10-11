@@ -778,3 +778,30 @@ across eight modules (build/inert-identity-final-validation.log). This is constr
 identity coverage; per-entity gameplay, rendering, payloads and full persistence behavior
 retain their own acceptance requirements. The overnight handoff records nine completed
 backlog items and remaining priorities; unrelated worldgen/IDE changes remain uncommitted.
+
+
+## Player transfers and formed-casing mining — D17, 2026-10-11
+
+Checked latest working progress: the full-state D31 rift port and installed DH/Chunky
+startup repair have successful recorded validation, but remain separate pending changes.
+The existing formed casing multiplier inverted the original hardness rule. Native mining
+progress now divides by four; every real casing variant retains positive base hardness 2
+and the native harvest formula. All three native multiblock regressions pass with bare
+hands and an iron pickaxe (build/formed-casing-mining-validation.log).
+
+D17 now implements the original array API's intended transfer operation; the original
+body itself never transferred anything. All main/hotbar slots move only accepted amounts,
+with component identity, stack limits and exact leftovers retained. Equipment/offhand
+remain equipped. A native Container overload honors filters, resource-dependent capacity,
+snapshot writeback and dirty notifications; self-targets change nothing and non-owning
+threads fail before inventory access. The existing Inventory insertion overload remains.
+Contracts: DragonAPI/docs/player-chest-transfer-port.md and formed-casing-mining-port.md.
+
+All 48 family DragonAPI native tests and 135 affected units pass (87 DA + 34 RC + 8 ReC +
+6 Chroma). Both strengthened transfer fixtures pass again after equipment/dirty coverage
+improvements. Eight accepted-output guards verify 3,262 current primary outputs. Evidence:
+build/player-chest-transfer-validation.log and player-chest-transfer-final-validation.log.
+Normal Play argument hashes match; saves, installed mods and unrelated working changes
+are preserved. No push. Full structure/drop, powered-cannon and remote/menu acceptance
+remain separate; D35 is a different base-class contract. The next focused work is D53,
+then D16. Checkpoint boundary: TestInstance/docs/continuation-2026-10-11.md.

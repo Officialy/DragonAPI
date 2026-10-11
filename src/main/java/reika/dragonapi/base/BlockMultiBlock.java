@@ -96,7 +96,8 @@ public abstract class BlockMultiBlock<R> extends Block {
 	public float getDestroyProgress(BlockState state, Player player, BlockGetter level, BlockPos pos) {
 		float ret = super.getDestroyProgress(state, player, level, pos);
 		if (state.getValue(FORMED))
-			ret *= 4;
+			// The original multiplied hardness by four; native progress is inverse hardness.
+			ret /= 4;
 		return ret;
 	}
 

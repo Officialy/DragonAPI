@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -32,6 +33,7 @@ import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
 import java.util.*;
+import java.util.function.ToIntFunction;
 
 public class ReikaPlayerAPI {
 
@@ -41,12 +43,43 @@ public class ReikaPlayerAPI {
     private static GameProfile clientProfile;
 
     /**
-     * Transfers a player's entire inventory to an inventory. Args: Player, Inventory
+     * Moves as much main inventory/hotbar storage as fits, retaining every leftover in its source
+     * slot. Equipment and offhand are not part of the original mainInventory contract. Runs on
+     * the owning server thread; callers owning a legacy destination array must mark its owner dirty.
      */
     public static void transferInventoryToChest(Player ep, ItemStack[] inv) {
-        int num = ReikaInventoryHelper.getTotalUniqueStacks(ReikaInventoryHelper.getWholeInventory(ep.getInventory()).toArray(new ItemStack[0]));
-        if (num >= inv.length) {
+        Objects.requireNonNull(inv, "destination inventory");
+        transferMainInventory(ep, stack -> ReikaInventoryHelper.addToInventoryWithLeftover(stack, inv));
+    }
+
+    /** Native destination variant: observes capacity/slot filters and marks changed storage dirty. */
+    public static void transferInventoryToChest(Player ep, Container inv) {
+        Objects.requireNonNull(inv, "destination inventory");
+        requireInventoryTransferThread(ep);
+        if (inv == ep.getInventory()) return;
+        transferMainInventory(ep, stack -> ReikaInventoryHelper.addToInventoryWithLeftover(stack, inv, false));
+    }
+
+    private static void requireInventoryTransferThread(Player player) {
+        Objects.requireNonNull(player, "player");
+        if (!(player.level() instanceof ServerLevel level) || !level.getServer().isSameThread())
+            throw new IllegalStateException("Player inventory transfers must run on the owning server thread");
+    }
+
+    private static void transferMainInventory(Player player, ToIntFunction<ItemStack> insert) {
+        requireInventoryTransferThread(player);
+        var inventory = player.getInventory();
+        boolean changed = false;
+        for (int slot = 0; slot < inventory.getNonEquipmentItems().size(); slot++) {
+            ItemStack source = inventory.getItem(slot);
+            if (source.isEmpty()) continue;
+            int leftover = insert.applyAsInt(source);
+            if (leftover < source.getCount()) {
+                inventory.setItem(slot, leftover == 0 ? ItemStack.EMPTY : source.copyWithCount(leftover));
+                changed = true;
+            }
         }
+        if (changed) inventory.setChanged();
     }
 
     public static void kickPlayer(ServerPlayer ep, String reason) {

@@ -430,9 +430,14 @@ public class ReikaInventoryHelper {
     }
 
     public static int addToInventoryWithLeftover(ItemStack stack, Inventory inventory, boolean simulate) {
+        return addToInventoryWithLeftover(stack, (Container)inventory, simulate);
+    }
+
+    /** Partial, component-preserving insertion into native containers; the offered stack is unchanged. */
+    public static int addToInventoryWithLeftover(ItemStack stack, Container inventory, boolean simulate) {
         if (empty(stack)) return 0;
         int left = stack.getCount();
-        int limit = Math.min(inventory.getMaxStackSize(), stack.getMaxStackSize());
+        int limit = Math.min(stack.getMaxStackSize(), inventory.getMaxStackSize(stack));
         for (int slot = 0; slot < inventory.getContainerSize() && left > 0; slot++) {
             if (!inventory.canPlaceItem(slot, stack)) continue;
             ItemStack present = inventory.getItem(slot);
