@@ -179,8 +179,8 @@ public class DragonAPI extends DragonAPIMod {
     }
 
     @SubscribeEvent
-    public void updateOreCatalogue(net.neoforged.neoforge.event.DefaultDataComponentsBoundEvent event) {
-        if (event.shouldUpdateStaticData()) reika.dragonapi.modregistry.ModOreList.initializeAll();
+    public void updateOreCatalogue(net.neoforged.neoforge.event.TagsUpdatedEvent event) {
+        reika.dragonapi.modregistry.ModOreList.onTagsUpdated(event);
     }
 
     public void commonSetup(final FMLCommonSetupEvent evt) {

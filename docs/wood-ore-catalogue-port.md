@@ -1,4 +1,4 @@
-# Wood and ore state/item associations â€” D36, Minecraft 26.3
+# Wood and ore state/item associations — D36, Minecraft 26.3
 
 Source reference: DragonAPI upstream/master at
 `c29c4fcc2d3a65566783a4a163d8e682116e868c`, `ModRegistry/ModWoodList.java` and
@@ -90,9 +90,9 @@ ore item damage.
 D37 remains separate: plank lookup still requires a real loaded crafting recipe
 and a PLANKS-tagged block result. The selected input now preserves the species item
 components, and block-only logs safely have no recipe input. No glow plank recipe
-or association is guessed. D38 remains separate: restoring product/drop reverse
-lookup, multiple ore classifications and complete reload replacement is the next
-batch. This batch does not claim those unfinished APIs are complete.
+or association is guessed. D38 was completed in the subsequent ore/product catalogue batch;
+see [the D38 contract](ore-product-catalogue-port.md) for complete product lookup,
+multiple classifications, native tag lifecycle and reload replacement.
 
 ## Evidence
 

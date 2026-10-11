@@ -1,6 +1,10 @@
 package reika.dragonapi.modregistry;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.BlockItem;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -10,14 +14,7 @@ import net.minecraft.util.RandomSource;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.ModList;
-import reika.dragonapi.exception.MisuseException;
-import reika.dragonapi.instantiable.data.maps.ItemHashMap;
-import reika.dragonapi.instantiable.data.maps.MultiMap;
 import reika.dragonapi.interfaces.registry.OreType;
-import reika.dragonapi.libraries.java.ReikaArrayHelper;
-import reika.dragonapi.libraries.java.ReikaJavaLibrary;
-import reika.dragonapi.libraries.level.ReikaBlockHelper;
-import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
 import java.util.*;
 
@@ -32,7 +29,7 @@ public enum ModOreList implements OreType {
     ALUMINUM("Aluminum", 0xF1F1F1, OreRarity.COMMON, getAluminumName(), 1, "oreAluminum", "oreAluminium", "oreNaturalAluminum"), //...Why??
     IRIDIUM("Iridium", 0xC1E2D3, OreRarity.RARE, "ingotIridium", 1, "oreIridium"),
     FIRESTONE("Firestone", 0xE19636, OreRarity.RARE, "shardFirestone", 1, "oreFirestone"),
-    CERTUSQUARTZ("Certus Quartz", 0xC4CEFF, OreRarity.AVERAGE, "crystalCertusQuartz", 2, getCertusOreNames()),
+    CERTUSQUARTZ("Certus Quartz", 0xC4CEFF, OreRarity.AVERAGE, "crystalCertusQuartz", 2, "oreCertusQuartz"),
     URANIUM("Uranium", 0x4CFF00, OreRarity.SCATTERED, "ingotUranium", 1, "oreUranium", "oreYellorite", "oreUraninite"),
     CINNABAR("Mercury", 0x811A1A, OreRarity.SCATTERED, "itemQuicksilver", 1, "oreCinnabar"),
     AMBER("Amber", 0xB17F17, OreRarity.SCATTERED, "gemAmber", 1, "oreAmber"),
@@ -116,22 +113,18 @@ public enum ModOreList implements OreType {
     MEUTOITE("Meutoite", 0x5F5269, OreRarity.SCARCE, "ingotMeutoite", 1, "oreMeutoite"),
     ;
 
-    private final ArrayList<ItemStack> ores = new ArrayList<>();
     public final String displayName;
-    private String[] oreLabel;
+    private volatile String[] oreLabel;
     public final int dropCount;
     public final int oreColor;
     private final String product;
-    private boolean init;
     public final OreRarity rarity;
-    private final MultiMap<String, ItemStack> perName = new MultiMap<>();
 
     //private static final ArrayList<ItemStack> blocks = new ArrayList<ItemStack>();
 
     public static final ModOreList[] oreList = values();
 
-    private static final ItemHashMap<ModOreList> oreMappings = new ItemHashMap<>();
-    private static final HashMap<String, ModOreList> oreNames = new HashMap<>();
+    private static volatile OreCatalogue catalogue;
     private static final HashMap<String, ModOreList> enumNames = new HashMap<>();
 
     ModOreList(String n, int color, OreRarity r, String prod, int count, String... ore) {
@@ -148,83 +141,65 @@ public enum ModOreList implements OreType {
         DragonAPI.LOGGER.info("Adding ore entries for "+ this +" (Ore Names: "+ Arrays.toString(ore)+")");
     }
 
-    private static String[] getCertusOreNames() {
-        ArrayList<String> li = ReikaJavaLibrary.makeListFrom("oreCertusQuartz");
-//      todo  if (DragonOptions.COMMON.CHARGED_CERTUS.get())
-//            li.add("oreChargedCertusQuartz");
-        return li.toArray(new String[li.size()]);
-    }
-
     private static String getAluminumName() {
         return ModList.GREGTECH.isLoaded() ? "dustAluminum" : "ingotAluminum";
     }
 
-    public static void initializeAll() {
-        oreMappings.clear();
-        oreNames.clear();
-//        if (!DragonAPI.canLoadHandlers())
-//            throw new MisuseException("Initialized registry enum too early! Wait until postInit!");
-        for (int i = 0; i < oreList.length; i++) {
-            oreList[i].initialize();
+    public static void initializeAll() { initializeAll(BuiltInRegistries.ITEM); }
+
+    public static void onTagsUpdated(TagsUpdatedEvent event) {
+        if (event.shouldUpdateStaticData()) initializeAll(event.getRegistries().lookupOrThrow(Registries.ITEM));
+    }
+
+    private static synchronized void initializeAll(HolderLookup.RegistryLookup<Item> registry) {
+        var definitions = Arrays.stream(values()).map(ore -> {
+            var names = new LinkedHashSet<>(List.of(ore.getOreDictNames()));
+            for (var name : List.copyOf(names))
+                OreCatalogueTags.resolve(name).forEach(tag -> names.add(tag.location().toString()));
+            return new OreCatalogue.Definition(ore, List.copyOf(names), ore.product);
+        }).toList();
+        var next = OreCatalogue.build(definitions, name -> {
+            var items = new LinkedHashSet<Item>();
+            for (var tag : OreCatalogueTags.resolve(name))
+                registry.get(tag).ifPresent(members -> members.forEach(holder -> items.add(holder.value())));
+            return List.copyOf(items);
+        });
+        catalogue = next;
+        DragonAPI.LOGGER.debug("Rebuilt ore/product catalogue for {} definitions", definitions.size());
+    }
+
+    private static OreCatalogue catalogue() {
+        var snapshot = catalogue;
+        if (snapshot != null) return snapshot;
+        synchronized (ModOreList.class) {
+            if (catalogue == null) initializeAll();
+            return catalogue;
         }
     }
 
-    public void addOreDictName(String s) {
-        if (!ReikaArrayHelper.arrayContains(oreLabel, s, false)) {
-            oreLabel = Arrays.copyOf(oreLabel, oreLabel.length+1);
-            oreLabel[oreLabel.length-1] = s;
-        }
-        this.initialize();
+    /** Native tag registration; legacy category/material aliases remain supported below. */
+    public void addOreTag(TagKey<Item> tag) {
+        Objects.requireNonNull(tag);
+        if (!tag.registry().equals(Registries.ITEM)) throw new IllegalArgumentException("Expected an item tag");
+        addOreDictName(tag.location().toString());
     }
 
-    public void initialize() {
-		/*
-		if (init) {
-			DragonAPI.LOGGER.error(this+" is already initialized!");
-			return;
-		}
-		init = true;
-		 */
-        DragonAPI.LOGGER.info("Loading ore type "+this);
-        ores.clear();
-        perName.clear();
-		for (String label : oreLabel) {
-			oreNames.put(label, this);
-			ArrayList<ItemStack> toadd = new ArrayList<>();
-			TagKey<Item> tag = ReikaItemHelper.getOreTag(label);
-			if (tag != null)
-				BuiltInRegistries.ITEM.getTagOrEmpty(tag).forEach(holder -> toadd.add(new ItemStack(holder.value())));
-            if (!toadd.isEmpty()) {
-                toadd.removeIf(is -> is.getItem() == null);
-                DragonAPI.LOGGER.info("\tDetected the following blocks for " + this + " from OreDict \"" + label + "\": " + toadd);
-                for (ItemStack is : toadd) {
-                    if (ReikaItemHelper.isBlock(is)) {
-                        if (!ReikaItemHelper.collectionContainsItemStack(ores, is))
-                            ores.add(is);
-                        perName.addValue(label, is);
-                    } else {
-                        DragonAPI.LOGGER.info("\t" + is + " is not an ore block, but was OreDict fetched by \"" + label + "\"!");
-                    }
-                }
-            } else {
-                DragonAPI.LOGGER.info("\tNo ore blocks detected for \"" + label + "\"");
+    public void addOreDictName(String name) {
+        OreCatalogueTags.resolve(name); // Validate before changing any catalogue definition.
+        synchronized (ModOreList.class) {
+            var previous = oreLabel;
+            if (!Arrays.asList(previous).contains(name)) {
+                var extended = Arrays.copyOf(previous, previous.length + 1);
+                extended[previous.length] = name;
+                oreLabel = extended;
             }
-        }
-
-		// Modern common tags replace both OreDictionary entries and the old hard-coded
-		// compatibility list; every registered member has already been collected above.
-
-        if (!this.existsInGame())
-            DragonAPI.LOGGER.info("\tNo ore blocks detected for "+this);
-
-        this.loadCache();
-    }
-
-    private final void loadCache() {
-        for (ItemStack is : ores) {
-            oreMappings.put(is, this);
+            try { initializeAll(); }
+            catch (RuntimeException failure) { oreLabel = previous; throw failure; }
         }
     }
+
+    /** Rebuild the complete snapshot so old reverse entries disappear and shared memberships survive. */
+    public void initialize() { initializeAll(); }
 
     @Override
     public String toString() {
@@ -272,7 +247,7 @@ public enum ModOreList implements OreType {
     }
 
     public static ModOreList getModOreFromOre(Block b) {
-        return b == null ? null : getModOreFromOre(new ItemStack(b));
+        return first(getAllModOresFromOre(b));
     }
 
     public static ModOreList getModOreFromOre(BlockState state) {
@@ -283,17 +258,29 @@ public enum ModOreList implements OreType {
 
     /** Common item tags classify every native state of each registered ore block. */
     public List<BlockState> getOreStates() {
-        return ores.stream().map(WoodSpecies::stateOf).filter(Objects::nonNull)
-                .flatMap(state -> state.getBlock().getStateDefinition().getPossibleStates().stream()).distinct().toList();
+        return catalogue().blocks(this).stream().map(item -> ((BlockItem)item).getBlock())
+                .flatMap(block -> block.getStateDefinition().getPossibleStates().stream()).distinct().toList();
     }
 
-    public static ModOreList getModOreFromOre(ItemStack is) {
-        if (is == null || is.isEmpty())
-            return null;
-//  todo      if (ReikaItemHelper.matchStackWithBlock(is, MekanismHandler.getInstance().oreID))
-//            return MekanismHandler.getInstance().getModOre(is.getItem(), is.getItemDamage());
-        return oreMappings.get(is);
+    // DRAGONAPI-PORT: The original MekanismHandler.getModOre(item, damage) special case
+    // discriminated its shared 1.7.10 ore block. Its modern port must provide native
+    // item tags or explicit state associations; numeric damage cannot select a species.
+    /** Singular compatibility lookups choose the first original enum entry. Use the plural API for all matches. */
+    public static ModOreList getModOreFromOre(ItemStack stack) { return first(getAllModOresFromOre(stack)); }
+
+    public static List<ModOreList> getAllModOresFromOre(ItemStack stack) {
+        return stack == null || stack.isEmpty() ? List.of() : catalogue().ores(stack.getItem());
     }
+
+    public static List<ModOreList> getAllModOresFromOre(Block block) {
+        return block == null ? List.of() : catalogue().ores(block.asItem());
+    }
+
+    public static List<ModOreList> getAllModOresFromOre(BlockState state) {
+        return state == null ? List.of() : getAllModOresFromOre(state.getBlock());
+    }
+
+    private static ModOreList first(List<ModOreList> matches) { return matches.isEmpty() ? null : matches.getFirst(); }
 
     /** Decode an old saved catalogue ordinal; this has never classified block/item damage. */
     public static ModOreList getByLegacyOrdinal(int ordinal) {
@@ -305,9 +292,17 @@ public enum ModOreList implements OreType {
     public static ModOreList getEntryFromDamage(int damage) { return getByLegacyOrdinal(damage); }
 
     public String[] getOreDictNames() {
-        String[] arr = new String[oreLabel.length];
-        System.arraycopy(oreLabel, 0, arr, 0, oreLabel.length);
-        return arr;
+        synchronized (ModOreList.class) {
+            boolean charged = DragonAPI.config == null ? DragonOptions.CHARGEDCERTUS.getDefaultState() : DragonOptions.CHARGEDCERTUS.getState();
+            return oreNames(charged).toArray(String[]::new);
+        }
+    }
+
+    List<String> oreNames(boolean chargedCertus) {
+        var names = new ArrayList<>(List.of(oreLabel));
+        if (this == CERTUSQUARTZ && chargedCertus && !names.contains("oreChargedCertusQuartz"))
+            names.add("oreChargedCertusQuartz");
+        return List.copyOf(names);
     }
 
     public String getProductOreDictName() {
@@ -341,37 +336,39 @@ public enum ModOreList implements OreType {
     }
 
     public static ArrayList<ItemStack> getAllRegisteredOreBlocks() {
-        ArrayList<ItemStack> li = new ArrayList<ItemStack>();
-        for (ModOreList modOreList : oreList) {
-            modOreList.ores.forEach(stack -> li.add(stack.copy()));
-        }
-        return li;
+        var snapshot = catalogue();
+        var result = new ArrayList<ItemStack>();
+        for (var ore : values()) snapshot.blocks(ore).forEach(item -> result.add(new ItemStack(item)));
+        return result;
     }
 
     public ItemStack getFirstOreBlock() {
-        if (!this.existsInGame())
-            return null;
-        return ores.getFirst().copy();
+        var items = catalogue().blocks(this);
+        return items.isEmpty() ? null : new ItemStack(items.getFirst());
     }
 
     public ItemStack getRandomOreBlock() {
-        if (!this.existsInGame())
-            return null;
-        return ores.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(ores.size())).copy();
+        var items = catalogue().blocks(this);
+        return items.isEmpty() ? null : new ItemStack(items.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(items.size())));
     }
 
     public ItemStack getRandomOreBlock(RandomSource random) {
         Objects.requireNonNull(random);
-        return existsInGame() ? ores.get(random.nextInt(ores.size())).copy() : null;
+        var items = catalogue().blocks(this);
+        return items.isEmpty() ? null : new ItemStack(items.get(random.nextInt(items.size())));
     }
 
     public Collection<ItemStack> getAllOreBlocks() {
-        return ores.stream().map(ItemStack::copy).toList();
+        return catalogue().blocks(this).stream().map(ItemStack::new).toList();
     }
 
-    public boolean existsInGame() {
-        return !ores.isEmpty();
+    /** Declared product tag members, rather than guessed recipes or possible native loot drops. */
+    public List<ItemStack> getProductItems() {
+        return catalogue().products(this).stream().map(ItemStack::new).toList();
     }
+
+    public boolean existsInGame() { return !catalogue().blocks(this).isEmpty(); }
+
 	/*
 	public boolean isRare() {
 		return this == PLATINUM || this == NETHERPLATINUM || this == IRIDIUM ||	this == MOONSTONE || this == NETHERIRIDIUM;
@@ -438,13 +435,13 @@ public enum ModOreList implements OreType {
                 ? net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_STONE
                 : host.is(net.neoforged.neoforge.common.Tags.Blocks.ORE_BEARING_GROUND_NETHERRACK)
                 ? net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_NETHERRACK : null;
-        return ores.stream().filter(stack -> {
-            var state = ((net.minecraft.world.item.BlockItem) stack.getItem()).getBlock().defaultBlockState();
+        return catalogue().blocks(this).stream().filter(item -> {
+            var state = ((BlockItem)item).getBlock().defaultBlockState();
             boolean classified = state.is(net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_STONE)
                     || state.is(net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_DEEPSLATE)
                     || state.is(net.neoforged.neoforge.common.Tags.Blocks.ORES_IN_GROUND_NETHERRACK);
             return classified ? ground != null && state.is(ground) : this.canGenerateIn(b);
-        }).map(ItemStack::copy).toList();
+        }).map(ItemStack::new).toList();
     }
 
     @Override
@@ -453,7 +450,7 @@ public enum ModOreList implements OreType {
     }
 
     public boolean contains(ItemStack is) {
-        return ReikaItemHelper.collectionContainsItemStack(this.getAllOreBlocks(), is);
+        return getAllModOresFromOre(is).contains(this);
     }
 
     public static ModList getOreModFromItemStack(ItemStack is) {
@@ -467,24 +464,20 @@ public enum ModOreList implements OreType {
         return ModList.getModFromID(BuiltInRegistries.BLOCK.getKey(item.getBlock()).getNamespace());
     }
 
-    public static boolean isModOreType(String s) {
-        return oreNames.containsKey(s);
+    public static boolean isModOreType(String name) { return !getAllByOreName(name).isEmpty(); }
+
+    public static ModOreList getByOreName(String name) { return first(getAllByOreName(name)); }
+
+    public static List<ModOreList> getAllByOreName(String name) {
+        return name == null ? List.of() : catalogue().names(name);
     }
 
-    public static ModOreList getByOreName(String s) {
-        return oreNames.get(s);
-    }
+    /** Declared product associations plus the original ore-block fallback, in enum order. */
+    public static ModOreList getByDrop(ItemStack stack) { return first(getAllByDrop(stack)); }
 
-//   todo public static ModOreList getByDrop(ItemStack is) {
-//        int[] ids = OreDictionary.getOreIDs(is);
-//        for (int id : ids) {
-//            String s = OreDictionary.getOreName(id);
-//            ModOreList ore = oreNames.get(s);
-//            if (ore != null)
-//                return ore;
-//        }
-//        return null;
-//    }
+    public static List<ModOreList> getAllByDrop(ItemStack stack) {
+        return stack == null || stack.isEmpty() ? List.of() : catalogue().drops(stack.getItem());
+    }
 
     public static ModOreList getByEnumName(String name) {
         return enumNames.get(name);

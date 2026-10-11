@@ -68,6 +68,7 @@ public enum DragonOptions implements IntegerConfig, BooleanConfig, StringArrayCo
     STOPUNLOADSPREAD("Prevent block spreading near unloaded chunks", true),
     VERSIONCHANGEWARN("Version Change Warning Level (0 = None, 1 = ReikaMods only, 2 = All)", 2),
     DEBUGLOG("Mod's Debug Log (false = None, true = All)", false),
+    CHARGEDCERTUS("Allow charged certus to be recognized as normal certus ore", false),
     ;
 
     private final String label;

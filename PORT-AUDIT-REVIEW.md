@@ -1003,3 +1003,37 @@ TestInstance/docs/wood-ore-catalogue-2026-10-11.md. D37 plank provenance and D38
 product/drop/multiple-mapping/reload work remain separate. Other pending rift,
 worldgen, compatibility, launcher and IDE changes remain outside this checkpoint.
 Nothing is pushed.
+
+
+## Complete ore/product catalogue — D38, 2026-10-11
+
+ModOreList.getByDrop now recognizes the original declared product tags and retains
+its ore-block fallback. Immutable generations preserve every overlapping ore,
+product and source/native-name association; singular adapters consistently choose
+original enum order. Returned stacks are detached and classification follows item
+tag identity regardless of display components or stack count. Product lookup is
+the source's declared-product contract, not an invented exhaustive loot/recipe map.
+
+Full, individual and alias-triggered initialization replace the complete generation,
+removing stale associations while preserving held immutable views. Alias validation
+precedes mutation; synchronized publication and rollback retain a complete catalogue.
+Compound common tags, previous flat spellings, unusual original Monazit/Forcicium
+names, Certus gem/crystal tags and historical lapis products are retained. Native
+TagKey registration and plural lookup APIs are available. The source CHARGEDCERTUS
+option regains its original false default; enabled policy is read at rebuild time.
+
+The root TagsUpdatedEvent listener consumes authoritative server/remote item tags
+and skips shared integrated-client notifications. Minecraft 26.3 posts server tag
+updates before default item components bind, so snapshots hold Item identities and
+build stacks only when queried. No incomplete prototypes are created during binding.
+
+Five new units and two native fixtures pass. Final family validation passes 151
+units (103/34/8/6), all 71 required native DragonAPI fixtures, eight accepted-class
+guards covering 3,271 primary outputs, and DA/RC production jars. Normal Play
+argument hashes match the preceding checkpoint. Native reload fixtures restore all
+tag bindings; headless event handling does not establish live remote/visual acceptance
+or optional-mod parity. Contract: DragonAPI/docs/ore-product-catalogue-port.md.
+Evidence: TestInstance/docs/ore-product-catalogue-2026-10-11.md and
+build/ore-catalogue-family-validation.log. D37 plank provenance and D39 keyed-stack
+matching remain separate. Pending worldgen, rift, startup compatibility, IDE and
+launcher changes remain outside this local checkpoint. Nothing is pushed.
