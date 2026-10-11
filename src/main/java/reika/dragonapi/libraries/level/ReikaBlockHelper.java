@@ -134,7 +134,8 @@ public class ReikaBlockHelper {
         //   return null;
         if (id instanceof BlockTieredResource b) {
             if (ep != null && b.isPlayerSufficientTier(world, pos, ep)) {
-                return ReikaItemHelper.collateItemList(b.getHarvestResources(world, pos, 0, ep)).get(0);
+                var resources = ReikaItemHelper.collateItemList(b.getHarvestResources(world, pos, 0, ep));
+                return resources.isEmpty() ? null : resources.getFirst();
             } else {
                 Collection<ItemStack> li = b.getNoHarvestResources(world, pos, 0, ep);
                 return li.isEmpty() ? null : new ArrayList<>(li).get(0);
