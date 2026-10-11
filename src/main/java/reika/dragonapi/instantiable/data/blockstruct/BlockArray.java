@@ -29,6 +29,9 @@ import java.util.function.Function;
 public class BlockArray implements Iterable<BlockPos> {
 
     private record SearchNode(BlockPos position, int depth) {}
+    private static final Direction[] CALLBACK_SEARCH_DIRECTIONS = {
+            Direction.EAST, Direction.WEST, Direction.UP, Direction.DOWN, Direction.SOUTH, Direction.NORTH
+    };
 
     protected static final Random rand = new Random();
     private static final int DEPTH_LIMIT = getMaxDepth();
@@ -602,81 +605,67 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
 
+    /** Bounded callback flood fill; the historical callback receives the fixed search origin. */
     public void recursiveAddCallbackWithBounds(Level world, int x, int y, int z, int x1, int y1, int z1, int x2, int y2, int z2, AbstractSearch.PropagationCondition f) {
-        this.recursiveAddCallbackWithBounds(world, x, y, z, x, y, z, x1, y1, z1, x2, y2, z2, f, 0, new HashMap<>());
+        this.searchCallbackWithBounds(world, new BlockPos(x, y, z), x1, y1, z1, x2, y2, z2, f, true);
     }
 
-    private void recursiveAddCallbackWithBounds(Level world, int x0, int y0, int z0, int x, int y, int z, int x1, int y1, int z1, int x2, int y2, int z2, AbstractSearch.PropagationCondition f, int depth, HashMap<BlockPos, Integer> map) {
-        if (overflow)
+    /** Bounded callback flood fill whose callback receives the actual predecessor. */
+    public void iterativeAddCallbackWithBounds(Level world, int x, int y, int z, int x1, int y1, int z1, int x2, int y2, int z2, AbstractSearch.PropagationCondition f) {
+        this.searchCallbackWithBounds(world, new BlockPos(x, y, z), x1, y1, z1, x2, y2, z2, f, false);
+    }
+
+    private void searchCallbackWithBounds(Level world, BlockPos origin, int x1, int y1, int z1, int x2, int y2, int z2,
+                                         AbstractSearch.PropagationCondition condition, boolean originRelative) {
+        Objects.requireNonNull(world, "Search world");
+        Objects.requireNonNull(condition, "Propagation condition");
+        if (overflow || x1 > x2 || y1 > y2 || z1 > z2)
             return;
-        if (depth > maxDepth)
-            return;
-        if (taxiCabDistance && Math.abs(x - x0) + Math.abs(y - y0) + Math.abs(z - z0) > maxDepth)
-            return;
-        if (x < x1 || y < y1 || z < z1 || x > x2 || y > y2 || z > z2)
-            return;
-        if (!f.isValidLocation(world, new BlockPos(x, y, z), new BlockPos(x0, y0, z0))) {
-            return;
-        }
-        if (this.hasBlock(new BlockPos(x, y, z))) ;//return;
-        BlockPos c = new BlockPos(x, y, z);
-        if (map.containsKey(c) && depth >= map.get(c)) {
-            return;
-        }
-        this.addBlockCoordinate(x, y, z);
-        map.put(c, depth);
-        try {
+        BlockBox searchBounds = new BlockBox(x1, y1, z1, x2, y2, z2);
+        ArrayDeque<SearchNode> pending = new ArrayDeque<>();
+        Set<BlockPos> visited = new HashSet<>();
+        this.enqueueCallbackNode(world, origin, origin, origin, 0, searchBounds, condition, pending, visited);
+        while (!pending.isEmpty() && !overflow) {
+            SearchNode node = pending.removeFirst();
+            BlockPos current = node.position();
+            this.addBlockCoordinate(current);
+            if (node.depth() >= maxDepth)
+                continue;
+            int depth = node.depth() + 1;
+            BlockPos from = originRelative ? origin : current;
             if (extraSpread) {
-                for (int i = -1; i <= 1; i++)
-                    for (int j = -1; j <= 1; j++)
-                        for (int k = -1; k <= 1; k++)
-                            this.recursiveAddCallbackWithBounds(world, x0, y0, z0, x + i, y + j, z + k, x1, y1, z1, x2, y2, z2, f, depth + 1, map);
-            } else {
-                this.recursiveAddCallbackWithBounds(world, x0, y0, z0, x + 1, y, z, x1, y1, z1, x2, y2, z2, f, depth + 1, map);
-                this.recursiveAddCallbackWithBounds(world, x0, y0, z0, x - 1, y, z, x1, y1, z1, x2, y2, z2, f, depth + 1, map);
-                this.recursiveAddCallbackWithBounds(world, x0, y0, z0, x, y + 1, z, x1, y1, z1, x2, y2, z2, f, depth + 1, map);
-                this.recursiveAddCallbackWithBounds(world, x0, y0, z0, x, y - 1, z, x1, y1, z1, x2, y2, z2, f, depth + 1, map);
-                this.recursiveAddCallbackWithBounds(world, x0, y0, z0, x, y, z + 1, x1, y1, z1, x2, y2, z2, f, depth + 1, map);
-                this.recursiveAddCallbackWithBounds(world, x0, y0, z0, x, y, z - 1, x1, y1, z1, x2, y2, z2, f, depth + 1, map);
-            }
-        } catch (StackOverflowError e) {
-            this.throwOverflow(depth);
-            e.printStackTrace();
-        }
-    }
-
-    public void iterativeAddCallbackWithBounds(Level world, int x0, int y0, int z0, int x1, int y1, int z1, int x2, int y2, int z2, AbstractSearch.PropagationCondition f) {
-        BlockPos root = new BlockPos(x0, y0, z0);
-        if (!f.isValidLocation(world, new BlockPos(x0, y0, z0), root))
-            return;
-        HashSet<BlockPos> next = new HashSet<>();
-        next.add(root);
-        while (!next.isEmpty()) {
-            HashSet<BlockPos> toNext = new HashSet<>();
-            for (BlockPos c : next) {
-                if (c.getX() < x1 || c.getY() < y1 || c.getZ() < z1 || c.getX() > x2 || c.getY() > y2 || c.getZ() > z2)
-                    continue;
-                this.addBlockCoordinate(c.getX(), c.getY(), c.getZ());
-                if (extraSpread) {
-                    for (int i = -1; i <= 1; i++) {
-                        for (int j = -1; j <= 1; j++) {
-                            for (int k = -1; k <= 1; k++) {
-                                BlockPos c2 = c.offset(i, j, k);
-                                if (!keys.contains(c2) && f.isValidLocation(world, c2, c)) {
-                                    toNext.add(c2);
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    for (BlockPos c2 : CoordHelper.getAdjacentCoordinates(c)) {
-                        if (!keys.contains(c2) && f.isValidLocation(world, c2, c)) {
-                            toNext.add(c2);
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        for (int dz = -1; dz <= 1; dz++) {
+                            if (dx != 0 || dy != 0 || dz != 0)
+                                this.enqueueCallbackNode(world, current.offset(dx, dy, dz), origin, from, depth,
+                                        searchBounds, condition, pending, visited);
                         }
                     }
                 }
+            } else {
+                // Retain the recursive API's axis order, with deterministic breadth-first admission.
+                for (Direction direction : CALLBACK_SEARCH_DIRECTIONS)
+                    this.enqueueCallbackNode(world, current.relative(direction), origin, from, depth,
+                            searchBounds, condition, pending, visited);
             }
-            next = toNext;
+        }
+    }
+
+    private void enqueueCallbackNode(Level world, BlockPos position, BlockPos origin, BlockPos from, int depth,
+                                     BlockBox searchBounds, AbstractSearch.PropagationCondition condition,
+                                     ArrayDeque<SearchNode> pending, Set<BlockPos> visited) {
+        if (depth > maxDepth || visited.contains(position) || !searchBounds.isBlockInside(position)
+                || !bounds.isBlockInside(position) || !world.isInValidBounds(position))
+            return;
+        if (taxiCabDistance && position.distManhattan(origin) > maxDepth)
+            return;
+        if (clampToChunkLoad && !world.hasChunk(position.getX() >> 4, position.getZ() >> 4))
+            return;
+        if (condition.isValidLocation(world, position, from)) {
+            BlockPos immutable = position.immutable();
+            visited.add(immutable);
+            pending.addLast(new SearchNode(immutable, depth));
         }
     }
 
@@ -970,7 +959,7 @@ public class BlockArray implements Iterable<BlockPos> {
 
     protected void throwOverflow(int depth) {
         overflow = true;
-        DragonAPI.LOGGER.error("Stack overflow at depth " + depth + "/" + maxDepth + "!");
+        DragonAPI.LOGGER.error("Stack overflow at depth {}/{}!", depth, maxDepth);
     }
 
     public BlockPos getRandomBlock() {
