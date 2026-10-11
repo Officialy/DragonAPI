@@ -830,3 +830,35 @@ and tick-failure-machine-validation.log. Normal Play argument hashes match.
 Only this batch is checkpointed. Other pending rift, worldgen, compatibility,
 launcher and IDE work remains separate. Nothing is pushed. Next: D16's block-array
 computation threading contract. Boundary: TestInstance/docs/tick-failure-continuation-2026-10-11.md.
+
+
+## Block array computation and authorized fills — D16, 2026-10-11
+
+Original and ported BlockArrayComputer branches were empty, with no real callers
+beyond an unused private instance. Explicit inputs now define coordinate-NBT LOAD,
+ordered snapshot ITERATE and full-state FILL using the existing array contracts.
+BlockArray.getComputer captures current membership/bounds; no task retains or mutates
+its source array. Copied NBT and immutable positions/results permit worker computation
+with world-free callbacks. Missing inputs, concurrent execution/configuration and
+callback failures report explicitly without a stale successful result.
+
+FILL capture/execution require the owning server thread, loaded chunks, valid bounds,
+expected full states and explicit caller actor/claim authorization. Every target is
+preflighted before writing; denial, failed authorization and stale preflight change
+nothing. Native UPDATE_ALL placement preserves neighbor/client updates and returns
+actual changed counts. Explicit server submission works from workers. Later targets
+changed by neighbor effects stop with partial-progress context; native world updates
+are not transactional and no unsafe rollback is attempted. Contract/source boundary:
+DragonAPI/docs/block-array-computer-port.md.
+
+Coordinate NBT again writes original x/y/z, reads both original and affected-port
+pos.getX()/pos.getY()/pos.getZ() keys, and derives loaded limits from accepted members
+while retaining the persisted legacy limit tag. Six new unit regressions and five
+native fixtures pass; the final family suite passes all 56 native tests and 141 units
+(93 DA + 34 RC + 8 ReC + 6 Chroma). Eight guards verify 3,264 accepted primary outputs.
+Evidence: build/block-array-computer-focused-validation.log and
+block-array-computer-family-validation.log. Normal Play argument hashes match.
+
+Only D16 code/tests/notes are checkpointed; pending rift, worldgen, compatibility,
+launcher and IDE changes remain separate. Nothing is pushed. Boundary:
+TestInstance/docs/block-array-computer-continuation-2026-10-11.md.

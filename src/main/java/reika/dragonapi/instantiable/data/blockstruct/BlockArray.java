@@ -36,7 +36,6 @@ public class BlockArray implements Iterable<BlockPos> {
     private static final Comparator<BlockPos> heightComparator2 = new HeightComparator(true);
     private final ArrayList<BlockPos> blocks = new ArrayList<>();
     private final HashSet<BlockPos> keys = new HashSet<>();
-    private final BlockArrayComputer computer;
     public int maxDepth = DEPTH_LIMIT;
     public boolean clampToChunkLoad = false;
     public boolean extraSpread = false;
@@ -56,7 +55,6 @@ public class BlockArray implements Iterable<BlockPos> {
     }
 
     public BlockArray(Collection<BlockPos> li) {
-        computer = new BlockArrayComputer(this);
         if (li != null) {
             for (BlockPos c : li) {
                 this.addBlockCoordinate(c);
@@ -119,6 +117,15 @@ public class BlockArray implements Iterable<BlockPos> {
     public BlockArray setWorld(Level world) {
         refWorld = world;
         return this;
+    }
+
+    public final Level getWorld() {
+        return refWorld;
+    }
+
+    /** Captures current membership; call while exclusively owning this mutable array. */
+    public final BlockArrayComputer getComputer() {
+        return new BlockArrayComputer(this);
     }
 
     public void addBlockCoordinate(int x, int y, int z) {
@@ -1040,9 +1047,9 @@ public class BlockArray implements Iterable<BlockPos> {
         for (int i = 0; i < this.getSize(); i++) {
             CompoundTag tag = new CompoundTag();
             BlockPos c = this.getNthBlock(i);
-            tag.putInt("pos.getX()", c.getX());
-            tag.putInt("pos.getY()", c.getY());
-            tag.putInt("pos.getZ()", c.getZ());
+            tag.putInt("x", c.getX());
+            tag.putInt("y", c.getY());
+            tag.putInt("z", c.getZ());
             li.add(tag);
         }
         NBT.put(label, li);
@@ -1063,18 +1070,14 @@ public class BlockArray implements Iterable<BlockPos> {
             return;
         for (int i = 0; i < tag.size(); i++) {
             CompoundTag coord = NBTCompat.getListCompound(tag, i);
-            int x = NBTCompat.getInt(coord, "x", 0);
-            int y = NBTCompat.getInt(coord, "y", 0);
-            int z = NBTCompat.getInt(coord, "z", 0);
+            // Read the original x/y/z format and saves from the port's renamed-key writer.
+            int x = NBTCompat.getInt(coord, "x", NBTCompat.getInt(coord, "pos.getX()", 0));
+            int y = NBTCompat.getInt(coord, "y", NBTCompat.getInt(coord, "pos.getY()", 0));
+            int z = NBTCompat.getInt(coord, "z", NBTCompat.getInt(coord, "pos.getZ()", 0));
             this.addBlockCoordinate(new BlockPos(x, y, z));
         }
-        CompoundTag limit = NBTCompat.getCompound(NBT, label + "_lim");
-        minX = NBTCompat.getInt(limit, "minx", minX);
-        minY = NBTCompat.getInt(limit, "miny", minY);
-        minZ = NBTCompat.getInt(limit, "minz", minZ);
-        maxX = NBTCompat.getInt(limit, "maxx", maxX);
-        maxY = NBTCompat.getInt(limit, "maxy", maxY);
-        maxZ = NBTCompat.getInt(limit, "maxz", maxZ);
+        // addBlockCoordinate computed limits from accepted membership. Persisted limits may
+        // describe rejected/out-of-bounds coordinates or come from a stale/corrupt cache.
     }
 
     public void shaveToCube() {
