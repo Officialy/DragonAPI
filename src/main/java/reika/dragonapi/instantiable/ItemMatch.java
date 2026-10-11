@@ -80,7 +80,7 @@ public class ItemMatch {
     }
 
     public ItemMatch addItem(KeyedItemStack ks) {
-        ks = ks.setSimpleHash(true).setIgnoreNBT(ks.getItemStack().getComponentsPatch().isEmpty()).lock();
+        ks = ks.setSimpleHash(true).setIgnoreNBT(!reika.dragonapi.instantiable.data.ItemKeyComponents.hasAdditionalChanges(ks.getItemStack())).lock();
         items.add(ks);
         //if (FMLEnvironment.getDist() == Dist.CLIENT)
         ItemStack is2 = ks.getItemStack();

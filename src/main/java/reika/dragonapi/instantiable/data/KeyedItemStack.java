@@ -28,6 +28,9 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     private static final java.util.concurrent.atomic.AtomicLong NEXT_COMPONENT_ORDER = new java.util.concurrent.atomic.AtomicLong();
     private final ItemStack item;
     private final ComponentOrder componentOrder;
+    private final ComponentOrder variantOrder;
+    private final ComponentOrder additionalOrder;
+    private final int durability;
     private final boolean[] enabledCriteria = new boolean[Criteria.list.length];
     private boolean lock = false;
     private boolean simpleHash = false;
@@ -38,18 +41,22 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
 
     public KeyedItemStack(Item i) {
         this(new ItemStack(i, 1));
+        this.setIgnoreMetadata(true);
         this.setSized(false);
         this.setIgnoreNBT(true);
         this.setSimpleHash(true);
     }
 
     public KeyedItemStack(ItemStack is) {
-        if (is == null || is.getItem() == null)
+        if (is == null || is.isEmpty())
             throw new MisuseException("You cannot key a null itemstack!");
         item = is.copy();
-        componentOrder = COMPONENT_ORDERS.intern(new ComponentOrder(
-                net.minecraft.core.component.DataComponentMap.builder().addAll(item.getComponents()).build(),
-                NEXT_COMPONENT_ORDER.getAndIncrement()));
+        reika.dragonapi.interfaces.LegacyItemData.migrate(item);
+        componentOrder = order(net.minecraft.core.component.DataComponentMap.builder().addAll(item.getComponents()).build());
+        var parts = ItemKeyComponents.split(item);
+        variantOrder = order(parts.variants());
+        additionalOrder = order(parts.additional());
+        durability = parts.variants().has(net.minecraft.core.component.DataComponents.DAMAGE) ? 0 : item.getDamageValue();
         for (int i = 0; i < enabledCriteria.length; i++)
             enabledCriteria[i] = Criteria.list[i].defaultState;
     }
@@ -63,7 +70,8 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         boolean sized = NBTCompat.getBoolean(nbt, "sized", false);
         boolean simple = NBTCompat.getBoolean(nbt, "simplehash", false);
         return new KeyedItemStack(ItemStack.OPTIONAL_CODEC.parse(provider != null ? provider.createSerializationContext(NbtOps.INSTANCE) : NbtOps.INSTANCE, nbt).result().orElse(ItemStack.EMPTY)).setIgnoreNBT(ignore).setSized(sized).setSimpleHash(simple)
-                .setIgnoreMetadata(NBTCompat.getBoolean(nbt, "ignoremeta", false));
+                .setIgnoreMetadata(NBTCompat.getBoolean(nbt, "ignoremeta", false))
+                .setIgnoreDamage(NBTCompat.getBoolean(nbt, "ignoredamage", true));
     }
 
     public KeyedItemStack setSized(boolean size) {
@@ -112,6 +120,9 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     private boolean match(KeyedItemStack ks, boolean force) {
+        if (ks == null) return false;
+        if (force) return item.getItem() == ks.item.getItem() && item.getCount() == ks.item.getCount()
+                && componentOrder.components().equals(ks.componentOrder.components());
         for (int i = 0; i < Criteria.list.length; i++) {
             Criteria c = Criteria.list[i];
             if ((force || (enabledCriteria[i] && ks.enabledCriteria[i])) && !c.match(this, ks))
@@ -121,6 +132,7 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
     }
 
     public boolean match(ItemStack is) {
+        if (is == null || is.isEmpty()) return false;
         KeyedItemStack ks = new KeyedItemStack(is);
         ks.setSimpleHash(simpleHash);
         System.arraycopy(enabledCriteria, 0, ks.enabledCriteria, 0, Criteria.list.length);
@@ -170,13 +182,13 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         nbt.putBoolean("sized", enabledCriteria[Criteria.SIZE.ordinal()]);
         nbt.putBoolean("ignorenbt", !enabledCriteria[Criteria.NBT.ordinal()]);
         nbt.putBoolean("ignoremeta", !enabledCriteria[Criteria.METADATA.ordinal()]);
+        nbt.putBoolean("ignoredamage", !enabledCriteria[Criteria.DAMAGE.ordinal()]);
         nbt.putBoolean("useID", enabledCriteria[Criteria.ID.ordinal()]);
         nbt.putBoolean("simplehash", simpleHash);
     }
 
     public boolean contains(KeyedItemStack ks) {
         if (!this.exactMatch(ks) && this.matches(ks)) {
-            boolean flag = true;
             for (int i = 0; i < Criteria.list.length; i++) {
                 Criteria c = Criteria.list[i];
                 if (!enabledCriteria[i] && ks.enabledCriteria[i]) {
@@ -197,16 +209,26 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
             if (result != 0) return result;
         }
         if (enabledCriteria[Criteria.METADATA.ordinal()]) {
-            result = Integer.compare(item.getDamageValue(), o.item.getDamageValue());
+            result = compareComponents(variantOrder, o.variantOrder);
             if (result != 0) return result;
         }
         if (enabledCriteria[Criteria.SIZE.ordinal()]) {
             result = Integer.compare(item.getCount(), o.item.getCount());
             if (result != 0) return result;
         }
-        if (enabledCriteria[Criteria.NBT.ordinal()] && !componentOrder.components().equals(o.componentOrder.components()))
-            return Long.compare(componentOrder.order(), o.componentOrder.order());
-        return 0;
+        if (enabledCriteria[Criteria.NBT.ordinal()]) {
+            result = compareComponents(additionalOrder, o.additionalOrder);
+            if (result != 0) return result;
+        }
+        return enabledCriteria[Criteria.DAMAGE.ordinal()] ? Integer.compare(durability, o.durability) : 0;
+    }
+
+    private static ComponentOrder order(net.minecraft.core.component.DataComponentMap components) {
+        return COMPONENT_ORDERS.intern(new ComponentOrder(components, NEXT_COMPONENT_ORDER.getAndIncrement()));
+    }
+
+    private static int compareComponents(ComponentOrder first, ComponentOrder second) {
+        return first.components().equals(second.components()) ? 0 : Long.compare(first.order(), second.order());
     }
 
     /** Native components include transient values without a persistence codec. Intern immutable
@@ -219,10 +241,31 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         @Override public int hashCode() { return components.hashCode(); }
     }
 
+    /** Legacy metadata now selects declared subtype components, never tool wear. */
     public KeyedItemStack setIgnoreMetadata(boolean ignore) {
         if (!lock) enabledCriteria[Criteria.METADATA.ordinal()] = !ignore;
         return this;
     }
+
+    public KeyedItemStack setIgnoreVariantComponents(boolean ignore) { return setIgnoreMetadata(ignore); }
+
+    /** Legacy NBT selects additional components, separately from subtype identity and durability. */
+    public KeyedItemStack setIgnoreAdditionalComponents(boolean ignore) { return setIgnoreNBT(ignore); }
+
+    public KeyedItemStack setIgnoreDamage(boolean ignore) {
+        if (!lock) enabledCriteria[Criteria.DAMAGE.ordinal()] = !ignore;
+        return this;
+    }
+
+    /** Modern whole-component policy; size remains independently selectable. */
+    public KeyedItemStack setIgnoreComponents(boolean ignore) {
+        return setIgnoreVariantComponents(ignore).setIgnoreAdditionalComponents(ignore).setIgnoreDamage(ignore);
+    }
+
+    public boolean hasMeta() { return enabledCriteria[Criteria.METADATA.ordinal()]; }
+    public boolean hasNBT() { return enabledCriteria[Criteria.NBT.ordinal()]; }
+    public boolean isSized() { return enabledCriteria[Criteria.SIZE.ordinal()]; }
+    public boolean checksDamage() { return enabledCriteria[Criteria.DAMAGE.ordinal()]; }
 
     public String getDisplayName() {
         String base = item.getDisplayName().toString();
@@ -235,7 +278,8 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
         ID(true, ChatFormatting.RESET), //none
         METADATA(true, ChatFormatting.LIGHT_PURPLE),
         SIZE(false, ChatFormatting.BOLD),
-        NBT(true, ChatFormatting.UNDERLINE);
+        NBT(true, ChatFormatting.UNDERLINE),
+        DAMAGE(false, ChatFormatting.STRIKETHROUGH);
 
         private static final Criteria[] list = values();
         private final boolean defaultState;
@@ -246,29 +290,18 @@ public final class KeyedItemStack implements Comparable<KeyedItemStack> {
             chatChar = f;
         }
 
-        public int hash(KeyedItemStack ks) {
-            switch (this) {
-                case ID:
-                    return ks.item.getItem().hashCode();
-                case SIZE:
-                    return ks.item.getCount();
-                case NBT:
-                    return ks.item.getComponents().hashCode();
-                default:
-                    return 0;
-            }
-        }
-
         private boolean match(KeyedItemStack k1, KeyedItemStack k2) {
             switch (this) {
                 case ID:
                     return k1.item.getItem() == k2.item.getItem();
-                case METADATA: //1.7.10 item damage
-                    return k1.item.getDamageValue() == k2.item.getDamageValue();
+                case METADATA: //Declared native components replace 1.7.10 subtypes.
+                    return k1.variantOrder.components().equals(k2.variantOrder.components());
                 case SIZE:
                     return k1.item.getCount() == k2.item.getCount();
-                case NBT: //components only; size is its own criterion (ItemStack.matches also compared counts)
-                    return k1.componentOrder.components().equals(k2.componentOrder.components());
+                case NBT: //Additional components; subtype, count and durability are separate.
+                    return k1.additionalOrder.components().equals(k2.additionalOrder.components());
+                case DAMAGE:
+                    return k1.durability == k2.durability;
             }
             return false;
         }
