@@ -805,3 +805,28 @@ Normal Play argument hashes match; saves, installed mods and unrelated working c
 are preserved. No push. Full structure/drop, powered-cannon and remote/menu acceptance
 remain separate; D35 is a different base-class contract. The next focused work is D53,
 then D16. Checkpoint boundary: TestInstance/docs/continuation-2026-10-11.md.
+
+
+## Native tick failure policy — D53, 2026-10-11
+
+The shared BlockEntityBase lifecycle no longer swallows broad programming errors
+and continues into synchronization, callbacks and machine logic after failed
+animation/initialization. Failures reach the real 26.3 LevelChunk ticker: complete
+crash report by default, or native entity removal when the owner's existing
+NeoForge option enables it. Production code does not alter that option. Existing
+caller-local handling remains; writeError logs the complete Throwable with type,
+class, position, dimension and logical side before its optional chat display.
+Contract and sources: DragonAPI/docs/block-entity-tick-failures.md.
+
+All three new native fixtures pass, including the formerly swallowed five error
+classes plus illegal state/linkage errors, both lifecycle hooks, both native
+policies, no retry after removal, healthy replacement and explicit handled-error
+logging/continuation. The strengthened family suite passes all 51 native tests;
+all 135 affected units pass. All 151 registered-machine lifecycle cases pass under
+the stricter policy. Eight output guards verify 3,263 accepted primary classes.
+Evidence: build/tick-failure-focused-validation.log, tick-failure-family-validation.log
+and tick-failure-machine-validation.log. Normal Play argument hashes match.
+
+Only this batch is checkpointed. Other pending rift, worldgen, compatibility,
+launcher and IDE work remains separate. Nothing is pushed. Next: D16's block-array
+computation threading contract. Boundary: TestInstance/docs/tick-failure-continuation-2026-10-11.md.

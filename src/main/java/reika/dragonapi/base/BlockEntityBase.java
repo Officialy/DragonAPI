@@ -12,6 +12,7 @@ package reika.dragonapi.base;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
@@ -35,7 +36,6 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.util.FakePlayer;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -332,6 +332,13 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         forceSync = true;
     }
 
+    /**
+     * Runs the shared lifecycle. Unexpected failures propagate to the native block-entity
+     * ticker, which supplies a crash report and applies NeoForge's configured failure policy.
+     * A failed initialization or animation must not continue into synchronization, callbacks
+     * or the caller's machine logic. Recoverable failures belong in the operation that can
+     * actually recover, and may still be reported through {@link #writeError(Throwable)}.
+     */
     public final void updateEntity() {
 //        DragonAPI.LOGGER.info("Running update entity code for "+this+"!");
         long time = level.getGameTime();
@@ -352,15 +359,8 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
             hasTicked = true;
         }
 
-        if (this.shouldRunUpdateCode()) {
-            try {
-                if (isNaturalTick)
-                    this.updateBlockEntity();
-            } catch (IndexOutOfBoundsException | NullPointerException | ClassCastException | ArithmeticException |
-                     IllegalArgumentException e) {
-                this.writeError(e);
-            }
-        }
+        if (this.shouldRunUpdateCode() && isNaturalTick)
+            this.updateBlockEntity();
 
         if (isNaturalTick) {
             // Initial sync fix: previously fired {@code syncAllData(true)} 5× in the first 20 ticks for
@@ -681,16 +681,19 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         return level != null;
     }
 
+    /** Reports a failure explicitly handled by the caller; does not choose a tick recovery policy. */
     public void writeError(Throwable e) {
+        String side = level == null ? "unattached" : level.isClientSide() ? "client" : "server";
+        String dimension = level == null ? "unattached" : level.dimension().identifier().toString();
+        String context = "Block entity " + BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(this.getType())
+                + " (" + this.getClass().getName() + ") at " + worldPosition
+                + " in " + dimension + " [" + side + "] reported a handled failure";
+        DragonAPI.LOGGER.error(context, e);
         if (DragonOptions.CHATERRORS.getState()) {
-            ReikaChatHelper.write(this + " [" + FMLEnvironment.getDist() + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
+            ReikaChatHelper.write(context + ": " + e.getClass().getName() + ": " + e.getMessage());
             ReikaChatHelper.write(Arrays.toString(e.getStackTrace()));
             ReikaChatHelper.write("");
         }
-
-        DragonAPI.LOGGER.error(this + " [" + FMLEnvironment.getDist() + "] is throwing " + e.getClass() + " on update: " + e.getMessage());
-        e.printStackTrace();
-        DragonAPI.LOGGER.info("");
     }
 
     public Random getRandom() {
