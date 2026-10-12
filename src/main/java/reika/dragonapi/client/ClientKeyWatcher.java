@@ -89,7 +89,7 @@ public final class ClientKeyWatcher {
     private static void send(Key key, boolean pressed) {
         var bytes = new ByteArrayOutputStream(12);
         try (var data = new DataOutputStream(bytes)) {
-            data.writeInt(APIPacketHandler.PacketIDs.KEYUPDATE.ordinal());
+            data.writeInt(APIPacketHandler.PacketIDs.KEYUPDATE.wireId());
             data.writeInt(key.wireId);
             data.writeInt(pressed ? 1 : 0);
         } catch (IOException e) { throw new IllegalStateException("Unable to encode key state", e); }

@@ -194,7 +194,7 @@ public class ReikaWorldHelper {
             world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
         }
         if (FX) {
-            ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BREAKPARTICLES.ordinal(), world, pos, 128, Block.getId(b));
+            ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BREAKPARTICLES.wireId(), world, pos, 128, Block.getId(b));
             ReikaSoundHelper.playBreakSound(world, pos, b.getBlock());
         }
     }

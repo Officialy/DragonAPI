@@ -186,7 +186,7 @@ public class ReikaSoundHelper {
     }
 
     public static void playSoundFromServer(Level world, double x, double y, double z, Identifier loc, float vol, float pitch, boolean scale) {
-        ReikaPacketHelper.writeDirectSound(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.SERVERSOUND.ordinal(), world, x, y, z, loc, vol, pitch, scale);
+        ReikaPacketHelper.writeDirectSound(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.SERVERSOUND.wireId(), world, x, y, z, loc, vol, pitch, scale);
     }
 
     public static void playSoundFromServerAtBlock(Level world, int x, int y, int z, Identifier loc, float vol, float pitch, boolean scale) {

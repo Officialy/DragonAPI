@@ -1308,7 +1308,7 @@ public class ReikaPacketHelper {
             outputStream.writeInt(y);
             outputStream.writeInt(z);
             PacketableData type = PacketableData.getType(obj);
-            outputStream.writeInt(type.ordinal());
+            outputStream.writeInt(type.wireId());
             type.write(outputStream, obj);
         } catch (IllegalAccessException | IOException ex) {
             DragonAPI.LOGGER.error("Error encoding SyncPacket", ex);
@@ -1345,12 +1345,16 @@ public class ReikaPacketHelper {
         }
     }
 
-    private enum PacketableData {
-        INT("I", Integer.class),
-        BOOLEAN("B", Boolean.class),
-        DOUBLE("D", Double.class),
-        FLOAT("F", Float.class),
-        STRING("S", String.class);
+    private enum PacketableData implements reika.dragonapi.interfaces.PacketId {
+        INT(0, "I", Integer.class),
+        BOOLEAN(1, "B", Boolean.class),
+        DOUBLE(2, "D", Double.class),
+        FLOAT(3, "F", Float.class),
+        STRING(4, "S", String.class);
+
+        private final int wireId;
+        private static final java.util.Map<Integer, PacketableData> BY_ID = reika.dragonapi.interfaces.PacketId.index(values());
+        @Override public int wireId() { return wireId; }
 
         private final String id;
         private final Class type;
@@ -1359,7 +1363,8 @@ public class ReikaPacketHelper {
         private static final HashMap<Class, PacketableData> classMap = new HashMap();
         private static final PacketableData[] list = values();
 
-        PacketableData(String s, Class c) {
+        PacketableData(int wireId, String s, Class c) {
+            this.wireId = wireId;
             id = s;
             type = c;
         }
@@ -1434,7 +1439,7 @@ public class ReikaPacketHelper {
         e.save(output);
         CompoundTag nbt = output.buildResult();
         nbt.putInt("dispatchID", e.getId());
-        DataPacket pack = getNBTPacket(APIPacketHandler.PacketIDs.ENTITYSYNC.ordinal(), nbt);
+        DataPacket pack = getNBTPacket(APIPacketHandler.PacketIDs.ENTITYSYNC.wireId(), nbt);
         PacketPipeline pipe = pipelines.get(ch);
         if (pipe == null) {
             DragonAPI.LOGGER.error("Attempted to send a packet from an unbound channel!");
@@ -1472,7 +1477,7 @@ public class ReikaPacketHelper {
                     //DragonAPI.LOGGER.info("Null field for syncing tank field "+name);
                     return;
                 }
-                Object data = PacketableData.list[in.readInt()].read(in);
+                Object data = reika.dragonapi.interfaces.PacketId.lookup(PacketableData.BY_ID, in.readInt()).read(in);
                 f.setAccessible(true);
                 f.set(te, data);
             } catch (Exception e) {
@@ -1683,7 +1688,7 @@ public class ReikaPacketHelper {
 
         /** See {@link DataPacket#decode} for the symmetric wire format. */
         public void encode(FriendlyByteBuf data) {
-            data.writeByte(this.type.ordinal());
+            data.writeByte(this.type.wireId());
         }
 
         // Legacy handleClient/handleServer methods removed - using payload system instead
@@ -1775,7 +1780,7 @@ public class ReikaPacketHelper {
             CompoundTag NBT = output.buildResult();
             List<ServerPlayer> li = tile.getLevel().getEntitiesOfClass(ServerPlayer.class, ReikaAABBHelper.getBlockAABB(tile.getBlockPos().getX(), tile.getBlockPos().getY(), tile.getBlockPos().getZ()).inflate(4, 4, 4)); //todo inflate or expandtowards
             for (ServerPlayer ep : li)
-                sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.VTILESYNC.ordinal(), NBT, new PacketTarget.PlayerTarget(ep));
+                sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.VTILESYNC.wireId(), NBT, new PacketTarget.PlayerTarget(ep));
         }
     }
 

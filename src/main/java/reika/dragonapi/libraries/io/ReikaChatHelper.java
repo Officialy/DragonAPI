@@ -40,7 +40,7 @@ public final class ReikaChatHelper {
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
             clearChatGui();
         } else if (ep != null) {
-            ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.CLEARCHAT.ordinal(), ep);
+            ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.CLEARCHAT.wireId(), ep);
         }
     }
 

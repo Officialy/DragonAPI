@@ -76,7 +76,7 @@ public class EntityListCommand {
     }
 
     private static void sendPacket(ServerPlayer ep) {
-        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.ENTITYDUMP.ordinal(), ep);
+        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.ENTITYDUMP.wireId(), ep);
     }
 
     private static ArrayList<String> getData(Player ep, Dist side) {

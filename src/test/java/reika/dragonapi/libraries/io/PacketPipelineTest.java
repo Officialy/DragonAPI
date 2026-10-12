@@ -48,7 +48,7 @@ class PacketPipelineTest {
         var server = (ServerboundCustomPayloadPacket)pipe.getMinecraftPacket(packet, PacketFlow.SERVERBOUND);
         var payload = (DataPacketPayload)client.payload();
         assertEquals(Identifier.fromNamespaceAndPath("pipeline_test", "channel"), payload.type().id());
-        assertArrayEquals(new byte[]{(byte)PacketTypes.RAW.ordinal(), 4, 12, 34, 56, 78}, payload.data());
+        assertArrayEquals(new byte[]{(byte)7, 4, 12, 34, 56, 78}, payload.data());
         assertArrayEquals(payload.data(), ((DataPacketPayload)server.payload()).data());
         assertArrayEquals(packet.getBytes(), ((DataPacket)pipe.bridge().decode(payload)).getBytes());
     }

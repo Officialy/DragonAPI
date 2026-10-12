@@ -167,7 +167,7 @@ public class BiomeMapCommand {
         ResourceKey<Level> dim = ep.level().dimension();
         var biomeRegistry = ep.level().registryAccess().lookupOrThrow(Registries.BIOME);
         // The dimension slot is reserved; the receiver uses its synchronized current dimension.
-        ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGSTART.ordinal(), ep, bp.getName(), hash, 0, x, z, range, res, grid, fullGrid ? 1 : 0);
+        ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGSTART.wireId(), ep, bp.getName(), hash, 0, x, z, range, res, grid, fullGrid ? 1 : 0);
 
         ArrayList<Integer> dat = new ArrayList<>();
         dat.add(hash);
@@ -180,13 +180,13 @@ public class BiomeMapCommand {
                     DragonAPI.LOGGER.warn("Skipping unregistered biome {} at {}, {}", biome, dx, dz);
                     continue;
                 }
-//                ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, hash, dx, dz, b.biomeID);
+//                ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.wireId(), ep, hash, dx, dz, b.biomeID);
                 n++;
                 dat.add(dx);
                 dat.add(dz);
                 dat.add(biomeId);
                 if (n >= PACKET_COMPILE) {
-                    ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, dat);
+                    ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.wireId(), ep, dat);
                     n = 0;
                     dat.clear();
                     dat.add(hash);
@@ -202,12 +202,12 @@ public class BiomeMapCommand {
                 dat.add(z - range);
                 dat.add(biomeRegistry.getId(bp.getBiome(x - range, z - range)));
             }
-            ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.ordinal(), ep, dat);
+            ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.wireId(), ep, dat);
         }
         if (callback != null) {
             callback.onComplete();
         }
-        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGEND.ordinal(), ep, hash);
+        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGEND.wireId(), ep, hash);
     }
 
     private static Object[] getPlayer(CommandSourceStack ics, String[] args) throws CommandSyntaxException {

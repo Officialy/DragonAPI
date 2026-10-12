@@ -41,7 +41,7 @@ public class ScheduledBlockPlace implements ScheduledEvent {
 		location.setBlock(block);
 		Level world = location.getWorld();
 		BlockPos pos = location.pos;
-		ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, PacketIDs.BREAKPARTICLES.ordinal(), world, pos, 128, Block.getId(block), 0);
+		ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, PacketIDs.BREAKPARTICLES.wireId(), world, pos, 128, Block.getId(block), 0);
 		ReikaSoundHelper.playBreakSound(world, pos, block.getBlock());
 	}
 

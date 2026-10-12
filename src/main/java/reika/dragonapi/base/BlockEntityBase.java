@@ -137,7 +137,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         if (redstoneInput && !lastRedstone)
             this.onPositiveRedstoneEdge();
         if (redstoneInput != lastRedstone) {
-            ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.REDSTONECHANGE.ordinal(), this, 32, redstoneInput ? 1 : 0, lastRedstone ? 1 : 0);
+            ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.REDSTONECHANGE.wireId(), this, 32, redstoneInput ? 1 : 0, lastRedstone ? 1 : 0);
             this.syncAllData(false);
         }
         this.onAdjacentBlockUpdate();
@@ -233,7 +233,7 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         long _saT0 = reika.dragonapi.auxiliary.BlockEntityDiagnostics.enabled() ? System.nanoTime() : 0;
         if (reika.dragonapi.auxiliary.BlockEntityDiagnostics.enabled()) reika.dragonapi.auxiliary.BlockEntityDiagnostics.event(_dbgTag);
         if (level.isClientSide()) {
-            ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.TILESYNC.ordinal(), this, 512, fullNBT ? 1 : 0);
+            ReikaPacketHelper.sendDataPacketWithRadius(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.TILESYNC.wireId(), this, 512, fullNBT ? 1 : 0);
         } else {
             // Notification fix: previously called {@code level.markAndNotifyBlock(pos, chunk,
             // state, state, BLOCK_UPDATE, 512)} here with {@code oldState == newState}. That

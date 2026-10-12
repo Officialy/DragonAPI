@@ -25,6 +25,9 @@ import reika.dragonapi.libraries.io.ReikaPacketHelper.PacketObj;
 /** A namespaced, channel-bound compatibility transport for the 26.3 payload API. */
 public class CustomNetworkBridge {
 
+    /** Existing bytes remain protocol 2.1.0; incompatible ID/schema changes must negotiate a new version. */
+    public static final String PROTOCOL_VERSION = "2.1.0";
+
     private final reika.dragonapi.interfaces.PacketHandler packetHandler;
     private final String modId;
     private final String channel;
@@ -98,7 +101,7 @@ public class CustomNetworkBridge {
     public synchronized void registerAll(RegisterPayloadHandlersEvent event) {
         if (sealed) throw new IllegalStateException("Payloads already registered for " + channel);
         sealed = true;
-        PayloadRegistrar registrar = event.registrar("2.1.0");
+        PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
         IPayloadHandler<DataPacketPayload> handler = this::handleIncoming;
         registrar.playBidirectional(payloadType, streamCodec, handler, handler);
         for (PacketRegistration<?> registration : registrations.values())

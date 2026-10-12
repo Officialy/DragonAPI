@@ -36,7 +36,7 @@ public class ModFileVersionChecker {
         if (!reika.dragonapi.DragonOptions.FILEHASH.getState()) return;
         for (String mod : data.keySet()) {
             String s = mod+":"+data.get(mod);
-            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.FILEMATCH.ordinal(), PacketTarget.server, s);
+            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.FILEMATCH.wireId(), PacketTarget.server, s);
         }
     }
 

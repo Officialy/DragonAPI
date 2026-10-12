@@ -97,7 +97,7 @@ public class ReikaPlayerAPI {
 
 
     public static void kickPlayerClientside(Player ep, String reason) {
-        ReikaPacketHelper.sendStringPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERKICK.ordinal(), reason, PacketTarget.server);
+        ReikaPacketHelper.sendStringPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERKICK.wireId(), reason, PacketTarget.server);
     }
 
     public static void syncCustomData(ServerPlayer ep) {
@@ -106,7 +106,7 @@ public class ReikaPlayerAPI {
         // client also reloads Pos/Rotation/Motion; rapid Chroma buffer updates then
         // continually snap the local camera back to the server's previous rotation.
         CompoundTag tag = ep.getPersistentData().copy();
-        ReikaPacketHelper.sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERDATSYNC.ordinal(), tag, new PacketTarget.PlayerTarget(ep));
+        ReikaPacketHelper.sendNBTPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.PLAYERDATSYNC.wireId(), tag, new PacketTarget.PlayerTarget(ep));
     }
 
     public static boolean playerCanBreakAt(ServerLevel world, BlockArray b, ServerPlayer ep) {

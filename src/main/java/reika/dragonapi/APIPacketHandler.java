@@ -422,7 +422,7 @@ public class APIPacketHandler implements PacketHandler {
                         String dropper = ReikaItemHelper.getDropperId(item);
                         if (dropper != null)
                             ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel,
-                                    PacketIDs.ITEMDROPPER.ordinal(), (ServerPlayer) ep, dropper, item.getId());
+                                    PacketIDs.ITEMDROPPER.wireId(), (ServerPlayer) ep, dropper, item.getId());
                     }
                     break;
                 }
@@ -465,7 +465,7 @@ public class APIPacketHandler implements PacketHandler {
                     break;
                 case GETLATENCY:
                     int[] l = ReikaJavaLibrary.splitLong(System.currentTimeMillis());
-                    ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, PacketIDs.SENDLATENCY.ordinal(), (ServerPlayer) ep, data[0], data[1], l[0], l[1]);
+                    ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, PacketIDs.SENDLATENCY.wireId(), (ServerPlayer) ep, data[0], data[1], l[0], l[1]);
                     break;
                 case ENTITYVERIFY:
                     ReikaEntityHelper.performEntityVerification((ServerPlayer) ep, data[0], world.dimension()/*data[1]*/, data[2]); //todo dimension is null for now as i need to figure out how to get it with the new system
@@ -494,60 +494,62 @@ public class APIPacketHandler implements PacketHandler {
 
 
 
-    public enum PacketIDs {
-        BIOMECHANGE(),
-        BLOCKUPDATE(),
-        PARTICLE(),
-        PARTICLEWITHPOS(),
-        PARTICLEWITHPOSVEL(),
-        KEYUPDATE(),
-        TILESYNC(),
-        VTILESYNC(),
-        TILEDELETE(),
-        PLAYERDATSYNC(),
-        PLAYERDATSYNC_CLIENT(),
-        PLAYERDATSYNCREQ_CLIENT(),
-        RERENDER(),
-        COLOREDPARTICLE(),
-        NUMBERPARTICLE(),
-        STRINGPARTICLE(),
-        IDDUMP(),
-        ENTITYDUMP(),
-        EXPLODE(),
-        OLDMODS(),
-        LOGIN(),
-        LOGOUT(),
-        SERVERSOUND(),
-        BREAKPARTICLES(),
-        PLAYERKICK(),
-        CONFIGSYNC(),
-        CONFIGSYNCSTART(),
-        CONFIGSYNCEND(),
-        ITEMDROPPER(),
-        ITEMDROPPERREQUEST(),
-        PLAYERINTERACT(),
-        GUIRELOAD(),
-        BIOMEPNGSTART(),
-        BIOMEPNGDAT(),
-        BIOMEPNGEND(),
-        FILEMATCH(),
-        ENTITYSYNC(),
-        MODULARLOGGER(),
-        POPUP(),
-        GETLATENCY(),
-        SENDLATENCY(),
-        REDSTONECHANGE(),
-        ENTITYVERIFY(),
-        ENTITYVERIFYFAIL(),
-        CLEARCHAT(),
-        MODLOCK(),
-        OREDUMP();
+    public enum PacketIDs implements reika.dragonapi.interfaces.PacketId {
+        BIOMECHANGE(0),
+        BLOCKUPDATE(1),
+        PARTICLE(2),
+        PARTICLEWITHPOS(3),
+        PARTICLEWITHPOSVEL(4),
+        KEYUPDATE(5),
+        TILESYNC(6),
+        VTILESYNC(7),
+        TILEDELETE(8),
+        PLAYERDATSYNC(9),
+        PLAYERDATSYNC_CLIENT(10),
+        PLAYERDATSYNCREQ_CLIENT(11),
+        RERENDER(12),
+        COLOREDPARTICLE(13),
+        NUMBERPARTICLE(14),
+        STRINGPARTICLE(15),
+        IDDUMP(16),
+        ENTITYDUMP(17),
+        EXPLODE(18),
+        OLDMODS(19),
+        LOGIN(20),
+        LOGOUT(21),
+        SERVERSOUND(22),
+        BREAKPARTICLES(23),
+        PLAYERKICK(24),
+        CONFIGSYNC(25),
+        CONFIGSYNCSTART(26),
+        CONFIGSYNCEND(27),
+        ITEMDROPPER(28),
+        ITEMDROPPERREQUEST(29),
+        PLAYERINTERACT(30),
+        GUIRELOAD(31),
+        BIOMEPNGSTART(32),
+        BIOMEPNGDAT(33),
+        BIOMEPNGEND(34),
+        FILEMATCH(35),
+        ENTITYSYNC(36),
+        MODULARLOGGER(37),
+        POPUP(38),
+        GETLATENCY(39),
+        SENDLATENCY(40),
+        REDSTONECHANGE(41),
+        ENTITYVERIFY(42),
+        ENTITYVERIFYFAIL(43),
+        CLEARCHAT(44),
+        MODLOCK(45),
+        OREDUMP(46);
+
+        private final int wireId;
+        private static final java.util.Map<Integer, PacketIDs> BY_ID = reika.dragonapi.interfaces.PacketId.index(values());
+        PacketIDs(int id) { wireId = id; }
+        @Override public int wireId() { return wireId; }
 
         public static PacketIDs getEnum(int index) {
-            PacketIDs[] values = PacketIDs.values();
-            if (index < 0 || index >= values.length)
-                throw new IllegalArgumentException("Invalid DragonAPI packet id " + index);
-            return values[index];
+            return reika.dragonapi.interfaces.PacketId.lookup(BY_ID, index);
         }
 
         public boolean isLongPacket() {

@@ -114,7 +114,7 @@ public class PopupWriter extends Screen {
         for (Warning s : serverMessages) {
             if (c.contains(s))
                 continue;
-            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.POPUP.ordinal(), pt, s.text, s.width);
+            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.POPUP.wireId(), pt, s.text, s.width);
             c.add(s);
         }
         alreadySent.put(ep, c);

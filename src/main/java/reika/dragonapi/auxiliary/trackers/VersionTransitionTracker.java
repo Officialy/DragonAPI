@@ -118,7 +118,7 @@ public class VersionTransitionTracker {
     public void notifyPlayerOfVersionChanges(ServerPlayer emp) {
         if (this.haveModsUpdated()) {
             String s0 = newVersions.size()+" of your mods have changed version (see the log for more details). It is strongly recommended you read their changelogs.";
-            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.POPUP.ordinal(), new PacketTarget.PlayerTarget(emp), s0, 300);
+            ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.POPUP.wireId(), new PacketTarget.PlayerTarget(emp), s0, 300);
             DragonAPI.LOGGER.info(newVersions.size()+" mod version changes detected: ");
             for (IModInfo mod : ModList.get().getMods()) {
                 if (newVersions.contains(mod.getModId()))

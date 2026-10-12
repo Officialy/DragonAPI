@@ -371,7 +371,7 @@ public class ReikaEntityHelper {
                 }
             }
         }
-        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.ENTITYVERIFYFAIL.ordinal(), ep, entityID, dim.hashCode()); //todo dimension id stuff, old code so i just put hashcode for now so it doesnt hate me
+        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.ENTITYVERIFYFAIL.wireId(), ep, entityID, dim.hashCode()); //todo dimension id stuff, old code so i just put hashcode for now so it doesnt hate me
         //ReikaJavaLibrary.pConsole("Verified NON-existence of "+entityID+" on side "+FMLCommonHandler.instance.getEffectiveSide());
     }
 

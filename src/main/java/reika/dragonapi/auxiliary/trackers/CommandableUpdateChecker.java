@@ -235,11 +235,11 @@ public class CommandableUpdateChecker {
             PacketTarget pt = new PacketTarget.PlayerTarget((ServerPlayer) ep);
             for (DragonAPIMod mod : oldMods) {
                 if (this.beAggressive(mod, (ServerPlayer) ep)) {
-                    ReikaPacketHelper.sendStringPacket(DragonAPI.packetChannel, PacketIDs.OLDMODS.ordinal(), modNamesReverse.get(mod), pt);
+                    ReikaPacketHelper.sendStringPacket(DragonAPI.packetChannel, PacketIDs.OLDMODS.wireId(), modNamesReverse.get(mod), pt);
                 }
             }
             for (DragonAPIMod mod : noURLMods) {
-                ReikaPacketHelper.sendStringPacket(DragonAPI.packetChannel, PacketIDs.OLDMODS.ordinal(), "URL_" + modNamesReverse.get(mod), pt);
+                ReikaPacketHelper.sendStringPacket(DragonAPI.packetChannel, PacketIDs.OLDMODS.wireId(), "URL_" + modNamesReverse.get(mod), pt);
             }
         }
     }
