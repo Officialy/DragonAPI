@@ -75,16 +75,43 @@ public final class PlayerSpecificRenderer {
    */
 
    public void registerRenderer(UUID uuid, PlayerRenderObj r) {
-       renders.addValue(uuid, r);
+       addRenderer(uuid, r);
 
        //If anyone flips out over this and complains "OMG REIKA GIVES HIMSELF ALL THE RENDERS IN THE DEV ENVIRONMENT! DRM!",
        //You are:
        //If you cannot understand Java: making wild accusations based on your own ignorance
        //If you can understand Java: A disgrace to other programmers for harassing a developer over what you should understand is harmless
        //Update: Someone did it. Congratulations. Now go eat the contents of your toilet.
-       if (/*DragonAPI.isReikasComputer() && */ReikaObfuscationHelper.isDeObfEnvironment()) {
-           renders.addValue(DragonAPI.Reika_UUID, r);
-           renders.addValue(DragonAPI.Officialy_UUID, r);
+       if (!net.neoforged.fml.loading.FMLEnvironment.isProduction()) {
+           addRenderer(DragonAPI.Reika_UUID, r);
+           addRenderer(DragonAPI.Officialy_UUID, r);
+       }
+   }
+
+   private void addRenderer(UUID uuid, PlayerRenderObj renderer) {
+       Objects.requireNonNull(uuid);
+       Objects.requireNonNull(renderer);
+       Collection<PlayerRenderObj> existing = renders.get(uuid);
+       if (existing == null || !existing.contains(renderer)) renders.addValue(uuid, renderer);
+   }
+
+   public Collection<PlayerRenderObj> getRenderers(UUID uuid) {
+       Collection<PlayerRenderObj> entries = renders.get(uuid);
+       return entries != null ? List.copyOf(entries) : List.of();
+   }
+
+   /** Original Reika donor + Patreon roster, registered after every mod has finished loading it. */
+   public void registerDonatorRenderer(PlayerRenderObj renderer) {
+       Set<DonatorController.Donator> donors = new LinkedHashSet<>(DonatorController.instance.getReikasDonators());
+       donors.addAll(reika.dragonapi.trackers.PatreonController.instance.getModPatrons("Reika"));
+       for (DonatorController.Donator donor : donors) {
+           if (donor.ingameName != null) registerRenderer(donor.ingameName, renderer);
+           else DragonAPI.LOGGER.warn("Donator {} UUID could not be found; cannot register {}", donor.displayName, renderer.getClass().getSimpleName());
+       }
+       // Preserve the existing developer previews even when the remote roster is unavailable.
+       if (!net.neoforged.fml.loading.FMLEnvironment.isProduction()) {
+           addRenderer(DragonAPI.Reika_UUID, renderer);
+           addRenderer(DragonAPI.Officialy_UUID, renderer);
        }
    }
 
