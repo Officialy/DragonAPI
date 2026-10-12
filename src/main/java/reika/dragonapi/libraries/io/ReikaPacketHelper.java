@@ -64,9 +64,8 @@ public class ReikaPacketHelper {
         if (pipelines.containsKey(channel)) {
             DragonAPI.LOGGER.warn("Replacing existing packet handler for channel {}", channel);
         }
-        CustomNetworkBridge bridge = new CustomNetworkBridge(mod.getModId(), channel, handler);
-        bridges.put(channel, bridge);
         PacketPipeline p = new PacketPipeline(mod, channel, handler);
+        bridges.put(channel, p.bridge());
         short id = handlerID++;
         handlers.put(id, handler);
         pipelines.put(channel, p);
@@ -1621,6 +1620,11 @@ public class ReikaPacketHelper {
         return pipe != null ? pipe.getMinecraftPacket(p) : null;
     }
 
+    public static Packet<?> getPacket(String channel, PacketObj p, net.minecraft.network.protocol.PacketFlow flow) {
+        PacketPipeline pipe = pipelines.get(channel);
+        return pipe != null ? pipe.getMinecraftPacket(p, flow) : null;
+    }
+
     public static class DataPacket extends PacketObj {
         protected byte[] bytes;
         private DataInputStream in;
@@ -1741,6 +1745,9 @@ public class ReikaPacketHelper {
             String hd = handler.getClass().getCanonicalName() + " (ID " + this.handlerID() + ")";
             return "type " + this.getType() + "; Data: " + this.getDataAsString() + " from " + hd;
         }
+
+        /** Decoders bind to their registered channel; packet bytes never select a handler. */
+        final void bindHandler(PacketHandler handler) { this.handler = Objects.requireNonNull(handler); }
 
         public final PacketHandler getHandler() { return handler; }
 
