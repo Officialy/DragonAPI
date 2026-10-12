@@ -166,8 +166,7 @@ public class BiomeMapCommand {
 
         ResourceKey<Level> dim = ep.level().dimension();
         var biomeRegistry = ep.level().registryAccess().lookupOrThrow(Registries.BIOME);
-        // The dimension slot is reserved; the receiver uses its synchronized current dimension.
-        ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGSTART.wireId(), ep, bp.getName(), hash, 0, x, z, range, res, grid, fullGrid ? 1 : 0);
+        sendMapPacket(ep, dim, APIPacketHandler.PacketIDs.BIOMEPNGSTART, bp.getName(), hash, x, z, range, res, grid, fullGrid ? 1 : 0);
 
         ArrayList<Integer> dat = new ArrayList<>();
         dat.add(hash);
@@ -186,7 +185,7 @@ public class BiomeMapCommand {
                 dat.add(dz);
                 dat.add(biomeId);
                 if (n >= PACKET_COMPILE) {
-                    ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.wireId(), ep, dat);
+                    sendMapPacket(ep, dim, APIPacketHandler.PacketIDs.BIOMEPNGDAT, "", dat.stream().mapToInt(Integer::intValue).toArray());
                     n = 0;
                     dat.clear();
                     dat.add(hash);
@@ -202,12 +201,12 @@ public class BiomeMapCommand {
                 dat.add(z - range);
                 dat.add(biomeRegistry.getId(bp.getBiome(x - range, z - range)));
             }
-            ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGDAT.wireId(), ep, dat);
+            sendMapPacket(ep, dim, APIPacketHandler.PacketIDs.BIOMEPNGDAT, "", dat.stream().mapToInt(Integer::intValue).toArray());
         }
         if (callback != null) {
             callback.onComplete();
         }
-        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.BIOMEPNGEND.wireId(), ep, hash);
+        sendMapPacket(ep, dim, APIPacketHandler.PacketIDs.BIOMEPNGEND, "", hash);
     }
 
     private static Object[] getPlayer(CommandSourceStack ics, String[] args) throws CommandSyntaxException {
@@ -224,16 +223,32 @@ public class BiomeMapCommand {
         return new Object[]{target, true};
     }
 
+    private static void sendMapPacket(ServerPlayer player, ResourceKey<Level> dimension, APIPacketHandler.PacketIDs control, String name, int... values) {
+        new reika.dragonapi.libraries.io.DimensionPacketData(control, dimension, name, values)
+                .send(new reika.dragonapi.instantiable.io.PacketTarget.PlayerTarget(player));
+    }
+
     public static void startCollecting(int hash, String world, ResourceKey<Level> dim, int x, int z, int range, int res, int grid, boolean fullGrid) {
+        startCollecting(reika.dragonapi.client.ClientEnvironment.level(), hash, world, dim, x, z, range, res, grid, fullGrid);
+    }
+
+    public static void startCollecting(Level level, int hash, String world, ResourceKey<Level> dim, int x, int z, int range, int res, int grid, boolean fullGrid) {
+        if (level == null || !level.dimension().equals(dim)) return;
+        activeMaps.values().removeIf(map -> map.level != level);
         validateMapSize(range, res);
         if (activeMaps.size() >= 16) throw new IllegalStateException("Too many unfinished biome maps");
-        BiomeMap map = new BiomeMap(world, dim, x, z, range, res, grid, fullGrid);
+        BiomeMap map = new BiomeMap(level, world, dim, x, z, range, res, grid, fullGrid);
         activeMaps.put(hash, map);
     }
 
 
     public static void addBiomePoint(int hash, int x, int z, int biomeID) {
+        addBiomePoint(reika.dragonapi.client.ClientEnvironment.level(), hash, x, z, biomeID);
+    }
+
+    public static void addBiomePoint(Level level, int hash, int x, int z, int biomeID) {
         BiomeMap map = activeMaps.get(hash);
+        if (map != null && map.level != level) { activeMaps.remove(hash); return; }
         if (map != null) {
             map.addPoint(x, z, biomeID);
         }
@@ -241,8 +256,12 @@ public class BiomeMapCommand {
 
 
     public static void finishCollectingAndMakeImage(int hash) {
+        finishCollectingAndMakeImage(reika.dragonapi.client.ClientEnvironment.level(), hash);
+    }
+
+    public static void finishCollectingAndMakeImage(Level level, int hash) {
         BiomeMap map = activeMaps.remove(hash);
-        if (map != null) {
+        if (map != null && map.level == level) {
             try {
                 map.addGrid();
                 String path = map.createImage();
@@ -311,8 +330,10 @@ public class BiomeMapCommand {
         private final BitSet received = new BitSet();
         private final Map<ResourceKey<Biome>, Integer> biomeCounts = new HashMap<>();
 
-        private BiomeMap(String name, ResourceKey<Level> dim, int x, int z, int r, int res, int grid, boolean fgrid) {
+        private final Level level;
+        private BiomeMap(Level level, String name, ResourceKey<Level> dim, int x, int z, int r, int res, int grid, boolean fgrid) {
             super(name, dim, x, z, r, res, grid, fgrid);
+            this.level = level;
         }
 
         @Override
@@ -324,7 +345,7 @@ public class BiomeMapCommand {
                 int count = biomeCounts.get(key);
                 csv.append(key.identifier()).append(',').append(count).append(',')
                         .append(String.format(Locale.ROOT, "%.6f", 100D * count / total)).append(',')
-                        .append(String.format(Locale.ROOT, "#%06X", getBiomeColor(originX, originZ, key) & 0xffffff)).append('\n');
+                        .append(String.format(Locale.ROOT, "#%06X", getBiomeColor(level, originX, originZ, key) & 0xffffff)).append('\n');
             }
             java.nio.file.Files.writeString(new File(f.getParentFile(), f.getName().replace(".png", ".biomes.csv")).toPath(),
                     csv, java.nio.charset.StandardCharsets.UTF_8);
@@ -332,9 +353,8 @@ public class BiomeMapCommand {
 
         @Override
         protected int getColor(int x, int z, Integer data) {
-            // The biome map is a client-side debug render; go through the holder so this class
-            // stays loadable where commands are registered.
-            var registry = reika.dragonapi.client.ClientEnvironment.level().registryAccess()
+            // Use the source level captured when the map started.
+            var registry = level.registryAccess()
                     .lookupOrThrow(Registries.BIOME);
             Biome b = registry.byId(data);
             if (b == null)
@@ -346,11 +366,11 @@ public class BiomeMapCommand {
                 received.set(index);
                 biomeCounts.merge(key.get(), 1, Integer::sum);
             }
-            return key.map(biomeResourceKey -> getBiomeColor(x, z, biomeResourceKey)).orElse(0);
+            return key.map(biomeResourceKey -> getBiomeColor(level, x, z, biomeResourceKey)).orElse(0);
         }
 
         private void createLegend(File f) throws IOException {
-            writeBiomeLegend(reika.dragonapi.client.ClientEnvironment.level(), f.getParentFile());
+            writeBiomeLegend(level, f.getParentFile());
         }
     }
 

@@ -1,5 +1,10 @@
 # Tank sender/recipient migration — D45, 2026-10-12
 
+Current negotiation: D47 advances the bridge to **2.2.0** for dimension-scoped
+entity/biome bodies; this operation's body remains unchanged from the 2.1 checkpoint.
+See [dimension-packet-port.md](dimension-packet-port.md).
+
+
 Minecraft 26.3, NeoForge 26.3.0.51-beta. Original DragonAPI source:
 `c29c4fcc2d3a65566783a4a163d8e682116e868c`, `Base/TileEntityBase.java` and
 `Libraries/IO/ReikaPacketHelper.java`.

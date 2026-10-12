@@ -1,5 +1,10 @@
 # Compound sync and dormant payload retirement — D44, Minecraft 26.3
 
+Current negotiation: D47 advances the bridge to **2.2.0** for dimension-scoped
+entity/biome bodies; this operation's body remains unchanged from the 2.1 checkpoint.
+See [dimension-packet-port.md](dimension-packet-port.md).
+
+
 Original source: DragonAPI `c29c4fcc2d3a65566783a4a163d8e682116e868c`,
 `IO/CompoundSyncPacket.java`. Native references are the generated Minecraft 26.3
 sources and NeoForge 26.3.0.51-beta PacketDistributor, level tick/lifecycle events

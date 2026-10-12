@@ -951,6 +951,25 @@ public class ReikaWorldHelper {
         return index;
     }
 
+    /** Loaded-only palette update for the legacy client biome-column packet (native quart resolution). */
+    public static boolean applyBiomeColumn(Level level, int x, int z, net.minecraft.resources.Identifier biomeKey) {
+        var biome = level.registryAccess().lookupOrThrow(Registries.BIOME)
+                .get(ResourceKey.create(Registries.BIOME, biomeKey));
+        if (biome.isEmpty()) return false;
+        var chunk = level.getChunk(x >> 4, z >> 4, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, false);
+        if (chunk == null || chunk instanceof net.minecraft.world.level.chunk.EmptyLevelChunk) return false;
+        int quartX = x >> 2, quartZ = z >> 2;
+        var sections = chunk.getSections();
+        for (int i = 0; i < sections.length; i++) {
+            var section = sections[i];
+            var before = section.getBiomes();
+            int quartY = (level.getMinSectionY() + i) << 2;
+            section.fillBiomesFromNoise((qx, qy, qz) -> qx == quartX && qz == quartZ
+                    ? biome.get() : before.get(qx & 3, qy & 3, qz & 3), (x >> 4) << 2, quartY, (z >> 4) << 2);
+        }
+        return true;
+    }
+
     /**
      * Sets the biome type at an xz column. Args: World, x, z, biome
      */
@@ -962,9 +981,9 @@ public class ReikaWorldHelper {
 				.findFirst()
 				.orElseThrow(() -> new IllegalArgumentException("Biome is not registered in this level: " + biome));
 		BlockPos from = new BlockPos(x, server.getMinY(), z);
-		BlockPos to = new BlockPos(x, server.getMaxY()-1, z);
+		BlockPos to = new BlockPos(x, server.getMaxY(), z);
 		FillBiomeCommand.fill(server, from, to, holder).ifRight(error -> DragonAPI.LOGGER.error("Could not set biome column at {}, {}", x, z, error));
-		for (int y = server.getMinY(); y < server.getMaxY(); y++)
+		for (int y = server.getMinY(); y <= server.getMaxY(); y++)
 			temperatureEnvironment(server, new BlockPos(x, y, z), (int)ReikaBiomeHelper.getBiomeTemp(biome));
 	}
 

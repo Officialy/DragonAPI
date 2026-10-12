@@ -1516,7 +1516,7 @@ public class ReikaPacketHelper {
         }
     }
 
-    private static void writeString(String par0Str, DataOutput par1DataOutput) throws IOException {
+    public static void writeString(String par0Str, DataOutput par1DataOutput) throws IOException {
         if (par0Str.length() > 32767) {
             throw new IOException("String too big");
         } else {

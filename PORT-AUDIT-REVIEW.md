@@ -1228,3 +1228,48 @@ Contract/mapping: DragonAPI/docs/packet-id-port.md and packet-ids-protocol-2.1.j
 Evidence: TestInstance/docs/packet-id-2026-10-12.md and build/packet-id-*.log/json.
 D46 is complete for the accepted port; D47 dimension-field semantics is next. This
 continuation is committed locally after the already verified published checkpoint.
+
+
+## Dimension-scoped entity and biome packets — D47, 2026-10-12
+
+Replaced ignored numeric dimension slots, zero placeholders and ResourceKey hashes
+with explicit namespaced DIMENSION keys in six strict RAW packet bodies. The actual
+bridge registrar now negotiates protocol 2.2.0; protocol 2.1 peers must update both
+ends. All 353 historical category/control/tag numbers stay unchanged. Legacy or
+malformed bodies and wrong directions are rejected before gameplay dispatch.
+
+Restored verifyClientEntity and preserved the original existence/class-hash check.
+The server ignores requests for a dimension the player has left; failure replies
+retain the requested dimension/class, and only a matching client entity is removed.
+Server entities cannot be removed through this operation. Player implementations
+use the common Player class hash across logical sides; other entities retain exact
+class-name hashes. Biome PNG start/data/end
+frames retain the captured source dimension even if the completion callback moves
+the player. Maps capture the actual source Level/registry and discard stale sessions;
+client level unload/logout clear unfinished maps. Existing names, samples, batching,
+padding, colors, grid, PNG/CSV exports and callbacks remain.
+
+The formerly ineffective custom BIOMECHANGE client receiver now writes native quart
+palettes across all loaded sections, preserves neighbors, clears tint caches and
+invalidates renderer sections. It uses a namespaced biome key rather than registry
+iteration order and does not generate missing chunks. The authoritative server
+helper retains native FillBiomeCommand synchronization with correct inclusive 26.3
+height bounds. Excluded pristine 1.7.10 consumers remain untouched.
+
+Three new units and four native fixtures cover schema goldens, custom keys/Unicode,
+malformed/old/trailing/truncated frames, entity/class/dimension checks, Nether stream
+frames, callback dimension changes, full-height/neighbor palettes and stale map
+sessions. The opt-in disposable client fixture covers production request/reply and
+client palette application. Normal Play retains its separate arguments/directory.
+
+Contract: DragonAPI/docs/dimension-packet-port.md. Final evidence and acceptance
+boundary: TestInstance/docs/dimension-packet-2026-10-12.md. D47 is complete for the
+accepted port; D48 EventProfiler listener instrumentation is next. Actual remote
+client and Iris/Distant Horizons acceptance remain open.
+
+D47 final validation: 185 family units and all 95 required native DragonAPI tests
+pass. Eight guards verify 3,290 primary outputs; development DA/RC jars build. The
+disposable integrated client passes native entity request/reply, stale reply guards,
+client biome palettes, PNG export and the existing full audit, then exits cleanly
+in 3m 20s. Normal Play argument hashes are unchanged. This batch is checkpointed
+locally; ongoing IntelliJ workspace.xml changes are preserved outside the checkpoint.

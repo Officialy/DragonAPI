@@ -359,20 +359,37 @@ public class ReikaEntityHelper {
         return ret;
     }
 
-    public static void performEntityVerification(ServerPlayer ep, int entityID, ResourceKey<Level> dim, int classHash) {
-//        ReikaJavaLibrary.pConsole("Verifying existence of "+entityID+" on side "+ FMLEnvironment.getDist());
-        Level world = ep.level();//todo DimensionManager.getWorld(dim);
-        if (world != null) {
-            Entity e = world.getEntity(entityID);
-            if (e != null) {
-                if (e.getClass().getName().hashCode() == classHash) {
-                    ReikaJavaLibrary.pConsole("Verified existence of " + e + " on side " + FMLEnvironment.getDist());
-                    return;
-                }
-            }
-        }
-        ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.ENTITYVERIFYFAIL.wireId(), ep, entityID, dim.hashCode()); //todo dimension id stuff, old code so i just put hashcode for now so it doesnt hate me
-        //ReikaJavaLibrary.pConsole("Verified NON-existence of "+entityID+" on side "+FMLCommonHandler.instance.getEffectiveSide());
+    /** Player implementations differ between logical sides; other entities keep the original exact-class check. */
+    public static int verificationClassHash(Entity entity) {
+        return (entity instanceof Player ? Player.class : entity.getClass()).getName().hashCode();
+    }
+
+    /** Request the original server existence/class check for a client entity. */
+    public static void verifyClientEntity(Entity entity) {
+        if (!entity.level().isClientSide()) throw new IllegalArgumentException("Expected a client entity");
+        new reika.dragonapi.libraries.io.DimensionPacketData(APIPacketHandler.PacketIDs.ENTITYVERIFY,
+                entity.level().dimension(), "", new int[]{entity.getId(), verificationClassHash(entity)})
+                .send(reika.dragonapi.instantiable.io.PacketTarget.server);
+    }
+
+    public static void performEntityVerification(ServerPlayer player, int entityID, ResourceKey<Level> dimension, int classHash) {
+        // A stale request after teleport must not look up an unrelated world's entity ID.
+        if (!player.level().dimension().equals(dimension)) return;
+        Entity entity = player.level().getEntity(entityID);
+        if (entity != null && verificationClassHash(entity) == classHash) return;
+        new reika.dragonapi.libraries.io.DimensionPacketData(APIPacketHandler.PacketIDs.ENTITYVERIFYFAIL,
+                dimension, "", new int[]{entityID, classHash})
+                .send(new reika.dragonapi.instantiable.io.PacketTarget.PlayerTarget(player));
+    }
+
+    /** Class and dimension guards prevent delayed replies from discarding a replacement entity. */
+    public static boolean applyEntityVerificationFailure(Level level, ResourceKey<Level> dimension, int id, int classHash) {
+        if (!level.isClientSide() || !level.dimension().equals(dimension)) return false;
+        Entity entity = level.getEntity(id);
+        if (entity == null || verificationClassHash(entity) != classHash) return false;
+        entity.remove(Entity.RemovalReason.DISCARDED);
+        DragonAPI.LOGGER.info("Removing client-only entity {}", entity);
+        return true;
     }
 
     private static int damageArmorItem(LivingEntity e, int slot, int amt, BiFunction<ItemStack, Integer, Integer> handle) {

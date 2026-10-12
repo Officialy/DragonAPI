@@ -65,6 +65,33 @@ public class APIPacketHandler implements PacketHandler {
 
     private final Random rand = new Random();
 
+    private void handleDimensionPacket(reika.dragonapi.libraries.io.DimensionPacketData packet, Level world, Player player) {
+        boolean request = packet.control() == PacketIDs.ENTITYVERIFY;
+        if (request == world.isClientSide() || !packet.matches(world)) return;
+        int[] data = packet.values();
+        switch (packet.control()) {
+            case ENTITYVERIFY -> {
+                if (player instanceof ServerPlayer serverPlayer && serverPlayer.level() == world)
+                    ReikaEntityHelper.performEntityVerification(serverPlayer, data[0], packet.dimension(), data[1]);
+            }
+            case ENTITYVERIFYFAIL -> ReikaEntityHelper.applyEntityVerificationFailure(world, packet.dimension(), data[0], data[1]);
+            case BIOMEPNGSTART -> BiomeMapCommand.startCollecting(world, data[0], packet.name(), packet.dimension(), data[1], data[2], data[3], data[4], data[5], data[6] > 0);
+            case BIOMEPNGDAT -> {
+                for (int i = 0; i < BiomeMapCommand.PACKET_COMPILE; i++) {
+                    int a = 1 + i * 3;
+                    BiomeMapCommand.addBiomePoint(world, data[0], data[a], data[a + 1], data[a + 2]);
+                }
+            }
+            case BIOMEPNGEND -> BiomeMapCommand.finishCollectingAndMakeImage(world, data[0]);
+            case BIOMECHANGE -> {
+                if (ReikaWorldHelper.applyBiomeColumn(world, data[0], data[1], Identifier.parse(packet.name()))
+                        && FMLEnvironment.getDist().isClient())
+                    reika.dragonapi.client.ClientAPIPacketHandler.refreshBiomeColumn(data[0], data[1]);
+            }
+            default -> throw new IllegalArgumentException("Unexpected dimension packet");
+        }
+    }
+
     public void handleData(ReikaPacketHelper.PacketObj packet, Level world, Player ep) {
         if (packet == null || world == null) {
             DragonAPI.LOGGER.error("Cannot handle a packet without both packet data and a level");
@@ -72,6 +99,22 @@ public class APIPacketHandler implements PacketHandler {
         }
         if (!world.isClientSide() && packet.getType().isClientboundOnly()) return;
         DataInputStream inputStream = packet.getDataIn();
+        // These six controls have a strict, dimension-keyed RAW schema from protocol 2.2.
+        if (packet instanceof ReikaPacketHelper.DataPacket dp && dp.getBytes().length >= 4) {
+            try {
+                var peek = new DataInputStream(new java.io.ByteArrayInputStream(dp.getBytes()));
+                PacketIDs id = PacketIDs.getEnum(peek.readInt());
+                if (reika.dragonapi.libraries.io.DimensionPacketData.supports(id)
+                        && (packet.getType() == PacketTypes.RAW || packet.getType() == PacketTypes.DATA)) {
+                    if (packet.getType() != PacketTypes.RAW) return;
+                    handleDimensionPacket(reika.dragonapi.libraries.io.DimensionPacketData.read(id, peek), world, ep);
+                    return;
+                }
+            } catch (IOException | IllegalArgumentException error) {
+                // Other categories have a string/NBT header, so only reject malformed RAW here.
+                if (packet.getType() == PacketTypes.RAW) return;
+            }
+        }
 
         int control;
         int len;
@@ -252,7 +295,7 @@ public class APIPacketHandler implements PacketHandler {
             e.printStackTrace();
             return;
         }
-        if (pack == null) return;
+        if (pack == null || reika.dragonapi.libraries.io.DimensionPacketData.supports(pack)) return;
         boolean serverCommand = switch (pack) {
             case KEYUPDATE, TILESYNC, PLAYERDATSYNCREQ_CLIENT, PLAYERKICK, ITEMDROPPERREQUEST, FILEMATCH, GETLATENCY, ENTITYVERIFY -> true;
             default -> false;
@@ -299,14 +342,6 @@ public class APIPacketHandler implements PacketHandler {
                             world.addParticle(p.particle, px, py, pz, vx, vy, vz);
                         }
                     }
-                    break;
-                case BIOMECHANGE:
-                    var biomeList = world.registryAccess().lookupOrThrow(Registries.BIOME).listElements().toList();
-                    if (data[0] >= 0 && data[0] < biomeList.size()) {
-                        ReikaWorldHelper.setBiomeForXZ(world, x, z, biomeList.get(data[0]).value());
-                    }
-//                    world.markBlockRangeForRenderUpdate(x, 0, z, x, world.getHeight(), z);
-                    world.sendBlockUpdated(new BlockPos(x, 0, z), world.getBlockState(new BlockPos(x, world.getHeight(), z)), world.getBlockState(new BlockPos(x, world.getHeight(), z)), 3);
                     break;
                 case KEYUPDATE:
                     if (data.length < 2) {
@@ -430,19 +465,6 @@ public class APIPacketHandler implements PacketHandler {
                     if (data[3] >= -1 && data[3] <= 5 && data[4] >= 0 && data[4] < PlayerInteractEventClient.Result.values().length)
                         NeoForge.EVENT_BUS.post(new PlayerInteractEventClient(ep, PlayerInteractEventClient.Result.values()[data[4]], data[0], data[1], data[2], data[3], world));
                     break;
-                case BIOMEPNGSTART:
-                    BiomeMapCommand.startCollecting(data[0], stringdata, world.dimension()/*todo old dimension id's data[1]*/, data[2], data[3], data[4], data[5], data[6], data[7] > 0);
-                    break;
-                case BIOMEPNGDAT:
-                    int hash = data[0];
-                    for (int i = 0; i < BiomeMapCommand.PACKET_COMPILE; i++) {
-                        int a = 1 + i * 3;
-                        BiomeMapCommand.addBiomePoint(hash, data[a], data[a + 1], data[a + 2]);
-                    }
-                    break;
-                case BIOMEPNGEND:
-                    BiomeMapCommand.finishCollectingAndMakeImage(data[0]);
-                    break;
                 case FILEMATCH:
                     ModFileVersionChecker.instance.checkFiles((ServerPlayer) ep, stringdata);
                     break;
@@ -466,20 +488,6 @@ public class APIPacketHandler implements PacketHandler {
                 case GETLATENCY:
                     int[] l = ReikaJavaLibrary.splitLong(System.currentTimeMillis());
                     ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, PacketIDs.SENDLATENCY.wireId(), (ServerPlayer) ep, data[0], data[1], l[0], l[1]);
-                    break;
-                case ENTITYVERIFY:
-                    ReikaEntityHelper.performEntityVerification((ServerPlayer) ep, data[0], world.dimension()/*data[1]*/, data[2]); //todo dimension is null for now as i need to figure out how to get it with the new system
-                    break;
-                case ENTITYVERIFYFAIL:
-                    Entity e = world.getEntity(data[0]);
-                    if (e != null && world instanceof ServerLevel serverLevel) {
-                        e.kill(serverLevel);
-                        DragonAPI.LOGGER.info("Removing client-only entity " + e);
-                    } else if (e != null) {
-                        // Client-side: use remove instead
-                        e.remove(Entity.RemovalReason.DISCARDED);
-                        DragonAPI.LOGGER.info("Removing client-only entity " + e);
-                    }
                     break;
             }
             // Dispatched through a client-only class: naming ClientLevel/Particle in this class puts
@@ -562,16 +570,15 @@ public class APIPacketHandler implements PacketHandler {
 
         public int getNumberDataInts() {
             return switch (this) {
-                case PARTICLE, ENTITYVERIFYFAIL, REDSTONECHANGE, GETLATENCY, BREAKPARTICLES, KEYUPDATE -> 2;
+                case PARTICLE, ENTITYVERIFY, ENTITYVERIFYFAIL, BIOMECHANGE, REDSTONECHANGE, GETLATENCY, BREAKPARTICLES, KEYUPDATE -> 2;
                 case PARTICLEWITHPOS -> 2 + 2 * 3;
                 case PARTICLEWITHPOSVEL -> 2 + 2 * 6;
                 case NUMBERPARTICLE, POPUP, MODULARLOGGER, LOGIN, BIOMEPNGEND, IDDUMP, CONFIGSYNC, ITEMDROPPER,
-                     ITEMDROPPERREQUEST, TILESYNC, BIOMECHANGE -> 1;
+                     ITEMDROPPERREQUEST, TILESYNC -> 1;
                 case COLOREDPARTICLE, PLAYERINTERACT -> 5;
-                case BIOMEPNGSTART -> 8;
+                case BIOMEPNGSTART -> 7;
                 case BIOMEPNGDAT -> 1 + 3 * BiomeMapCommand.PACKET_COMPILE;
                 case SENDLATENCY -> 4;
-                case ENTITYVERIFY -> 3;
                 default -> 0;
             };
         }

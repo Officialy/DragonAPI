@@ -25,8 +25,8 @@ import reika.dragonapi.libraries.io.ReikaPacketHelper.PacketObj;
 /** A namespaced, channel-bound compatibility transport for the 26.3 payload API. */
 public class CustomNetworkBridge {
 
-    /** Existing bytes remain protocol 2.1.0; incompatible ID/schema changes must negotiate a new version. */
-    public static final String PROTOCOL_VERSION = "2.1.0";
+    /** Protocol 2.2.0 migrates dimension-scoped bodies; future incompatible schemas must negotiate a new version. */
+    public static final String PROTOCOL_VERSION = "2.2.0";
 
     private final reika.dragonapi.interfaces.PacketHandler packetHandler;
     private final String modId;

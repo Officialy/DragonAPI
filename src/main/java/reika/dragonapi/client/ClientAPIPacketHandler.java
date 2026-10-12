@@ -49,6 +49,16 @@ public final class ClientAPIPacketHandler {
 
     private ClientAPIPacketHandler() {}
 
+    public static void refreshBiomeColumn(int x, int z) {
+        var minecraft = Minecraft.getInstance();
+        var level = minecraft.level;
+        if (level == null) return;
+        level.clearTintCaches();
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++)
+            for (int y = level.getMinSectionY(); y <= level.getMaxSectionY(); y++)
+                minecraft.levelExtractor.setSectionDirty((x >> 4) + dx, y, (z >> 4) + dz);
+    }
+
     public static void handle(int x, int y, int z, PacketIDs pack, int[] data, String sg, Player player) {
         ClientLevel world = Minecraft.getInstance().level;
         if (world == null || pack == null)

@@ -40,7 +40,15 @@ the last valid operation. Reactor/Rotary/Electri/DragonAPI lookups likewise reje
 unknown IDs consistently. Existing payload bounds and direction checks remain;
 IDs still belong to their authoritative channel/handler namespace.
 
-## Negotiation policy
+## Current protocol after D47
+
+D46 preserved protocol 2.1.0 as described below. D47 subsequently migrates the
+six entity-verification/biome control bodies and negotiates 2.2.0, while retaining
+all 353 explicit numeric IDs. See [dimension-packet-port.md](dimension-packet-port.md)
+for the current schemas, compatibility boundary and dimension checks. The 2.1
+manifest remains the published historical ID fixture.
+
+## Negotiation policy at the D46 checkpoint
 
 CustomNetworkBridge exposes PROTOCOL_VERSION, and actual PayloadRegistrar
 registration uses it. It remains 2.1.0 because existing numbers, canonical frames,
