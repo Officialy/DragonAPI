@@ -74,6 +74,14 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
         // if it then tries to encode with a missing handler, so we don't double-log here.
     }
 
+    /** Detached queued delta, encoded with the existing BE_NBT_SYNC frame. */
+    public static SyncPacket fromChanges(BlockEntity tile, CompoundTag patch) {
+        SyncPacket packet = new SyncPacket(tile);
+        packet.populateFromStream(patch.copy());
+        packet.data.forEach((key, value) -> packet.changes.put(key, value == null ? null : value.copy()));
+        return packet;
+    }
+
     public void setData(BlockEntity te, boolean force, CompoundTag NBT) {
         if (dispatch) {
             if (DragonOptions.LOGSYNCCME.getState()) {
@@ -206,6 +214,13 @@ public final class SyncPacket extends ReikaPacketHelper.PacketObj implements Dat
                 toSend.put(key, val.copy());
         }
         if (!removed.isEmpty()) toSend.put(REMOVED_KEYS, removed);
+    }
+
+    /** Current full state without delta tombstones, detached for transport mode transitions. */
+    public CompoundTag getCurrentState() {
+        CompoundTag tag = new CompoundTag();
+        data.forEach((key, value) -> { if (value != null) tag.put(key, value.copy()); });
+        return tag;
     }
 
     // Accessors for payload bridge

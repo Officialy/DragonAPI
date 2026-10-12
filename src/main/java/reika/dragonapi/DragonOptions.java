@@ -45,7 +45,7 @@ public enum DragonOptions implements IntegerConfig, BooleanConfig, StringArrayCo
     PARTICLELIMIT("Particle Limit (Vanilla = 4000)", 4000),
     DEBUGKEY("Debug Overlay Key (LWJGL ID)", KEY_TAB), //Keyboard.KEY_TAB
     //RECURSE("Recursion Limit Override", -1),
-    //COMPOUNDSYNC("Compound Sync Packet System - Use at own risk", false);
+    // COMPOUNDSYNC is appended below to preserve existing option ordinals.
     DIRECTOC("Direct OpenComputers Support", false),
     AUTOREBOOT("Automatic Reboot Interval (Seconds)", -1),
     XPMERGE("Merge XP Orbs Like Items", true),
@@ -69,6 +69,7 @@ public enum DragonOptions implements IntegerConfig, BooleanConfig, StringArrayCo
     VERSIONCHANGEWARN("Version Change Warning Level (0 = None, 1 = ReikaMods only, 2 = All)", 2),
     DEBUGLOG("Mod's Debug Log (false = None, true = All)", false),
     CHARGEDCERTUS("Allow charged certus to be recognized as normal certus ore", false),
+    COMPOUNDSYNC("Batch block entity sync packets", false),
     ;
 
     private final String label;

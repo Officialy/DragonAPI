@@ -1,349 +1,264 @@
+/*******************************************************************************
+ * @author Reika Kalseki
+ * Copyright 2017. All rights reserved.
+ * Distribution requires explicit prior permission from the owner.
+ ******************************************************************************/
 package reika.dragonapi.io;
 
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.PacketListener;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.PacketType;
-import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-// Removed unused ClientTickEvent import
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
+import reika.dragonapi.instantiable.io.SyncPacket;
 import reika.dragonapi.interfaces.DataSync;
-import reika.dragonapi.libraries.io.NBTCompat;
+import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
-import java.io.IOException;
-import java.util.*;
-
-public class CompoundSyncPacket implements DataSync, Packet<PacketListener> {
-
-    private static final String ERROR_TAG = "erroredPacket";
-
+/** Optional native bundles of the existing channel-bound BE_NBT_SYNC payloads. */
+public class CompoundSyncPacket implements DataSync {
     public static final CompoundSyncPacket instance = new CompoundSyncPacket();
+    private static final int SNAPSHOT_VERSION = 1;
+    private static final int MAX_SNAPSHOT_ENTRIES = 4096;
+    private static final int BUNDLE_SIZE = 256;
+    private final Map<WorldLocation, State> states = new LinkedHashMap<>();
+    private final Map<WorldLocation, Change> received = new LinkedHashMap<>();
 
-    private final HashMap<WorldLocation, HashMap<String, Tag>> data = new HashMap();
-    private final HashMap<WorldLocation, HashMap<String, Tag>> oldData = new HashMap();
-    private final HashMap<WorldLocation, HashMap<String, Tag>> changes = new HashMap();
-
-    /** Is the packet currently being written by the network thread */
-    private boolean dispatch;
-    /** Is the packet currently being read by the network thread */
-    private boolean receive;
-
-    private CompoundSyncPacket() {
-
+    private static final class State {
+        final WeakReference<BlockEntity> tile;
+        final Identifier type;
+        CompoundTag sent = new CompoundTag();
+        CompoundTag latest;
+        boolean force;
+        double radius;
+        long revision;
+        State(BlockEntity tile) { this.tile = new WeakReference<>(tile); type = typeOf(tile); }
     }
-
-    /**
-     * Diffs {@code NBT} against the last tag sent for this tile and queues only what changed.
-     *
-     * <p><b>Key removal is not synced.</b> Only keys <em>present in {@code NBT}</em> are examined, so
-     * a key that was sent last time and is absent now is never compared, never queued as a change,
-     * and never cleared on the client -- the client merges what it receives and keeps the old value
-     * forever. A {@code writeSyncTag} that writes a key only when its value is "interesting" will
-     * therefore leave stale data on screen; write the key unconditionally instead, using a codec that
-     * can represent the empty state (e.g. {@code ItemStack.OPTIONAL_CODEC} rather than
-     * {@code ItemStack.CODEC}). This is what stranded the last crafted recipe in the casting table's
-     * result slot after the grid was emptied.
-     */
-    public void setData(BlockEntity te, boolean force, CompoundTag NBT) {
-        if (dispatch) {
-            if (DragonOptions.LOGSYNCCME.getState()) {
-                DragonAPI.LOGGER.info("The compound sync packet for "+te+" would have just CME'd, as the");
-                DragonAPI.LOGGER.info("Server-Thread data-writing code has overlapped with the Network-Thread byte[] dispatch.");
-                DragonAPI.LOGGER.info("Seeing this message frequently could indicate a serious issue.\n");
-            }
-            return;
+    /** Immutable snapshot identity and detached NBT; accessors cannot mutate the queued state. */
+    public record Change(WorldLocation location, Identifier type, CompoundTag patch) {
+        public Change {
+            Objects.requireNonNull(location); Objects.requireNonNull(type);
+            patch = Objects.requireNonNull(patch).copy();
         }
-
-        WorldLocation loc = new WorldLocation(te);
-
-        this.createMaps(loc);
-        changes.remove(loc);
-
-        Collection<String> c = NBT.keySet();
-        Iterator<String> it = c.iterator();
-        while (it.hasNext()) {
-            String name = it.next();
-            if (name == null) {
-                DragonAPI.LOGGER.info("An NBT tag with a null key is being sent to the compound sync packet from "+te);
-            }
-            else {
-                Tag tag = NBT.get(name);
-                this.addData(loc, name, tag, force);
-            }
-        }
+        @Override public CompoundTag patch() { return patch.copy(); }
     }
-
-    private void createMaps(WorldLocation loc) {
-        if (data.get(loc) == null) {
-            data.put(loc, new HashMap<>());
-        }
-        if (oldData.get(loc) == null) {
-            oldData.put(loc, new HashMap<>());
-        }
+    private static Identifier typeOf(BlockEntity tile) {
+        return Objects.requireNonNull(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(tile.getType()));
     }
-
-    private void addData(WorldLocation loc, String key, Tag value, boolean force) {
-        Tag prev = data.get(loc).get(key);
-        oldData.get(loc).put(key, prev);
-        data.get(loc).put(key, value);
-        if (force || !this.match(prev, value)) {
-            //DragonAPI.LOGGER.info("Changing '"+key+"' from "+prev+" to "+value+" @ "+loc.getBlockEntity());
-            this.addChange(loc, key, value);
+    /** Source compatibility: direct aggregate callers address all players in that dimension. */
+    public void setData(BlockEntity tile, boolean force, CompoundTag tag) { setData(tile, force, tag, Double.POSITIVE_INFINITY); }
+    public synchronized void setData(BlockEntity tile, boolean force, CompoundTag tag, double radius) {
+        if (!(tile.getLevel() instanceof ServerLevel level) || !level.getServer().isSameThread())
+            throw new IllegalStateException("Compound sync must be queued on the owning server thread");
+        if (Double.isNaN(radius) || radius < 0) throw new IllegalArgumentException("Invalid sync radius");
+        if (tag.contains(SyncPacket.REMOVED_KEYS)) throw new IllegalArgumentException("Full sync state contains the reserved removal key");
+        WorldLocation location = new WorldLocation(tile);
+        State state = states.get(location);
+        if (state == null || state.tile.get() != tile) { state = new State(tile); states.put(location, state); }
+        state.latest = tag.copy(); state.force |= force; state.radius = radius; state.revision++;
+    }
+    /** Carry the prior per-tile state into batching, including keys which later disappear before a flush. */
+    public synchronized void primeBaseline(BlockEntity tile, CompoundTag prior) {
+        if (!(tile.getLevel() instanceof ServerLevel level) || !level.getServer().isSameThread())
+            throw new IllegalStateException("Compound baseline must be primed on the server thread");
+        State state = new State(tile); state.sent = prior.copy(); states.put(new WorldLocation(tile), state);
+    }
+    /** Diff against the consumed baseline; intermediate queue writes cannot erase outstanding changes. */
+    public static CompoundTag difference(CompoundTag before, CompoundTag after, boolean force) {
+        CompoundTag patch = new CompoundTag();
+        for (String key : after.keySet())
+            if (force || !Objects.equals(before.get(key), after.get(key))) patch.put(key, after.get(key).copy());
+        ListTag removed = new ListTag();
+        before.keySet().stream().filter(key -> !after.contains(key)).sorted().forEach(key -> removed.add(StringTag.valueOf(key)));
+        if (!removed.isEmpty()) patch.put(SyncPacket.REMOVED_KEYS, removed);
+        return patch;
+    }
+    public static void merge(CompoundTag target, CompoundTag patch) {
+        for (var key : patch.getListOrEmpty(SyncPacket.REMOVED_KEYS)) key.asString().ifPresent(target::remove);
+        for (String key : patch.keySet()) if (!key.equals(SyncPacket.REMOVED_KEYS)) target.put(key, patch.get(key).copy());
+    }
+    private static CompoundTag pending(State state) {
+        return state.latest != null ? difference(state.sent, state.latest, state.force) : new CompoundTag();
+    }
+    public synchronized List<Change> snapshot() {
+        ArrayList<Change> result = new ArrayList<>();
+        for (var entry : states.entrySet()) {
+            CompoundTag patch = pending(entry.getValue());
+            if (!patch.isEmpty()) result.add(new Change(entry.getKey(), entry.getValue().type, patch));
         }
+        return List.copyOf(result);
     }
-
-    private void addChange(WorldLocation loc, String key, Tag value) {
-        HashMap<String, Tag> map = changes.get(loc);
-        if (map == null) {
-            map = new HashMap();
-            changes.put(loc, map);
-        }
-        map.put(key, value);
+    public synchronized boolean isEmpty() { return snapshot().isEmpty(); }
+    public synchronized boolean isEmpty(WorldLocation location) {
+        State state = states.get(location); return state == null || pending(state).isEmpty();
     }
-
-    public boolean isEmpty() {
-        return changes.isEmpty();
-    }
-
-    public boolean isEmpty(WorldLocation loc) {
-        return changes.get(loc).isEmpty();
-    }
-
-
-    public void readForSync(BlockEntity te, CompoundTag NBT) {
-        if (dispatch) {
-            if (DragonOptions.LOGSYNCCME.getState()) {
-                DragonAPI.LOGGER.info("The compound sync packet for "+te+" would have just CME'd, as the");
-                DragonAPI.LOGGER.info("Client-Thread data-reading code has overlapped with the Network-Thread byte[] reading.");
-                DragonAPI.LOGGER.info("Seeing this message frequently could indicate a serious issue.\n");
-            }
-            return;
-        }
-
-        WorldLocation loc = new WorldLocation(te);
-
-        this.createMaps(loc);
-
-        for (String key : data.get(loc).keySet()) {
-            NBT.put(key, data.get(loc).get(key));
+    @Override public synchronized boolean hasNoData() { return received.isEmpty() && states.isEmpty(); }
+    @Override public synchronized String toString() { return snapshot().toString(); }
+    public synchronized void readForSync(BlockEntity tile, CompoundTag tag) {
+        WorldLocation location = new WorldLocation(tile);
+        Change change = received.get(location);
+        if (change != null && change.type().equals(typeOf(tile))) merge(tag, change.patch());
+        else {
+            State state = states.get(location);
+            if (state != null && state.tile.get() == tile) merge(tag, pending(state));
         }
     }
-
-    @Override
-    public String toString() {
-        return changes.isEmpty() ? "[Empty]" : changes.toString();
+    public static CompoundSyncPacket fromChanges(BlockEntity tile, CompoundTag patch) {
+        CompoundSyncPacket packet = new CompoundSyncPacket();
+        WorldLocation location = new WorldLocation(tile);
+        packet.received.put(location, new Change(location, typeOf(tile), patch));
+        return packet;
     }
-
-    private boolean match(Tag old, Tag cur) {
-        if (old == cur)
-            return true;
-        if (old == null || cur == null)
-            return false;
-        return cur.equals(old);
-    }
-
-    public void write(FriendlyByteBuf out) {
-        dispatch = true;
-
-        out.writeInt(changes.size());
-        for (WorldLocation loc : changes.keySet()) {
-            out.writeResourceKey(loc.getDimension()); //write resourceKey for 1.19 - future max says thank you to past max
-            out.writeInt(loc.pos.getX());
-            out.writeShort(loc.pos.getY());
-            out.writeInt(loc.pos.getZ());
-        }
-
-        CompoundTag toSend = new CompoundTag();
-
-        for (WorldLocation loc : changes.keySet()) {
-            HashMap<String, Tag> map = changes.get(loc);
-            try {
-                CompoundTag local = new CompoundTag();
-                this.saveChanges(map, local);
-                toSend.put(loc.toSerialString(), local);
-            }
-            catch (Exception e) {
-                toSend.putBoolean(ERROR_TAG, true);
-                e.printStackTrace();
-                //out.clear();
-            }
-        }
-
+    /** Standalone snapshot codec, not a registered network packet. Full signed BlockPos Y is retained. */
+    public synchronized void write(FriendlyByteBuf output) {
+        List<Change> changes = received.isEmpty() ? snapshot() : List.copyOf(received.values());
+        if (changes.size() > MAX_SNAPSHOT_ENTRIES) throw new IllegalArgumentException("Too many snapshot entries");
+        int start = output.writerIndex();
         try {
-            out.writeNbt(toSend);
-        }
-        catch (Exception e) {
-            DragonAPI.LOGGER.error("Error writing Compound Sync Tag!");
-            out.clear();
-            e.printStackTrace();
-        }
-
-        DragonAPI.LOGGER.info("Wrote "+changes.size()+" locations, data="+toSend);
-
-        dispatch = false;
+            output.writeVarInt(SNAPSHOT_VERSION); output.writeVarInt(changes.size());
+            for (Change change : changes) {
+                output.writeResourceKey(change.location().getDimension()); output.writeInt(change.location().pos.getX()); output.writeInt(change.location().pos.getY()); output.writeInt(change.location().pos.getZ());
+                output.writeIdentifier(change.type()); output.writeNbt(change.patch());
+            }
+            if (output.writerIndex() - start > 1_048_576) throw new IllegalArgumentException("Snapshot too large");
+        } catch (RuntimeException failure) { output.writerIndex(start); throw failure; }
     }
-
-    private void saveChanges(HashMap<String, Tag> changes, CompoundTag loc) {
-        for (String key : changes.keySet()) {
-            Tag val = changes.get(key);
-            loc.put(key, val);
+    public synchronized void readPacketData(FriendlyByteBuf input) {
+        if (input.readableBytes() > 1_048_576) throw new IllegalArgumentException("Snapshot too large");
+        if (input.readVarInt() != SNAPSHOT_VERSION) throw new IllegalArgumentException("Unknown snapshot version");
+        int count = input.readVarInt();
+        if (count < 0 || count > MAX_SNAPSHOT_ENTRIES) throw new IllegalArgumentException("Invalid snapshot count");
+        Map<WorldLocation, Change> decoded = new LinkedHashMap<>();
+        for (int i = 0; i < count; i++) {
+            ResourceKey<Level> dimension = input.readResourceKey(Registries.DIMENSION);
+            WorldLocation location = new WorldLocation(dimension, input.readInt(), input.readInt(), input.readInt());
+            Identifier type = input.readIdentifier(); CompoundTag patch = input.readNbt();
+            if (patch == null || decoded.put(location, new Change(location, type, patch)) != null)
+                throw new IllegalArgumentException("Missing patch or duplicate location");
+        }
+        if (input.isReadable()) throw new IllegalArgumentException("Trailing snapshot data");
+        received.clear(); received.putAll(decoded);
+    }
+    /** Apply only to loaded, matching client tiles; do not load chunks to deliver a snapshot. */
+    public synchronized void handle(Level level) {
+        if (level == null || !level.isClientSide()) return;
+        for (Change change : received.values()) {
+            if (!change.location().getDimension().equals(level.dimension()) || !level.hasChunkAt(change.location().pos)) continue;
+            BlockEntity tile = level.getBlockEntity(change.location().pos);
+            if (tile instanceof CompoundSyncPacketHandler receiver && typeOf(tile).equals(change.type())) receiver.handleCompoundSyncPacket(this);
         }
     }
-    /*
-    private void trim() {
-        HashSet<WorldLocation> remove = new HashSet();
-        for (WorldLocation loc : changes.keySet()) {
-            if (changes.get(loc).isEmpty()) {
-                remove.add(loc);
+    public interface CompoundSyncPacketHandler { void handleCompoundSyncPacket(CompoundSyncPacket packet); }
+    public synchronized void forget(WorldLocation location) { states.remove(location); received.remove(location); }
+    public synchronized void forgetDimension(ResourceKey<Level> dimension) {
+        states.keySet().removeIf(location -> location.getDimension().equals(dimension));
+        received.keySet().removeIf(location -> location.getDimension().equals(dimension));
+    }
+    public synchronized void clear() { states.clear(); received.clear(); }
+    protected boolean supports(ServerPlayer player, CustomPacketPayload payload) { return player.connection.hasChannel(payload); }
+    protected void send(ServerPlayer player, List<CustomPacketPayload> payloads) {
+        PacketDistributor.sendToPlayer(player, payloads.getFirst(), payloads.subList(1, payloads.size()).toArray(CustomPacketPayload[]::new));
+    }
+    /** Snapshot before encoding/sending; failed sends retain pending work for an idempotent retry. */
+    public synchronized void flush(ServerLevel level) {
+        if (!level.getServer().isSameThread()) throw new IllegalStateException("Compound sync flush requires the server thread");
+        record Delivery(WorldLocation location, State state, CompoundTag full, long revision, double radius, CustomPacketPayload payload) {}
+        ArrayList<Delivery> deliveries = new ArrayList<>();
+        var iterator = states.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (!entry.getKey().getDimension().equals(level.dimension())) continue;
+            State state = entry.getValue(); BlockEntity tile = state.tile.get();
+            if (tile == null || tile.isRemoved() || !level.hasChunkAt(entry.getKey().pos) || level.getBlockEntity(entry.getKey().pos) != tile) {
+                iterator.remove(); continue;
+            }
+            CompoundTag patch = pending(state);
+            if (!patch.isEmpty()) {
+                CustomPacketPayload payload = ReikaPacketHelper.toPayload(DragonAPI.MODID, SyncPacket.fromChanges(tile, patch), DragonAPI.packetChannel);
+                deliveries.add(new Delivery(entry.getKey(), state, state.latest.copy(), state.revision, state.radius, payload));
             }
         }
-        for (WorldLocation loc : remove)
-            changes.remove(loc);
-    }
-     */
-
-    public void readPacketData(FriendlyByteBuf in) {
-        receive = true;
-        try {
-            int num = in.readInt();
-            for (int i = 0; i < num; i++) {
-                ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, Identifier.parse(in.readUtf())); //todo check if it breaks or not
-                int x = in.readInt();
-                int y = in.readShort();
-                int z = in.readInt();
-                WorldLocation loc = new WorldLocation(dim, x, y, z);
-                this.createMaps(loc);
+        if (deliveries.isEmpty()) return;
+        for (ServerPlayer player : List.copyOf(level.players())) {
+            if (player.level() != level) continue;
+            ArrayList<CustomPacketPayload> selected = new ArrayList<>();
+            for (Delivery delivery : deliveries) {
+                double radius = delivery.radius();
+                if (player.distanceToSqr(delivery.location().pos.getX(), delivery.location().pos.getY(), delivery.location().pos.getZ()) <= radius * radius
+                        && supports(player, delivery.payload())) selected.add(delivery.payload());
             }
-
-            CompoundTag received = in.readNbt();
-            if (!received.getBooleanOr(ERROR_TAG, false)) {
-                Collection c = received.keySet();
-                for (String name : (Iterable<String>) c) {
-                    CompoundTag local = NBTCompat.getCompound(received, name);
-                    WorldLocation loc = WorldLocation.fromSerialString(name);
-                    //try {
-                    this.populateFromStream(loc, local);
-                    //}
-                    //catch (Exception e) {
-                    //	e.printStackTrace();
-                    //	data.clear(); //discard packet
-                    //}
-                }
+            for (int start = 0; start < selected.size(); start += BUNDLE_SIZE)
+                send(player, List.copyOf(selected.subList(start, Math.min(selected.size(), start + BUNDLE_SIZE))));
+        }
+        for (Delivery delivery : deliveries) {
+            delivery.state().sent = delivery.full();
+            if (delivery.state().revision == delivery.revision()) {
+                delivery.state().latest = null; delivery.state().force = false;
             }
         }
-        catch (Exception e) {
-            DragonAPI.LOGGER.error("Error reading Compound Sync Tag!");
-            e.printStackTrace();
-            data.clear();
-        }
-        receive = false;
     }
-
-    private void populateFromStream(WorldLocation loc, CompoundTag local) {
-        Collection c = local.keySet();
-        Iterator<String> it = c.iterator();
-        while (it.hasNext()) {
-            String name = it.next();
-            Tag tag = local.get(name);
-            data.get(loc).put(name, tag);
-        }
-        DragonAPI.LOGGER.info("Reading "+data.get(loc)+" from "+local+" @ "+loc.getBlockEntity());
-    }
-
-    @Override
-    public boolean hasNoData() {
-        return data.isEmpty();
-    }
-
-    @Override
-    public PacketType<? extends Packet<PacketListener>> type() {
-        // TODO: This is a legacy packet - should be migrated to CustomPacketPayload
-        return new PacketType<>(PacketFlow.CLIENTBOUND, Identifier.fromNamespaceAndPath("dragonapi", "compound_sync"));
-    }
-
-    @Override
-    public void handle(PacketListener inh) { //Ignore default handling
-        // Through the holder: this packet class is loaded on the server in order to *send*, so it
-        // must not name ClientLevel. Every block entity that syncs would otherwise fail on a server.
-        if (!FMLEnvironment.getDist().isClient())
-            return;
-        Level world = reika.dragonapi.client.ClientEnvironment.level();
-        for (WorldLocation loc : data.keySet()) {
-            if (loc.getDimension() == world.dimension()) {
-                if (world.getBlockState(new BlockPos(loc.pos.getX(), loc.pos.getY(), loc.pos.getZ())) != null) {
-                    BlockEntity te = loc.getBlockEntity(world);
-                    if (te instanceof CompoundSyncPacketHandler) {
-                        ((CompoundSyncPacketHandler)te).handleCompoundSyncPacket(this);
+    public static final class CompoundSyncPacketTracker implements TickRegistry.TickHandler {
+        public static final CompoundSyncPacketTracker instance = new CompoundSyncPacketTracker();
+        private final Map<ResourceKey<Level>, Long> lastTick = new LinkedHashMap<>();
+        private final Map<ResourceKey<Level>, Integer> ticks = new LinkedHashMap<>();
+        private final Map<ResourceKey<Level>, Long> lastError = new LinkedHashMap<>();
+        private CompoundSyncPacketTracker() {}
+        @Override public void tick(TickRegistry.TickType type, Object... data) {
+            if (!(data[0] instanceof ServerLevel level)) return;
+            long time = level.getGameTime();
+            if (Objects.equals(lastTick.put(level.dimension(), time), time)) return;
+            int count = ticks.getOrDefault(level.dimension(), 0) + 1;
+            int interval = DragonOptions.SLOWSYNC.getState() ? 20 : 4;
+            ticks.put(level.dimension(), count >= interval ? 0 : count);
+            if (count >= interval) {
+                try { CompoundSyncPacket.instance.flush(level); }
+                catch (RuntimeException failure) {
+                    Long previous = lastError.get(level.dimension());
+                    if (previous == null || time - previous >= 200) {
+                        lastError.put(level.dimension(), time);
+                        DragonAPI.LOGGER.error("Compound sync flush failed; pending updates retained for retry", failure);
                     }
                 }
             }
         }
+        void clear(ResourceKey<Level> dimension) { lastTick.remove(dimension); ticks.remove(dimension); lastError.remove(dimension); }
+        void clear() { lastTick.clear(); ticks.clear(); lastError.clear(); }
+        @Override public EnumSet<TickRegistry.TickType> getType() { return EnumSet.of(TickRegistry.TickType.WORLD); }
+        @Override public boolean canFire(TickRegistry.Phase phase) { return phase == TickRegistry.Phase.END; }
+        @Override public String getLabel() { return "Compound Sync Packet"; }
     }
-
-    public interface CompoundSyncPacketHandler {
-
-        void handleCompoundSyncPacket(CompoundSyncPacket packet);
-
-    }
-
-    public static class CompoundSyncPacketTracker implements TickRegistry.TickHandler {
-
-        public static final CompoundSyncPacketTracker instance = new CompoundSyncPacketTracker();
-
-        private int tickcount;
-        private static final int MAXTICK = DragonOptions.SLOWSYNC.getState() ? 20 : 4;
-
-        private CompoundSyncPacketTracker() {
-
-        }
-
-        @Override
-        public void tick(TickRegistry.TickType type, Object... tickData) {
-            tickcount++;
-            if (tickcount >= MAXTICK) {
-                if (!CompoundSyncPacket.instance.isEmpty())
-                    this.dispatchPacket((Level)tickData[0]);
-                tickcount = 0;
+    @EventBusSubscriber(modid = DragonAPI.MODID)
+    public static final class Lifecycle {
+        @SubscribeEvent public static void tick(LevelTickEvent.Post event) { CompoundSyncPacketTracker.instance.tick(TickRegistry.TickType.WORLD, event.getLevel()); }
+        @SubscribeEvent public static void unload(LevelEvent.Unload event) {
+            if (event.getLevel() instanceof ServerLevel level) {
+                instance.forgetDimension(level.dimension()); CompoundSyncPacketTracker.instance.clear(level.dimension());
             }
         }
-
-        private void dispatchPacket(Level world) {
-            for (ServerPlayer ep : ((List<ServerPlayer>)world.players()))  {
-                ep.connection.send(CompoundSyncPacket.instance);
-            }
-        }
-
-        @Override
-        public EnumSet<TickRegistry.TickType> getType() {
-            return EnumSet.of(TickRegistry.TickType.WORLD);
-        }
-
-        @Override
-        public boolean canFire(TickRegistry.Phase p) {
-            return p == TickRegistry.Phase.END;
-        }
-
-        @Override
-        public String getLabel() {
-            return "Compound Sync Packet";
-        }
-
+        @SubscribeEvent public static void stop(ServerStoppedEvent event) { instance.clear(); CompoundSyncPacketTracker.instance.clear(); }
     }
 }
-

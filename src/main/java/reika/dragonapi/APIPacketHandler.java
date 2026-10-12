@@ -202,8 +202,7 @@ public class APIPacketHandler implements PacketHandler {
                     // Wire format inside the DataPacket's payload bytes — written by
                     // {@link reika.dragonapi.instantiable.io.SyncPacket#encode}:
                     //   - BlockPos        (FriendlyByteBuf#writeBlockPos = packed long, 8 bytes)
-                    //   - varInt typeId   (BlockEntityType registry id, currently unused on the receive
-                    //                      side but kept in case we want to add a type-mismatch guard)
+                    //   - varInt typeId   (BlockEntityType registry id, checked against the loaded target)
                     //   - NBT compound    (FriendlyByteBuf#writeNbt)
                     // We can't decode that off the plain DataInputStream — varInt and writeNbt are
                     // FriendlyByteBuf-format — so wrap the DataPacket's raw bytes into a
@@ -223,9 +222,11 @@ public class APIPacketHandler implements PacketHandler {
                             int typeId = bbuf.readVarInt();
                             CompoundTag nbt = bbuf.readNbt();
                             if (nbt != null) {
-                                BlockEntity te = world.getBlockEntity(pos);
-                                if (te instanceof BlockEntityBase beb && net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(te.getType()) == typeId) {
-                                    beb.applySyncTag(nbt);
+                                BlockEntity te = world.hasChunkAt(pos) ? world.getBlockEntity(pos) : null;
+                                if (te != null && net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(te.getType()) == typeId
+                                        && te instanceof reika.dragonapi.io.CompoundSyncPacket.CompoundSyncPacketHandler receiver) {
+                                    if (te instanceof BlockEntityBase beb) beb.applySyncTag(nbt);
+                                    else receiver.handleCompoundSyncPacket(reika.dragonapi.io.CompoundSyncPacket.fromChanges(te, nbt));
                                 } else if (te == null) {
                                     // Common case during chunk-edge resync; not worth a log line.
                                 } else {

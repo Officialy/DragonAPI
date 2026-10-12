@@ -532,23 +532,24 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         return DragonOptions.SLOWSYNC.getState() ? 20 : 5;
     }
 
+    private boolean compoundSyncActive;
+
     private void sendSyncPacket() {
         if (reika.dragonapi.auxiliary.BlockEntityDiagnostics.enabled()) reika.dragonapi.auxiliary.BlockEntityDiagnostics.event("sendSyncPacket.call." + (this.shouldFullSync() ? "forced" : "delta"));
         CompoundTag nbt = new CompoundTag();
         this.writeSyncTag(nbt);
-        //if (DragonOptions.COMPOUNDSYNC.getState()) {
-        //	CompoundSyncPacket.instance.setData(this, this.shouldFullSync(), nbt);
-        //}
-        //else {
-        syncTag.setData(this, this.shouldFullSync(), nbt);
-        if (!syncTag.isEmpty()) {
-            int r = this.shouldFullSync() ? 128 : this.getUpdatePacketRadius();
-            ResourceKey<Level> dim = level.dimension();
-            //PacketDispatcher.sendPacketToAllAround(xCoord, yCoord, zCoord, r, dim, syncTag);
-            this.sendPacketToAllAround(syncTag, r);
-            //DragonAPICore.debug("Packet "+syncTag+" sent from "+this);
+        boolean compound = DragonOptions.COMPOUNDSYNC.getState();
+        boolean modeChanged = compound != compoundSyncActive;
+        if (compound && modeChanged) CompoundSyncPacket.instance.primeBaseline(this, syncTag.getCurrentState());
+        boolean full = this.shouldFullSync() || modeChanged;
+        syncTag.setData(this, full, nbt); // Keep the same baseline/history through either transport mode.
+        if (compound) {
+            CompoundSyncPacket.instance.setData(this, full, nbt, full ? 128 : this.getUpdatePacketRadius());
+        } else {
+            if (modeChanged) CompoundSyncPacket.instance.forget(new WorldLocation(this));
+            if (!syncTag.isEmpty()) this.sendPacketToAllAround(syncTag, full ? 128 : this.getUpdatePacketRadius());
         }
-        //}
+        compoundSyncActive = compound;
         level.setBlocksDirty(worldPosition, this.getBlockState(), this.getBlockState());
         this.onSync();
         forceSync = false;
