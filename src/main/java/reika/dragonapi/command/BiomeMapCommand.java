@@ -24,14 +24,12 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
-import reika.dragonapi.instantiable.data.maps.MultiMap;
 import reika.dragonapi.instantiable.io.MapOutput;
 import reika.dragonapi.interfaces.CustomBiomeDistributionWorld;
 import reika.dragonapi.interfaces.CustomMapColorBiome;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
-import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 import reika.dragonapi.libraries.level.ReikaBiomeHelper;
 import reika.dragonapi.libraries.rendering.ReikaColorAPI;
 
@@ -310,6 +308,8 @@ public class BiomeMapCommand {
     }
 
     private static class BiomeMap extends MapOutput<Integer> {
+        private final BitSet received = new BitSet();
+        private final Map<ResourceKey<Biome>, Integer> biomeCounts = new HashMap<>();
 
         private BiomeMap(String name, ResourceKey<Level> dim, int x, int z, int r, int res, int grid, boolean fgrid) {
             super(name, dim, x, z, r, res, grid, fgrid);
@@ -318,6 +318,16 @@ public class BiomeMapCommand {
         @Override
         protected void onImageCreate(File f) throws IOException {
             this.createLegend(f);
+            StringBuilder csv = new StringBuilder("biome,samples,percentage,hex_at_origin\n");
+            int total = biomeCounts.values().stream().mapToInt(Integer::intValue).sum();
+            for (var key : biomeCounts.keySet().stream().sorted(Comparator.comparing(k -> k.identifier().toString())).toList()) {
+                int count = biomeCounts.get(key);
+                csv.append(key.identifier()).append(',').append(count).append(',')
+                        .append(String.format(Locale.ROOT, "%.6f", 100D * count / total)).append(',')
+                        .append(String.format(Locale.ROOT, "#%06X", getBiomeColor(originX, originZ, key) & 0xffffff)).append('\n');
+            }
+            java.nio.file.Files.writeString(new File(f.getParentFile(), f.getName().replace(".png", ".biomes.csv")).toPath(),
+                    csv, java.nio.charset.StandardCharsets.UTF_8);
         }
 
         @Override
@@ -330,67 +340,92 @@ public class BiomeMapCommand {
             if (b == null)
                 return 0;
             var key = registry.getResourceKey(b);
+            int width = 2 * range / resolution + 1;
+            int index = (range + x - originX) / resolution * width + (range + z - originZ) / resolution;
+            if (key.isPresent() && !received.get(index)) {
+                received.set(index);
+                biomeCounts.merge(key.get(), 1, Integer::sum);
+            }
             return key.map(biomeResourceKey -> getBiomeColor(x, z, biomeResourceKey)).orElse(0);
         }
 
         private void createLegend(File f) throws IOException {
-            File f2 = new File(f.getParentFile(), "!legend.png");
-            if (f2.exists() && !ReikaObfuscationHelper.isDeObfEnvironment())
-                return;
-            f2.createNewFile();
-
-            MultiMap<Integer, Integer> li = ReikaBiomeHelper.getBiomeHierearchy();
-            int heightPerBiome = 18;
-            int height = (4 + heightPerBiome) * (1 + li.totalSize() + li.keySet().size());
-            //height = ReikaMathLibrary.ceil2PseudoExp(height);
-
-            BufferedImage img = new BufferedImage(256, height, BufferedImage.TYPE_INT_ARGB);
-
-            Graphics graphics = img.getGraphics();
-            Font ft = graphics.getFont();
-            graphics.setFont(new Font(ft.getName(), ft.getStyle(), ft.getSize()));
-            graphics.setColor(new Color(0xff000000));
-            int y = 2;
-            for (Integer b : li.keySet()) {
-                this.createLegendEntry(b, 2, y, graphics, img, heightPerBiome);
-                y += heightPerBiome + 4;
-                for (Integer b2 : li.get(b)) {
-                    this.createLegendEntry(b2, 24, y, graphics, img, heightPerBiome);
-                    y += heightPerBiome + 4;
-                }
-            }
-            graphics.dispose();
-
-            ImageIO.write(img, "png", f2);
+            writeBiomeLegend(reika.dragonapi.client.ClientEnvironment.level(), f.getParentFile());
         }
+    }
 
-        private void createLegendEntry(int b, int x, int y, Graphics g, BufferedImage img, int hpb) {
-            var registry = reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME);
-            Biome biome = registry.byId(b);
-            if (biome == null)
-                return;
-            ResourceKey<Biome> key = registry.getResourceKey(biome).orElse(null);
-            if (key == null)
-                return;
-            g.drawString(biome.toString(), x + hpb + 4, y + hpb / 2 + 4);
-            for (int i = -1; i <= hpb; i++) {
-                for (int k = -1; k <= hpb; k++) {
-                    int clr = i == -1 || k == -1 || i == hpb || k == hpb ? 0xff000000 : 0xff000000 | getBiomeColor(i * 12, k * 12, key);
-                    img.setRGB(x + i, y + k, clr);
-                }
-            }
+    /** Registry-backed legend, also usable by offline/debug exports without a client renderer. */
+    public static void writeBiomeLegend(Level level, File directory) throws IOException {
+        var registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+        var keys = registry.listElements().map(holder -> holder.key()).sorted(
+                Comparator.comparing(key -> key.identifier().toString())).toList();
+        if (keys.isEmpty()) throw new IOException("The synchronized biome registry is empty");
+        java.nio.file.Files.createDirectories(directory.toPath());
+        int rowHeight = 24;
+        BufferedImage img = new BufferedImage(800, 32 + rowHeight * keys.size(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = img.createGraphics();
+        graphics.setColor(Color.WHITE);
+        graphics.fillRect(0, 0, img.getWidth(), img.getHeight());
+        graphics.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        graphics.setColor(Color.BLACK);
+        graphics.drawString("Biome registry key / RGB at (0,0); swatches show spatial colour variation", 8, 20);
+        StringBuilder csv = new StringBuilder("biome,red,green,blue,hex\n");
+        for (int row = 0; row < keys.size(); row++) {
+            var key = keys.get(row);
+            int y = 32 + row * rowHeight;
+            graphics.setColor(Color.BLACK);
+            graphics.drawRect(7, y - 1, 19, 19);
+            for (int x = 0; x < 18; x++) for (int z = 0; z < 18; z++)
+                img.setRGB(8 + x, y + z, 0xff000000 | getBiomeColor(level, x * 12, z * 12, key));
+            int color = getBiomeColor(level, 0, 0, key) & 0xffffff;
+            String hex = String.format(Locale.ROOT, "#%06X", color);
+            graphics.drawString(key.identifier() + "  " + hex, 36, y + 14);
+            csv.append(key.identifier()).append(',').append(color >> 16).append(',')
+                    .append((color >> 8) & 255).append(',').append(color & 255).append(',').append(hex).append('\n');
         }
-
+        graphics.dispose();
+        ImageIO.write(img, "png", new File(directory, "!legend.png"));
+        java.nio.file.Files.writeString(new File(directory, "!legend.csv").toPath(), csv,
+                java.nio.charset.StandardCharsets.UTF_8);
     }
 
 
     public static int getBiomeColor(int x, int z, ResourceKey<Biome> b) {
-        if (b == null)
-            return 0x000000; //should never happen
+        return getBiomeColor(reika.dragonapi.client.ClientEnvironment.level(), x, z, b);
+    }
 
-        var level = reika.dragonapi.client.ClientEnvironment.level();
+    public static int getBiomeColor(Level level, int x, int z, ResourceKey<Biome> b) {
+        if (b == null) return 0x000000;
+
         CustomMapColorBiome custom = customColors.get(b);
         if (custom != null) return custom.getMapColor(level, x, z);
+
+        // Modern oceans used to fall through to grass colours, hiding both water and climate.
+        // Give active mod biomes their own debug colours rather than identical forest swatches.
+        int modernColor = switch (b.identifier().toString()) {
+            case "minecraft:ocean" -> 0x0000FF;
+            case "minecraft:deep_ocean" -> 0x0000B0;
+            case "minecraft:cold_ocean" -> 0x315FA1;
+            case "minecraft:deep_cold_ocean" -> 0x25357A;
+            case "minecraft:lukewarm_ocean" -> 0x30A2DC;
+            case "minecraft:deep_lukewarm_ocean" -> 0x1463AC;
+            case "minecraft:warm_ocean" -> 0x36D4E8;
+            case "minecraft:deep_frozen_ocean" -> 0x00B7D4;
+            case "minecraft:frozen_river" -> 0x77CFFF;
+            case "minecraft:frozen_peaks", "minecraft:jagged_peaks", "minecraft:grove" -> 0xE6EFFF;
+            case "minecraft:dripstone_caves" -> 0x905B36;
+            case "minecraft:lush_caves" -> 0x00D48A;
+            case "minecraft:deep_dark" -> 0x133E4C;
+            case "chromaticraft:rainbow_forest" -> 0xD969E8;
+            case "chromaticraft:rainbow_stream" -> 0xAF76F5;
+            case "chromaticraft:ender_forest" -> 0x3D2466;
+            case "chromaticraft:luminous_cliffs" -> 0xF4D35E;
+            case "chromaticraft:luminous_cliffs_shores" -> 0xB8A85A;
+            case "geostrata:arctic_spires" -> 0xD6F4FF;
+            case "geostrata:kelp_forest" -> 0x18785D;
+            default -> -1;
+        };
+        if (modernColor >= 0) return modernColor;
 
         /*boolean mutate = b instanceof BiomeGenMutated;
         if (mutate) {
@@ -423,11 +458,7 @@ public class BiomeMapCommand {
             return 0x009000;
         } else if (b.identifier().getPath().equalsIgnoreCase("Bayou")) {
             return 0x7B7F4F; //Eew
-        }/* else if (ReikaBiomeHelper.isOcean(null, b)) { //todo this will crash without a level so its commented out for now, sorry future max
-            if (b == Biomes.DEEP_OCEAN)
-                return 0x0000b0;
-            return 0x0000ff;
-        }*/
+        }
 
         if (b == Biomes.RIVER)
             return 0x22aaff;
@@ -458,7 +489,7 @@ public class BiomeMapCommand {
             return 0x3A7F52;
         }
 
-        int c = reika.dragonapi.client.ClientEnvironment.level().registryAccess().lookupOrThrow(Registries.BIOME).get(b).get().value().getGrassColor(x, z);
+        int c = level.registryAccess().lookupOrThrow(Registries.BIOME).get(b).get().value().getGrassColor(x, z);
 
         if (ReikaBiomeHelper.isSnowBiome(b)) {
             c = 0xffffff;

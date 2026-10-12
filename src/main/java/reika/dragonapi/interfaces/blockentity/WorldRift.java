@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
 
@@ -14,19 +15,22 @@ import reika.dragonapi.instantiable.data.immutable.WorldLocation;
  * shipped a copy of; 26.x modules cannot share a package, and ChromatiCraft depends on those mods, so the interface
  * they test for lives here.
  *
- * <p>For every directional method the result is the object on that side of the rift's other end: calling
- * getBlockIDFrom(Direction.EAST) on a rift linked to another at 300, 50, 100 in the Nether returns the block at
- * 301, 50, 100 in the Nether. Rifts are two-directional.
+ * <p>V33a block/state reads mirror the requested face at the far end, while tile-entity reads use the requested
+ * face itself. For a far end at 300, 50, 100, EAST reads the block/state at 299, 50, 100 and the tile entity at
+ * 301, 50, 100. Rifts are two-directional.
  */
 public interface WorldRift {
 
-	/** Direction is the side it is relative to you, NOT the side of it you are asking! */
-	@Nullable Block getBlockIDFrom(Direction dir);
+	/** The block on the far end's opposite face, or null if the target world cannot be resolved. */
+	default @Nullable Block getBlockIDFrom(Direction dir) {
+		BlockState state = this.getBlockStateFrom(dir);
+		return state != null ? state.getBlock() : null;
+	}
 
-	/** Direction is the side it is relative to you, NOT the side of it you are asking! */
-	int getBlockMetadataFrom(Direction dir);
+	/** Complete state on the far end's opposite face; null while unlinked or the target world is absent. */
+	@Nullable BlockState getBlockStateFrom(Direction dir);
 
-	/** Direction is the side it is relative to you, NOT the side of it you are asking! */
+	/** The tile entity on the far end's requested face, or null if it is absent or unavailable. */
 	@Nullable BlockEntity getTileEntityFrom(Direction dir);
 
 	/** Returns the location of the other rift. */

@@ -1015,13 +1015,14 @@ public class ReikaWorldHelper {
         return world.getBlockState(new BlockPos(x, y, z)).getBlock();
     }
 
-    /** MULTIBLOCK-PORT: returns 0 until multiblock blocks expose variant in BlockState. */
-    public static int getBlockMetadata(BlockGetter world, int x, int y, int z) {
-        return 0;
+    /** Coordinate bridge retaining every native state property. */
+    public static BlockState getBlockState(BlockGetter world, int x, int y, int z) {
+        return world.getBlockState(new BlockPos(x, y, z));
     }
 
-    /** MULTIBLOCK-PORT: metadata writes become blockstate updates when multiblocks land on DeferredRegister. */
-    public static void setBlockMetadataWithNotify(Level world, int x, int y, int z, int meta, int flags) {
+    /** Writes a complete state with the caller's native update flags and returns the world's write result. */
+    public static boolean setBlockStateWithNotify(Level world, int x, int y, int z, BlockState state, int flags) {
+        return world.setBlock(new BlockPos(x, y, z), state, flags);
     }
 
     /**

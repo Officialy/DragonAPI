@@ -37,6 +37,11 @@ public final class LegacyOreVeins {
 
     public static boolean place(LevelAccessor world, RandomSource random, BlockState ore,
                                 int size, int dimensionType, int x, int y, int z) {
+        return place(world, random, ore, ore, size, dimensionType, x, y, z);
+    }
+
+    public static boolean place(LevelAccessor world, RandomSource random, BlockState ore, BlockState deepslateOre,
+                                int size, int dimensionType, int x, int y, int z) {
         if (size < 1) throw new IllegalArgumentException("Vein size must be positive");
         float angle = random.nextFloat() * (float)Math.PI;
         double x1 = x + 8 + Mth.sin(angle) * size / 8F, x2 = x + 8 - Mth.sin(angle) * size / 8F;
@@ -65,7 +70,10 @@ public final class LegacyOreVeins {
                             case 2 -> host.is(Blocks.END_STONE);
                             default -> host.is(BlockTags.STONE_ORE_REPLACEABLES) || host.is(BlockTags.DEEPSLATE_ORE_REPLACEABLES);
                         };
-                        if (replace) placed |= world.setBlock(pos,ore,2);
+                        if (replace) {
+                            BlockState deposit = host.is(BlockTags.DEEPSLATE_ORE_REPLACEABLES) ? deepslateOre : ore;
+                            placed |= world.setBlock(pos, deposit, 2);
+                        }
                     }
                 }
             }

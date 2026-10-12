@@ -6,6 +6,10 @@
     "mixins": [
         "MixinGameTestRunner",
         "MixinGameTestServer",
+        "MixinGenerationTask",
+        "MixinPopulationServer",
+        "MixinChunkyGenerationTask",
+        "MixinDistantHorizonsChunkyAccessor",
 		"MixinBiome",
         "MixinEnvironmentAttributeSystem",
         "MixinBlockStateBase",

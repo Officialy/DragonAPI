@@ -223,6 +223,7 @@ public class DragonAPI extends DragonAPIMod {
         EntityListCommand.register(commandDispatcher);
         TestControlCommand.register(commandDispatcher);
         BiomeMapCommand.register(commandDispatcher);
+        reika.dragonapi.command.ReikaPregenerationCommand.register(commandDispatcher);
         EventProfilerCommand.register(commandDispatcher);
         CommandableUpdateChecker.CheckerDisableCommand.register(commandDispatcher);
     }
