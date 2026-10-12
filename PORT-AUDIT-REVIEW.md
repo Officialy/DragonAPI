@@ -1153,3 +1153,43 @@ D44 is complete. D45 tank sender semantics, D46 legacy sub-IDs, excluded Chroma
 subsystem ports and release/remote acceptance remain open. Earlier pending worldgen,
 rift, compatibility, launcher, IDE and D31 changes remain outside this selective
 local checkpoint. Nothing is pushed.
+
+
+## Explicit tank sender and menu recipients — D45, 2026-10-12
+
+Completed tank synchronization through the existing native channel bridge. Original
+source c29c4fcc also left base syncTankData dormant; it is now a real public opt-in
+refresh, with no added automatic reflective broadcast on every BE update. The
+named-field sender retains the original 24-block same-dimension radius, with an
+explicit clientbound PacketTarget overload. Snapshot reads require the owning
+server thread and a loaded/live tile. Unbound channels and invalid fields cannot
+produce partial frames.
+
+Thirteen accepted RotaryCraft tank menus use CoreContainer's owner-targeted helper
+instead of repeating nearby broadcasts per viewer. The reservoir's physical
+dedicated-server gate is replaced by logical-server routing; Steam's initial
+sendAllDataToRemote path is included. Existing nearby/tool sends and full/periodic
+BE tags remain. Pristine excluded Chroma/integration source is retained.
+
+TankSyncData caches inherited instance/subtype field discovery, rejects static,
+null and shadowed targets, owns detached snapshots and validates the complete
+canonical body. All four active DA/RC/ReC/EC receivers share decoding before
+mutation, reject serverbound TANK and only resolve loaded client tiles. Unknown
+named fluid IDs cannot fall back to the old fluid. Fill/switch/empty/capacity
+semantics and existing same-fluid components survive; deprecated level-only direct
+updates cannot invent an empty tank's fluid. Existing protocol 2.1.0, ordinals,
+payload IDs and canonical bytes are preserved. New fluid components/type identities
+remain a deliberate future wire migration, with component state supplied by BE tags.
+
+Three units, five new native fixtures, all 89 native DragonAPI regressions, all
+178 family units and eight crafter regressions pass. A final focused rerun validates
+the consolidated receivers. Eight guards cover 3,285 outputs (DA 670 / RC 1,023);
+development DA/RC jars build. Normal Play arguments are unchanged. Captured native
+transport calls are not actual remote socket/render acceptance.
+
+Contract: DragonAPI/docs/tank-sync-port.md. Evidence:
+TestInstance/docs/tank-sync-2026-10-12.md and build/tank-sync-*.log. D45 is complete;
+D46 explicit sub-IDs/negotiated schemas and remaining ports/remote acceptance stay
+open. Validation includes earlier working-tree changes; this selective checkpoint
+preserves worldgen/rift/compatibility/launcher/IDE/D31 work outside its commits.
+Nothing is pushed.

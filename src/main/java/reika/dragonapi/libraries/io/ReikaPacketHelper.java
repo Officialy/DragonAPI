@@ -1396,62 +1396,25 @@ public class ReikaPacketHelper {
         }
     }
 
-    public static void sendTankSyncPacket(String ch, BlockEntity te, String tankField) {
-        if (te == null || tankField == null || tankField.isBlank())
-            throw new IllegalArgumentException("Tank sync requires a block entity and field name");
-        var x = te.getBlockPos().getX();
-        var y = te.getBlockPos().getY();
-        var z = te.getBlockPos().getZ();
-        var length = 0;
-        var bos = new ByteArrayOutputStream(length);
-        var outputStream = new DataOutputStream(bos);
-        try {
-            Field f = ReikaReflectionHelper.getProtectedInheritedField(te, tankField);
-            if (f == null)
-                throw new NoSuchFieldException(tankField);
-            f.setAccessible(true);
-            HybridTank tank = (HybridTank) f.get(te);
-            writeString(tankField, outputStream);
-            outputStream.writeInt(x);
-            outputStream.writeInt(y);
-            outputStream.writeInt(z);
-            outputStream.writeInt(tank.getFluidLevel());
-            Identifier fluidId = tank.isEmpty() ? null : BuiltInRegistries.FLUID.getKey(tank.getActualFluid().getFluid());
-            writeString(fluidId != null ? fluidId.toString() : "", outputStream);
-        } catch (ClassCastException ex) {
-//            ex.printStackTrace();
-            DragonAPI.LOGGER.error(te + " tried to sync its tank, but it is not a HybridTank instance!");
-            return;
-        } catch (ReflectiveOperationException | IOException ex) {
-            DragonAPI.LOGGER.error("Error encoding TankSyncPacket", ex);
-            return;
-        }
+    /** Original nearby update: 24 blocks in the tile's dimension, on either logical server type. */
+    public static void sendTankSyncPacket(String channel, BlockEntity tile, String field) {
+        if (tile == null) throw new IllegalArgumentException("Tank sync requires a block entity");
+        if (!(tile.getLevel() instanceof net.minecraft.server.level.ServerLevel)) return;
+        sendTankSyncPacket(channel, tile, field, new PacketTarget.RadiusTarget(tile, 24));
+    }
 
-        var pipe = pipelines.get(ch);
-        if (pipe == null) {
-            DragonAPI.LOGGER.error("Attempted to send a packet from an unbound channel!");
-            ReikaJavaLibrary.dumpStack();
-            return;
-        }
-
-        var dat = bos.toByteArray();
-        var pack = new DataPacket();
-        pack.init(PacketTypes.TANK, pipe);
-        pack.setData(dat);
-
-        if (te.getLevel() == null) {
-            DragonAPI.LOGGER.error(te + "has a null level, this is an issue, cannot perform sync packet!");
-            return;
-        }
-        Dist side = te.getLevel().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
-        if (side == Dist.DEDICATED_SERVER) {
-//            DragonAPI.LOGGER.info(te + " sent a tank sync packet from the server, this is good.");
-            new PacketTarget.RadiusTarget(te, 24).dispatch(pipe, pack);
-        } else if (side == Dist.CLIENT) {
-            DragonAPI.LOGGER.error(te + " sent a sync packet from the client! This is not allowed!");
-        } else {
-            // We are on the Bukkit server.
-        }
+    /** Explicit clientbound recipients, using the existing TANK category and native channel bridge. */
+    public static void sendTankSyncPacket(String channel, BlockEntity tile, String field, PacketTarget target) {
+        if (tile == null || field == null || field.isBlank() || target == null)
+            throw new IllegalArgumentException("Tank sync requires a tile, field and recipient target");
+        if (!(tile.getLevel() instanceof net.minecraft.server.level.ServerLevel level)) return;
+        if (!level.getServer().isSameThread()) throw new IllegalStateException("Tank synchronization requires the owning server thread");
+        if (tile.isRemoved() || !level.hasChunkAt(tile.getBlockPos()) || level.getBlockEntity(tile.getBlockPos()) != tile) return;
+        PacketPipeline pipe = pipelines.get(channel);
+        if (pipe == null) throw new IllegalArgumentException("Unbound tank sync channel: " + channel);
+        TankSyncData snapshot = TankSyncData.capture(tile, field);
+        DataPacket packet = new DataPacket(snapshot.encode()); packet.init(PacketTypes.TANK, pipe);
+        target.dispatch(pipe, packet);
     }
 
     public static void sendNBTPacket(String ch, int id, CompoundTag nbt, PacketTarget pt) {
@@ -1527,39 +1490,24 @@ public class ReikaPacketHelper {
         updateBlockEntityTankData(world, x, y, z, name, level, "");
     }
 
-    public static void updateBlockEntityTankData(Level world, int x, int y, int z, String name, int level, String fluidName) {
-        if (!world.isClientSide()) return;
-        if (world.isLoaded(new BlockPos(x, y, z))) {
-            BlockEntity te = world.getBlockEntity(new BlockPos(x, y, z));
-            if (te == null) {
-                DragonAPI.LOGGER.error("Null BlockEntity for syncing tank field " + name);
-                return;
-            }
-            try {
-                Field f = ReikaReflectionHelper.getProtectedInheritedField(te, name);
-                if (f == null) {
-                    //DragonAPI.LOGGER.info("Null field for syncing tank field "+name);
-                    return;
-                }
-                f.setAccessible(true);
-                HybridTank tank = (HybridTank) f.get(te);
-                if (level <= 0) {
-                    tank.empty();
-                } else {
-                    level = Math.min(level, tank.getCapacity());
-                    Fluid fluid = null;
-                    Identifier fluidId = Identifier.tryParse(fluidName);
-                    if (fluidId != null && BuiltInRegistries.FLUID.containsKey(fluidId))
-                        fluid = BuiltInRegistries.FLUID.getValue(fluidId);
-                    else if (!tank.isEmpty())
-                        fluid = tank.getActualFluid().getFluid();
-                    if (fluid == null)
-                        throw new IllegalArgumentException("Cannot restore positive tank level without a valid fluid id: " + fluidName);
-                    tank.setContents(level, fluid);
-                }
-            } catch (Exception e) {
-                DragonAPI.LOGGER.error("Error updating tank field {} at {}, {}, {}", name, x, y, z, e);
-            }
+    /** Decode the complete clientbound body before applying any field or level change. */
+    public static void receiveTankSyncPacket(Level world, DataInputStream input) throws IOException {
+        if (world == null || !world.isClientSide()) return;
+        TankSyncData data = TankSyncData.read(input);
+        BlockPos pos = data.position();
+        updateBlockEntityTankData(world, pos.getX(), pos.getY(), pos.getZ(), data.field(), data.amount(), data.fluid());
+    }
+
+    public static void updateBlockEntityTankData(Level world, int x, int y, int z, String name, int amount, String fluidName) {
+        if (world == null || !world.isClientSide()) return;
+        BlockPos pos = new BlockPos(x, y, z);
+        if (!world.hasChunkAt(pos)) return;
+        BlockEntity tile = world.getBlockEntity(pos);
+        if (tile == null) return; // Chunk-edge delivery does not load or create a target.
+        try {
+            TankSyncData.apply(TankSyncData.tank(tile, name), amount, fluidName);
+        } catch (RuntimeException error) {
+            DragonAPI.LOGGER.error("Error updating tank field {} at {}, {}, {}", name, x, y, z, error);
         }
     }
 

@@ -105,6 +105,15 @@ public class CoreContainer<T extends BlockEntityBase> extends AbstractContainerM
         this.addPlayerInventoryWithOffset(player, 0, 0);
     }
 
+    /** Menu updates belong to this viewer, rather than every nearby player's copy of the same menu. */
+    protected final void syncTank(String channel, String field) {
+        if (tile.getLevel() instanceof net.minecraft.server.level.ServerLevel
+                && epInv.player instanceof net.minecraft.server.level.ServerPlayer player
+                && player.level() == tile.getLevel())
+            reika.dragonapi.libraries.io.ReikaPacketHelper.sendTankSyncPacket(channel, tile, field,
+                    new reika.dragonapi.instantiable.io.PacketTarget.PlayerTarget(player));
+    }
+
     @Override
     public void broadcastChanges() { //todo reika commented out code so its not even used, see what it did?
         super.broadcastChanges();

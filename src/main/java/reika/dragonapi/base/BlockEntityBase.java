@@ -44,7 +44,6 @@ import reika.dragonapi.ModList;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.extras.BlockFlags;
 import reika.dragonapi.instantiable.BlockUpdateCallback;
-import reika.dragonapi.instantiable.HybridTank;
 import reika.dragonapi.instantiable.RedstoneTracker;
 import reika.dragonapi.instantiable.StepTimer;
 import reika.dragonapi.instantiable.data.immutable.WorldLocation;
@@ -58,12 +57,10 @@ import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.NBTCompat;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
-import reika.dragonapi.libraries.java.ReikaReflectionHelper;
 import reika.dragonapi.libraries.level.ReikaWorldHelper;
 import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 import reika.dragonapi.modinteract.lua.LuaMethod;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 public abstract class BlockEntityBase extends BlockEntity implements CompoundSyncPacket.CompoundSyncPacketHandler {
@@ -301,8 +298,11 @@ public abstract class BlockEntityBase extends BlockEntity implements CompoundSyn
         return 32;
     }
 
-    private void syncTankData() {
-        Collection<Field> c = ReikaReflectionHelper.getFields(this.getClass(), new ReikaReflectionHelper.TypeSelector(HybridTank.class));
+    /** Explicit opt-in tank refresh. The original base method had no automatic caller. */
+    public final void syncTankData() {
+        if (!(level instanceof ServerLevel)) return;
+        for (String field : reika.dragonapi.libraries.io.TankSyncData.fields(getClass()))
+            ReikaPacketHelper.sendTankSyncPacket(DragonAPI.packetChannel, this, field);
     }
 
     protected void onDataSync(boolean fullNBT) {
