@@ -1317,3 +1317,26 @@ all three original head renders and idempotence, then reaches the real third-per
 render path. The existing full audit/PNG export also passes; clean exit in 3m 40s.
 Default Play and Automated Checks launch files are regenerated separately after
 the opt-in identity test. This continuation is checkpointed locally.
+
+## D48 — actual EventProfiler listener measurement, 2026-10-13
+
+The earlier command-only limitation is resolved: NeoForge.EVENT_BUS is constructed
+as a native EventBus subtype with the original builder, and enabling profiling
+temporarily instruments the selected native listeners. Cancellation, priority,
+inheritance, registration/unregister and native exception handling are preserved.
+Nested posts keep separate timers; event fires are actual posts, and reports include
+per-body calls and failures. Stop restores original listeners and retains a coherent
+immutable report. Exact concrete class and initiating-thread scope are explicit.
+
+Client shortcut classes no longer load eagerly in common code. Ambiguous nested
+aliases report a status instead of selecting whichever was registered last, and
+the command parser now accepts binary class names containing $. Reflection is
+isolated to the bus-8.0.5 adapter, with unsupported instrumentation reported before
+starting a session. Legacy explicit timing hooks remain available.
+
+Contract/source pin: docs/event-profiler-port.md. Seven new units pass, alongside
+the complete 192-unit family. All 96 required native DragonAPI fixtures pass. The
+new global-bus fixture profiles real block changes and the existing Chroma network
+subscriber. The separate disposable client also measures real native client-event
+callbacks, passes the complete existing audit and exits cleanly in 3m 38s.
+Evidence: TestInstance/docs/event-profiler-2026-10-13.md.
