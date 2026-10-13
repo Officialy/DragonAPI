@@ -1364,3 +1364,52 @@ regressions. The disposable integrated client also passes movement/view restorat
 and actual logout/unload/server-stop cleanup, then exits cleanly in 3m 31s with the
 complete existing audit passing. Eight guards verify 3,297 accepted primary outputs.
 Evidence: TestInstance/docs/player-chunk-tracker-2026-10-13.md.
+
+## D50 — updater remains inactive, 2026-10-14
+
+The owner explicitly requires the port updater to remain inactive until Reika's
+release permission exists. No maintained feed, scheduled fetch or update login
+hook is configured. The inherited legacy endpoint remains excluded. D50 stays
+open; runtime transitions and notifications are deferred by this instruction.
+
+DragonAPI/docs/update-checker-inactive.md records the restriction and source pin.
+UpdateFeedClient is fully written future transport/parser infrastructure with no
+runtime callers. Four local-only regressions cover bounded HTTP transport, missing
+Last-Modified and malformed/unavailable feeds; failures never become comparison
+versions. No release or feed data was published.
+
+## D51 — packaged FILEHASH and native client lifecycle, 2026-10-14
+
+The original ClientLoginEvent depended on an unsent legacy LOGIN packet. A
+client-only native LoggingIn/LoggingOut subscriber now raises the original common
+events, including automatic FILEMATCH dispatch after connection/reconnection.
+The updater remains inactive. Hash registration tolerates parallel mod initialization;
+read-only HashCheckEvent reports decisions after enforcement, while cancellation
+remains exclusively on the original HashKickEvent. Protocol 2.2.0 and historical
+packet IDs/bodies are unchanged.
+
+The opt-in harness loads eight immutable private packaged jars in separate JVMs
+and directories. Server binds IPv4 loopback only, with an ephemeral port; Play's
+identity, saves and audit-disabled configuration are preserved. Only one inert
+META-INF entry differs between DragonAPI variants; every original entry has
+identical bytes. Matching archives pass, enabled mismatch disconnects with the
+actual reason/hashes, saved-and-synchronized FILEHASH=false permits the mismatch,
+and the original event cancels enforcement on the final reconnect.
+
+Final run 20261014-d51-f passed the required packaged GameTest and all four
+client/server decisions. State is ALL_PASS with final client acknowledgment PASS.
+Server exits cleanly in 4m 22s; matching client in 1m 42s; different client in 1m 41s.
+Fixture corrections save config before synchronization, close the actual connection
+before reconnecting and enter terminal completion before client teardown.
+
+Contract: DragonAPI/docs/packaged-filehash-port.md. Evidence/rerun commands:
+TestInstance/docs/packaged-filehash-2026-10-13.md. All 196 family units and 100
+ordinary native DragonAPI GameTests pass; eight output guards verify 3,302 accepted
+primary outputs. D51 is complete. D50 remains owner-deferred; mixed-protocol peer
+negotiation, authenticated remote hosting and shader/LOD acceptance remain open.
+
+The ordinary disposable integrated client audit also passes and exits cleanly in
+3m 56s, including native automatic login dispatch and the complete prior audit.
+Actual PlayerChunkTracker logout/unload/server-stop cleanup still passes. Normal
+Play retains OfficialyAwsome, bb5029b7-9381-4d99-aaa9-106da41aa659 and auditClient=false.
+Evidence: build/packaged-hash-integrated-client-validation.log. Checkpointed locally.

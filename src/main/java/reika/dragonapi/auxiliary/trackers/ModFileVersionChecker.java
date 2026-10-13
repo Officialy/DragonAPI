@@ -15,14 +15,14 @@ import reika.dragonapi.instantiable.io.PacketTarget;
 import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 @EventBusSubscriber(modid = DragonAPI.MODID)
 public class ModFileVersionChecker {
 
     public static final ModFileVersionChecker instance = new ModFileVersionChecker();
 
-    private static final HashMap<String, String> data = new HashMap<>();
+    private static final ConcurrentHashMap<String, String> data = new ConcurrentHashMap<>();
 
     private ModFileVersionChecker() {
     }
@@ -41,25 +41,23 @@ public class ModFileVersionChecker {
     }
 
 	public void checkFiles(ServerPlayer ep, String s) {
-        if (!reika.dragonapi.DragonOptions.FILEHASH.getState()) return;
 		String[] parts = s != null ? s.split(":", 2) : new String[0];
+        String mod = parts.length > 0 ? parts[0] : "<unknown>";
+        String client = parts.length == 2 ? parts[1] : "<malformed>";
+        String hash = data.get(mod);
+        if (!reika.dragonapi.DragonOptions.FILEHASH.getState()) {
+            report(ep, mod, client, hash, HashDecision.DISABLED); return;
+        }
 		if (parts.length != 2) {
-			this.kick(ep, parts.length > 0 ? parts[0] : "<unknown>", "<malformed>", null);
+			this.kick(ep, mod, client, null);
 			return;
 		}
-		boolean flag = false;
-		String mod = parts[0];
-        String hash = data.get(mod);
-        if (!flag) {
-            if (hash != null) { //Client-only mods will be ignored
-                flag = !hash.equals(parts[1]);
-            }
-        }
-        if (flag) {
-            this.kick(ep, mod, parts[1], hash);
+        if (hash != null && !hash.equals(client)) {
+            this.kick(ep, mod, client, hash);
         }
         else {
             DragonAPI.LOGGER.info("Player "+ep.getName()+" passed hash check for "+mod+". Hash: "+hash);
+            report(ep,mod,client,hash,hash == null ? HashDecision.CLIENT_ONLY : HashDecision.MATCH);
         }
     }
 
@@ -69,9 +67,24 @@ public class ModFileVersionChecker {
             String msg = mod+" jarfile mismatch. Client Hash: "+client+"; Expected (Server) Hash: "+server;
             ReikaPlayerAPI.kickPlayer(ep, msg);
             DragonAPI.LOGGER.info("Player "+ep.getName()+" kicked due to "+msg);
+            report(ep,mod,client,server,HashDecision.KICKED);
         }
         else {
             DragonAPI.LOGGER.info("Player "+ep.getName()+" not kicked for "+mod+" hash mismatch; kick cancelled");
+            report(ep,mod,client,server,HashDecision.CANCELLED);
+        }
+    }
+
+    private static void report(ServerPlayer player,String mod,String client,String server,HashDecision decision) {
+        NeoForge.EVENT_BUS.post(new HashCheckEvent(player,mod,client,server,decision));
+    }
+    public enum HashDecision { MATCH, CLIENT_ONLY, DISABLED, KICKED, CANCELLED }
+    /** Read-only observation after enforcement; cancellation stays on the original HashKickEvent. */
+    public static final class HashCheckEvent extends PlayerEvent {
+        public final String mod, clientHash, serverHash;
+        public final HashDecision decision;
+        public HashCheckEvent(ServerPlayer player,String mod,String client,String server,HashDecision decision) {
+            super(player); this.mod=mod; clientHash=client; serverHash=server; this.decision=decision;
         }
     }
 

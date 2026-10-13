@@ -120,8 +120,9 @@ public abstract class DragonAPIMod {
                 : reika.dragonapi.io.ReikaFileReader.getHash(path.toFile(), reika.dragonapi.io.ReikaFileReader.HashType.SHA256);
         if (this.requireSameFilesOnClientAndServer())
             reika.dragonapi.auxiliary.trackers.ModFileVersionChecker.instance.addMod(this);
-        // Version checks are registered for explicitly supported endpoints. The inherited 1.7.10
-        // version server has no verified 26.3 feed and must not be queried during mod construction.
+        // The owner has no permission from Reika for a port release yet: inherited port update
+        // checks must stay inactive. There is no verified 26.3 feed; never query the 1.7.10 server.
+        // Explicit external-mod endpoints retain their existing registration behavior.
         String url = this.getUpdateCheckURL();
         if (url != null && !url.equals(reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker.reikaURL))
             reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker.instance.registerMod(this);
