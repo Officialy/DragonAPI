@@ -1,6 +1,7 @@
 package reika.dragonapi.mixin;
 
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,5 +13,8 @@ public interface ChunkMapAccessor {
 
     @Invoker("isExistingChunkFull")
     boolean dragonapi$isExistingChunkFull(ChunkPos pos);
+
+    @Invoker("updateChunkTracking")
+    void dragonapi$updateChunkTracking(ServerPlayer player);
 
 }

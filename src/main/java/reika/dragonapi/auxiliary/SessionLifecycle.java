@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.KeyWatcher;
+import reika.dragonapi.auxiliary.trackers.PlayerChunkTracker;
 import reika.dragonapi.auxiliary.trackers.VersionTransitionTracker;
 import reika.dragonapi.auxiliary.trackers.WorldgenProfiler;
 import reika.dragonapi.libraries.ReikaIngredientHelper;
@@ -41,15 +42,28 @@ public final class SessionLifecycle {
     @SubscribeEvent
     public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         KeyWatcher.instance.clear(event.getEntity());
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) PlayerChunkTracker.instance.onLogout(player);
+    }
+
+    @SubscribeEvent
+    public static void respawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) PlayerChunkTracker.instance.onPlayerReplacement(player);
+    }
+
+    @SubscribeEvent
+    public static void dimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) PlayerChunkTracker.instance.onPlayerReplacement(player);
     }
 
     @SubscribeEvent
     public static void unload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level) PlayerChunkTracker.instance.clearLevel(level);
         if (event.getLevel() == WorldgenProfiler.getLevel()) WorldgenProfiler.finishProfiling();
     }
 
     @SubscribeEvent
     public static void stop(ServerStoppedEvent event) {
+        PlayerChunkTracker.instance.clearServer(event.getServer());
         KeyWatcher.instance.clear();
         ReikaIngredientHelper.clearCache();
         WorldgenProfiler.finishProfiling();

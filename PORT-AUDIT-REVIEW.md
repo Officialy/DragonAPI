@@ -1340,3 +1340,27 @@ new global-bus fixture profiles real block changes and the existing Chroma netwo
 subscriber. The separate disposable client also measures real native client-event
 callbacks, passes the complete existing audit and exits cleanly in 3m 38s.
 Evidence: TestInstance/docs/event-profiler-2026-10-13.md.
+
+## D49 — PlayerChunkTracker synchronization and native loading, 2026-10-13
+
+Confirmed unsynchronized reads/tick flags, missing lifecycle cleanup and obsolete
+movement-field writes. The existing MixinChunkMap froze client view updates while
+native player loading tickets still moved. The tracker now runs mutation/callback
+work on its owning server and binds server + UUID to the exact player and level.
+Concurrent queries and snapshot iteration preserve reentrant registrations without
+overwriting newer entries. Lifecycle cleanup is scoped and prevents resurrection;
+terminal identities are weakly held rather than retaining old worlds/players.
+
+The native skipPlayer hook removes only the suspended player's loading contribution.
+Expiry/stop restore native tickets and the current view through move/updateChunkTracking,
+including without further movement. Original 40-tick grace, true-condition reset,
+dead-player behavior and same-owner condition renewal are retained. xo/zo are never
+rewritten. Callback failures release suspension, log the error and preserve restoration.
+The old PlayerManager bridge is retained against ChunkMap.
+
+Contract: docs/player-chunk-tracker-port.md. All 192 family units and 100 required
+native DragonAPI fixtures pass, including four new ticket/view/lifecycle/worker
+regressions. The disposable integrated client also passes movement/view restoration
+and actual logout/unload/server-stop cleanup, then exits cleanly in 3m 31s with the
+complete existing audit passing. Eight guards verify 3,297 accepted primary outputs.
+Evidence: TestInstance/docs/player-chunk-tracker-2026-10-13.md.
