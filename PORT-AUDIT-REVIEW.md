@@ -1413,3 +1413,35 @@ The ordinary disposable integrated client audit also passes and exits cleanly in
 Actual PlayerChunkTracker logout/unload/server-stop cleanup still passes. Normal
 Play retains OfficialyAwsome, bb5029b7-9381-4d99-aaa9-106da41aa659 and auditClient=false.
 Evidence: build/packaged-hash-integrated-client-validation.log. Checkpointed locally.
+
+## D55 — obsolete packaged transformers and duplicate mixin config, 2026-10-14
+
+Verified native 26.3 sources, current family consumers and actual baseline jars.
+DragonAPI's two SRG field transformers have no current consumers: the old Minecraft
+block-renderer field is gone, and ModelPart traversal uses public native visit.
+The historical audit's suggested Minecraft.minecraft replacement is also absent.
+RotaryCraft's four SRG ShapedRecipe parser transformers target removed methods;
+current original-recipe datagen uses ShapedRecipePattern.of and native codecs.
+Both unused files and their explicit TOML registrations are removed.
+
+The unused dragonapi.mixin.json is unreferenced in source/build/TOML/manifest,
+has empty arrays and names a nonexistent plural package/refmap. It is removed;
+the real mixins.dragonapi.json and mixins.rotarycraft.json remain byte-identical
+with their metadata entries preserved. All deleted declarations and their intent
+are recorded in DragonAPI/docs/resource-ownership-d55.md. ReikaRenderDispatcher
+and LODModelPart source references remain available for later full porting.
+No accepted Java content, recipes or rendering logic is removed or excluded.
+
+Rebuilt jar inspection confirms no obsolete resources or transformer declarations;
+31 DragonAPI mixin entries and RotaryCraft's entry remain packaged. All 196 family
+units and 100 required native DragonAPI GameTests pass; eight output guards verify
+3,302 primary outputs. Fresh packaged clients/server pass matching, enabled kick
+with exact reason, disabled acceptance and original cancellation. Clean exits:
+server 3m 16s, matching client 59s, different client 1m 2s. A first socket-abort
+attempt is preserved separately and is not counted as acceptance; the unchanged
+strict assertions pass on the restarted sequence.
+
+D55 is complete. D56's complete active/optional mixin and distribution matrix
+remains open. Play configuration is preserved; updater stays inactive per owner.
+Evidence: DragonAPI/docs/resource-ownership-d55.md and build/d55-*.log.
+This batch is checkpointed locally.
