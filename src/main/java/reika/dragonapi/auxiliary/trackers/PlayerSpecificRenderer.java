@@ -27,7 +27,6 @@ import reika.dragonapi.extras.ReikaModel;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
 import reika.dragonapi.interfaces.PlayerRenderObj;
 import reika.dragonapi.io.ReikaFileReader;
-import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
 import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;

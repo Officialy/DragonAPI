@@ -16,7 +16,7 @@ import reika.dragonapi.instantiable.data.KeyedItemStack;
 import reika.dragonapi.instantiable.data.maps.ItemHashMap;
 import reika.dragonapi.interfaces.CustomToStringRecipe;
 import reika.dragonapi.libraries.java.ReikaJavaLibrary;
-import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
+import net.neoforged.fml.loading.FMLEnvironment;
 import reika.dragonapi.libraries.registry.ReikaItemHelper;
 
 import java.lang.reflect.Field;
@@ -218,7 +218,7 @@ public class ReikaRecipeHelper {
        RecipeCache cache = map.get(ir);
        if (cache == null) {
            cache = calculateRecipeToItemStackArray(ir, client);
-           if (!ReikaObfuscationHelper.isDeObfEnvironment())
+           if (FMLEnvironment.isProduction())
                map.put(ir, cache);
        }
        return cache;

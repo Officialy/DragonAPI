@@ -17,7 +17,7 @@ import reika.dragonapi.instantiable.data.WeightedRandom;
 import reika.dragonapi.io.ReikaFileReader;
 import reika.dragonapi.libraries.ReikaNBTHelper;
 import reika.dragonapi.libraries.ReikaEnchantmentHelper;
-import reika.dragonapi.libraries.java.ReikaASMHelper;
+import reika.dragonapi.libraries.java.LuaValueParser;
 import reika.dragonapi.libraries.java.ReikaStringParser;
 
 import java.io.File;
@@ -30,17 +30,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public abstract class LuaBlock {
 
     private static final Comparator<String> outputSorter = new OutputSorter();
-
-    private static final Pattern TYPE_SPECIFIER = Pattern.compile("\\[(.*?)\\]");
 
     public static final String NULL_KEY_INHERIT = "[NULL KEY INHERIT]";
     public static final String NULL_PARENT_INHERIT = "[NULL PARENT INHERIT]";
@@ -626,70 +621,8 @@ public abstract class LuaBlock {
         return b.isList() && b.data.size() == 1 && b.children.isEmpty() ? this.parseObject(b.data.values().iterator().next()) : b.isList() ? b.asList() : b.asHashMap();
     }
 
-	private Object parseObject(String s) {
-		if (s == null)
-			return null;
-		if (s.isEmpty())
-			return "";
-        if (s.equalsIgnoreCase("true"))
-            return true;
-        if (s.equalsIgnoreCase("false"))
-            return false;
-        ReikaASMHelper.PrimitiveType override = null;
-        if (s.contains("[datatype=")) {
-            String type = s.replace("datatype=", "");
-            Matcher m = TYPE_SPECIFIER.matcher(type);
-            type = m.find() ? m.group(1) : null;
-            s = s.replace("[datatype="+type+"]", "");
-			try {
-				if (type == null)
-					throw new IllegalArgumentException("Missing datatype name");
-				override = ReikaASMHelper.PrimitiveType.valueOf(type.toUpperCase(Locale.ENGLISH));
-            }
-            catch (IllegalArgumentException ignored) {
-
-            }
-        }
-        if (override != null) {
-            try {
-                switch(override) {
-                    case BYTE:
-                        return Byte.parseByte(s);
-					case SHORT:
-						return Short.parseShort(s);
-                    case LONG:
-                        return Long.parseLong(s);
-                    case FLOAT:
-                        return Float.parseFloat(s);
-					case DOUBLE:
-						return Double.parseDouble(s);
-                    default:
-                        break;
-                }
-            }
-            catch (Exception ignored) {
-
-            }
-        }
-        try {
-            return Integer.parseInt(s);
-        }
-        catch (Exception ignored) {
-
-        }
-        try {
-            return Long.parseLong(s);
-        }
-        catch (Exception ignored) {
-
-        }
-        try {
-            return Double.parseDouble(s);
-        }
-        catch (Exception ignored) {
-
-        }
-        return s;
+    private Object parseObject(String s) {
+        return LuaValueParser.parse(s);
     }
 
     public ArrayList<String> writeToStrings() {

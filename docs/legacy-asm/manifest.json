@@ -1,0 +1,32 @@
+[
+  {
+    "original": "DragonAPI/src/main/java/reika/dragonapi/libraries/java/ReikaASMHelper.java",
+    "reference": "DragonAPI/docs/legacy-asm/ReikaASMHelper.java.reference",
+    "sha256": "6004c98a768e09f03c87d2869b74e57c2faa669500f478a9c2d6ab208f6da601"
+  },
+  {
+    "original": "DragonAPI/src/main/java/reika/dragonapi/asm/patchers/Patcher.java",
+    "reference": "DragonAPI/docs/legacy-asm/Patcher.java.reference",
+    "sha256": "4b5a50420bd8c457e761feeac5927bf8993e7417d43aa244aa7e77df0742fd9f"
+  },
+  {
+    "original": "DragonAPI/src/main/java/reika/dragonapi/exception/ASMException.java",
+    "reference": "DragonAPI/docs/legacy-asm/ASMException.java.reference",
+    "sha256": "1cc357793528c6321ab40c010cd486432ba1afbf39780904bb818463af1fe7d6"
+  },
+  {
+    "original": "DragonAPI/src/main/java/reika/dragonapi/exception/MissingASMException.java",
+    "reference": "DragonAPI/docs/legacy-asm/MissingASMException.java.reference",
+    "sha256": "03917626813883392d7ccdf9093e6c6027a604ac4aa017cc210b9db6f123d9c0"
+  },
+  {
+    "original": "DragonAPI/src/main/java/reika/dragonapi/libraries/java/ReikaObfuscationHelper.java",
+    "reference": "DragonAPI/docs/legacy-asm/ReikaObfuscationHelper.java.reference",
+    "sha256": "81cb96f8d2d30b461c49f2be16955091050a93a68511310b6f3c0673924b6b83"
+  },
+  {
+    "original": "ChromatiCraft/src/main/java/reika/chromaticraft/auxiliary/ChromaASMHandler.java",
+    "reference": "ChromatiCraft/docs/legacy-asm/ChromaASMHandler.java.reference",
+    "sha256": "e13155e7b12f3a609eb9040ca4fcccd80d92f2ccc3ca4b0042e5fea17cf47831"
+  }
+]

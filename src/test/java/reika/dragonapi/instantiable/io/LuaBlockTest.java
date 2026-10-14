@@ -12,6 +12,33 @@ class LuaBlockTest {
         return new LuaBlock.NBTLuaBlock("nbt", null, new LuaBlock.LuaBlockDatabase(), tag, parse);
     }
 
+    @Test void scalarTypeHintsPreserveNbtNumericWidthsWithoutBytecodeHelpers() {
+        var b = block(new CompoundTag(), false);
+        b.putData("byte", "127[datatype=byte]");
+        b.putData("short", "32767[datatype=short]");
+        b.putData("long", "7[datatype=long]");
+        b.putData("float", "1.5[datatype=float]");
+        b.putData("double", "2[datatype=double]");
+        b.putData("boolean", "TRUE[datatype=boolean]");
+        assertEquals(Map.of("byte", (byte)127, "short", (short)32767, "long", 7L,
+                "float", 1.5F, "double", 2D, "boolean", true), b.asHashMap());
+    }
+
+    @Test void failedTypeHintsAndMalformedAnnotationsKeepTheirData() {
+        var b = block(new CompoundTag(), false);
+        b.putData("overflow", "128[datatype=byte]");
+        b.putData("large", "2147483648");
+        b.putData("unknown", "3[datatype=future]");
+        b.putData("invalid", "hello[datatype=long]");
+        b.putData("malformed", "hello[datatype=long");
+        b.putData("brackets", "[label]hello[datatype=long]");
+        b.putData("false", "false");
+        b.putData("empty", "");
+        assertEquals(Map.of("overflow", 128, "large", 2147483648L, "unknown", 3,
+                "invalid", "hello", "malformed", "hello[datatype=long",
+                "brackets", "[label]hello", "false", false, "empty", ""), b.asHashMap());
+    }
+
     @Test void legacyNumericIdsAndUnknownModsKeepOriginalDataAndReadableLevels() {
         var tag = new CompoundTag(); var entries = new ListTag();
         var known = new CompoundTag(); known.putShort("id", (short)16); known.putShort("lvl", (short)3); entries.add(known);

@@ -34,7 +34,7 @@ import reika.dragonapi.instantiable.data.immutable.BlockKey;
 import reika.dragonapi.instantiable.data.immutable.ImmutableItemStack;
 import reika.dragonapi.libraries.ReikaIngredientHelper;
 import reika.dragonapi.libraries.ReikaNBTHelper;
-import reika.dragonapi.libraries.java.ReikaObfuscationHelper;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -230,7 +230,7 @@ public class ReikaItemHelper {
             if (fullCheck)
                 is.getDisplayName();
         } catch (Exception e) {
-            if (ReikaObfuscationHelper.isDeObfEnvironment())
+            if (!FMLEnvironment.isProduction())
                 e.printStackTrace();
             return false;
         }

@@ -30,7 +30,7 @@ public abstract class DragonAPIMod {
 	private static final HashSet<DragonAPIMod> preInitSet = new HashSet<>();
 
 	private static ModVersion apiVersion;
-	protected final boolean isDeObf;
+	protected final boolean isDevelopment;
 	private final ModVersion version;
 	private final LoadProfiler profiler;
 
@@ -43,11 +43,11 @@ public abstract class DragonAPIMod {
 	protected DragonAPIMod() {
 		profiler = new LoadProfiler(this);
 		profiler.startTiming(LoadProfiler.LoadPhase.CONSTRUCT);
-		isDeObf = !isProduction();
-		if (isDeObf) {
-			ReikaJavaLibrary.pConsole(this.getDisplayName() + " is running in a deobfuscated environment!");
+		isDevelopment = !isProduction();
+		if (isDevelopment) {
+			ReikaJavaLibrary.pConsole(this.getDisplayName() + " is running in a development environment!");
 		} else {
-			ReikaJavaLibrary.pConsole(this.getDisplayName() + " is not running in a deobfuscated environment.");
+			ReikaJavaLibrary.pConsole(this.getDisplayName() + " is running in a production environment.");
 		}
 
 		version = ModVersion.readFromFile(this);
