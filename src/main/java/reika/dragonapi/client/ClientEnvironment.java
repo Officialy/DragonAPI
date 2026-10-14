@@ -1,6 +1,10 @@
 package reika.dragonapi.client;
 
 import java.io.File;
+import java.io.InputStream;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import org.jspecify.annotations.Nullable;
 
 import com.mojang.authlib.GameProfile;
 
@@ -8,7 +12,7 @@ import net.minecraft.client.Minecraft;
 
 /**
  * Client-only environment lookups, isolated so that no class the dedicated server loads names
- * {@link Minecraft}. Callers must gate on {@code FMLEnvironment.dist.isClient()} first.
+ * {@link Minecraft}. Callers must gate on {@code FMLEnvironment.getDist().isClient()} first.
  */
 public final class ClientEnvironment {
 
@@ -27,13 +31,13 @@ public final class ClientEnvironment {
     }
 
     /** The local player. Declared LocalPlayer on Minecraft, so the same rule applies as for level(). */
-    public static net.minecraft.world.entity.player.Player player() {
+    public static @Nullable Player player() {
         return Minecraft.getInstance().player;
     }
 
     /** The client's own level. Its declared type is ClientLevel, which is why this cannot live in a
      *  class the dedicated server loads: verifying such a method resolves the field descriptor. */
-    public static net.minecraft.world.level.Level level() {
+    public static @Nullable Level level() {
         return Minecraft.getInstance().level;
     }
 
@@ -45,7 +49,7 @@ public final class ClientEnvironment {
             return (String)f.get(Minecraft.getInstance());
         }
         catch (Exception e) {
-            e.printStackTrace();
+            reika.dragonapi.DragonAPI.LOGGER.error("Failed to read the client launched-version field", e);
             return e.toString();
         }
     }
@@ -67,7 +71,7 @@ public final class ClientEnvironment {
     }
 
     /** Opens a resource from the *client* resource manager (assets), not the server's data packs. */
-    public static java.io.InputStream resourceStream(net.minecraft.resources.Identifier id) throws java.io.IOException {
+    public static @Nullable InputStream resourceStream(net.minecraft.resources.Identifier id) throws java.io.IOException {
         var resource = Minecraft.getInstance().getResourceManager().getResource(id);
         return resource.isPresent() ? resource.get().open() : null;
     }

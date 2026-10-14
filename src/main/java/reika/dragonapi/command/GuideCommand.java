@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 public class GuideCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        // 1.21.5: building the ItemStack eagerly here (during RegisterCommandsEvent → command tree
+        // Building the ItemStack eagerly here (during RegisterCommandsEvent → command tree
         // construction → ReloadableServerResources.<init>) hits Holder$Reference.components()
         // before the item holders' components are bound and throws
         // "java.lang.NullPointerException: Components not bound yet".
@@ -19,7 +19,7 @@ public class GuideCommand {
         // registries are long-since bound.
         dispatcher.register(Commands.literal("guide").executes((context) -> {
             ItemStack is = new ItemStack(Items.ENCHANTED_BOOK);
-            is.set(DataComponents.CUSTOM_NAME, Component.literal("Reika's Mods Guide"));
+            is.set(DataComponents.CUSTOM_NAME, Component.translatable("item.dragonapi.guide.name"));
             context.getSource().getPlayerOrException().getInventory().add(is);
             return 1;
         }));

@@ -1524,3 +1524,41 @@ build/mixin-audit/20261014-d57-native/gameTest-GameTestServer.json.
 
 Normal Play and updater inactivity are preserved. Local checkpoint only; unrelated
 .idea/workspace.xml edits are excluded. D57 is complete; D58 is next.
+
+
+## D58a — Command/chat correctness and generated translations (2026-10-14)
+
+D58 remains open. This batch fixes the actual item/coordinate/block chat format
+exceptions, readable entity names and the no-op writeLocalString. The latter now
+sends an intact translatable component through a client-only, player-null-safe
+writeComponent path. ClientEnvironment explicitly marks nullable player/level/
+resource returns and logs version-reflection failure with its cause.
+
+Entity-list invalid-side and console/client failures use failure feedback and
+return zero; headers, guide custom name, modular-logger state/error feedback and
+biome-map success/error wrappers are translatable components. A native client
+language provider emits 17 entries, preserving all six original language entries.
+The duplicate manual language resource is removed after comparing generated values.
+The produced jar contains exactly one en_us resource matching all generated keys.
+
+Biome-map player/argument routing now uses a typed MapTarget record, replacing
+Object[] and unchecked casts. Removed unused private start-time argument and
+unused imports. Map failure logging includes transfer hash, dimension and throwable.
+Packet decode/handling errors include type/packet and cause in one logger event,
+without a separate stderr stack trace. Wire IDs, payload formats, map sampling,
+permissions and callback behavior are preserved.
+
+Validation: native client datagen and all 198 family units pass with zero failures,
+errors or skips. Native run passes 101 required fixtures and strict common mixin
+audit (30 transformed bindings; two optional integrations absent), clean exit in
+1m 38s. New/expanded regressions cover original formatting failures, invalid-side
+return status, console/client rejection, lazy guide creation retaining its key and
+console biome target argument offset. All accepted-class guards pass. Evidence:
+build/d58-command-family.log, build/d58-command-native.log and
+build/d58-command-proof.json. Localized visual presentation was not exercised by
+this server test. Normal Play and inactive updater remain unchanged.
+
+Remaining D58 work: profiler/pregeneration and other public command translations,
+biome validation detail translations, remaining raw/generic types and null
+contracts, and contextual exception logging throughout accepted libraries. No
+claim that D58 as a whole is finished. Local checkpoint; unrelated IDE edits kept.

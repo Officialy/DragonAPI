@@ -4,7 +4,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -14,20 +13,17 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.instantiable.io.MapOutput;
 import reika.dragonapi.interfaces.CustomBiomeDistributionWorld;
 import reika.dragonapi.interfaces.CustomMapColorBiome;
-import reika.dragonapi.libraries.ReikaPlayerAPI;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 import reika.dragonapi.libraries.io.ReikaPacketHelper;
 import reika.dragonapi.libraries.level.ReikaBiomeHelper;
@@ -102,9 +98,9 @@ public class BiomeMapCommand {
     }
 
     public static int processCommand(CommandSourceStack source, String[] args) throws CommandSyntaxException {
-        Object[] target = getPlayer(source, args);
-        ServerPlayer player = (ServerPlayer)target[0];
-        int index = (boolean)target[1] ? 1 : 0;
+        MapTarget target = getPlayer(source, args);
+        ServerPlayer player = target.player();
+        int index = target.argumentOffset();
         Collection<BiomeProvider> providers = new ArrayList<>();
         try {
             if (index < args.length && args[index].startsWith("seed=")) {
@@ -120,10 +116,10 @@ public class BiomeMapCommand {
             boolean fullGrid = index < args.length && Boolean.parseBoolean(args[index]);
             if (providers.isEmpty()) providers.add(new WorldBiomes(player.level()));
             for (BiomeProvider provider : providers)
-                generateMap(provider, player, System.currentTimeMillis(), Mth.floor(player.getX()), Mth.floor(player.getZ()), range, resolution, grid, fullGrid, null);
+                generateMap(provider, player, Mth.floor(player.getX()), Mth.floor(player.getZ()), range, resolution, grid, fullGrid, null);
             return providers.size();
         } catch (IllegalArgumentException error) {
-            source.sendFailure(Component.literal(error.getMessage()));
+            source.sendFailure(Component.translatable("command.dragonapi.biomepng.error", Objects.toString(error.getMessage(), error.getClass().getSimpleName())));
             return 0;
         }
     }
@@ -153,14 +149,14 @@ public class BiomeMapCommand {
     public static void clearClientMaps() { activeMaps.clear(); }
 
     public static void triggerBiomeMap(ServerPlayer ep, int x, int z, int range, int res, int grid, MapCompleteCallback call) {
-        generateMap(new WorldBiomes(ep.level()), ep, System.currentTimeMillis(), x, z, range, res, grid, false, call);
+        generateMap(new WorldBiomes(ep.level()), ep, x, z, range, res, grid, false, call);
     }
 
   /*  public static void triggerBiomeMap(ServerPlayer ep, int range, int res, int grid) {
         instance.processCommand(ep, new String[]{String.valueOf(range), String.valueOf(res), String.valueOf(grid)});
     }*/
 
-    private static void generateMap(BiomeProvider bp, ServerPlayer ep, long start, int x, int z, int range, int res, int grid, boolean fullGrid, MapCompleteCallback callback) {
+    private static void generateMap(BiomeProvider bp, ServerPlayer ep, int x, int z, int range, int res, int grid, boolean fullGrid, MapCompleteCallback callback) {
         validateMapSize(range, res);
         int hash = rand.nextInt();
 
@@ -209,18 +205,20 @@ public class BiomeMapCommand {
         sendMapPacket(ep, dim, APIPacketHandler.PacketIDs.BIOMEPNGEND, "", hash);
     }
 
-    private static Object[] getPlayer(CommandSourceStack ics, String[] args) throws CommandSyntaxException {
+    private record MapTarget(ServerPlayer player, int argumentOffset) {}
+
+    private static MapTarget getPlayer(CommandSourceStack ics, String[] args) throws CommandSyntaxException {
         ServerPlayer executingPlayer = ics.getPlayer();
         if (executingPlayer != null)
-            return new Object[]{executingPlayer, false};
+            return new MapTarget(executingPlayer, 0);
         if (args == null || args.length == 0)
             throw EntityArgument.NO_PLAYERS_FOUND.create();
         ServerPlayer target = ics.getServer().getPlayerList().getPlayerByName(args[0]);
         if (target == null) {
-            ics.sendFailure(Component.literal("If you specify a player, they must exist."));
+            ics.sendFailure(Component.translatable("command.dragonapi.biomepng.player_missing"));
             throw EntityArgument.NO_PLAYERS_FOUND.create();
         }
-        return new Object[]{target, true};
+        return new MapTarget(target, 1);
     }
 
     private static void sendMapPacket(ServerPlayer player, ResourceKey<Level> dimension, APIPacketHandler.PacketIDs control, String name, int... values) {
@@ -266,10 +264,10 @@ public class BiomeMapCommand {
                 map.addGrid();
                 String path = map.createImage();
                 long dur = System.currentTimeMillis() - map.startTime;
-                ReikaChatHelper.writeString(ChatFormatting.GREEN + "File created in " + dur + " ms: " + path);
+                ReikaChatHelper.writeComponent(Component.translatable("command.dragonapi.biomepng.created", dur, path).withStyle(ChatFormatting.GREEN));
             } catch (IOException e) {
-                ReikaChatHelper.writeString(ChatFormatting.RED + "Failed to create file: " + e);
-                e.printStackTrace();
+                ReikaChatHelper.writeComponent(Component.translatable("command.dragonapi.biomepng.failed", e.toString()).withStyle(ChatFormatting.RED));
+                DragonAPI.LOGGER.error("Failed to write biome map {} in dimension {}", hash, map.level.dimension(), e);
             }
         }
     }

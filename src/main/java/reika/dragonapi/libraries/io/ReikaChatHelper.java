@@ -25,7 +25,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.APIPacketHandler;
 import reika.dragonapi.DragonAPI;
@@ -78,7 +77,7 @@ public final class ReikaChatHelper {
         if (is == null)
             msg = "Null Stack!";
         else
-            msg = String.format("%d, %d, %d", is.getItem(), is.getCount());
+            msg = String.format("%s, %d, %d", BuiltInRegistries.ITEM.getKey(is.getItem()), is.getCount(), is.getDamageValue());
         writeString(msg);
     }
 
@@ -88,7 +87,7 @@ public final class ReikaChatHelper {
      */
     public static void writeCoords(Level world, BlockPos pos) {
         String msg;
-        msg = String.format("%.2f, %.2f, %.2f", pos.getX(), pos.getY(), pos.getZ());
+        msg = String.format("%d, %d, %d", pos.getX(), pos.getY(), pos.getZ());
         writeString(msg);
     }
 
@@ -104,7 +103,7 @@ public final class ReikaChatHelper {
             name = id.toString();
         else
             name = "Air";
-        sb.append(String.format("Block %s pos=%d", name, Block.getId(id.defaultBlockState()), pos) + "\n");
+        sb.append(String.format("Block %s (ID %d) at %s", name, Block.getId(id.defaultBlockState()), pos) + "\n");
         BlockEntity te = world.getBlockEntity(pos);
         if (te == null) {
             sb.append("No Tile Entity at this location.");
@@ -140,11 +139,18 @@ public final class ReikaChatHelper {
             sendChatToPlayer(local, sg);
     }
 
-    /**
-     * Automatically translates if possible.
-     */
+    /** Sends a component without resolving translations before delivery to the local client. */
+    public static void writeComponent(Component message) {
+        if (!FMLEnvironment.getDist().isClient())
+            return;
+        Player local = ClientEnvironment.player();
+        if (local != null)
+            local.sendSystemMessage(message);
+    }
+
+    /** Sends the translation key to the local client for resolution in its language. */
     public static void writeLocalString(String tag) {
-        //writeString(I18n.get(tag));
+        writeComponent(Component.translatable(tag));
     }
 
     /**
@@ -176,7 +182,7 @@ public final class ReikaChatHelper {
         if (ent == null)
             writeString("null");
         else
-            writeString(ent.getName() + " @ " + String.format("%.2f, %.2f, %.2f", ent.getX(), ent.getY(), ent.getZ()));
+            writeString(ent.getName().getString() + " @ " + String.format("%.2f, %.2f, %.2f", ent.getX(), ent.getY(), ent.getZ()));
     }
 
     public static void writeItem(Level world, Item id) {

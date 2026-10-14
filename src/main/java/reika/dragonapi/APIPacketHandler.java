@@ -291,8 +291,7 @@ public class APIPacketHandler implements PacketHandler {
                 z = inputStream.readInt();
             }
         } catch (IOException | IllegalArgumentException e) {
-            DragonAPI.LOGGER.error("Error when handling " + packet.getType() + " packet [" + packet + "]: " + e);
-            e.printStackTrace();
+            DragonAPI.LOGGER.error("Error decoding {} packet [{}]", packet.getType(), packet, e);
             return;
         }
         if (pack == null || reika.dragonapi.libraries.io.DimensionPacketData.supports(pack)) return;
@@ -495,8 +494,7 @@ public class APIPacketHandler implements PacketHandler {
             if (world.isClientSide() && FMLEnvironment.getDist().isClient())
                 reika.dragonapi.client.ClientAPIPacketHandler.handle(x, y, z, pack, data, stringdata, ep);
         } catch (Exception e) {
-            DragonAPI.LOGGER.error("Error when handling " + pack + " packet [" + packet + "]: " + e);
-            e.printStackTrace();
+            DragonAPI.LOGGER.error("Error handling {} packet [{}]", pack, packet, e);
         }
     }
 

@@ -37,7 +37,7 @@ public class ModularLogger {
     public void log(String logger, String msg) {
         LoggerElement e = loggers.get(logger.toLowerCase(Locale.ENGLISH));
         if (e == null) {
-            DragonAPI.LOGGER.error("Tried to use an unregistered logger '" + logger + "'!");
+            DragonAPI.LOGGER.error("Tried to use an unregistered logger '{}'!", logger);
         } else {
             if (e.enabled) {
                 e.mod.getModLogger().info(msg);
@@ -84,13 +84,13 @@ public class ModularLogger {
                             
                             LoggerElement e = instance.loggers.get(id);
                             if (e == null) {
-                                context.getSource().sendFailure(Component.literal(ChatFormatting.RED + "Unrecognized logger ID '" + id + "'!"));
+                                context.getSource().sendFailure(Component.translatable("command.dragonapi.modularlog.unknown", id));
                                 return 0;
                             }
                             
                             e.enabled = stateStr.equalsIgnoreCase("yes") || stateStr.equalsIgnoreCase("enable") || stateStr.equalsIgnoreCase("1") || Boolean.parseBoolean(stateStr);
-                            String status = e.enabled ? "enabled" : "disabled";
-                            context.getSource().sendSuccess(() -> Component.literal(ChatFormatting.GREEN + "Logger '" + id + "' " + status + "."), false);
+                            String statusKey = e.enabled ? "command.dragonapi.modularlog.enabled" : "command.dragonapi.modularlog.disabled";
+                            context.getSource().sendSuccess(() -> Component.translatable(statusKey, id).withStyle(ChatFormatting.GREEN), false);
                             ReikaPacketHelper.sendStringIntPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.MODULARLOGGER.wireId(), PacketTarget.allPlayers, id, e.enabled ? 1 : 0);
 
                             return 1;

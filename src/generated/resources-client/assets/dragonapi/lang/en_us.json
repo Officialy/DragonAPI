@@ -1,0 +1,19 @@
+{
+  "command.dragonapi.biomepng.created": "File created in %s ms: %s",
+  "command.dragonapi.biomepng.error": "Cannot generate biome map: %s",
+  "command.dragonapi.biomepng.failed": "Failed to create file: %s",
+  "command.dragonapi.biomepng.player_missing": "If you specify a player, they must exist.",
+  "command.dragonapi.entitylist.header": "Found entities:",
+  "command.dragonapi.entitylist.invalid_side": "Invalid side. Use one of: %s.",
+  "command.dragonapi.entitylist.player_required": "Client entity data can only be requested by a player.",
+  "command.dragonapi.modularlog.disabled": "Logger '%s' disabled.",
+  "command.dragonapi.modularlog.enabled": "Logger '%s' enabled.",
+  "command.dragonapi.modularlog.unknown": "Unrecognized logger ID '%s'!",
+  "config.jade.plugin_dragonapi.temperature": "Temperature",
+  "dragonapi.checkram": "Memory Usage Info: \n",
+  "dragonapi.checkram1": "Used Memory: ",
+  "dragonapi.checkram2": "Allocated Memory: ",
+  "dragonapi.donatorcommand": "Thank you to all these people whose donations made the following mods possible:\n",
+  "dragonapi.uuidcommand": "UUID is: ",
+  "item.dragonapi.guide.name": "Reika's Mods Guide"
+}

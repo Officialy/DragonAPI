@@ -10,6 +10,11 @@ public final class DragonAPIDataProviders {
     private DragonAPIDataProviders() {}
 
     @SubscribeEvent
+    public static void onGatherClient(GatherDataEvent.Client event) {
+        event.createProvider(DragonAPILanguageProvider::new);
+    }
+
+    @SubscribeEvent
     public static void onGatherServer(GatherDataEvent.Server event) {
         event.createProvider(DragonAPIBlockTagsProvider::new);
     }
