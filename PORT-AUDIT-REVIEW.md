@@ -1615,3 +1615,26 @@ setting, with strict common MixinAudit. Evidence: build/d58c-reflection.log,
 build/d58c-family-native.log and build/d58c-proof.json. D58 remains open.
 The prior D58b ledger count is corrected to 201: the owner's newer ChromatiCraft
 suite contains 12 tests. Existing version/datagen/IDE edits stay outside commits.
+
+
+## D58d — Command failure handling and validation translations (2026-10-16)
+
+/getuuid resolves its entity before scheduling feedback, so console use produces
+the normal checked Brigadier syntax error rather than a wrapped RuntimeException.
+/debugtest now requires administrator permission and supports authorized console
+feedback; rejected sources cannot toggle the global flag. Feedback is translated.
+Biome range/resolution/grid/seed validation details use stable reason keys and
+nested translatable components, including malformed-number feedback. Limits and
+seed/map algorithms are preserved. The Jade temperature row keeps its server
+value as a translation argument; all 50 language entries come from datagen.
+
+207 units pass with no failures/errors/skips; 101 native fixtures and common
+MixinAudit pass, clean exit in 1m 1s. Native tests check entity/console UUID paths,
+permission rejection without debug mutation, authorized console toggle (restored
+in finally), and invalid numeric/grid map arguments. The temperature test checks
+exactly one translated row with the server's numeric argument, and DC engines
+still have none. Its prior hardcoded-English assertion failed as expected during
+migration and was replaced; the rerun passes. Fresh jar has 50 entries.
+Evidence: build/d58d-family.log (initial tooltip expectation), build/d58d-native.log
+(final passing checks) and build/d58d-proof.json. D58 stays open; no updater/feed
+behavior or normal Play setup changed. Existing owner edits remain untouched.

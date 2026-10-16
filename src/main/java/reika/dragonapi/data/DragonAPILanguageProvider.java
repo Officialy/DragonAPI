@@ -12,6 +12,16 @@ public final class DragonAPILanguageProvider extends LanguageProvider {
 
     @Override
     protected void addTranslations() {
+        add("command.dragonapi.debugtest.enabled", "Debug test mode enabled.");
+        add("command.dragonapi.debugtest.disabled", "Debug test mode disabled.");
+        add("tooltip.dragonapi.temperature", "Temperature: %s\u00b0C");
+        add("command.dragonapi.biomepng.validation.usage", "Use [seed=<seed,list,range>] <range> <resolution> [grid] [fullgrid].");
+        add("command.dragonapi.biomepng.validation.grid", "Grid must be non-negative.");
+        add("command.dragonapi.biomepng.validation.seed_range", "Seed ranges must be ascending and contain at most 16 seeds.");
+        add("command.dragonapi.biomepng.validation.seed_limit", "At most 16 seed maps may be requested at once.");
+        add("command.dragonapi.biomepng.validation.dimensions", "Range and resolution must be between 1 and 100000.");
+        add("command.dragonapi.biomepng.validation.size", "Map exceeds 2048 pixels per side; increase resolution.");
+        add("command.dragonapi.biomepng.validation.number", "Range, resolution, grid and seeds must be valid numbers within their supported bounds.");
         add("command.dragonapi.profile.usage", "Specify 'disable', 'enable', or 'display'.");
         add("command.dragonapi.profile.finished", "Profiling finished.");
         add("command.dragonapi.profile.missing_type", "You must specify an event type (class)!");

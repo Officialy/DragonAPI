@@ -75,7 +75,7 @@ public class ThermalTileJadePlugin implements IWailaPlugin {
         public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
             CompoundTag data = accessor.getServerData();
             if (data.contains(TAG))
-                tooltip.add(Component.literal("Temperature: " + data.getIntOr(TAG, 0) + "°C"));
+                tooltip.add(Component.translatable("tooltip.dragonapi.temperature", data.getIntOr(TAG, 0)));
         }
 
         @Override

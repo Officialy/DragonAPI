@@ -107,20 +107,31 @@ public class BiomeMapCommand {
                 for (long seed : parseSeeds(args[index++].substring(5))) providers.add(new SeedBiomes(player.level(), seed));
             }
             if (args.length - index < 2 || args.length - index > 4)
-                throw new IllegalArgumentException("Use [seed=<seed,list,range>] <range> <resolution> [grid] [fullgrid].");
+                throw new MapValidationException("usage");
             int range = Integer.parseInt(args[index++]);
             int resolution = Integer.parseInt(args[index++]);
             validateMapSize(range, resolution);
             int grid = index < args.length ? Integer.parseInt(args[index++]) : 0;
-            if (grid < 0) throw new IllegalArgumentException("Grid must be non-negative.");
+            if (grid < 0) throw new MapValidationException("grid");
             boolean fullGrid = index < args.length && Boolean.parseBoolean(args[index]);
             if (providers.isEmpty()) providers.add(new WorldBiomes(player.level()));
             for (BiomeProvider provider : providers)
                 generateMap(provider, player, Mth.floor(player.getX()), Mth.floor(player.getZ()), range, resolution, grid, fullGrid, null);
             return providers.size();
         } catch (IllegalArgumentException error) {
-            source.sendFailure(Component.translatable("command.dragonapi.biomepng.error", Objects.toString(error.getMessage(), error.getClass().getSimpleName())));
+            Component detail = error instanceof MapValidationException validation ? Component.translatable(validation.key)
+                    : error instanceof NumberFormatException ? Component.translatable("command.dragonapi.biomepng.validation.number")
+                    : Component.literal(Objects.toString(error.getMessage(), error.getClass().getSimpleName()));
+            source.sendFailure(Component.translatable("command.dragonapi.biomepng.error", detail));
             return 0;
+        }
+    }
+
+    private static final class MapValidationException extends IllegalArgumentException {
+        private final String key;
+        private MapValidationException(String reason) {
+            super("command.dragonapi.biomepng.validation." + reason);
+            key = getMessage();
         }
     }
 
@@ -131,19 +142,19 @@ public class BiomeMapCommand {
             if (range.matches()) {
                 long first = Long.parseLong(range.group(1)), last = Long.parseLong(range.group(2));
                 if (last < first || java.math.BigInteger.valueOf(last).subtract(java.math.BigInteger.valueOf(first)).compareTo(java.math.BigInteger.valueOf(15)) > 0)
-                    throw new IllegalArgumentException("Seed ranges must be ascending and contain at most 16 seeds.");
+                    throw new MapValidationException("seed_range");
                 for (long seed = first;; seed++) { seeds.add(seed); if (seed == last) break; }
             } else seeds.add(Long.parseLong(token));
-            if (seeds.size() > 16) throw new IllegalArgumentException("At most 16 seed maps may be requested at once.");
+            if (seeds.size() > 16) throw new MapValidationException("seed_limit");
         }
         return List.copyOf(seeds);
     }
 
     public static void validateMapSize(int range, int resolution) {
         if (range < 1 || range > 100000 || resolution < 1 || resolution > 100000)
-            throw new IllegalArgumentException("Range and resolution must be between 1 and 100000.");
+            throw new MapValidationException("dimensions");
         long width = 2L * range / resolution + 1;
-        if (width * width > 4194304) throw new IllegalArgumentException("Map exceeds 2048 pixels per side; increase resolution.");
+        if (width * width > 4194304) throw new MapValidationException("size");
     }
 
     public static void clearClientMaps() { activeMaps.clear(); }
