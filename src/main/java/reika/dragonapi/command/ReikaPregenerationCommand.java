@@ -30,9 +30,11 @@ public final class ReikaPregenerationCommand {
                                     Math.max(a.x(), b.x()), Math.max(a.z(), b.z())));
                         }))))
                 .then(Commands.literal("status").executes(ctx -> {
-                    var messages = BoundedPopulation.get(ctx.getSource().getLevel()).status();
-                    if (messages.isEmpty()) ctx.getSource().sendSuccess(() -> Component.literal("No bounded pregeneration sessions in this dimension."), false);
-                    messages.forEach(message -> ctx.getSource().sendSuccess(() -> Component.literal(message), false));
+                    var messages = BoundedPopulation.get(ctx.getSource().getLevel()).statusSnapshot();
+                    if (messages.isEmpty()) ctx.getSource().sendSuccess(() -> Component.translatable("command.dragonapi.pregen.empty"), false);
+                    messages.forEach(message -> ctx.getSource().sendSuccess(() -> Component.translatable("command.dragonapi.pregen.status",
+                            message.id(), message.source(), Component.translatable("command.dragonapi.pregen.state." + message.state().name().toLowerCase(java.util.Locale.ROOT)),
+                            message.originChunks(), message.pendingJobs()), false));
                     return messages.size();
                 }))
                 .then(Commands.literal("pause").executes(ctx -> control(ctx, "pause")))
@@ -41,8 +43,7 @@ public final class ReikaPregenerationCommand {
     }
     private static int start(CommandContext<CommandSourceStack> ctx, PopulationScope origins) {
         long id = BoundedPopulation.get(ctx.getSource().getLevel()).begin("manual", "manual/" + System.nanoTime(), origins, false);
-        ctx.getSource().sendSuccess(() -> Component.literal("Population #" + id + " started for " + origins.size()
-                + " origin chunks. Finishes queued structures; use a terrain pregenerator to fill missing terrain."), true);
+        ctx.getSource().sendSuccess(() -> Component.translatable("command.dragonapi.pregen.started", id, origins.size()), true);
         return 1;
     }
     private static int control(CommandContext<CommandSourceStack> ctx, String action) {
@@ -53,8 +54,7 @@ public final class ReikaPregenerationCommand {
             case "cancel" -> population.cancelAll();
             default -> throw new IllegalArgumentException(action);
         }
-        ctx.getSource().sendSuccess(() -> Component.literal("Bounded population: " + action
-                + " in this dimension. The terrain pregenerator has separate controls."), true);
+        ctx.getSource().sendSuccess(() -> Component.translatable("command.dragonapi.pregen." + action), true);
         return 1;
     }
 }

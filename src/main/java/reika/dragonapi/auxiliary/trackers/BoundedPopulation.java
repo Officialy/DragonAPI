@@ -129,12 +129,25 @@ public final class BoundedPopulation extends SavedData {
     public long pending(long id) {
         Session s = sessions.get(id); return s == null ? 0 : queues.values().stream().mapToLong(q -> q.pending(s.origins::contains)).sum();
     }
+    public enum SessionState { CANCELLED, COMPLETE, PAUSED, TERRAIN_RUNNING, FINISHING_STRUCTURES }
+    public record PopulationStatus(long id, String source, SessionState state, long originChunks, long pendingJobs) {}
+
+    /** Immutable values for presentation; session and queue internals never escape to callers. */
+    public java.util.List<PopulationStatus> statusSnapshot() {
+        var result = new java.util.ArrayList<PopulationStatus>();
+        for (Session session : sessions.values()) {
+            SessionState state = session.cancelled ? SessionState.CANCELLED : session.done ? SessionState.COMPLETE
+                    : session.paused ? SessionState.PAUSED : session.feeding ? SessionState.TERRAIN_RUNNING : SessionState.FINISHING_STRUCTURES;
+            result.add(new PopulationStatus(session.id, session.source, state, session.origins.size(), pending(session.id)));
+        }
+        return java.util.List.copyOf(result);
+    }
+
+    /** Historical diagnostic strings retained for API callers; commands use the typed snapshot. */
     public java.util.List<String> status() {
-        var result = new java.util.ArrayList<String>();
-        for (Session s : sessions.values()) result.add("#" + s.id + " " + s.source + " "
-                + (s.cancelled ? "cancelled" : s.done ? "complete" : s.paused ? "paused" : s.feeding ? "terrain running" : "finishing structures")
-                + ": " + s.origins.size() + " origin chunks, " + pending(s.id) + " pending jobs");
-        return result;
+        return statusSnapshot().stream().map(status -> "#" + status.id() + " " + status.source() + " "
+                + status.state().name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ')
+                + ": " + status.originChunks() + " origin chunks, " + status.pendingJobs() + " pending jobs").collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
     }
     private void tick(ServerLevel level) {
         if (++ticks % 20 != 0) return;

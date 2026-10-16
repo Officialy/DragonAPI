@@ -1562,3 +1562,25 @@ Remaining D58 work: profiler/pregeneration and other public command translations
 biome validation detail translations, remaining raw/generic types and null
 contracts, and contextual exception logging throughout accepted libraries. No
 claim that D58 as a whole is finished. Local checkpoint; unrelated IDE edits kept.
+
+
+## D58b — Profiler and bounded-population feedback (2026-10-16)
+
+Profiler and pregeneration command feedback use generated translation components.
+All six profiler error states and five population states have keys; 40 language
+entries now generate. Profiler errors send failure feedback and return zero.
+Numeric diagnostics use Locale.ROOT. Handler count/time/call/failure details remain
+in both chat and contextual logs. Population status uses immutable typed snapshots;
+the historical mutable diagnostic-string list API and original text are preserved.
+No admission, queue, persistence, permissions or population control behavior changed.
+
+Validated on the owner's existing local NeoForge 26.3.0.76 setting: 200 family units
+(147 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 11 ChromatiCraft), zero failures,
+errors or skips; 101 native fixtures and strict common MixinAudit pass, clean exit
+in 1m 14s. Two new unit tests cover immutable snapshots, state transitions and
+feeding/save/reload recovery. Native commands cover missing profiler arguments,
+invalid event return status and population start/status/pause/resume/cancel.
+Evidence: build/d58b-family.log, build/d58b-native.log, build/d58b-proof.json.
+D58 remains open. Existing IDE, version, datagen-provider and other mod changes
+are preserved outside this scoped checkpoint. Updater stays inactive. Next:
+reflection correctness, types/null contracts and contextual failure handling.
