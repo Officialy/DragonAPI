@@ -21,7 +21,6 @@ import org.apache.logging.log4j.Level;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
 import reika.dragonapi.exception.MisuseException;
-import reika.dragonapi.libraries.mathsci.ReikaMathLibrary;
 import reika.dragonapi.libraries.mathsci.ReikaMusicHelper;
 
 import java.io.*;
@@ -540,44 +539,42 @@ public final class ReikaJavaLibrary {
         return false;
     }
 
-    public static byte[] streamToBytes(InputStream in) {
-        ArrayList<Byte> li = new ArrayList<>();
+    /** Reads through EOF without closing the caller-owned stream; failures retain the null result. */
+    public static byte @Nullable [] streamToBytes(InputStream input) {
         try {
-            int ret = in.read();
-            while (ReikaMathLibrary.isValueInsideBoundsIncl(0, 255, ret)) {
-                li.add((byte) ret);
-                ret = in.read();
-            }
-            byte[] arr = new byte[li.size()];
-            for (int i = 0; i < li.size(); i++) {
-                arr[i] = li.get(i);
-            }
-            return arr;
-        } catch (IOException e) {
-            e.printStackTrace();
+            return input.readAllBytes();
+        } catch (IOException error) {
+            DragonAPI.LOGGER.error("Could not read bytes from stream type {}", input.getClass().getName(), error);
             return null;
         }
     }
 
-    public static <I, O> Collection<O> getConstructedCollection(Collection<I> inputs, Class<I> ci, Class<O> co) {
+    /** Constructor lookup failures retain the historical null result and full diagnostic cause. */
+    public static <I, O> @Nullable Collection<O> getConstructedCollection(Collection<? extends I> inputs,
+            Class<I> inputType, Class<? extends O> outputType) {
         try {
-            return getConstructedCollection(inputs, co.getConstructor(ci));
-        } catch (Exception e) {
-            e.printStackTrace();
+            return getConstructedCollection(inputs, outputType.getConstructor(inputType));
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not construct collection of {} from {}", outputType.getName(), inputType.getName(), error);
+            return null;
         }
-        return null;
     }
 
-	public static <I, O> Collection<O> getConstructedCollection(Collection<I> inputs, Constructor<O> c) {
-		Collection<O> outputs = new ArrayList<>();
-		for (I in : inputs) {
-			try {
-				O out = c.newInstance(in);
-				outputs.add(out);
-			} catch (ReflectiveOperationException e) {
-				throw new IllegalStateException("Could not construct collection entry from " + in, e);
-			}
-		}
+    /** Preserves input order; a constructor failure never returns a partial collection. */
+    public static <I, O> Collection<O> getConstructedCollection(Collection<? extends I> inputs, Constructor<? extends O> constructor) {
+        Collection<O> outputs = new ArrayList<>();
+        int index = 0;
+        for (I input : inputs) {
+            try {
+                outputs.add(constructor.newInstance(input));
+            } catch (ReflectiveOperationException | IllegalArgumentException error) {
+                Throwable cause = error instanceof java.lang.reflect.InvocationTargetException invocation
+                        ? invocation.getCause() : error;
+                throw new IllegalStateException("Could not construct collection entry " + index + " of "
+                        + constructor.getDeclaringClass().getName(), cause);
+            }
+            index++;
+        }
         return outputs;
     }
 

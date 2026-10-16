@@ -1666,3 +1666,21 @@ NeoForge's native local-chat hook. It restores audit chat state/listeners. The
 19-class TestInstance slice compiles, but this new graphics check has NOT run:
 an existing gotoClient game was active and was left untouched. It runs during the
 next ordinary automated client audit, and is inert in Play. D58 remains open.
+
+
+## D58f — Bulk stream reads and constructor diagnostics (2026-10-16)
+
+streamToBytes uses native bulk reads through EOF rather than boxing every byte.
+It does not close caller-owned streams; IOException still returns null, now with
+stream-type context and cause in one logger event. Nullable array result is explicit.
+Constructed collections accept subtype inputs/constructors, preserve order and
+never expose a partial result. Constructor failures identify the entry index and
+output class with the original target exception as cause. The lookup overload
+retains its historical null-on-failure contract and structured diagnostics.
+
+Three regressions cover short bulk reads/all byte values/ownership, failure without
+closing caller input, and ordered construction/missing signatures/actual target
+failure. All 215 units and 101 native fixtures pass; common strict MixinAudit passes.
+Final native build exits cleanly in 1m 42s. Evidence: build/d58f-stream-construction.log,
+build/d58f-family-native.log and build/d58f-proof.json. Client language acceptance
+remains compiled but deferred while the existing game is active. D58 remains open.

@@ -12,6 +12,52 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ReikaJavaLibraryTest {
+    @Test void streamReadsPreserveAllByteValuesAndShortReadsWithoutTakingOwnership() {
+        byte[] bytes = new byte[10_000];
+        for (int i = 0; i < bytes.length; i++) bytes[i] = (byte)i;
+        var source = new java.io.ByteArrayInputStream(bytes);
+        boolean[] closed = {false};
+        int[] reads = {0};
+        var stream = new java.io.InputStream() {
+            @Override public int read() { throw new AssertionError("Use bulk reads"); }
+            @Override public int read(byte[] buffer, int offset, int length) {
+                reads[0]++;
+                return source.read(buffer, offset, Math.min(length, 17));
+            }
+            @Override public void close() { closed[0] = true; }
+        };
+        assertArrayEquals(bytes, ReikaJavaLibrary.streamToBytes(stream));
+        assertEquals(0, source.available());
+        assertTrue(reads[0] > 0);
+        assertFalse(closed[0]);
+    }
+
+    @Test void failedStreamReadRetainsNullResultAndCallerOwnership() {
+        boolean[] closed = {false};
+        var stream = new java.io.InputStream() {
+            @Override public int read() throws java.io.IOException { throw new java.io.IOException("expected stream failure"); }
+            @Override public void close() { closed[0] = true; }
+        };
+        assertNull(ReikaJavaLibrary.streamToBytes(stream));
+        assertFalse(closed[0]);
+    }
+
+    public record Constructed(String value) {}
+    public static class FailingConstructor {
+        public FailingConstructor(String value) throws java.io.IOException { throw new java.io.IOException("expected constructor failure"); }
+    }
+
+    @Test void collectionConstructionPreservesOrderAndReportsActualConstructorFailure() throws Exception {
+        assertEquals(List.of(new Constructed("first"), new Constructed("second")),
+                ReikaJavaLibrary.getConstructedCollection(List.of("first", "second"), String.class, Constructed.class));
+        assertNull(ReikaJavaLibrary.getConstructedCollection(List.of(new Object()), Object.class, Constructed.class));
+        var error = assertThrows(IllegalStateException.class, () -> ReikaJavaLibrary.getConstructedCollection(
+                List.of("broken"), FailingConstructor.class.getConstructor(String.class)));
+        assertInstanceOf(java.io.IOException.class, error.getCause());
+        assertTrue(error.getMessage().contains("entry 0"));
+        assertNull(ReikaJavaLibrary.getConstructedCollection(List.of("broken"), String.class, FailingConstructor.class));
+    }
+
     @Test void arrayFactoryPreservesRuntimeTypeEmptyArraysAndNullElements() {
         String[] values = ReikaJavaLibrary.collectionToArray(Arrays.asList("first", null, "last"), String[]::new);
         assertArrayEquals(new String[]{"first", null, "last"}, values);
