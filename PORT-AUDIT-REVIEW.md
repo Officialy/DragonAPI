@@ -1574,8 +1574,8 @@ in both chat and contextual logs. Population status uses immutable typed snapsho
 the historical mutable diagnostic-string list API and original text are preserved.
 No admission, queue, persistence, permissions or population control behavior changed.
 
-Validated on the owner's existing local NeoForge 26.3.0.76 setting: 200 family units
-(147 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 11 ChromatiCraft), zero failures,
+Validated on the owner's existing local NeoForge 26.3.0.76 setting: 201 family units
+(147 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft), zero failures,
 errors or skips; 101 native fixtures and strict common MixinAudit pass, clean exit
 in 1m 14s. Two new unit tests cover immutable snapshots, state transitions and
 feeding/save/reload recovery. Native commands cover missing profiler arguments,
@@ -1584,3 +1584,34 @@ Evidence: build/d58b-family.log, build/d58b-native.log, build/d58b-proof.json.
 D58 remains open. Existing IDE, version, datagen-provider and other mod changes
 are preserved outside this scoped checkpoint. Updater stays inactive. Next:
 reflection correctness, types/null contracts and contextual failure handling.
+
+
+## D58c — Java 25 reflection correctness (2026-10-16)
+
+Private primitive readers now handle static fields, inherited fields and restore
+access on failed reads. Historical null/sentinel behavior remains; failures use
+contextual logger events with causes, and debug chat tolerates an uninitialized
+config. Nullable lookup returns and optional selectors are explicit.
+
+Replaced obsolete Field.modifiers mutation with the actual Java 25 Field.set
+contract from installed JDK 25.0.2 sources: ordinary non-static final fields are
+writable for reconstruction before publication, without changing final modifiers.
+Access override is restored after success and failure. Static/record/hidden final
+writes fail clearly; there is no Unsafe or JVM-internals fallback. Missing fields
+report NoSuchFieldException. Parent constructors are no longer falsely returned
+as inherited constructors; inherited ordinary method lookup is preserved.
+
+Invocation caches are ClassValue-owned concurrent maps keyed by method name AND
+immutable parameter types. Exact runtime-type convenience calls retain their API;
+a new explicit-signature overload supports primitive/interface/nullable arguments.
+Different overloads no longer reuse the first cached method. Failures retain null
+results with actual invocation causes logged. No legacy ASM/SRG machinery returns.
+
+Six regressions cover field inheritance/static/sentinels, constructor ownership,
+reconstruction and access restoration on failure, prohibited final writes,
+concurrent alternating overloads, and primitive/interface/null arguments.
+All 207 family units and 101 native fixtures pass on the existing local 26.3.0.76
+setting, with strict common MixinAudit. Evidence: build/d58c-reflection.log,
+build/d58c-family-native.log and build/d58c-proof.json. D58 remains open.
+The prior D58b ledger count is corrected to 201: the owner's newer ChromatiCraft
+suite contains 12 tests. Existing version/datagen/IDE edits stay outside commits.

@@ -9,131 +9,64 @@ import java.util.Collection;
 
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
-import reika.dragonapi.instantiable.data.maps.PluralMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import org.jspecify.annotations.Nullable;
 import reika.dragonapi.libraries.io.ReikaChatHelper;
 
 public class ReikaReflectionHelper {
 
-    private static final PluralMap<Method> methodCache = new PluralMap<>(2);
-
-    /**
-     * Gets the value of a private int in an instance of obj.
-     */
-    public static int getPrivateInteger(Object obj, String field) {
-        if (obj == null || field == null || field.isEmpty())
-            return Integer.MIN_VALUE;
-        try {
-            Class<? extends Object> c = obj.getClass();
-            Field f = null;
-            while (f == null && c != null) {
-                try {
-                    f = c.getDeclaredField(field);
-                } catch (NoSuchFieldException e2) {
-                    c = c.getSuperclass();
-                }
-            }
-            if (f == null) {
-                if (DragonOptions.DEBUGLOG.getState()) {
-                    DragonAPI.LOGGER.error("Could not find field " + field + " in " + obj);
-                    ReikaChatHelper.write("Could not find field " + field + " in " + obj);
-                }
-                throw new NoSuchFieldException();
-            }
-            int val = Integer.MIN_VALUE;
-            if (!f.canAccess(obj)) {
-                f.setAccessible(true);
-                val = f.getInt(obj);
-                f.setAccessible(false);
-            } else
-                val = f.getInt(obj);
-            return val;
-        } catch (NoSuchFieldException e) {
-            if (DragonOptions.DEBUGLOG.getState()) {
-                DragonAPI.LOGGER.error("Could not find field " + field + " in " + obj);
-                ReikaChatHelper.write("Could not find field " + field + " in " + obj);
-            }
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            if (DragonOptions.DEBUGLOG.getState()) {
-                DragonAPI.LOGGER.error("Could not access field " + field + " in " + obj);
-                ReikaChatHelper.write("Could not access field " + field + " in " + obj);
-            }
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            if (DragonOptions.DEBUGLOG.getState()) {
-                DragonAPI.LOGGER.error("Security Manager locked field " + field + " in " + obj);
-                ReikaChatHelper.write("Security Manager locked field " + field + " in " + obj);
-            }
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            DragonAPI.LOGGER.error("Field " + field + " in " + obj + " is not an instance integer", e);
+    private record MethodSignature(String name, List<Class<?>> parameterTypes) {}
+    private static final ClassValue<ConcurrentMap<MethodSignature, Method>> methodCache = new ClassValue<>() {
+        @Override protected ConcurrentMap<MethodSignature, Method> computeValue(Class<?> type) {
+            return new ConcurrentHashMap<>();
         }
-        return Integer.MIN_VALUE;
+    };
+
+    /** Missing/inaccessible or non-integer fields retain the historical sentinel. */
+    public static int getPrivateInteger(@Nullable Object obj, @Nullable String field) {
+        return readPrivateField(obj, field, Integer.MIN_VALUE, Field::getInt);
     }
 
-    /**
-     * Gets the value of a private boolean in an instance of obj.
-     */
-    public static boolean getPrivateBoolean(Object obj, String field) {
-        if (obj == null || field == null || field.isEmpty())
-            return false;
-        try {
-            Class<?> c = obj.getClass();
-            Field f = null;
-            while (f == null && c != null) {
-                try {
-                    f = c.getDeclaredField(field);
-                } catch (NoSuchFieldException e2) {
-                    c = c.getSuperclass();
-                }
-            }
-            if (f == null) {
-                if (DragonOptions.DEBUGLOG.getState()) {
-                    DragonAPI.LOGGER.error("Could not find field " + field + " in " + obj);
-                    ReikaChatHelper.write("Could not find field " + field + " in " + obj);
-                }
-                throw new NoSuchFieldException();
-            }
-            boolean val = false;
-            if (!f.canAccess(obj)) {
-                f.setAccessible(true);
-                val = f.getBoolean(obj);
-                f.setAccessible(false);
-            } else
-                val = f.getBoolean(obj);
-            return val;
-        } catch (NoSuchFieldException e) {
-            if (DragonOptions.DEBUGLOG.getState()) {
-                DragonAPI.LOGGER.error("Could not find field " + field + " in " + obj);
-                ReikaChatHelper.write("Could not find field " + field + " in " + obj);
-            }
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            if (DragonOptions.DEBUGLOG.getState()) {
-                DragonAPI.LOGGER.error("Could not access field " + field + " in " + obj);
-                ReikaChatHelper.write("Could not access field " + field + " in " + obj);
-            }
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            if (DragonOptions.DEBUGLOG.getState()) {
-                DragonAPI.LOGGER.error("Security Manager locked field " + field + " in " + obj);
-                ReikaChatHelper.write("Security Manager locked field " + field + " in " + obj);
-            }
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            DragonAPI.LOGGER.error("Field " + field + " in " + obj + " is not an instance boolean", e);
-        }
-        return false;
+    /** Missing/inaccessible or non-boolean fields retain the historical false result. */
+    public static boolean getPrivateBoolean(@Nullable Object obj, @Nullable String field) {
+        return readPrivateField(obj, field, false, Field::getBoolean);
     }
 
-    public static Field getProtectedInheritedField(Object o, String field) {
+    @FunctionalInterface
+    private interface FieldReader<T> { T read(Field field, @Nullable Object receiver) throws IllegalAccessException; }
+
+    private static <T> T readPrivateField(@Nullable Object obj, @Nullable String name, T fallback, FieldReader<T> reader) {
+        if (obj == null || name == null || name.isEmpty()) return fallback;
+        try {
+            Field field = getProtectedInheritedField(obj.getClass(), name);
+            if (field == null) throw new NoSuchFieldException(obj.getClass().getName() + "." + name);
+            Object receiver = Modifier.isStatic(field.getModifiers()) ? null : obj;
+            boolean accessible = field.canAccess(receiver);
+            try {
+                if (!accessible) field.setAccessible(true);
+                return reader.read(field, receiver);
+            } finally {
+                if (!accessible) field.setAccessible(false);
+            }
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not read field {}.{}", obj.getClass().getName(), name, error);
+            if (DragonAPI.config != null && Boolean.TRUE.equals(DragonAPI.config.getControl(DragonOptions.DEBUGLOG.ordinal())))
+                ReikaChatHelper.write("Could not read field " + obj.getClass().getName() + "." + name + ": " + error);
+            return fallback;
+        }
+    }
+
+    public static @Nullable Field getProtectedInheritedField(Object o, String field) {
         return getProtectedInheritedField(o.getClass(), field);
     }
 
     /**
      * Gets a nonvisible field that may be inherited by any of the superclasses. Returns null if none exists.
      */
-    public static Field getProtectedInheritedField(Class<?> c, String field) {
+    public static @Nullable Field getProtectedInheritedField(Class<?> c, String field) {
         Field f = null;
         while (f == null && c != null) {
             try {
@@ -145,22 +78,21 @@ public class ReikaReflectionHelper {
         return f;
     }
 
-    public static Executable getProtectedInheritedMethod(Object o, String method, Class<?>... types) {
+    public static @Nullable Executable getProtectedInheritedMethod(Object o, String method, Class<?>... types) {
         return getProtectedInheritedMethod(o.getClass(), method, types);
     }
 
     /**
      * Gets a nonvisible Method that may be inherited by any of the superclasses. Returns null if none exists.
      */
-    public static Executable getProtectedInheritedMethod(Class<?> c, String method, Class<?>... types) {
+    public static @Nullable Executable getProtectedInheritedMethod(Class<?> c, String method, Class<?>... types) {
         Executable f = null;
         if (method.equals("<init>")) {
-            while (f == null && c != null) {
-                try {
-                    f = c.getDeclaredConstructor(types);
-                } catch (NoSuchMethodException e2) {
-                    c = c.getSuperclass();
-                }
+            // Constructors belong only to the declaring class; they are never inherited.
+            try {
+                return c == null ? null : c.getDeclaredConstructor(types);
+            } catch (NoSuchMethodException absent) {
+                return null;
             }
         } else {
             while (f == null && c != null) {
@@ -174,27 +106,34 @@ public class ReikaReflectionHelper {
         return f;
     }
 
-    public static void setFinalField(Class<?> c, String s, Object instance, Object o) throws Exception {
-        setFinalField(getProtectedInheritedField(c, s), instance, o);
+    public static void setFinalField(Class<?> owner, String name, @Nullable Object instance, @Nullable Object value) throws Exception {
+        Field field = getProtectedInheritedField(owner, name);
+        if (field == null) throw new NoSuchFieldException(owner.getName() + "." + name);
+        setFinalField(field, instance, value);
     }
 
-    public static void setFinalField(Field f, Object instance, Object o) throws Exception {
+    /**
+     * Uses Java 25's supported reflective write for ordinary instance fields. Final
+     * fields are only suitable for reconstruction before publication. Static final,
+     * record and hidden-class final fields require a different design/access transformer.
+     * No JVM internals or modifier-bit mutation is involved.
+     */
+    @SuppressWarnings("deprecation") // isAccessible is the API for preserving the override flag itself.
+    public static void setFinalField(Field field, @Nullable Object instance, @Nullable Object value) throws Exception {
+        Objects.requireNonNull(field, "field");
+        if (Modifier.isFinal(field.getModifiers()) && (Modifier.isStatic(field.getModifiers())
+                || field.getDeclaringClass().isRecord() || field.getDeclaringClass().isHidden()))
+            throw new IllegalAccessException("Java 25 cannot reflectively write " + field + "; use a supported API or an access transformer");
+        boolean override = field.isAccessible();
         try {
-            f.setAccessible(true);
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
-            f.set(instance, o);
-        } catch (IllegalAccessException e) {
-            if (e.toString().contains("Can not set final")) {
-                throw new RuntimeException("You need to un-final a field BEFORE any accesses (ie f.get() calls)!", e);
-            } else {
-                throw e;
-            }
+            field.setAccessible(true);
+            field.set(Modifier.isStatic(field.getModifiers()) ? null : instance, value);
+        } finally {
+            field.setAccessible(override);
         }
     }
 
-    public static Collection<Field> getFields(Class<?> c, FieldSelector sel) {
+    public static Collection<Field> getFields(Class<?> c, @Nullable FieldSelector sel) {
         Collection<Field> li = new ArrayList<>();
         while (c != null) {
             Field[] fd = c.getDeclaredFields();
@@ -207,7 +146,7 @@ public class ReikaReflectionHelper {
         return li;
     }
 
-    public static Collection<Method> getMethods(Class<?> c, MethodSelector sel) {
+    public static Collection<Method> getMethods(Class<?> c, @Nullable MethodSelector sel) {
         Collection<Method> li = new ArrayList<>();
         while (c != null) {
             Method[] fd = c.getDeclaredMethods();
@@ -265,35 +204,42 @@ public class ReikaReflectionHelper {
     }
 
     /**
-     * Note that this does not support overloading, as to do so would compromise performance.
+     * Convenience lookup using exact runtime argument types, as in the original API.
+     * Use the explicit-signature overload for primitive, interface or nullable arguments.
+     * Failures retain the original null result and are logged with their cause.
      */
-    public static Object cacheAndInvokeMethod(String cl, String name, Object ref, Object... args) {
+    public static @Nullable Object cacheAndInvokeMethod(String className, String name, @Nullable Object receiver, Object... args) {
         try {
-            Method m = methodCache.get(cl, name);
-            if (m == null) {
-                try {
-                    Class<?> c = Class.forName(cl);
-                    m = c.getDeclaredMethod(name, getArgTypesFromArgs(args));
-                    m.setAccessible(true);
-                    methodCache.put(m, cl, name);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return null;
-                }
-            }
-            return m.invoke(ref, args);
-        } catch (Exception e) {
-            e.printStackTrace();
+            Class<?>[] types = new Class<?>[args.length];
+            for (int i = 0; i < types.length; i++)
+                types[i] = Objects.requireNonNull(args[i], "Nullable arguments need an explicit method signature").getClass();
+            return cacheAndInvokeMethod(Class.forName(className), name, types, receiver, args);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not resolve method {}.{}", className, name, error);
             return null;
         }
     }
 
-    private static Class<?>[] getArgTypesFromArgs(Object[] args) {
-        Class<?>[] arr = new Class[args.length];
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = args[i].getClass();
+    /** Exact parameter types distinguish overloads, including primitive and nullable arguments. */
+    public static @Nullable Object cacheAndInvokeMethod(Class<?> owner, String name, Class<?>[] parameterTypes,
+            @Nullable Object receiver, @Nullable Object... args) {
+        try {
+            var signature = new MethodSignature(name, List.of(parameterTypes));
+            var methods = methodCache.get(owner);
+            Method method = methods.get(signature);
+            if (method == null) {
+                Method candidate = owner.getDeclaredMethod(name, parameterTypes);
+                candidate.setAccessible(true);
+                Method previous = methods.putIfAbsent(signature, candidate);
+                method = previous != null ? previous : candidate;
+            }
+            return method.invoke(receiver, args);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            Throwable cause = error instanceof java.lang.reflect.InvocationTargetException invocation
+                    ? invocation.getCause() : error;
+            DragonAPI.LOGGER.error("Could not invoke method {}.{} with signature {}", owner.getName(), name,
+                    java.util.Arrays.toString(parameterTypes), cause);
+            return null;
         }
-        return arr;
     }
-
 }
