@@ -492,41 +492,38 @@ public final class ReikaJavaLibrary {
     }
 
     public static Class<?>[] getObjectClasses(Object... objs) {
-        Class<?>[] c = new Class[objs.length];
+        Class<?>[] c = new Class<?>[objs.length];
         for (int i = 0; i < c.length; i++) {
             c[i] = getClassOf(objs[i]);
         }
         return c;
     }
 
+    /** Infers primitive types for actual boxed values; null has no inferable runtime type. */
     public static Class<?> getClassOf(Object o) {
+        Objects.requireNonNull(o, "Cannot infer a class from null");
         Class<?> p = getPrimitiveClass(o);
         return p != null ? p : o.getClass();
     }
 
     private static Class<?> getPrimitiveClass(Object o) {
-        String name = o.getClass().getSimpleName().toLowerCase(Locale.ENGLISH);
-        if (name.equals("byte"))
+        if (o instanceof Byte)
             return byte.class;
-        if (name.equals("short"))
+        if (o instanceof Short)
             return short.class;
-        if (name.equals("int"))
+        if (o instanceof Integer)
             return int.class;
-        if (name.equals("integer"))
-            return int.class;
-        if (name.equals("long"))
+        if (o instanceof Long)
             return long.class;
-        if (name.equals("char"))
+        if (o instanceof Character)
             return char.class;
-        if (name.equals("character"))
-            return char.class;
-        if (name.equals("float"))
+        if (o instanceof Float)
             return float.class;
-        if (name.equals("double"))
+        if (o instanceof Double)
             return double.class;
-        if (name.equals("boolean"))
+        if (o instanceof Boolean)
             return boolean.class;
-        if (name.equals("void"))
+        if (o instanceof Void)
             return void.class;
         return null;
     }
@@ -578,21 +575,17 @@ public final class ReikaJavaLibrary {
         return outputs;
     }
 
-/*    public static HashMap<?, ?> sortMapByValues(HashMap<?, ?> map) {
-        List<Entry<Object, Comparable<Object>>> list = new LinkedList<>(map.entrySet());
-        list.sort(new MapValueSorter<>());
-        HashMap<Object, Object> sortedHashMap = new LinkedHashMap<>();
-        for (Entry<Object, Comparable<Object>> e : list) {
-            sortedHashMap.put(e.getKey(), e.getValue());
-        }
-        return sortedHashMap;
-    }*/
+    /** Returns an ordered copy, retaining encounter order for equal values. */
+    public static <K, V extends Comparable<? super V>> HashMap<K, V> sortMapByValues(HashMap<K, V> map) {
+        return sortMapByValues(map, Comparator.naturalOrder());
+    }
 
-    public static HashMap<Object, Object> sortMapByValues(HashMap<Object, Object> map) {
-        List<Map.Entry<Object, Object>> list = new LinkedList<>(map.entrySet());
-        list.sort(new MapValueSorter());
-        HashMap<Object, Object> sortedHashMap = new LinkedHashMap<>();
-        for (Map.Entry<Object, Object> e : list) {
+    /** Supports non-comparable values and explicit null ordering without changing the input map. */
+    public static <K, V> HashMap<K, V> sortMapByValues(HashMap<K, V> map, Comparator<? super V> comparator) {
+        List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
+        list.sort(Map.Entry.comparingByValue(comparator));
+        HashMap<K, V> sortedHashMap = new LinkedHashMap<>();
+        for (Map.Entry<K, V> e : list) {
             sortedHashMap.put(e.getKey(), e.getValue());
         }
         return sortedHashMap;
@@ -635,8 +628,9 @@ public final class ReikaJavaLibrary {
     }
 
     public static String getTopLevelPackage(Class<?> c) {
-        String n = c.getName();
-        return n.substring(0, n.indexOf('.'));
+        String name = c.getPackageName();
+        int separator = name.indexOf('.');
+        return separator < 0 ? name : name.substring(0, separator);
     }
 
     public static <E> Collection<E> getCompoundCollection(Collection<Collection<E>> colls) {
@@ -946,9 +940,7 @@ public final class ReikaJavaLibrary {
     }
 
     public static String getPackageName(Class<?> c) {
-        String name = c.getName();
-        int idx = name.lastIndexOf('.');
-        return name.substring(0, idx);
+        return c.getPackageName();
     }
 
     public static String getEnumNameList(Class<? extends Enum<?>> e) {
@@ -969,17 +961,10 @@ public final class ReikaJavaLibrary {
 
     }
 
-    private static class MapValueSorter<V> implements Comparator<Map.Entry<V, Comparable<Object>>> {
-
-        public int compare(Map.Entry<V, Comparable<Object>> o1, Map.Entry<V, Comparable<Object>> o2) {
-            return (o1.getValue()).compareTo(o2.getValue());
-        }
-    }
-
-    public static class ReverseComparator implements Comparator<Comparable<Object>> {
+    public static class ReverseComparator<T extends Comparable<? super T>> implements Comparator<T> {
 
         @Override
-        public int compare(Comparable<Object> o1, Comparable<Object> o2) {
+        public int compare(T o1, T o2) {
             return o2.compareTo(o1);
         }
 

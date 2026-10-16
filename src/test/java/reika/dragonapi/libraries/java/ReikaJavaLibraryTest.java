@@ -12,6 +12,59 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ReikaJavaLibraryTest {
+    private static class WrapperNames {
+        static class Integer {}
+        static class Boolean {}
+        static class Character {}
+        static class Void {}
+    }
+
+    @Test void primitiveInferenceUsesWrapperIdentityAndRejectsUntypedNulls() {
+        assertArrayEquals(new Class<?>[]{byte.class, short.class, int.class, long.class, char.class,
+                        float.class, double.class, boolean.class, String.class, int[].class, Class.class},
+                ReikaJavaLibrary.getObjectClasses((byte)1, (short)2, 3, 4L, 'a', 5F, 6D, true,
+                        "text", new int[0], void.class));
+        for (Object value : List.of(new WrapperNames.Integer(), new WrapperNames.Boolean(),
+                new WrapperNames.Character(), new WrapperNames.Void())) {
+            assertSame(value.getClass(), ReikaJavaLibrary.getClassOf(value));
+        }
+        assertArrayEquals(new Class<?>[0], ReikaJavaLibrary.getObjectClasses());
+        assertThrows(NullPointerException.class, () -> ReikaJavaLibrary.getClassOf(null));
+        assertThrows(NullPointerException.class, () -> ReikaJavaLibrary.getObjectClasses("text", null));
+    }
+
+    @Test void packageHelpersHandleArraysNestedClassesPrimitivesAndUnnamedPackages() throws Exception {
+        for (Class<?> type : List.of(String.class, String[][].class, int.class, int[].class, void.class)) {
+            assertEquals("java.lang", ReikaJavaLibrary.getPackageName(type));
+            assertEquals("java", ReikaJavaLibrary.getTopLevelPackage(type));
+        }
+        assertEquals("reika.dragonapi.libraries.java", ReikaJavaLibrary.getPackageName(WrapperNames.Integer.class));
+        assertEquals("reika", ReikaJavaLibrary.getTopLevelPackage(WrapperNames.Integer.class));
+        Class<?> unpackaged = Class.forName("UnpackagedTypeFixture");
+        assertEquals("", ReikaJavaLibrary.getPackageName(unpackaged));
+        assertEquals("", ReikaJavaLibrary.getTopLevelPackage(unpackaged));
+        assertEquals("", ReikaJavaLibrary.getPackageName(unpackaged.arrayType()));
+        assertEquals("", ReikaJavaLibrary.getTopLevelPackage(unpackaged.arrayType()));
+    }
+
+    @Test void valueSortingRetainsTypesStableTiesAndInputAndSupportsCustomNullOrdering() {
+        var input = new LinkedHashMap<String, Integer>();
+        input.put("large", 3); input.put("first tie", 1); input.put("second tie", 1); input.put("middle", 2);
+        var sorted = ReikaJavaLibrary.sortMapByValues(input);
+        assertEquals(List.of("first tie", "second tie", "middle", "large"), new ArrayList<>(sorted.keySet()));
+        assertEquals(List.of("large", "first tie", "second tie", "middle"), new ArrayList<>(input.keySet()));
+        assertNotSame(input, sorted);
+        assertEquals(input, sorted);
+        assertTrue(ReikaJavaLibrary.sortMapByValues(new LinkedHashMap<String, Integer>()).isEmpty());
+        assertEquals(List.of("large", "middle", "first tie", "second tie"), new ArrayList<>(
+                ReikaJavaLibrary.sortMapByValues(input, new ReikaJavaLibrary.ReverseComparator<>()).keySet()));
+        var nullable = new LinkedHashMap<String, Constructed>();
+        nullable.put("present", new Constructed("value")); nullable.put("absent", null);
+        assertEquals(List.of("absent", "present"), new ArrayList<>(ReikaJavaLibrary.sortMapByValues(nullable,
+                java.util.Comparator.nullsFirst(java.util.Comparator.comparing(Constructed::value))).keySet()));
+        assertThrows(NullPointerException.class, () -> ReikaJavaLibrary.sortMapByValues(input, null));
+    }
+
     @Test void streamReadsPreserveAllByteValuesAndShortReadsWithoutTakingOwnership() {
         byte[] bytes = new byte[10_000];
         for (int i = 0; i < bytes.length; i++) bytes[i] = (byte)i;

@@ -1762,3 +1762,40 @@ flags). Play arguments/config, updater inactivity and existing owner edits prese
 Local checkpoint only. D58 remains open for the remaining accepted-library type,
 null and exception-logging cleanup and untranslated integration/UI text. Checklist
 remains 44 complete / 119 open / 163 total.
+
+
+## D58i — Runtime type identity and typed value sorting (2026-10-16)
+
+Primitive inference now recognizes actual boxed Java values rather than matching
+simple class names. Unrelated Integer/Boolean/Character/Void classes retain their
+real types; class tokens remain Class values. Null still fails because it has no
+inferable runtime class, now with an explicit diagnostic. Object-class arrays no
+longer use a raw Class allocation.
+
+Package helpers delegate to Class.getPackageName(), including component-package
+semantics for arrays, java.lang for primitive/void types, and the empty unnamed
+package. Top-level lookup handles these cases without substring exceptions.
+
+Value sorting preserves key/value types and stable encounter order for equal
+values, returning the existing LinkedHashMap-backed ordered copy without mutating
+the input. Natural sorting requires Comparable values; the comparator overload
+supports non-comparable values and explicit null ordering. ReverseComparator is
+generic. Existing erased public descriptors remain; the natural-sort source API
+now rejects Object-valued maps without an explicit comparator. There are no
+in-tree consumers requiring migration. The obsolete commented duplicate and raw
+private comparator have been replaced by the typed implementation.
+
+Three regressions cover all eight wrappers and name collisions, null/empty type
+inference, nested/array/primitive/unnamed packages, stable natural/reverse sorting,
+input preservation, empty maps and custom null/non-comparable ordering.
+226 family units pass (172 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. All 101 native fixtures, strict common MixinAudit
+(30 transformed bindings, two optional absences) and eight accepted-class guards
+pass on the owner's current NeoForge 26.3.0.76 setting; clean exit in 2m 2s.
+Evidence: build/d58i-types.log, build/d58i-family-native.log and build/d58i-proof.json.
+
+D58 stays open for remaining accepted-library null/type and contextual logging
+cleanup and untranslated integration/UI text. The next concrete review targets
+are safe numeric parsing and class-resource/metadata diagnostics. Checklist stays
+44 complete / 119 open / 163 total. Local checkpoint only; existing owner edits,
+normal Play configuration and the inactive update checker remain untouched.
