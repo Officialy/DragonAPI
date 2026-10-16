@@ -26,6 +26,8 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.StandardCopyOption;
 import org.jspecify.annotations.Nullable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -295,77 +297,102 @@ public class ReikaFileReader {
 		return li;
 	}
 
-	public static BufferedWriter getWriter(File f) {
-		try {
-			return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f)));
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+    /** Caller owns the writer; the default overload preserves the platform charset. */
+    public static @Nullable BufferedWriter getWriter(File file) {
+        return getWriter(file, Charset.defaultCharset());
+    }
 
-	public static void writeLinesToFile(String s, ArrayList<String> li, boolean printStackTrace) {
-		writeLinesToFile(new File(s), li, printStackTrace);
-	}
+    public static @Nullable BufferedWriter getWriter(File file, Charset charset) {
+        try {
+            return openLocalWriter(file.toPath(), charset);
+        } catch (IOException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not open text output {} with charset {}", file, charset, error);
+            return null;
+        }
+    }
 
-	public static void writeLinesToFile(File f, ArrayList<String> li, boolean printStackTrace) {
-		try {
-			writeLinesToFile(new BufferedWriter(new PrintWriter(f)), li, printStackTrace);
-		} catch (IOException e) {
-			if (printStackTrace) {
-				e.printStackTrace();
-			}
-		}
-	}
+    private static BufferedWriter openLocalWriter(Path file, Charset charset) throws IOException {
+        var encoder = Objects.requireNonNull(charset, "charset").newEncoder()
+                .onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+        return new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file), encoder));
+    }
 
-	public static void writeLinesToFile(BufferedWriter p, ArrayList<String> li, boolean printStackTrace) {
-		String sep = System.getProperty("line.separator");
-		try {
-			for (String s : li) {
-				p.write(s + sep);
-			}
-			p.flush();
-			p.close();
-		} catch (IOException e) {
-			if (printStackTrace) {
-				e.printStackTrace();
-			}
-		}
-	}
+    public static void writeLinesToFile(String path, ArrayList<String> lines, boolean printStackTrace) {
+        writeLinesToFile(new File(path), lines, printStackTrace);
+    }
 
-	public static void writeDataToFile(File f, ArrayList<Byte> li, boolean printStackTrace) {
-		try {
-			f.delete();
-			File parent = f.getParentFile();
-			if (parent != null)
-				parent.mkdirs();
-			f.createNewFile();
-			try (FileOutputStream out = new FileOutputStream(f)) {
-				for (byte b : li)
-					out.write(b & 0xFF);
-			}
-		} catch (IOException e) {
-			if (printStackTrace) {
-				e.printStackTrace();
-			}
-		}
-	}
+    public static void writeLinesToFile(File file, ArrayList<String> lines, boolean printStackTrace) {
+        writeLinesToFile(file, lines, printStackTrace, Charset.defaultCharset());
+    }
 
-	public static InputStream convertLinesToStream(ArrayList<String> li, boolean printStackTrace, Charset set) {
-		String sep = System.getProperty("line.separator");
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(bos, set))) {
-			for (String s : li)
-				writer.write(s + sep);
-			writer.close();
-		} catch (IOException e) {
-			if (printStackTrace) {
-				e.printStackTrace();
-			}
-		}
-		byte[] bytes = bos.toByteArray();
-		return new ByteArrayInputStream(bytes);
-	}
+    /** Explicit charset for callers which own a portable text format. */
+    public static void writeLinesToFile(File file, ArrayList<String> lines, boolean printStackTrace, Charset charset) {
+        try {
+            writeLinesAndClose(openLocalWriter(file.toPath(), charset), lines);
+        } catch (IOException error) {
+            if (printStackTrace) DragonAPI.LOGGER.error("Could not write text lines to {} with charset {}", file, charset, error);
+        }
+    }
+
+    /** Owns/closes the supplied writer, including when writing or flushing fails. */
+    public static void writeLinesToFile(BufferedWriter writer, ArrayList<String> lines, boolean printStackTrace) {
+        try {
+            writeLinesAndClose(writer, lines);
+        } catch (IOException error) {
+            if (printStackTrace) DragonAPI.LOGGER.error("Could not write text lines to supplied writer", error);
+        }
+    }
+
+    private static void writeLinesAndClose(BufferedWriter writer, Collection<String> lines) throws IOException {
+        String separator = System.getProperty("line.separator");
+        try (writer) {
+            for (String line : lines) {
+                writer.write(String.valueOf(line));
+                writer.write(separator);
+            }
+        }
+    }
+
+    /** Replaces complete binary output without deleting existing data before the new bytes are ready. */
+    public static void writeDataToFile(File file, ArrayList<Byte> values, boolean printStackTrace) {
+        byte[] bytes = new byte[values.size()];
+        for (int i = 0; i < bytes.length; i++) bytes[i] = values.get(i);
+        Path destination = file.toPath().toAbsolutePath();
+        Path temporary = null;
+        try {
+            Path parent = destination.getParent();
+            if (parent == null || Files.isDirectory(destination))
+                throw new IOException("Binary output is not a regular file path: " + destination);
+            Files.createDirectories(parent);
+            temporary = Files.createTempFile(parent, "reika-data-", ".tmp");
+            Files.write(temporary, bytes);
+            try {
+                Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException unavailable) {
+                Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+            temporary = null;
+        } catch (IOException error) {
+            if (printStackTrace) DragonAPI.LOGGER.error("Could not replace binary output {}", destination, error);
+        } finally {
+            if (temporary != null) {
+                try { Files.deleteIfExists(temporary); }
+                catch (IOException error) {
+                    if (printStackTrace) DragonAPI.LOGGER.error("Could not remove incomplete binary output {}", temporary, error);
+                }
+            }
+        }
+    }
+
+    public static InputStream convertLinesToStream(ArrayList<String> lines, boolean printStackTrace, Charset charset) {
+        var bytes = new ByteArrayOutputStream();
+        try {
+            writeLinesAndClose(new BufferedWriter(new OutputStreamWriter(bytes, charset)), lines);
+        } catch (IOException error) {
+            if (printStackTrace) DragonAPI.LOGGER.error("Could not encode text lines with charset {}", charset, error);
+        }
+        return new ByteArrayInputStream(bytes.toByteArray());
+    }
 
 	public static String getHash(String path, HashType type) {
 		return getHash(new File(path), type);

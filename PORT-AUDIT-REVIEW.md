@@ -1719,3 +1719,46 @@ all completed changes here are scoped local checkpoints. Updater stays inactive.
 D58 stays open for remaining library generics/nullability and contextual logging,
 remaining UI/integration translations, and actual client-language acceptance.
 Checklist remains 44 complete / 119 open / 163 total.
+
+
+## D58h — Writer ownership, safe binary replacement and real client language acceptance (2026-10-16)
+
+Line writers now close their owned writer after write/flush failure as well as
+success. File output no longer wraps PrintWriter, which swallowed actual write
+failures. Charset-default overloads preserve platform behavior; explicit charset
+writer/line-file overloads support portable formats (including the original
+forward reference in RedecorateCommand). Encoders retain replacement policy and
+are prepared before opening/truncating files. Null-line text, trailing platform
+line separators, quiet error flags and ownership semantics remain. Stream encoding
+no longer redundantly closes its writer. Failures carry file/charset/cause context.
+
+Binary output validates the complete payload before touching the destination,
+writes a sibling temporary file, then atomically replaces the destination where
+supported (replace fallback otherwise). A failed write cannot first delete the
+old data. Parent creation and byte values are preserved; incomplete temporaries
+are cleaned up. Four new regressions cover exactly-once close, early write failure,
+explicit/default charset and stream agreement, null payload without data loss,
+full byte values, nested parent creation and temporary cleanup.
+
+223 family units pass (169 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. 101 native fixtures and strict common MixinAudit pass;
+all eight accepted output guards pass; clean native exit in 1m 59s. Evidence:
+build/d58h-writers.log, build/d58h-family-native.log and build/d58h-proof.json.
+
+The previously pending client-language acceptance is now COMPLETE. Once no game
+client was active, the private automated client ran successfully in 4m 15s. Its
+StableClientLauncher snapshot loaded all 50 generated entries, resolved the numeric
+temperature argument, and delivered both intact translated messages through the
+real NeoForge local-chat hook, restoring listener/chat state. The complete existing
+client audit also passed, including donation rendering, artefact zone, water puzzle,
+models, sounds, packets, assets, biome image and chunk-tracker shutdown. Strict
+client 44 and integrated-server 30 bindings pass, with two absent optional targets.
+This client snapshot preceded writer compilation; the new writers were separately
+validated by their unit tests and final native build. Log: build/d58-language-client.log.
+Reports: build/mixin-audit/20261016-d58-language-client/.
+
+Default automated-client arguments restored (auditClient=true, no mixin debug/audit
+flags). Play arguments/config, updater inactivity and existing owner edits preserved.
+Local checkpoint only. D58 remains open for the remaining accepted-library type,
+null and exception-logging cleanup and untranslated integration/UI text. Checklist
+remains 44 complete / 119 open / 163 total.
