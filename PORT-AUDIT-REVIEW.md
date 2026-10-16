@@ -1684,3 +1684,38 @@ failure. All 215 units and 101 native fixtures pass; common strict MixinAudit pa
 Final native build exits cleanly in 1m 42s. Evidence: build/d58f-stream-construction.log,
 build/d58f-family-native.log and build/d58f-proof.json. Client language acceptance
 remains compiled but deferred while the existing game is active. D58 remains open.
+
+
+## D58g — Local reader and directory traversal correctness (2026-10-16)
+
+The no-filter directory overload now passes a null ARRAY rather than one null
+extension. It no longer throws on the first ordinary file. Empty/null filters list
+all files, overlapping extensions include a file once, and original case-sensitive
+suffix matching and traversal order remain. Per-call canonical directory identities
+bound cycles/aliases without a global cache or Windows link-creation privileges.
+
+Local File/String readers build a decoder before opening a handle, report
+file/path/charset with causes, and explicitly declare nullable results. The old
+InputStreamReader replacement policy for malformed bytes is preserved; a direct
+Files.newBufferedReader migration would silently change it to REPORT. Stream
+wrapping failures leave caller-owned input open; successful readers own the input
+until closed. Line-consuming helpers preserve partial-result/close policy while
+logging causes contextually. Resource-root Class is parameterized and resource
+read errors retain path/class/line context. Network helpers are unchanged.
+
+Four regressions cover nested unfiltered traversal, overlapping filters and case,
+a canonical directory cycle, UTF-16/non-ASCII and malformed-byte replacement,
+reader ownership and wrapping/missing-file failure. All 219 family units pass
+(165 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft), zero failures,
+errors or skips. 101 native fixtures and strict common MixinAudit pass, clean exit
+in 1m 53s. All eight accepted-output guards pass. Fresh jar has exactly one
+50-entry generated language resource. Evidence: build/d58g-files.log,
+build/d58g-family-native.log and build/d58g-proof.json.
+
+The six completed D58b–g batches add 20 unit regressions. The client language
+fixture compiles but remains unexecuted: another gotoClient launch is active and
+was left untouched. Existing owner version/datagen/IDE changes are uncommitted;
+all completed changes here are scoped local checkpoints. Updater stays inactive.
+D58 stays open for remaining library generics/nullability and contextual logging,
+remaining UI/integration translations, and actual client-language acceptance.
+Checklist remains 44 complete / 119 open / 163 total.

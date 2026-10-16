@@ -22,7 +22,11 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -45,41 +49,43 @@ public class ReikaFileReader {
 		}
 	}
 
-	/**
-	 * Make sure you close this!
-	 */
-	public static BufferedReader getReader(File f, Charset set) {
-		try {
-			return new BufferedReader(new InputStreamReader(new FileInputStream(f), set));
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+    /** Caller owns the returned reader; failures are logged and return null. */
+    public static @Nullable BufferedReader getReader(@Nullable File file, Charset charset) {
+        try {
+            return openLocalReader(Objects.requireNonNull(file, "file").toPath(), charset);
+        } catch (IOException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not open text file {} with charset {}", file, charset, error);
+            return null;
+        }
+    }
 
-	/**
-	 * Make sure you close this!
-	 */
-	public static BufferedReader getReader(InputStream in, Charset set) {
-		try {
-			return new BufferedReader(new InputStreamReader(in, set));
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+    private static BufferedReader openLocalReader(Path file, Charset charset) throws IOException {
+        // Preserve InputStreamReader's historical replacement policy, while constructing the
+        // decoder before opening the file so invalid charsets cannot leak an open handle.
+        var decoder = Objects.requireNonNull(charset, "charset").newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+        return new BufferedReader(new InputStreamReader(Files.newInputStream(file), decoder));
+    }
 
-	/**
-	 * Make sure you close this!
-	 */
-	public static BufferedReader getReader(String path, Charset set) {
-		try {
-			return new BufferedReader(new InputStreamReader(new FileInputStream(path), set));
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+    /** Successful wrapping transfers stream ownership to the reader; failures leave it with the caller. */
+    public static @Nullable BufferedReader getReader(@Nullable InputStream input, Charset charset) {
+        try {
+            return new BufferedReader(new InputStreamReader(input, charset));
+        } catch (RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not wrap text stream with charset {}", charset, error);
+            return null;
+        }
+    }
+
+    /** Caller owns the returned reader; failures are logged and return null. */
+    public static @Nullable BufferedReader getReader(@Nullable String path, Charset charset) {
+        try {
+            return openLocalReader(Path.of(path), charset);
+        } catch (IOException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not open text path {} with charset {}", path, charset, error);
+            return null;
+        }
+    }
 
 	/**
 	 * Make sure you close this!
@@ -155,43 +161,39 @@ public class ReikaFileReader {
 		return false;
 	}
 
-	/**
-	 * Gets all files with the given extension in a directory and any subdirectories.
-	 */
-	public static ArrayList<File> getAllFilesInFolder(File f, String... ext) {
-		ArrayList<File> li = new ArrayList<>();
-		if (f.isDirectory()) {
-			File[] files = f.listFiles();
-			if (files == null)
-				return li;
-			for (File in : files) {
-				if (in.isDirectory()) {
-					li.addAll(getAllFilesInFolder(in, ext));
-				} else {
-					if (ext == null) {
-						li.add(in);
-					} else {
-						for (int k = 0; k < ext.length; k++) {
-							if (in.getName().endsWith(ext[k])) {
-								li.add(in);
-							}
-						}
-					}
-				}
-			}
-		}
-		return li;
-	}
+    /**
+     * Recursively lists files. No extensions (or a null filter) include every file.
+     * Canonical directory identities prevent links/aliases from cycling indefinitely.
+     */
+    public static ArrayList<File> getAllFilesInFolder(File directory, String... extensions) {
+        Objects.requireNonNull(directory, "directory");
+        var result = new ArrayList<File>();
+        collectFiles(directory, extensions == null ? null : extensions.clone(), new HashSet<>(), result);
+        return result;
+    }
 
-	/**
-	 * Gets all files in a directory and any subdirectories.
-	 */
-	public static ArrayList<File> getAllFilesInFolder(File f) {
-		return getAllFilesInFolder(f, (String) null);
-	}
+    private static void collectFiles(File directory, String @Nullable [] extensions, Set<Path> visited, ArrayList<File> result) {
+        if (!directory.isDirectory()) return;
+        try {
+            if (!visited.add(directory.toPath().toRealPath())) return;
+        } catch (IOException | SecurityException error) {
+            DragonAPI.LOGGER.warn("Could not resolve directory {} while collecting files", directory, error);
+            return;
+        }
+        File[] children = directory.listFiles();
+        if (children == null) return;
+        for (File child : children) {
+            if (child.isDirectory()) collectFiles(child, extensions, visited, result);
+            else if (extensions == null || extensions.length == 0 || Arrays.stream(extensions)
+                    .anyMatch(extension -> extension == null || child.getName().endsWith(extension))) result.add(child);
+        }
+    }
 
+    public static ArrayList<File> getAllFilesInFolder(File directory) {
+        return getAllFilesInFolder(directory, (String[])null);
+    }
 
-	public static String readTextFile(Class root, String path) throws IOException {
+	public static String readTextFile(Class<?> root, String path) throws IOException {
 		try(InputStream in = root.getResourceAsStream(path)) {
 			if (in == null) {
 				DragonAPI.LOGGER.error("File "+path+" does not exist!");
@@ -218,7 +220,7 @@ public class ReikaFileReader {
 				p.close();
 			}
 			catch (Exception e) {
-				DragonAPI.LOGGER.error(e.getMessage()+" on loading line "+i);
+				DragonAPI.LOGGER.error("Could not read resource {} relative to {} near nonempty line {}", path, root.getName(), i, e);
 			}
 			return sb.toString();
 		}
@@ -255,7 +257,7 @@ public class ReikaFileReader {
 		return getFileAsLines(getReader(in, set), printStackTrace);
 	}
 
-	public static ArrayList<String> getFileAsLines(BufferedReader r, boolean printStackTrace) {
+	public static ArrayList<String> getFileAsLines(@Nullable BufferedReader r, boolean printStackTrace) {
 		ArrayList<String> li = new ArrayList<>();
 		if (r == null)
 			return li;
@@ -269,12 +271,12 @@ public class ReikaFileReader {
 			}
 		} catch (Exception e) {
 			if (printStackTrace)
-				e.printStackTrace();
+				DragonAPI.LOGGER.error("Could not read text lines", e);
 		} finally {
 			try {
 				r.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				DragonAPI.LOGGER.error("Could not close text reader", e);
 			}
 		}
 		return li;
