@@ -10,6 +10,8 @@
 package reika.dragonapi.libraries.java;
 
 import com.google.common.reflect.ClassPath;
+import org.jspecify.annotations.Nullable;
+import java.util.function.IntFunction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -179,9 +181,9 @@ public final class ReikaJavaLibrary {
         pConsole("-".repeat(Math.max(0, length)));
     }
 
-    public static <T, E> T getHashMapKeyByValue(HashMap<T, E> map, E value) {
+    public static <T, E> @Nullable T getHashMapKeyByValue(HashMap<T, E> map, @Nullable E value) {
         for (Entry<T, E> entry : map.entrySet()) {
-            if (value.equals(entry.getValue())) {
+            if (Objects.equals(value, entry.getValue())) {
                 return entry.getKey();
             }
         }
@@ -205,47 +207,27 @@ public final class ReikaJavaLibrary {
         }
     }
 
-    public static void initClass(String c) {
+    public static void initClass(String className) {
         try {
-            Class.forName(c, true, ReikaJavaLibrary.class.getClassLoader());
-        } catch (ClassNotFoundException | LinkageError e) {
-            pConsole("DRAGONAPI: Failed to initalize class " + c + "! Class not found!");
-            e.printStackTrace();
-        } catch (RuntimeException e) {
-            pConsole("DRAGONAPI: Failed to initalize class " + c + "!");
-            String s = e.getMessage();
-            if (s.endsWith("for invalid side SERVER")) {
-                pConsole("DRAGONAPI: Attemped to load a clientside class on the server! This is a significant programming error!");
-            }
-            e.printStackTrace();
+            Class.forName(className, true, ReikaJavaLibrary.class.getClassLoader());
+        } catch (ClassNotFoundException | LinkageError | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not initialize class {}", className, error);
         }
     }
 
-    /**
-     * Initializes a class.
-     */
-    public static void initClass(Class<?> c) {
-        //if (printClasses)
-        //	printClassMetadata(c);
-        if (c == null) {
-            pConsole("DRAGONAPI: Cannot initalize a null class!");
-            dumpStack();
+    /** Initializes the supplied class in its own defining loader. */
+    public static void initClass(@Nullable Class<?> type) {
+        if (type == null) {
+            DragonAPI.LOGGER.error("Cannot initialize a null class", new IllegalArgumentException("class"));
             return;
         }
         try {
-            Class.forName(c.getName(), true, ReikaJavaLibrary.class.getClassLoader());
-        } catch (ClassNotFoundException | LinkageError e) {
-            pConsole("DRAGONAPI: Failed to initalize class " + c.getName() + "! Class not found!");
-            e.printStackTrace();
-            printClassMetadata(c);
-            //printClassASM(c);
-        } catch (RuntimeException e) {
-            pConsole("DRAGONAPI: Failed to initalize class " + c.getName() + "!");
-            String s = e.getMessage();
-            if (s.endsWith("for invalid side SERVER")) {
-                pConsole("DRAGONAPI: Attemped to load a clientside class on the server! This is a significant programming error!");
-            }
-            e.printStackTrace();
+            Class.forName(type.getName(), true, type.getClassLoader());
+        } catch (ClassNotFoundException | LinkageError error) {
+            DragonAPI.LOGGER.error("Could not initialize class {} in loader {}", type.getName(), type.getClassLoader(), error);
+            printClassMetadata(type);
+        } catch (RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not initialize class {} in loader {}", type.getName(), type.getClassLoader(), error);
         }
     }
 
@@ -619,39 +601,40 @@ public final class ReikaJavaLibrary {
         return sortedHashMap;
     }
 
-    public static <E> E[] collectionToArray(Collection<E> li) {
-        E[] arr = (E[]) new Object[li.size()];
-        int i = 0;
-        for (E ps : li) {
-            arr[i] = ps;
-            i++;
-        }
-        return arr;
+    /** Untyped collections produce Object[], without promising an unrepresentable element array type. */
+    public static Object[] collectionToArray(Collection<?> values) {
+        return values.toArray();
     }
 
-    public static <E> E getRandomListEntry(Random rand, List<E> li) {
-        return li.isEmpty() ? null : li.get(rand.nextInt(li.size()));
+    /** Supplies the runtime component type, including for empty and nullable-element collections. */
+    public static <E> E[] collectionToArray(Collection<? extends E> values, IntFunction<E[]> arrayFactory) {
+        return values.toArray(arrayFactory);
     }
 
-    public static <E> E getRandomListEntry(RandomSource rand, List<E> li) {
-        return li.isEmpty() ? null : li.get(rand.nextInt(li.size()));
+    public static <E> @Nullable E getRandomListEntry(Random rand, List<E> values) {
+        return values.isEmpty() ? null : values.get(rand.nextInt(values.size()));
     }
 
-    public static <E> E getRandomCollectionEntry(RandomSource rand, Collection<E> c) {
-        return c.isEmpty() ? null : c instanceof List ? getRandomListEntry(rand, (List<E>) c) : getRandomListEntry(rand, new ArrayList<E>(c));
+    public static <E> @Nullable E getRandomListEntry(RandomSource rand, List<E> values) {
+        return values.isEmpty() ? null : values.get(rand.nextInt(values.size()));
     }
 
-    public static <E> E getRandomCollectionEntry(Random rand, Collection<E> c) {
-        return c.isEmpty() ? null : c instanceof List ? getRandomListEntry(rand, (List<E>) c) : getRandomListEntry(rand, new ArrayList<E>(c));
+    public static <E> @Nullable E getRandomCollectionEntry(RandomSource rand, Collection<E> values) {
+        if (values.isEmpty()) return null;
+        return getRandomListEntry(rand, values instanceof List<E> list ? list : new ArrayList<>(values));
     }
 
-    public static <E> E getAndRemoveRandomCollectionEntry(Random rand, Collection<E> c) {
-        if (c instanceof List) {
-            return ((List<E>) c).remove(rand.nextInt(c.size()));
-        }
-        E val = getRandomCollectionEntry(rand, c);
-        c.remove(val);
-        return val;
+    public static <E> @Nullable E getRandomCollectionEntry(Random rand, Collection<E> values) {
+        if (values.isEmpty()) return null;
+        return getRandomListEntry(rand, values instanceof List<E> list ? list : new ArrayList<>(values));
+    }
+
+    public static <E> @Nullable E getAndRemoveRandomCollectionEntry(Random rand, Collection<E> values) {
+        if (values.isEmpty()) return null;
+        if (values instanceof List<E> list) return list.remove(rand.nextInt(list.size()));
+        E value = getRandomCollectionEntry(rand, values);
+        values.remove(value);
+        return value;
     }
 
     public static String getTopLevelPackage(Class<?> c) {

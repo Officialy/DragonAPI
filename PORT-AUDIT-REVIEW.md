@@ -1638,3 +1638,31 @@ migration and was replaced; the rerun passes. Fresh jar has 50 entries.
 Evidence: build/d58d-family.log (initial tooltip expectation), build/d58d-native.log
 (final passing checks) and build/d58d-proof.json. D58 stays open; no updater/feed
 behavior or normal Play setup changed. Existing owner edits remain untouched.
+
+
+## D58e — Honest array types, null contracts and class loaders (2026-10-16)
+
+The one-argument collectionToArray now declares its actual Object[] result instead
+of an unsound generic E[] cast. A factory overload supplies correct runtime types
+for empty, mixed-subtype and nullable-element collections. There are no in-tree
+callers of the old one-argument method; its erased JVM descriptor remains unchanged,
+but typed source callers must use the factory overload. Reverse map lookup handles
+null values with first-match order preserved. Random helpers declare nullable
+results; empty removal never draws from RNG or mutates immutable collections.
+Nonempty selection/removal order and seeded draw count are preserved.
+
+Class initialization uses the supplied Class's defining loader. Failure logs keep
+class/loader context and full causes without dereferencing a nullable exception
+message. Existing metadata export on linkage failures remains. Five regressions
+cover arrays, null lookup, immutable empties/no draws, seeded list/set removal and
+an independently defined class initialized in its own loader.
+
+212 family units and 101 native fixtures pass on local NeoForge 26.3.0.76, with
+strict common MixinAudit, clean native exit in 1m 52s. Evidence:
+build/d58e-library.log, build/d58e-family-native.log and build/d58e-proof.json.
+An opt-in LanguageClientChecks fixture now checks all generated entries in the
+actual client Language and captures the two intact translated messages through
+NeoForge's native local-chat hook. It restores audit chat state/listeners. The
+19-class TestInstance slice compiles, but this new graphics check has NOT run:
+an existing gotoClient game was active and was left untouched. It runs during the
+next ordinary automated client audit, and is inert in Play. D58 remains open.
