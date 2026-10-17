@@ -1,230 +1,200 @@
 package reika.dragonapi.auxiliary.trackers;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Options;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import org.jspecify.annotations.Nullable;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.auxiliary.PopupWriter;
-import reika.dragonapi.instantiable.event.ProfileEvent;
-import reika.dragonapi.io.ReikaFileReader;
-import reika.dragonapi.libraries.rendering.ReikaRenderHelper;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-
-import static reika.dragonapi.DragonAPI.MODID;
+import reika.dragonapi.instantiable.event.client.ClientLoginEvent;
+import reika.dragonapi.instantiable.event.client.ClientLogoutEvent;
 
 /**
- * This class is for registering handlers for when certain user-specified settings might cause functional problems ingame, but where the developer does not
- * wish to simply override the setting value (be that due to concerns over practical effects, an ideological stance, or otherwise).
- * <p>
- * This will monitor the state of such settings and will notify the player appropriately, once with a message on login and with a small icon to both act as a
- * continuous reminder and a watermark of sorts (so that complaints resulting from said settings can be appropriately identified and treated accordingly).
+ * Warns about user settings that can interfere with gameplay without overriding those settings.
+ * Login messages follow the configured persistence policy; relevant active settings also retain
+ * the original small reminder icons on the HUD, independently of message persistence.
+ * Registration, login and extraction are owned by the physical client's main thread.
  */
-public class SettingInterferenceTracker implements ProfileEvent.ProfileEventWatcher {
-
+@EventBusSubscriber(modid = DragonAPI.MODID, value = Dist.CLIENT)
+public final class SettingInterferenceTracker {
+    public static final Identifier LAYER = Identifier.fromNamespaceAndPath(DragonAPI.MODID, "setting_interference");
+    private static final Identifier MUTE_ICON = Identifier.fromNamespaceAndPath(DragonAPI.MODID, "textures/mutewarn.png");
     public static final SettingInterferenceTracker instance = new SettingInterferenceTracker();
 
     public static final SettingInterference muteInterference = new SettingInterference() {
-
         private final EnumSet<SoundSource> importantSounds = EnumSet.of(SoundSource.MASTER, SoundSource.AMBIENT, SoundSource.BLOCKS, SoundSource.PLAYERS);
 
-        @Override
-        public boolean isCurrentlyRelevant() {
-            return true;
+        @Override public boolean isCurrentlyRelevant() { return true; }
+
+        @Override public boolean isSetToInterfere() {
+            var options = Minecraft.getInstance().options;
+            return importantSounds.stream().anyMatch(source -> options.getSoundSourceVolume(source) < 0.1F);
         }
 
-        @Override
-        public boolean isSetToInterfere() {
-            Options gs = Minecraft.getInstance().options;
-            for (SoundSource s : importantSounds) {
-                if (gs.getSoundSourceVolume(s) < 0.1) {
-                    return true;
-                }
-            }
-            return false;
+        @Override public void drawIcon(GuiGraphicsExtractor graphics, int x, int y, int size) {
+            graphics.blit(RenderPipelines.GUI_TEXTURED, MUTE_ICON, x, y, 0, 0, size, size, 32, 32, 32, 32);
         }
 
-        @Override
-        public void drawIcon(PoseStack stack, int x, int y, int size) {
-            // TODO: Port to 26.1 rendering API (Tesselator.getBuilder() + vertex().uv().endVertex() + end() all removed)
+        @Override public String getDescription() {
+            return Component.translatable("warning.dragonapi.settings.muted").getString();
         }
 
-        @Override
-        public String getDescription() {
-            return "Sounds are muted, despite being used as indicators or warnings in many situations.";
-        }
-
-        public String getID() {
-            return "soundmute";
-        }
-
+        @Override public String getID() { return "soundmute"; }
     };
 
-    private final HashMap<String, SettingInterference> settings = new HashMap<>();
-
-    private WarningPersistence persistence = WarningPersistence.EVERYLOAD;
+    private final Map<String, SettingInterference> settings = new LinkedHashMap<>();
+    private final Path cacheFile;
+    private @Nullable UUID notifiedPlayer;
 
     private SettingInterferenceTracker() {
-        //ProfileEvent.registerHandler("gui", this);
-        persistence = WarningPersistence.valueOf(String.valueOf(DragonOptions.SETTINGWARN.getString()));
+        this(DragonAPI.getMinecraftDirectory().toPath().resolve("DragonAPI/setting_interference_cache.dat"));
     }
 
-    public void registerSettingHandler(SettingInterference s) {
-        if (!settings.containsKey(s.getID()))
-            settings.put(s.getID(), s);
+    private SettingInterferenceTracker(Path cacheFile) {
+        this.cacheFile = cacheFile;
     }
 
-    public void onLogin(Player ep) {
-        if (!persistence.isActive())
-            return;
-        this.cacheSettings();
-        ArrayList<String> li = new ArrayList<>();
-        for (SettingInterference si : settings.values()) {
-            if (si.isSetToInterfere()) {
-                li.add(si.getDescription());
-            }
-        }
-        if (!li.isEmpty()) {
-            String s0 = "You have one or more game settings configured in a manner that is likely to cause gameplay problems in some situations; consider changing them, and please do not report any issues that would not have arisen without that setting. See the next messages for more details.";
-            PopupWriter.instance().addMessage(s0);
-            DragonAPI.LOGGER.info(s0);
-            for (String s : li) {
-                PopupWriter.instance().addMessage(s);
-                DragonAPI.LOGGER.info(s);
-            }
-        }
+    @SubscribeEvent public static void registerLayers(RegisterGuiLayersEvent event) {
+        // Login popups draw after TITLE; keep reminders beneath them instead of covering their text.
+        event.registerBelow(VanillaGuiLayers.TITLE, LAYER, (graphics, delta) -> instance.onRender(graphics));
     }
 
-    public void onCall(String tag) {
-        if (settings.isEmpty())
-            return;
-        if ("gui".equals(tag)) {
-            this.onRender();
-        }
+    @SubscribeEvent public static void login(ClientLoginEvent event) {
+        instance.onLogin(event.player);
     }
 
-    public void onRender() {
-        if (!settings.isEmpty()) {
-//      todo      GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-//            Minecraft.getInstance().entityRenderer.setupOverlayRendering();
-            ReikaRenderHelper.disableEntityLighting();
-            ReikaRenderHelper.disableLighting();
-            // RenderSystem.enableBlend();
-            // RenderSystem.enableCull();
-            // RenderSystem.defaultBlendFunc();
-            // RenderSystem.defaultBlendFunc();
-            PoseStack stack = new PoseStack();
-
-            int x = 2;
-            int y = 2;
-            int size = 16;
-            for (SettingInterference s : settings.values()) {
-                if (s.isSetToInterfere() && s.isCurrentlyRelevant()) {
-                    s.drawIcon(stack, x, y, size);
-                    x += size + 4;
-                }
-            }
-//    todo        GL11.glPopAttrib();
-        }
+    @SubscribeEvent public static void logout(ClientLogoutEvent event) {
+        instance.notifiedPlayer = null;
     }
 
-    private File getSettingCacheFile() {
-        return new File(new File(DragonAPI.getMinecraftDirectory(), "DragonAPI"), "setting_interference_cache.dat");
+    public void registerSettingHandler(SettingInterference setting) {
+        Objects.requireNonNull(setting, "setting");
+        String id = Objects.requireNonNull(setting.getID(), "setting ID");
+        // Validate the persisted identifier before accepting a handler. First registration wins.
+        new SettingWarningCache.Snapshot(Set.of(id), Map.of());
+        settings.putIfAbsent(id, setting);
     }
 
-    private boolean settingsMatchCache() {
-        File f = this.getSettingCacheFile();
-        if (!f.exists())
-            return false;
-        ArrayList<String> li = ReikaFileReader.getFileAsLines(f, true);
-        HashSet<SettingInterference> set = new HashSet<>();
-        HashSet<SettingInterference> set2 = new HashSet<>();
-        for (String s : li) {
-            SettingInterference si = settings.get(s);
-            if (si != null) {
-                set.add(si);
-            }
-        }
-        for (SettingInterference s : settings.values()) {
-            if (s.isSetToInterfere()) {
-                set2.add(s);
-            }
-        }
-        return set.equals(set2);
-    }
-
-    private void cacheSettings() {
+    public void onLogin(Player player) {
+        if (player == null || player != Minecraft.getInstance().player || settings.isEmpty() || player.getUUID().equals(notifiedPlayer)) return;
+        notifiedPlayer = player.getUUID();
+        var current = currentState();
+        SettingWarningCache.Snapshot previous = null;
+        boolean readable = true;
         try {
-            File f = this.getSettingCacheFile();
-            f.delete();
-            f.getParentFile().mkdirs();
-            f.createNewFile();
-
-            ArrayList<String> li = new ArrayList<>();
-            for (SettingInterference s : settings.values()) {
-                if (s.isSetToInterfere()) {
-                    li.add(s.getID());
+            previous = SettingWarningCache.read(cacheFile, settings.keySet());
+        } catch (IOException error) {
+            readable = false;
+            DragonAPI.LOGGER.warn("Could not read setting warning cache {}; preserving it and showing warnings", cacheFile, error);
+        }
+        if (!SettingWarningCache.shouldWarn(persistence().policy(), previous, current)) return;
+        if (!current.enabled().isEmpty()) {
+            String header = Component.translatable("warning.dragonapi.settings.header").getString();
+            PopupWriter.instance().addMessage(header);
+            DragonAPI.LOGGER.info("{}", header);
+            for (SettingInterference setting : settings.values()) {
+                if (current.enabled().contains(setting.getID())) {
+                    String description = setting.getDescription();
+                    PopupWriter.instance().addMessage(description);
+                    DragonAPI.LOGGER.info("{}", description);
                 }
             }
+        }
+        if (readable) {
+            try {
+                SettingWarningCache.write(cacheFile, current);
+            } catch (IOException error) {
+                DragonAPI.LOGGER.warn("Could not save setting warning cache {}", cacheFile, error);
+            }
+        }
+    }
 
-            ReikaFileReader.writeLinesToFile(f, li, true);
-        } catch (Exception e) {
-            e.printStackTrace();
+    public void onRender(GuiGraphicsExtractor graphics) {
+        var minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.player == null || minecraft.gui.hud.isHidden()) return;
+        int x = 2;
+        for (SettingInterference setting : settings.values()) {
+            if (setting.isSetToInterfere() && setting.isCurrentlyRelevant()) {
+                graphics.pose().pushMatrix();
+                try {
+                    setting.drawIcon(graphics, x, 2, 16);
+                } finally {
+                    graphics.pose().popMatrix();
+                }
+                x += 20;
+            }
+        }
+    }
+
+    private SettingWarningCache.Snapshot currentState() {
+        Set<String> enabled = settings.values().stream().filter(SettingInterference::isSetToInterfere)
+                .map(SettingInterference::getID).collect(Collectors.toSet());
+        Map<String, String> versions = new TreeMap<>();
+        ModList.get().getMods().forEach(mod -> versions.put(mod.getModId(), mod.getVersion().toString()));
+        return new SettingWarningCache.Snapshot(enabled, versions);
+    }
+
+    private WarningPersistence persistence() {
+        String value = DragonOptions.SETTINGWARN.getString();
+        try {
+            return WarningPersistence.valueOf(value.strip().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            DragonAPI.LOGGER.warn("Invalid setting warning persistence '{}'; using EVERYLOAD", value, invalid);
+            return WarningPersistence.EVERYLOAD;
+        }
+    }
+
+    private boolean isWarningActive(WarningPersistence persistence) {
+        try {
+            return SettingWarningCache.shouldWarn(persistence.policy(), SettingWarningCache.read(cacheFile, settings.keySet()), currentState());
+        } catch (IOException error) {
+            DragonAPI.LOGGER.warn("Could not inspect setting warning cache {}", cacheFile, error);
+            return true;
         }
     }
 
     public interface SettingInterference {
-
-        /**
-         * Whether the influence of the setting is relevant <i>at this exact second</i>.
-         */
+        /** Whether the influence of the setting is relevant at this exact second. */
         boolean isCurrentlyRelevant();
-
-        /**
-         * Whether the setting is configured such that it might interfere under some circumstances, not necessarily at this instant.
-         */
+        /** Whether the setting can interfere, even when it is not currently relevant. */
         boolean isSetToInterfere();
-
-        /**
-         * Draw the icon at the specified position and size. The tessellator is not running, in case you want to bind your own textures.
-         */
-
-        void drawIcon(PoseStack stack, int x, int y, int size);
-
+        /** Extract the icon into the supplied native GUI context; no global render state changes. */
+        void drawIcon(GuiGraphicsExtractor graphics, int x, int y, int size);
         String getDescription();
-
         String getID();
-
     }
 
     public enum WarningPersistence {
-        EVERYLOAD(),
-        SETTINGCHANGE(),
-        VERSION(),
-        ONCE();
+        EVERYLOAD, SETTINGCHANGE, VERSION, ONCE;
+
+        private SettingWarningCache.Policy policy() {
+            return SettingWarningCache.Policy.valueOf(name());
+        }
 
         public boolean isActive() {
-            switch (this) {
-                case EVERYLOAD:
-                default:
-                    return true;
-                case VERSION:
-                    return VersionTransitionTracker.instance.haveModsUpdated();
-                case SETTINGCHANGE:
-                    return !instance.settingsMatchCache();//EnvironmentPackager.instance.checkAndUpdateSettingsCache();
-                case ONCE:
-                    return !instance.getSettingCacheFile().exists();//EnvironmentPackager.instance.hasSettingsCache();
-            }
+            return instance.isWarningActive(this);
         }
     }
 }
-

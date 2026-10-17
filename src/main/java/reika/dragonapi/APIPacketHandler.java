@@ -34,7 +34,6 @@ import reika.dragonapi.auxiliary.PopupWriter;
 import reika.dragonapi.auxiliary.trackers.CommandableUpdateChecker;
 import reika.dragonapi.auxiliary.trackers.KeyWatcher;
 import reika.dragonapi.auxiliary.trackers.ModFileVersionChecker;
-import reika.dragonapi.auxiliary.trackers.SettingInterferenceTracker;
 import reika.dragonapi.base.BlockEntityBase;
 import reika.dragonapi.command.BiomeMapCommand;
 import reika.dragonapi.command.EntityListCommand;

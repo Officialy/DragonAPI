@@ -20,7 +20,6 @@ import reika.dragonapi.libraries.registry.ReikaParticleHelper;
 import reika.dragonapi.APIPacketHandler.PacketIDs;
 import reika.dragonapi.instantiable.event.client.ClientLoginEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import reika.dragonapi.auxiliary.trackers.SettingInterferenceTracker;
 import reika.dragonapi.auxiliary.trackers.KeyWatcher;
 import reika.dragonapi.auxiliary.trackers.ModFileVersionChecker;
 import reika.dragonapi.auxiliary.PopupWriter;
@@ -89,7 +88,6 @@ public final class ClientAPIPacketHandler {
                 if (data.length < 1 || player == null)
                     break;
                 NeoForge.EVENT_BUS.post(new ClientLoginEvent(player, data[0] > 0));
-                SettingInterferenceTracker.instance.onLogin(player);
             }
             case LOGOUT -> NeoForge.EVENT_BUS.post(new ClientLogoutEvent(player));
             case BREAKPARTICLES -> {
