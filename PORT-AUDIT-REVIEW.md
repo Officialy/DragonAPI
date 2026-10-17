@@ -1799,3 +1799,43 @@ cleanup and untranslated integration/UI text. The next concrete review targets
 are safe numeric parsing and class-resource/metadata diagnostics. Checklist stays
 44 complete / 119 open / 163 total. Local checkpoint only; existing owner edits,
 normal Play configuration and the inactive update checker remain untouched.
+
+
+## D58j — Safe decimal parsing and class diagnostics (2026-10-17)
+
+safeIntParse/safeLongParse now parse the complete signed value, including the
+minimum int/long values, and return the historical zero fallback for overflow
+instead of throwing during text input or JVM-argument handling. Input syntax is
+preserved: optional ASCII minus and ASCII digits; no plus, whitespace, Unicode
+digits, fractions, exponents or hexadecimal. Nullable input is explicit. The
+shared character check avoids compiling a regex for each parse.
+
+Class-resource reads use InputStream.readAllBytes and retain the empty-array
+fallback and ownership/closure contract. Missing resources identify class, path
+and loader; read failures carry contextual logger events and causes. Class dumps
+use try-with-resources so a failed write also closes the output, and null payloads
+are rejected before truncating an existing file. Existing naming behavior remains.
+
+Metadata export uses a real throwing writer instead of a disk PrintWriter that
+hid write/flush errors. Parent creation and the default charset/replacement policy
+are preserved. Recoverable reflection/linkage/annotation failures retain partial
+reports and now include section labels and full failure traces in both contextual
+logs and the report. Catch-all Throwable recovery is removed: writer IOExceptions
+reach the export boundary for logging/closure; VM-fatal errors are not swallowed.
+The existing General/Internal Classes/Constructors/Fields/Methods information is
+retained. Null classes are rejected before touching output.
+
+Four new regressions cover boundary/overflow/syntax and 1,000 seeded numeric
+round trips, owned resource success/failure/missing/null cases, a deliberately
+unavailable signature dependency with preserved report sections/full causes,
+writer IOException propagation, and byte-exact class dumps/null-payload retention.
+230 family units pass (176 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. All 101 native fixtures, strict common MixinAudit
+(30 transformed bindings, two optional absences) and all eight accepted-class
+guards pass on NeoForge 26.3.0.76; clean exit in 2m 25s. Evidence:
+build/d58j-diagnostics.log, build/d58j-family-native.log and build/d58j-proof.json.
+
+D58 remains open for other accepted-library raw types, nullability and remaining
+integration/UI translations. Checklist stays 44 complete / 119 open / 163 total.
+Local checkpoint only; existing owner edits, Play configuration and the inactive
+update checker remain untouched.

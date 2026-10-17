@@ -16,7 +16,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
@@ -29,6 +28,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -146,34 +148,34 @@ public final class ReikaJavaLibrary {
         return true;
     }
 
-	public static int safeIntParse(String s) {
-		if (s == null || s.isEmpty())
-			return 0;
-        boolean neg = false;
-        int num = 0;
-        if (s.startsWith("-")) {
-            s = s.substring(1);
-            neg = true;
+    /** Parses the historical ASCII decimal syntax, returning zero for invalid or out-of-range input. */
+    public static int safeIntParse(@Nullable String s) {
+        if (!isSignedDecimal(s)) return 0;
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException error) {
+            return 0;
         }
-        if (s.matches("\\d+")) {
-            num = Integer.parseInt(s);
-        }
-        return neg ? -num : num;
     }
 
-	public static long safeLongParse(String s) {
-		if (s == null || s.isEmpty())
-			return 0;
-        boolean neg = false;
-        long num = 0;
-        if (s.startsWith("-")) {
-            s = s.substring(1);
-            neg = true;
+    /** Parses the historical ASCII decimal syntax, returning zero for invalid or out-of-range input. */
+    public static long safeLongParse(@Nullable String s) {
+        if (!isSignedDecimal(s)) return 0;
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException error) {
+            return 0;
         }
-        if (s.matches("\\d+")) {
-            num = Long.parseLong(s);
+    }
+
+    private static boolean isSignedDecimal(@Nullable String s) {
+        if (s == null || s.isEmpty()) return false;
+        int start = s.charAt(0) == '-' ? 1 : 0;
+        if (start == s.length()) return false;
+        for (int i = start; i < s.length(); i++) {
+            if (s.charAt(i) < '0' || s.charAt(i) > '9') return false;
         }
-        return neg ? -num : num;
+        return true;
     }
 
     public static void printLine(int length) {
@@ -242,38 +244,34 @@ public final class ReikaJavaLibrary {
         printClassSource(c.getName(), getClassBytes(c));
     }
 
-	public static byte[] getClassBytes(Class<?> c) {
+    /** Returns an empty array when unavailable; any resource opened here is owned and closed here. */
+	public static byte[] getClassBytes(@Nullable Class<?> c) {
 		if (c == null)
 			return new byte[0];
 		String className = c.getName();
 		String classAsPath = "/" + className.replace('.', '/') + ".class";
 		try (InputStream stream = c.getResourceAsStream(classAsPath)) {
 			if (stream == null) {
-				pConsole("DRAGONAPI: Class resource not found for " + className);
+				DragonAPI.LOGGER.warn("Class resource {} not found for {} in loader {}", classAsPath, className, c.getClassLoader());
 				return new byte[0];
 			}
-			return IOUtils.toByteArray(stream);
-        } catch (IOException e) {
-            pConsole("DRAGONAPI: Error converting class to byte[]!");
-            e.printStackTrace();
+			return stream.readAllBytes();
+        } catch (IOException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not read class resource {} for {}", classAsPath, className, error);
             return new byte[0];
         }
     }
 
 	public static void printClassMetadata(String path, Class<?> c) {
-		String filename = "FailedClasses/" + path + ".classdata";
+        Objects.requireNonNull(c, "class");
+		Path destination = Path.of("FailedClasses", path + ".classdata");
 		try {
-			File f = new File(filename);
-			File parent = f.getParentFile();
-			if (parent != null)
-				parent.mkdirs();
-			f.createNewFile();
-			try (BufferedWriter p = new BufferedWriter(new PrintWriter(f))) {
+			Files.createDirectories(destination.toAbsolutePath().getParent());
+			try (BufferedWriter p = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(destination), Charset.defaultCharset()))) {
 				printClassMetadata(p, c);
 			}
-        } catch (IOException e) {
-            pConsole("DRAGONAPI: Error printing class data!");
-            e.printStackTrace();
+        } catch (IOException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not write metadata for {} to {}", c.getName(), destination.toAbsolutePath(), error);
         }
     }
 
@@ -287,9 +285,8 @@ public final class ReikaJavaLibrary {
             p.write("\tInterfaces: " + Arrays.toString(c.getInterfaces()) + "\n");
             p.write("\tSynthetic: " + c.isSynthetic() + "\n");
             p.write("\n\n");
-        } catch (Throwable t) {
-            p.write("ERRORED ROOT DATA\n");
-            t.printStackTrace();
+        } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+            reportMetadataFailure(p, c, "ROOT DATA", error);
         }
 
         try {
@@ -299,14 +296,13 @@ public final class ReikaJavaLibrary {
                     p.write("-------------------------\n");
                     printClassMetadata(p, cs);
                     p.write("-------------------------\n");
-                } catch (Throwable t) {
-                    p.write("ERRORED INTERNAL CLASS\n");
-                    t.printStackTrace();
+                } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+                    reportMetadataFailure(p, c, "INTERNAL CLASS", error);
                 }
             }
             p.write("\n\n");
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+            reportMetadataFailure(p, c, "INTERNAL CLASSES", error);
         }
 
         try {
@@ -318,14 +314,13 @@ public final class ReikaJavaLibrary {
                     p.write("\t\tSignature: " + Arrays.toString(cs.getParameterTypes()) + "\n");
                     p.write("\t\tExceptions: " + Arrays.toString(cs.getExceptionTypes()) + "\n");
                     p.write("\t\tSynthetic: " + cs.isSynthetic() + "\n\n");
-                } catch (Throwable t) {
-                    p.write("ERRORED CONSTRUCTOR\n");
-                    t.printStackTrace();
+                } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+                    reportMetadataFailure(p, c, "CONSTRUCTOR", error);
                 }
             }
             p.write("\n\n");
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+            reportMetadataFailure(p, c, "CONSTRUCTORS", error);
         }
 
         try {
@@ -337,14 +332,13 @@ public final class ReikaJavaLibrary {
                     p.write("\t\tModifiers: " + parseModifiers(fd.getModifiers()) + "\n");
                     p.write("\t\tType: " + fd.getType() + "\n");
                     p.write("\t\tSynthetic: " + fd.isSynthetic() + "\n\n");
-                } catch (Throwable t) {
-                    p.write("ERRORED FIELD\n");
-                    t.printStackTrace();
+                } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+                    reportMetadataFailure(p, c, "FIELD", error);
                 }
             }
             p.write("\n\n");
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+            reportMetadataFailure(p, c, "FIELDS", error);
         }
 
         try {
@@ -358,15 +352,22 @@ public final class ReikaJavaLibrary {
                     p.write("\t\tExceptions: " + Arrays.toString(m.getExceptionTypes()) + "\n");
                     p.write("\t\tReturn: " + m.getReturnType() + "\n");
                     p.write("\t\tSynthetic: " + m.isSynthetic() + "\n\n");
-                } catch (Throwable t) {
-                    p.write("ERRORED METHOD\n");
-                    t.printStackTrace();
+                } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+                    reportMetadataFailure(p, c, "METHOD", error);
                 }
             }
             p.write("\n\n");
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (LinkageError | RuntimeException | java.lang.annotation.AnnotationFormatError error) {
+            reportMetadataFailure(p, c, "METHODS", error);
         }
+    }
+
+    private static void reportMetadataFailure(BufferedWriter writer, Class<?> type, String section, Throwable error) throws IOException {
+        DragonAPI.LOGGER.error("Could not inspect {} metadata for {}", section, type.getName(), error);
+        writer.write("ERRORED " + section + "\n");
+        StringWriter trace = new StringWriter();
+        error.printStackTrace(new PrintWriter(trace));
+        writer.write(trace.toString());
     }
 
     private static String parseModifiers(int modifiers) {
@@ -380,6 +381,7 @@ public final class ReikaJavaLibrary {
     }
 
     public static void printClassSource(String path, byte[] data) {
+        Objects.requireNonNull(data, "class bytes");
         //read in, build classNode
 		/*
 		ClassNode classNode = new ClassNode();
@@ -414,13 +416,10 @@ public final class ReikaJavaLibrary {
 		data = out.toByteArray() */
 
         String filename = path + ".class";
-        try {
-            FileOutputStream fos = new FileOutputStream(filename);
+        try (OutputStream fos = Files.newOutputStream(Path.of(filename))) {
             fos.write(data);
-            fos.close();
-        } catch (IOException e) {
-            pConsole("DRAGONAPI: Error printing class!");
-            e.printStackTrace();
+        } catch (IOException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not write {} class bytes to {}", data.length, filename, error);
         }
     }
 
