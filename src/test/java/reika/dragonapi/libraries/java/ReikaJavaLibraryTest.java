@@ -2,6 +2,7 @@ package reika.dragonapi.libraries.java;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -12,6 +13,136 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ReikaJavaLibraryTest {
+    private static class LookupState { static boolean initialized; }
+    public static class LookupFixture {
+        static { LookupState.initialized = true; }
+    }
+    public static class BrokenLookupFixture {
+        static { if (failInitialization()) throw new IllegalStateException("expected initializer failure"); }
+        private static boolean failInitialization() { return true; }
+    }
+
+    @Test void classProbesUseContextOrDefiningLoaderWithoutInitializingAndLookupRetainsInitialization() {
+        String name = LookupFixture.class.getName();
+        Thread thread = Thread.currentThread();
+        ClassLoader previous = thread.getContextClassLoader();
+        int[] lookups = {0};
+        var context = new ClassLoader(ReikaJavaLibrary.class.getClassLoader()) {
+            @Override protected Class<?> loadClass(String type, boolean resolve) throws ClassNotFoundException {
+                if (type.equals(name)) lookups[0]++;
+                return super.loadClass(type, resolve);
+            }
+        };
+        try {
+            assertFalse(LookupState.initialized);
+            thread.setContextClassLoader(context);
+            assertTrue(ReikaJavaLibrary.doesClassExist(name));
+            assertEquals(1, lookups[0]);
+            assertFalse(LookupState.initialized);
+            thread.setContextClassLoader(null);
+            assertTrue(ReikaJavaLibrary.doesClassExist(name));
+            assertFalse(LookupState.initialized);
+            assertSame(LookupFixture.class, ReikaJavaLibrary.getClassNoException(name));
+            assertTrue(LookupState.initialized);
+            assertFalse(ReikaJavaLibrary.doesClassExist("dragonapi.test.MissingClass"));
+            assertNull(ReikaJavaLibrary.getClassNoException("dragonapi.test.MissingClass"));
+        } finally {
+            thread.setContextClassLoader(previous);
+        }
+    }
+
+    @Test void availabilityTreatsLinkageFailuresAsUnavailableAndDoesNotSwallowVmErrors() {
+        Thread thread = Thread.currentThread();
+        ClassLoader previous = thread.getContextClassLoader();
+        try {
+            for (Error failure : List.of(new NoClassDefFoundError("expected absent dependency"),
+                    new UnsupportedClassVersionError("expected incompatible class"),
+                    new ClassFormatError("expected malformed class"), new StackOverflowError("simulated VM error"))) {
+                thread.setContextClassLoader(new ClassLoader() {
+                    @Override protected Class<?> loadClass(String name, boolean resolve) { throw failure; }
+                });
+                if (failure instanceof LinkageError) assertFalse(ReikaJavaLibrary.doesClassExist("dragonapi.test.Unavailable"));
+                else assertSame(failure, assertThrows(StackOverflowError.class,
+                        () -> ReikaJavaLibrary.doesClassExist("dragonapi.test.Unavailable")));
+            }
+        } finally {
+            thread.setContextClassLoader(previous);
+        }
+    }
+
+    @Test void nullableClassLookupRetainsFailureFallbackForFirstAndSubsequentInitializerFailure() {
+        String name = BrokenLookupFixture.class.getName();
+        assertNull(ReikaJavaLibrary.getClassNoException(name));
+        assertNull(ReikaJavaLibrary.getClassNoException(name));
+    }
+
+    @Test void nestedMapHelpersAcceptConcreteTypesAndNeverReorderAccessOrderedMaps() {
+        var outer = new LinkedHashMap<String, LinkedHashMap<String, Integer>>(16, .75F, true);
+        var first = new LinkedHashMap<String, Integer>(16, .75F, true);
+        first.put("first", 1); first.put("null", null);
+        var second = new LinkedHashMap<String, Integer>(16, .75F, true);
+        second.put("second", 2);
+        outer.put("first", first); outer.put("second", second); outer.put("empty", new LinkedHashMap<>());
+        Collection<Number> values = ReikaJavaLibrary.getValuesForMapOfMaps(outer);
+        assertEquals(Arrays.asList(1, null, 2), values);
+        assertEquals(3, ReikaJavaLibrary.getNestedMapSize(outer));
+        assertEquals(List.of("first", "second", "empty"), new ArrayList<>(outer.keySet()));
+        assertEquals(List.of("first", "null"), new ArrayList<>(first.keySet()));
+        values.clear();
+        assertEquals(2, first.size());
+        var mixed = new LinkedHashMap<String, Object>(16, .75F, true);
+        mixed.put("nested", outer); mixed.put("scalar", "value"); mixed.put("null", null);
+        assertEquals(5, ReikaJavaLibrary.getNestedMapSize(mixed)); // Shallow size: 3 outer entries + 2 scalar entries.
+        assertEquals(List.of("nested", "scalar", "null"), new ArrayList<>(mixed.keySet()));
+    }
+
+    @Test void flattenedCollectionsPreserveCovariantElementsDuplicatesNullsOrderAndIndependentResults() {
+        var first = new ArrayList<Integer>(Arrays.asList(1, null, 1));
+        List<ArrayList<Integer>> nested = List.of(first, new ArrayList<>(List.of(2)));
+        Collection<Number> compound = ReikaJavaLibrary.getCompoundCollection(nested);
+        assertEquals(Arrays.asList(1, null, 1, 2), compound);
+        compound.clear();
+        assertEquals(Arrays.asList(1, null, 1), first);
+        Collection<Number> combined = ReikaJavaLibrary.combineCollections(first, List.of(2.5));
+        assertEquals(Arrays.asList(1, null, 1, 2.5), combined);
+        var map = new LinkedHashMap<String, ArrayList<Integer>>(16, .75F, true);
+        map.put("first", first); map.put("empty", new ArrayList<>()); map.put("last", new ArrayList<>(List.of(3)));
+        Collection<Number> flattened = ReikaJavaLibrary.getValuesForMapOfCollections(map);
+        assertEquals(Arrays.asList(1, null, 1, 3), flattened);
+        assertEquals(List.of("first", "empty", "last"), new ArrayList<>(map.keySet()));
+        assertTrue(ReikaJavaLibrary.getValuesForMapOfMaps(java.util.Map.of()).isEmpty());
+        assertTrue(ReikaJavaLibrary.getValuesForMapOfCollections(java.util.Map.of()).isEmpty());
+        assertTrue(ReikaJavaLibrary.getCompoundCollection(List.of()).isEmpty());
+        assertTrue(ReikaJavaLibrary.combineCollections().isEmpty());
+        assertThrows(NullPointerException.class, () -> ReikaJavaLibrary.getCompoundCollection(Arrays.asList(first, null)));
+    }
+
+    private record HashValue(String name, int hash) { @Override public int hashCode() { return hash; } }
+    private static class ComparableParent implements Comparable<ComparableParent> {
+        final int rank;
+        ComparableParent(int rank) { this.rank = rank; }
+        @Override public int compareTo(ComparableParent other) { return Integer.compare(rank, other.rank); }
+    }
+    private static class ComparableChild extends ComparableParent { ComparableChild(int rank) { super(rank); } }
+
+    @Test void classSelectedSortingPreservesNaturalAndHashOrderingTiesAndInput() {
+        var low = new ComparableChild(1); var high = new ComparableChild(2);
+        List<ComparableChild> input = List.of(high, low);
+        ArrayList<ComparableChild> sorted = ReikaJavaLibrary.makeSortedListFromCollection(input, ComparableParent.class);
+        assertEquals(List.of(low, high), sorted);
+        assertEquals(List.of(high, low), input);
+        var minimum = new HashValue("minimum", Integer.MIN_VALUE);
+        var maximum = new HashValue("maximum", Integer.MAX_VALUE);
+        var firstTie = new HashValue("first tie", 0); var secondTie = new HashValue("second tie", 0);
+        var hashes = List.of(maximum, firstTie, minimum, secondTie);
+        assertEquals(List.of(minimum, firstTie, secondTie, maximum),
+                ReikaJavaLibrary.makeSortedListFromCollection(hashes, HashValue.class));
+        assertEquals(List.of(maximum, firstTie, minimum, secondTie), hashes);
+        var empty = ReikaJavaLibrary.<String>makeSortedListFromCollection(List.of(), null);
+        empty.add("mutable copy");
+        assertEquals(List.of("mutable copy"), empty);
+    }
+
     @Test void safeDecimalParsingPreservesSyntaxAndHandlesBoundariesAndOverflow() {
         assertEquals(Integer.MIN_VALUE, ReikaJavaLibrary.safeIntParse("-2147483648"));
         assertEquals(Integer.MAX_VALUE, ReikaJavaLibrary.safeIntParse("2147483647"));

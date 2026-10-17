@@ -191,19 +191,29 @@ public final class ReikaJavaLibrary {
         return null;
     }
 
+    /** Probes availability without initialization, using the context loader when one is installed. */
     public static boolean doesClassExist(String cl) {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        if (loader == null) loader = ReikaJavaLibrary.class.getClassLoader();
         try {
-            Class.forName(cl, false, Thread.currentThread().getContextClassLoader());
+            Class.forName(cl, false, loader);
             return true;
-        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+        } catch (ClassNotFoundException missing) {
+            return false;
+        } catch (LinkageError error) {
+            DragonAPI.LOGGER.debug("Class {} is unavailable in loader {}", cl, loader, error);
             return false;
         }
     }
 
-    public static Class<?> getClassNoException(String cl) {
+    /** Retains initialization in this library's defining loader; missing or unlinkable classes return null. */
+    public static @Nullable Class<?> getClassNoException(String cl) {
         try {
             return Class.forName(cl);
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException missing) {
+            return null;
+        } catch (LinkageError error) {
+            DragonAPI.LOGGER.error("Could not load and initialize class {}", cl, error);
             return null;
         }
     }
@@ -632,9 +642,9 @@ public final class ReikaJavaLibrary {
         return separator < 0 ? name : name.substring(0, separator);
     }
 
-    public static <E> Collection<E> getCompoundCollection(Collection<Collection<E>> colls) {
+    public static <E> Collection<E> getCompoundCollection(Collection<? extends Collection<? extends E>> colls) {
         Collection<E> c = new ArrayList<>();
-        for (Collection<E> c2 : colls) {
+        for (Collection<? extends E> c2 : colls) {
             c.addAll(c2);
         }
         return c;
@@ -662,26 +672,23 @@ public final class ReikaJavaLibrary {
 
     public static int getNestedMapSize(Map<?, ?> map) {
         int s = 0;
-        for (Object k : map.keySet()) {
-            Object o = map.get(k);
-            s += o instanceof Map ? ((Map<?, ?>) o).size() : 1;
+        for (Object value : map.values()) {
+            s += value instanceof Map<?, ?> nested ? nested.size() : 1;
         }
         return s;
     }
 
-    public static <V> Collection<V> getValuesForMapOfMaps(Map<?, Map<?, V>> map) {
+    public static <V> Collection<V> getValuesForMapOfMaps(Map<?, ? extends Map<?, ? extends V>> map) {
         Collection<V> li = new ArrayList<>();
-        for (Object k : map.keySet()) {
-            Map<?, V> o = map.get(k);
+        for (Map<?, ? extends V> o : map.values()) {
             li.addAll(o.values());
         }
         return li;
     }
 
-    public static <E> Collection<E> getValuesForMapOfCollections(Map<?, Collection<E>> map) {
+    public static <E> Collection<E> getValuesForMapOfCollections(Map<?, ? extends Collection<? extends E>> map) {
         Collection<E> li = new ArrayList<>();
-        for (Object k : map.keySet()) {
-            Collection<E> o = map.get(k);
+        for (Collection<? extends E> o : map.values()) {
             li.addAll(o);
         }
         return li;
@@ -720,9 +727,9 @@ public final class ReikaJavaLibrary {
     }
 
     @SafeVarargs
-    public static <V> Collection<V> combineCollections(Collection<V>... colls) {
+    public static <V> Collection<V> combineCollections(Collection<? extends V>... colls) {
         Collection<V> ret = new ArrayList<>();
-        for (Collection<V> coll : colls) {
+        for (Collection<? extends V> coll : colls) {
             ret.addAll(coll);
         }
         return ret;
@@ -757,7 +764,7 @@ public final class ReikaJavaLibrary {
         return tg;
     }
 
-    public static boolean exceptionMentions(Throwable e, Class c) {
+    public static boolean exceptionMentions(Throwable e, Class<?> c) {
         StackTraceElement[] arr = e.getStackTrace();
         for (StackTraceElement stackTraceElement : arr) {
             if (stackTraceElement.getClassName().equals(c.getName()))
@@ -883,10 +890,11 @@ public final class ReikaJavaLibrary {
         return val;
     }
 
-    public static <V> ArrayList<V> makeSortedListFromCollection(Collection<V> c, Class baseElementType) {
+    /** Copies before sorting; the declared base type selects natural ordering or the historical hash fallback. */
+    public static <V> ArrayList<V> makeSortedListFromCollection(Collection<? extends V> c, Class<? super V> baseElementType) {
         ArrayList<V> li = new ArrayList<>(c);
         if (!li.isEmpty()) {
-            li.sort(new FallbackComparator(baseElementType));
+            li.sort(new FallbackComparator<V>(baseElementType));
         }
         return li;
     }
@@ -969,20 +977,19 @@ public final class ReikaJavaLibrary {
 
     }
 
-    private record FallbackComparator(boolean useDefaultCompare) implements Comparator<Object> {
+    private record FallbackComparator<V>(boolean useDefaultCompare) implements Comparator<V> {
 
-            private FallbackComparator(Class<?> test) {
-                this(Comparable.class.isAssignableFrom(test));
-            }
-
-            @Override
-            public int compare(Object o1, Object o2) {
-                if (useDefaultCompare)
-                    return ((Comparable<Object>) o1).compareTo(o2);
-                else
-                    return Integer.compare(o1.hashCode(), o2.hashCode());
-            }
-
+        private FallbackComparator(Class<? super V> test) {
+            this(Comparable.class.isAssignableFrom(test));
         }
+
+        @Override
+        @SuppressWarnings("unchecked") // The legacy Class selector supplies the runtime Comparable contract.
+        public int compare(V o1, V o2) {
+            return useDefaultCompare ? ((Comparable<? super V>) o1).compareTo(o2)
+                    : Integer.compare(o1.hashCode(), o2.hashCode());
+        }
+
+    }
 }
 

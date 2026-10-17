@@ -1839,3 +1839,44 @@ D58 remains open for other accepted-library raw types, nullability and remaining
 integration/UI translations. Checklist stays 44 complete / 119 open / 163 total.
 Local checkpoint only; existing owner edits, Play configuration and the inactive
 update checker remain untouched.
+
+
+## D58k — Class lookup and nested collection contracts (2026-10-17)
+
+Class availability probes still avoid initialization and use the thread context
+loader. With no context loader they now fall back to this library's defining
+loader rather than accidentally probing only bootstrap classes. Missing classes
+remain quiet; linkage failures return unavailable with debug cause/context.
+getClassNoException explicitly returns nullable Class, preserves its historical
+initialization/defining-loader behavior, and reports linkage/initializer failures
+with full contextual causes before returning null. Fatal VM errors escape both
+recovery paths.
+
+Nested map helpers now iterate values directly. The old keySet/get traversal
+mutated access-ordered LinkedHashMaps and could throw ConcurrentModificationException.
+Counting remains shallow; null scalar entries still count as one. Flattening and
+combining accept covariant concrete nested maps/collections, preserve encounter
+order, duplicates and null elements, and return independent mutable copies. Null
+nested collections still fail rather than silently discarding data.
+
+Class-selected collection sorting has a typed collection/base-class/comparator
+contract while preserving its original natural-vs-hash selector, stable ties and
+copy-before-sort behavior. The necessary runtime Comparable cast is confined to
+the documented legacy Class-selector boundary. exceptionMentions no longer takes
+a raw Class. Public erased descriptors remain unchanged. FluidHashMap's accepted
+size caller and GeoStrata's optional Chisel availability probe retain their roles;
+Chroma PoolRecipes can pass concrete nested collections without casts.
+
+Six new regressions cover context/null-context lookup, initialization timing,
+first/repeated initializer failures, unavailable linkage vs fatal errors,
+access-ordered nested maps and collections, covariance/nulls/duplicates/independent
+copies, shallow counts, inherited Comparable ordering and stable hash collisions.
+236 family units pass (182 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. All 101 native fixtures, strict common MixinAudit
+(30 transformed bindings, two optional absences) and all eight accepted-class
+guards pass on NeoForge 26.3.0.76; clean exit in 2m 36s. Evidence:
+build/d58k-contracts.log, build/d58k-family-native.log and build/d58k-proof.json.
+
+D58 stays open for remaining accepted-helper contracts and untranslated integration/
+UI text. Checklist remains 44 complete / 119 open / 163 total. Local checkpoint
+only; existing owner edits, Play configuration and inactive updater are preserved.
