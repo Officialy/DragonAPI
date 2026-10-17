@@ -1880,3 +1880,48 @@ build/d58k-contracts.log, build/d58k-family-native.log and build/d58k-proof.json
 D58 stays open for remaining accepted-helper contracts and untranslated integration/
 UI text. Checklist remains 44 complete / 119 open / 163 total. Local checkpoint
 only; existing owner edits, Play configuration and inactive updater are preserved.
+
+
+## D58l — Bounded rotations, resource locations and module-aware discovery (2026-10-17)
+
+List rotations now normalize the signed distance with floorMod before native
+Collections.rotate. Positive/right and negative/left behavior is retained, with
+work bounded by list size rather than requested distance. Integer.MIN_VALUE no
+longer becomes a no-op through abs overflow; normalization also avoids the raw
+MIN_VALUE negation edge in Java 25's large linked-list rotate implementation.
+Both helpers are generic, retain duplicates/null elements, support fixed-size
+mutable lists and skip logical no-ops without mutation. Existing music-key
+rotations retain their values and direction; the Note-only import is unnecessary.
+
+Class locations use the qualified binary resource name, fixing nested classes.
+File URLs convert through URI/Path for native decoded paths (spaces, plus signs,
+Unicode, percent/hash characters); jar/module/other URLs remain intact rather
+than losing an assumed file prefix. Missing/null resources return explicit null;
+conversion failures include class/resource/cause diagnostics.
+
+Package discovery now respects package boundaries and recursive subpackages,
+retains trailing-dot/empty-package behavior and parent/abstract/deprecated filters,
+and avoids initialization. A missing context loader falls back to the defining
+loader. Guava remains for ordinary classpaths; native NeoForge ModuleClassLoader
+configuration and parent configurations supply named-module resources that Guava
+cannot see. Module readers/streams close, configuration diamonds and duplicate
+class names are deduplicated, and scan/load IO failures retain full context.
+No private reflection, transformer bypass or ASM framework is introduced.
+API references: installed Java 25 Collections source and the current FML 12.0.12
+ModuleClassLoader source used by NeoForge 26.3.0.76.
+
+Five regressions cover both list types through extreme distances and bounded
+writes, nulls/duplicates/fixed-size/no-op rotation, nested/file/jar/jrt locations,
+encoded paths, package boundaries/subpackages/filters, actual NeoForge discovery
+and parent JDK modules. Runtime fixtures compile fresh unowned packages with the
+JDK compiler so NeoForge's class-loading guardian stays active and real modifiers
+and annotations are tested in foreign jar loaders.
+241 family units pass (187 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. All 101 native fixtures, strict common MixinAudit
+(30 transformed bindings, two optional absences) and all eight accepted-class
+guards pass; clean exit in 2m 18s. Evidence: build/d58l-boundaries.log,
+build/d58l-family-native.log and build/d58l-proof.json.
+
+D58 remains open for other accepted-helper contracts and untranslated integration/
+UI text. Checklist stays 44 complete / 119 open / 163 total. Local checkpoint only;
+existing owner edits, normal Play configuration and the inactive updater remain.

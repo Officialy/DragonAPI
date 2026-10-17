@@ -13,6 +13,144 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ReikaJavaLibraryTest {
+    @Test void rotationsMatchIndexMappingForBothListTypesAndExtremeDistancesWithBoundedWork() {
+        for (int size : List.of(0, 1, 3, 137)) {
+            var input = new ArrayList<Integer>();
+            for (int i = 0; i < size; i++) input.add(i);
+            for (int distance : List.of(0, 1, -1, 2, -2, 137, -137, Integer.MIN_VALUE, Integer.MAX_VALUE)) {
+                var expected = new ArrayList<>(input);
+                for (int i = 0; i < size; i++) expected.set((int)Math.floorMod((long)i + distance, size), input.get(i));
+                int[] writes = {0};
+                var array = new ArrayList<>(input) {
+                    @Override public Integer set(int index, Integer value) { writes[0]++; return super.set(index, value); }
+                    @Override public Integer remove(int index) { throw new AssertionError("Rotation should not shift/remove each step"); }
+                };
+                ReikaJavaLibrary.cycleList(array, distance);
+                assertEquals(expected, array, () -> "size=" + size + ", distance=" + distance);
+                assertTrue(writes[0] <= size);
+                var linked = new java.util.LinkedList<>(input);
+                ReikaJavaLibrary.cycleLinkedList(linked, distance);
+                assertEquals(expected, linked, () -> "linked size=" + size + ", distance=" + distance);
+            }
+        }
+    }
+
+    @Test void rotationsPreserveNullsDuplicatesAndFixedSizeListsAndSkipLogicalNoOps() {
+        List<Integer> fixed = Arrays.asList(1, null, 1, 2);
+        ReikaJavaLibrary.cycleList(fixed, 1);
+        assertEquals(Arrays.asList(2, 1, null, 1), fixed);
+        ReikaJavaLibrary.cycleList(fixed, -1);
+        assertEquals(Arrays.asList(1, null, 1, 2), fixed);
+        assertDoesNotThrow(() -> ReikaJavaLibrary.cycleList(List.of(), Integer.MIN_VALUE));
+        assertDoesNotThrow(() -> ReikaJavaLibrary.cycleList(List.of("only"), Integer.MAX_VALUE));
+        assertDoesNotThrow(() -> ReikaJavaLibrary.cycleList(List.of("a", "b", "c"), 3));
+    }
+
+    @Test void classLocationsUseBinaryResourceNamesAndDecodeFileUrisAndRetainModuleUrls(
+            @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+        var compiled = compileScanFixtures(directory);
+        String binaryName = "portfixtures.scanbase.PackageScanFixture$Nested";
+        byte[] bytes = java.nio.file.Files.readAllBytes(compiled.resolve(binaryName.replace('.', '/') + ".class"));
+        var file = directory.resolve("compiled + caf\u00e9 #%.class");
+        java.nio.file.Files.write(file, bytes);
+        String expectedResource = binaryName.replace('.', '/') + ".class";
+        var requests = new ArrayList<String>();
+        class ResourceLoader extends ClassLoader {
+            private final java.net.URL resource;
+            ResourceLoader(java.net.URL resource) { this.resource = resource; }
+            Class<?> define() { return defineClass(null, bytes, 0, bytes.length); }
+            @Override public java.net.URL getResource(String name) { requests.add(name); return resource; }
+        }
+        assertEquals(file.toString(), ReikaJavaLibrary.getClassLocation(new ResourceLoader(file.toUri().toURL()).define()));
+        assertEquals(List.of(expectedResource), requests);
+        assertNull(ReikaJavaLibrary.getClassLocation(new ResourceLoader(null).define()));
+        assertNull(ReikaJavaLibrary.getClassLocation(null));
+        assertNull(ReikaJavaLibrary.getClassLocation(int.class));
+        assertEquals(String.class.getResource("String.class").toExternalForm(), ReikaJavaLibrary.getClassLocation(String.class));
+    }
+
+    /** Runtime fixtures avoid NeoForge's guardian replacing mod-owned classes in foreign loaders. */
+    private static java.nio.file.Path compileScanFixtures(java.nio.file.Path directory) throws Exception {
+        var output = java.nio.file.Files.createDirectories(directory.resolve("compiled"));
+        var sources = List.of(
+                "package portfixtures.scanbase; class PackageScanFixture extends java.util.ArrayList<String> { static class Nested {} } abstract class AbstractScanFixture {} @Deprecated class DeprecatedScanFixture {}",
+                "package portfixtures.scanbase.child; class ChildScanFixture {}",
+                "package portfixtures.scanbaseextra; class OtherScanFixture {}");
+        var arguments = new ArrayList<>(List.of("-proc:none", "-d", output.toString()));
+        for (int i = 0; i < sources.size(); i++) {
+            var source = directory.resolve("ScanFixture" + i + ".java");
+            java.nio.file.Files.writeString(source, sources.get(i));
+            arguments.add(source.toString());
+        }
+        var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        assertNotNull(compiler, "The project requires a JDK");
+        var diagnostics = new java.io.ByteArrayOutputStream();
+        assertEquals(0, compiler.run(null, diagnostics, diagnostics, arguments.toArray(String[]::new)), diagnostics::toString);
+        return output;
+    }
+
+    private static java.nio.file.Path fixtureJar(java.nio.file.Path destination, java.nio.file.Path compiled, List<String> classes) throws Exception {
+        try (var jar = new java.util.jar.JarOutputStream(java.nio.file.Files.newOutputStream(destination))) {
+            for (String name : classes) {
+                String entry = name.replace('.', '/') + ".class";
+                jar.putNextEntry(new java.util.jar.JarEntry(entry));
+                try (var input = java.nio.file.Files.newInputStream(compiled.resolve(entry))) {
+                    input.transferTo(jar);
+                }
+                jar.closeEntry();
+            }
+        }
+        return destination;
+    }
+
+    @Test void classLocationsPreserveCompleteJarUrls(@org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+        String name = "portfixtures.scanbase.PackageScanFixture";
+        var jar = fixtureJar(directory.resolve("classes + #%.jar"), compileScanFixtures(directory), List.of(name));
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{jar.toUri().toURL()}, null)) {
+            Class<?> type = Class.forName(name, false, loader);
+            String location = ReikaJavaLibrary.getClassLocation(type);
+            assertEquals(type.getResource("/" + name.replace('.', '/') + ".class").toExternalForm(), location);
+            assertTrue(location.startsWith("jar:file:"));
+            assertTrue(location.endsWith("!/" + name.replace('.', '/') + ".class"));
+            assertTrue(location.contains("%23"));
+        }
+    }
+
+    @Test void packageScanningHonorsBoundariesSubpackagesFiltersAndContextFallback(
+            @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+        String pack = "portfixtures.scanbase";
+        String regular = pack + ".PackageScanFixture", child = pack + ".child.ChildScanFixture";
+        var classes = List.of(regular, child, pack + ".AbstractScanFixture", pack + ".DeprecatedScanFixture",
+                pack + "extra.OtherScanFixture");
+        var jar = fixtureJar(directory.resolve("package scan.jar"), compileScanFixtures(directory), classes);
+        Thread thread = Thread.currentThread();
+        ClassLoader previous = thread.getContextClassLoader();
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{jar.toUri().toURL()}, null)) {
+            thread.setContextClassLoader(loader);
+            Set<String> expected = Set.copyOf(classes.subList(0, 4));
+            assertEquals(expected, classNames(ReikaJavaLibrary.getAllClassesFromPackage(pack, null, false, false)));
+            assertEquals(expected, classNames(ReikaJavaLibrary.getAllClassesFromPackage(pack + ".", null, false, false)));
+            Class<?> abstractType = Class.forName(pack + ".AbstractScanFixture", false, loader);
+            assertTrue(java.lang.reflect.Modifier.isAbstract(abstractType.getModifiers()), "Jar must retain abstract metadata");
+            assertTrue(Class.forName(pack + ".DeprecatedScanFixture", false, loader).isAnnotationPresent(Deprecated.class), "Jar must retain annotation metadata");
+            assertEquals(Set.of(regular, child), classNames(ReikaJavaLibrary.getAllClassesFromPackage(pack, null, true, true)));
+            assertEquals(Set.of(regular), classNames(ReikaJavaLibrary.getAllClassesFromPackage(pack, List.class, false, false)));
+            assertTrue(ReikaJavaLibrary.getAllClassesFromPackage("portfixtures.scanbas", null, false, false).isEmpty());
+            assertEquals(Set.copyOf(classes), classNames(ReikaJavaLibrary.getAllClassesFromPackage("", null, false, false)));
+            thread.setContextClassLoader(null);
+            assertEquals(Set.of(ReikaJavaLibrary.class), Set.copyOf(ReikaJavaLibrary.getAllClassesFromPackage(
+                    "reika.dragonapi.libraries.java", ReikaJavaLibrary.class, false, false)));
+            assertEquals(Set.of(String.class), Set.copyOf(ReikaJavaLibrary.getAllClassesFromPackage(
+                    "java.lang", String.class, false, false)));
+        } finally {
+            thread.setContextClassLoader(previous);
+        }
+    }
+
+    private static Set<String> classNames(Collection<Class<?>> classes) {
+        return classes.stream().map(Class::getName).collect(java.util.stream.Collectors.toSet());
+    }
+
     private static class LookupState { static boolean initialized; }
     public static class LookupFixture {
         static { LookupState.initialized = true; }

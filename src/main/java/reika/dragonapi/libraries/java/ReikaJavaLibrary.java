@@ -16,18 +16,20 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.classloading.ModuleClassLoader;
 import org.apache.logging.log4j.Level;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.ModList;
 import reika.dragonapi.exception.MisuseException;
-import reika.dragonapi.libraries.mathsci.ReikaMusicHelper;
 
 import java.io.*;
+import java.lang.module.Configuration;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -694,36 +696,15 @@ public final class ReikaJavaLibrary {
         return li;
     }
 
-    public static void cycleList(List<ReikaMusicHelper.Note> li, int n) {
-        if (li.isEmpty())
-            return;
-        boolean neg = n < 0;
-        n = Math.abs(n);
-        for (int i = 0; i < n; i++) {
-            if (neg) {
-                ReikaMusicHelper.Note o = li.remove(0);
-                li.add(o);
-            } else {
-                ReikaMusicHelper.Note o = li.remove(li.size() - 1);
-                li.add(0, o);
-            }
-        }
+    /** Positive distances rotate right, negative distances left; work is bounded by list size. */
+    public static <E> void cycleList(List<E> li, int n) {
+        if (li.isEmpty()) return;
+        int distance = Math.floorMod(n, li.size());
+        if (distance != 0) Collections.rotate(li, distance);
     }
 
-    public static void cycleLinkedList(LinkedList<Object> li, int n) {
-        if (li.isEmpty())
-            return;
-        boolean neg = n < 0;
-        n = Math.abs(n);
-        for (int i = 0; i < n; i++) {
-            if (neg) {
-                Object o = li.removeFirst();
-                li.addLast(o);
-            } else {
-                Object o = li.removeLast();
-                li.addFirst(o);
-            }
-        }
+    public static <E> void cycleLinkedList(LinkedList<E> li, int n) {
+        cycleList(li, n);
     }
 
     @SafeVarargs
@@ -788,22 +769,53 @@ public final class ReikaJavaLibrary {
     /**
      * Not exactly performant. Do not call this excessively, or ever during the main game loop.
      */
-    public static Collection<Class<?>> getAllClassesFromPackage(String pack, Class<?> parent, boolean skipAbstract, boolean skipDeprecated) throws IOException {
+    public static Collection<Class<?>> getAllClassesFromPackage(String pack, @Nullable Class<?> parent, boolean skipAbstract, boolean skipDeprecated) throws IOException {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        Collection<Class<?>> li = new ArrayList<>();
+        if (loader == null) loader = ReikaJavaLibrary.class.getClassLoader();
+        String prefix = pack.isEmpty() || pack.endsWith(".") ? pack : pack + ".";
+        Set<String> names = new LinkedHashSet<>();
         for (ClassPath.ClassInfo info : ClassPath.from(loader).getTopLevelClasses()) {
-            if (info.getName().startsWith(pack)) {
-                Class<?> c = info.load();
-                if (parent == null || parent.isAssignableFrom(c)) {
-                    if (skipAbstract && (c.getModifiers() & Modifier.ABSTRACT) != 0)
-                        continue;
-                    if (skipDeprecated && c.isAnnotationPresent(Deprecated.class))
-                        continue;
-                    li.add(c);
+            if (info.getName().startsWith(prefix)) names.add(info.getName());
+        }
+        if (loader instanceof ModuleClassLoader modules) {
+            collectModuleClasses(modules.getConfiguration(), prefix, names);
+        }
+        Collection<Class<?>> li = new ArrayList<>();
+        for (String name : names) {
+            Class<?> c;
+            try {
+                c = Class.forName(name, false, loader);
+            } catch (ClassNotFoundException error) {
+                throw new IOException("Could not load discovered class " + name + " in loader " + loader, error);
+            }
+            if (parent != null && !parent.isAssignableFrom(c)) continue;
+            if (skipAbstract && Modifier.isAbstract(c.getModifiers())) continue;
+            if (skipDeprecated && c.isAnnotationPresent(Deprecated.class)) continue;
+            li.add(c);
+        }
+        return li;
+    }
+
+    private static void collectModuleClasses(Configuration configuration, String prefix, Set<String> names) throws IOException {
+        Set<Configuration> visited = new HashSet<>();
+        Deque<Configuration> pending = new ArrayDeque<>();
+        pending.add(configuration);
+        while (!pending.isEmpty()) {
+            Configuration current = pending.removeFirst();
+            if (!visited.add(current)) continue;
+            pending.addAll(current.parents());
+            for (var module : current.modules()) {
+                if (module.reference().descriptor().packages().stream().noneMatch(pkg -> (pkg + ".").startsWith(prefix))) continue;
+                try (var reader = module.reference().open(); var resources = reader.list()) {
+                    resources.sequential().filter(resource -> resource.endsWith(".class") && !resource.contains("$")
+                                    && !resource.startsWith("META-INF/") && !resource.equals("module-info.class"))
+                            .map(resource -> resource.substring(0, resource.length() - ".class".length()).replace('/', '.'))
+                            .filter(name -> name.startsWith(prefix)).forEach(names::add);
+                } catch (IOException | UncheckedIOException error) {
+                    throw new IOException("Could not scan module " + module.name() + " for package prefix " + prefix, error);
                 }
             }
         }
-        return li;
     }
 
     /**
@@ -836,16 +848,18 @@ public final class ReikaJavaLibrary {
         return (b1 & 255) | ((b2 & 255) << 8) | ((b3 & 255) << 16) | ((b4 & 255) << 24);
     }
 
-	public static String getClassLocation(Class<?> c) {
-		if (c == null)
-			return null;
-		URL location = c.getResource(c.getSimpleName() + ".class");
-		if (location == null)
-			return null;
-		String ret = location.toString();
-        ret = ret.substring("file:\\".length());
-        ret = ret.replaceAll("%20", " ");
-        return ret;
+    /** Returns a native path for file resources and the intact URL for jar/module/other resources. */
+    public static @Nullable String getClassLocation(@Nullable Class<?> c) {
+        if (c == null) return null;
+        String resource = "/" + c.getName().replace('.', '/') + ".class";
+        try {
+            URL location = c.getResource(resource);
+            if (location == null) return null;
+            return location.getProtocol().equals("file") ? Path.of(location.toURI()).toString() : location.toExternalForm();
+        } catch (URISyntaxException | RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not locate class resource {} for {}", resource, c.getName(), error);
+            return null;
+        }
     }
 
     public static double buildDoubleFromInts(int i1, int i2) {
