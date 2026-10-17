@@ -14,6 +14,7 @@ import org.apache.commons.lang3.text.WordUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class ReikaStringParser {
@@ -23,9 +24,9 @@ public class ReikaStringParser {
 	private static final String STRING_FORMAT_CODE = "PARSE_STRING_FORMAT";
 	private static final String ENUM_FUNCTION_CODE = "PARSE_ENUM";
 
-	private static final TreeMap<Integer, String> romanNumerals = new TreeMap();
+	private static final TreeMap<Integer, String> romanNumerals = new TreeMap<>();
 
-	private static final HashSet<Character> wordChars = new HashSet();
+	private static final HashSet<Character> wordChars = new HashSet<>();
 
 	static {
 		romanNumerals.put(1000, "M");
@@ -78,39 +79,24 @@ public class ReikaStringParser {
 		return null;
 	}
 
-	private static String parseEnum(String sg) {
-		String[] parts = sg.split("\\$");
-		if (parts.length != 3)
-			throw new RuntimeException("This method does not support multi-layer class calls! " + sg);
-		String enumClassName = subtractFrom(parts[0], ENUM_FUNCTION_CODE + "(");
-		parts[2] = parts[2].substring(0, parts[2].length() - 1);
-		Class enumClass;
-		try {
-			enumClass = Class.forName(enumClassName);
-			Enum e = Enum.valueOf(enumClass, parts[1]);
-			Method m = enumClass.getDeclaredMethod(parts[2], (Class[]) null);
-			Object o = m.invoke(e, (Object[]) null);
-			return o.toString();
-		} catch (ClassNotFoundException e1) {
-			e1.printStackTrace();
-			throw new RuntimeException("Enum Class \"" + enumClassName + "\" does not exist!");
-		} catch (NoSuchMethodException e1) {
-			e1.printStackTrace();
-			throw new RuntimeException("Enum Class " + enumClassName + " does not contain method \"" + parts[2] + "\"!");
-		} catch (SecurityException e1) {
-			e1.printStackTrace();
-			throw new RuntimeException("Enum Class " + enumClassName + "'s method " + parts[2] + " threw security exception!");
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + enumClassName + "'s method " + parts[2] + " threw illegal access exception!");
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + enumClassName + "'s method " + parts[2] + " is not parameterless!");
-		} catch (InvocationTargetException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + enumClassName + "'s method " + parts[2] + " threw invocation target exception!");
-		}
-	}
+    private static String parseEnum(String expression) {
+        String[] parts = referenceParts(expression, ENUM_FUNCTION_CODE, 2);
+        try {
+            Class<?> type = Class.forName(parts[0]);
+            Object[] constants = type.getEnumConstants();
+            if (constants == null) throw new IllegalArgumentException("Class is not an enum: " + type.getName());
+            Enum<?> selected = null;
+            for (Object constant : constants) {
+                Enum<?> value = (Enum<?>)constant;
+                if (value.name().equals(parts[1])) { selected = value; break; }
+            }
+            if (selected == null) throw new IllegalArgumentException("No enum constant " + type.getName() + "." + parts[1]);
+            Method method = type.getDeclaredMethod(parts[2]);
+            return Objects.requireNonNull(method.invoke(selected), "Enum method returned null").toString();
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            throw referenceFailure("enum method", expression, error);
+        }
+    }
 
 	public static String parseStringFormat(String sg) {
 		if (sg == null || sg.isBlank())
@@ -132,90 +118,61 @@ public class ReikaStringParser {
 		}
 	}
 
-	private static String parseNumberMethod(String sg) {
-		String[] parts = sg.split("\\$");
-		if (parts.length != 2)
-			throw new IllegalArgumentException("Invalid numeric method reference: " + sg);
-		if (!parts[1].endsWith(")") || parts[1].length() == 1)
-			throw new IllegalArgumentException("Numeric method reference has no method name: " + sg);
-		parts[1] = parts[1].substring(0, parts[1].length() - 1);
-		String cl = subtractFrom(parts[0], NUMBER_METHOD_CODE + "(");
-		String obj;
-		try {
-			Class c = Class.forName(cl);
-			Method m = c.getMethod(parts[1], (Class[]) null);
-			Object g = new Object();
-			Object o = m.invoke(g, (Object[]) null);
-			obj = o.toString();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class \"" + cl + "\" does not exist!");
-		} catch (NoSuchMethodException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + " does not contain method \"" + parts[1] + "\"!");
-		} catch (SecurityException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + "'s method " + parts[1] + " threw security exception!");
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + "'s method " + parts[1] + " threw illegal access exception!");
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + "'s method " + parts[1] + " is not parameterless!");
-		} catch (InvocationTargetException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + "'s method " + parts[1] + " threw invocation target exception!");
-		}
-		return obj;
-	}
+    private static String parseNumberMethod(String expression) {
+        String[] parts = referenceParts(expression, NUMBER_METHOD_CODE, 1);
+        try {
+            Class<?> type = Class.forName(parts[0]);
+            Method method = type.getMethod(parts[1]);
+            if (!Modifier.isStatic(method.getModifiers())) throw new IllegalArgumentException("Referenced method must be static");
+            return Objects.requireNonNull(method.invoke(null), "Static method returned null").toString();
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            throw referenceFailure("static method", expression, error);
+        }
+    }
 
-	private static String parseStaticNumberVariable(String sg) {
-		String[] parts = sg.split("\\$");
-		if (parts.length != 2)
-			throw new IllegalArgumentException("Invalid numeric field reference: " + sg);
-		if (!parts[1].endsWith(")") || parts[1].length() == 1)
-			throw new IllegalArgumentException("Numeric field reference has no field name: " + sg);
-		parts[1] = parts[1].substring(0, parts[1].length() - 1);
-		String cl = subtractFrom(parts[0], NUMBER_VARIABLE_CODE + "(");
-		String obj = "NOT FOUND";
-		try {
-			Class c = Class.forName(cl);
-			Field f = c.getField(parts[1]);
-			Class type = f.getType();
-			if (type == int.class) {
-				int val = f.getInt(c);
-				obj = String.valueOf(val);
-			}
-			if (type == float.class) {
-				float val = f.getFloat(c);
-				obj = String.valueOf(val);
-			}
-			if (type == double.class) {
-				double val = f.getDouble(c);
-				obj = String.valueOf(val);
-			}
-			if (type == long.class) {
-				long val = f.getLong(c);
-				obj = String.valueOf(val);
-			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class \"" + cl + "\" does not exist!");
-		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + " does not contain field \"" + parts[1] + "\"!");
-		} catch (SecurityException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + "'s field " + parts[1] + " threw security exception!");
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + "'s field " + parts[1] + " threw illegal argument exception!");
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Class " + cl + "'s field " + parts[1] + " threw illegal access exception!");
-		}
-		return obj;
-	}
+    private static String parseStaticNumberVariable(String expression) {
+        String[] parts = referenceParts(expression, NUMBER_VARIABLE_CODE, 1);
+        try {
+            Class<?> type = Class.forName(parts[0]);
+            Field field = type.getField(parts[1]);
+            Class<?> fieldType = field.getType();
+            // Keep the original supported numeric types and unsupported-type result.
+            if (fieldType != int.class && fieldType != float.class && fieldType != double.class && fieldType != long.class)
+                return "NOT FOUND";
+            if (!Modifier.isStatic(field.getModifiers())) throw new IllegalArgumentException("Referenced numeric field must be static");
+            return field.get(null).toString();
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            throw referenceFailure("static numeric field", expression, error);
+        }
+    }
+
+    /** Split member separators from the right so binary nested-class names remain intact. */
+    private static String[] referenceParts(String expression, String marker, int members) {
+        String opening = marker + "(";
+        if (!expression.startsWith(opening) || !expression.endsWith(")"))
+            throw new IllegalArgumentException("Invalid " + marker + " reference: " + expression);
+        String body = expression.substring(opening.length(), expression.length() - 1);
+        String[] parts = new String[members + 1];
+        int end = body.length();
+        for (int i = members; i > 0; i--) {
+            int separator = body.lastIndexOf('$', end - 1);
+            if (separator < 0 || separator + 1 == end)
+                throw new IllegalArgumentException("Missing member in " + marker + " reference: " + expression);
+            parts[i] = body.substring(separator + 1, end);
+            end = separator;
+        }
+        if (end == 0) throw new IllegalArgumentException("Missing class in " + marker + " reference: " + expression);
+        parts[0] = body.substring(0, end);
+        return parts;
+    }
+
+    /** Attach context once; callers receive the real invoked failure rather than a discarded wrapper. */
+    private static IllegalArgumentException referenceFailure(String kind, String expression, Exception error) {
+        Throwable cause = error instanceof InvocationTargetException invocation && invocation.getCause() != null
+                ? invocation.getCause() : error;
+        if (cause instanceof Error fatal) throw fatal;
+        return new IllegalArgumentException("Could not resolve " + kind + " reference: " + expression, cause);
+    }
 
 	private static boolean isReference(String sg) {
 		if (sg.startsWith(NUMBER_VARIABLE_CODE))

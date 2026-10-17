@@ -1964,3 +1964,45 @@ D58 remains open for remaining helper diagnostics and untranslated integration/
 UI text; D59's broader cache/session/thread ownership audit also remains open.
 Checklist stays 44 complete / 119 open / 163 total. Local checkpoint only;
 existing owner edits, normal Play configuration and inactive updater are preserved.
+
+
+## D58n — Publication checkpoint and reflective string-reference diagnostics (2026-10-17)
+
+At the owner's explicit request, all outstanding changes were committed and
+pushed before continuing: seven Officialy mod forks (VoidMonster master, others
+26.3) and the root 26.3 branch. This includes the six previously preserved data
+provider API updates, NeoForge 26.3.0.76 setting, IDE state and prior local port
+checkpoints. Root checkpoint 3e5d11c was published. Follow-up root 120fa07 fixes
+ReactorCraft/ChromatiCraft .gitmodules URLs to the Officialy forks that actually
+host their port commits; all working trees were clean at publication. Broad
+staging was initially rejected by automatic approval review under the prior
+exclusion boundary; verified single-file staging was then approved under the
+owner's newer all-changes instruction. No changes remain blocked from that push.
+
+Continued locally with ReikaStringParser's reflective field/method/enum paths.
+Failures now carry the complete reference and real exception cause, rather than
+printing a stack trace and discarding its cause in a new RuntimeException.
+InvocationTargetException is unwrapped; target Errors propagate directly. Static
+members use null receivers with explicit static checks, enum/method calls use real
+empty parameter lists, and Class/Enum types and map/set constructors are generic.
+Public/inherited numeric lookup, declared enum methods, return-value toString,
+class initialization and the int/float/double/long field contract are retained.
+Unsupported field types keep the original NOT FOUND result.
+
+Member separators are parsed from the right, preserving the existing format
+while supporting binary nested-class names. Missing delimiters, names and class
+parts now fail contextually instead of incidental substring/reflection errors.
+Five regressions cover original and nested/inherited references, all supported
+numeric types and unsupported results, missing/inaccessible/instance members,
+enum constants, exact reference/cause preservation, checked/null/fatal invocation
+results, malformed expressions and existing direct-format behavior.
+251 family units pass (197 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. All 101 native fixtures, strict common MixinAudit
+(30 transformed bindings, two optional absences) and all eight accepted-class
+guards pass; clean exit in 1m 6s. Evidence: build/d58n-string-references.log,
+build/d58n-family-native.log and build/d58n-proof.json.
+
+The D58n continuation is a separate LOCAL checkpoint after the requested push.
+D58 remains open: format-expression wrapper grammar still needs its own review,
+along with remaining helper diagnostics and integration/UI translations. Checklist
+stays 44 complete / 119 open / 163 total. Normal Play and inactive updater remain.
