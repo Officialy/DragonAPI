@@ -2006,3 +2006,30 @@ The D58n continuation is a separate LOCAL checkpoint after the requested push.
 D58 remains open: format-expression wrapper grammar still needs its own review,
 along with remaining helper diagnostics and integration/UI translations. Checklist
 stays 44 complete / 119 open / 163 total. Normal Play and inactive updater remain.
+
+### 2026-10-17 — D58o: nested string-format reference grammar
+
+Fixed ReikaStringParser's PARSE_STRING_FORMAT wrapper handling: remove the
+marker/outer parentheses before formatting, validate balanced wrappers and reject
+trailing wrapper text. Commas inside nested references and plus signs inside
+reference parentheses now remain in their expressions; outer plus concatenation
+still works. Preserve direct template,reference calls, whitespace removal,
+default locale, string-valued reflective results, escape expansion and literal
+text (including leading-space marker text and unmatched prose parentheses).
+The first comma still ends the template; wrapped parentheses must balance.
+Unknown and empty argument references now fail contextually rather than silently
+formatting null. Reflective causes and fatal Errors retain D58n behavior.
+
+Three additional regression tests cover multi-argument nested formats, inner
+plus signs, outer concatenation, direct/wrapped forms, malformed/empty/unknown
+arguments, wrapper balance/trailing text, invocation failures, escapes and
+literal compatibility. Final validation: 254 family units (200 DragonAPI,
+34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft), zero failures/errors/skips;
+101 native GameTests; strict common MixinAudit (30 transformed, two optional
+absences, 14 other-side rows); all eight accepted-class guards. Final process
+exited successfully in 1m 25s. Evidence: build/d58o-string-formats.log,
+build/d58o-final-family-native.log, build/d58o-proof.json and
+build/mixin-audit/20261017-d58o-final-native/gameTest-GameTestServer.json.
+
+D58o is a local checkpoint. D58 stays OPEN for remaining helper diagnostics and
+integration/UI translations; checklist remains 44 complete / 119 open / 163 total.

@@ -56,13 +56,13 @@ public class ReikaStringParser {
 	}
 
 	public static String getStringWithEmbeddedReferences(String sg) {
-		String[] parts = sg.split("\\+");
+		List<String> parts = splitReferenceExpressions(sg, '+');
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < parts.length; i++) {
-			if (isReference(parts[i])) {
-				sb.append(parseReference(parts[i]));
+		for (String part : parts) {
+			if (isReference(part)) {
+				sb.append(parseReference(part));
 			} else
-				sb.append(parts[i]);
+				sb.append(part);
 		}
 		return sb.toString().replaceAll("\\\\n", "\n").replaceAll("\\\\t", "\t");
 	}
@@ -98,18 +98,43 @@ public class ReikaStringParser {
         }
     }
 
+	/**
+	 * Formats {@code template,reference,...}, optionally enclosed in
+	 * {@code PARSE_STRING_FORMAT(...)}. References may contain nested formats;
+	 * wrapper parentheses must balance and the first comma ends the template.
+	 * Retains the legacy whitespace removal, default locale and string-valued arguments.
+	 */
 	public static String parseStringFormat(String sg) {
 		if (sg == null || sg.isBlank())
 			throw new IllegalArgumentException("Format expression cannot be empty");
-		String[] parts = sg.split(",", -1);
-		String str;
-		str = parts[0].replaceAll("\\s", "");
-		Object[] args = new Object[parts.length - 1];
-		for (int i = 1; i < parts.length; i++) {
-			String reference = parts[i].replaceAll("\\s", "");
+		String body = sg;
+		if (sg.startsWith(STRING_FORMAT_CODE)) {
+			String opening = STRING_FORMAT_CODE + "(";
+			if (!sg.startsWith(opening) || !sg.endsWith(")"))
+				throw new IllegalArgumentException("Invalid format expression: " + sg);
+			int depth = 1;
+			for (int i = opening.length(); i < sg.length(); i++) {
+				if (sg.charAt(i) == '(') depth++;
+				else if (sg.charAt(i) == ')') depth--;
+				if (depth == 0 && i != sg.length() - 1)
+					throw new IllegalArgumentException("Trailing text in format expression: " + sg);
+			}
+			if (depth != 0) throw new IllegalArgumentException("Unbalanced format expression: " + sg);
+			body = sg.substring(opening.length(), sg.length() - 1);
+		}
+		// The first comma separates the template; only argument expressions can nest.
+		int separator = body.indexOf(',');
+		String template = separator < 0 ? body : body.substring(0, separator);
+		List<String> parts = separator < 0 ? List.of() : splitReferenceExpressions(body.substring(separator + 1), ',');
+		String str = template.replaceAll("\\s", "");
+		Object[] args = new Object[parts.size()];
+		for (int i = 0; i < parts.size(); i++) {
+			String reference = parts.get(i).replaceAll("\\s", "");
 			if (reference.isEmpty())
-				throw new IllegalArgumentException("Empty reference at argument " + i + " in " + sg);
-			args[i - 1] = parseReference(reference);
+				throw new IllegalArgumentException("Empty reference at argument " + (i + 1) + " in " + sg);
+			if (!isReference(reference))
+				throw new IllegalArgumentException("Invalid reference at argument " + (i + 1) + " in " + sg);
+			args[i] = parseReference(reference);
 		}
 		try {
 			return String.format(str, args);
@@ -117,6 +142,29 @@ public class ReikaStringParser {
 			throw new IllegalArgumentException("Invalid format expression: " + sg, e);
 		}
 	}
+
+    /** Separators inside reference parentheses belong to that reference, not its caller. */
+    private static List<String> splitReferenceExpressions(String expression, char separator) {
+        List<String> parts = new ArrayList<>();
+        int start = 0;
+        int depth = 0;
+        boolean reference = isReference(separator == ',' ? expression.stripLeading() : expression);
+        for (int i = 0; i < expression.length(); i++) {
+            char character = expression.charAt(i);
+            if (reference && character == '(') depth++;
+            else if (reference && character == ')') {
+                if (--depth < 0) throw new IllegalArgumentException("Unbalanced reference expression: " + expression);
+            } else if (character == separator && depth == 0) {
+                parts.add(expression.substring(start, i));
+                start = i + 1;
+                String remaining = expression.substring(start);
+                reference = isReference(separator == ',' ? remaining.stripLeading() : remaining);
+            }
+        }
+        if (depth != 0) throw new IllegalArgumentException("Unbalanced reference expression: " + expression);
+        parts.add(expression.substring(start));
+        return parts;
+    }
 
     private static String parseNumberMethod(String expression) {
         String[] parts = referenceParts(expression, NUMBER_METHOD_CODE, 1);

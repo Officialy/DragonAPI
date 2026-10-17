@@ -100,4 +100,42 @@ class ReikaStringReferenceTest {
         var invalid = assertThrows(IllegalArgumentException.class, () -> ReikaStringParser.parseStringFormat("%d," + field("INT")));
         assertInstanceOf(java.util.IllegalFormatException.class, invalid.getCause());
     }
+
+    @Test void wrappedFormatsResolveNestedArgumentsAndKeepInnerSeparators() {
+        String inner = "PARSE_STRING_FORMAT(%s+%s," + field("INT") + "," + method("text") + ")";
+        String outer = "PARSE_STRING_FORMAT([%s]:%s," + inner + "," + enumeration("FIRST", "text") + ")";
+        assertEquals("-42+text", resolve(inner));
+        assertEquals("[-42+text]:enum-FIRST", ReikaStringParser.parseStringFormat(outer));
+        assertEquals("before[-42+text]:enum-FIRSTafter", resolve("before+" + outer + "+after"));
+        assertEquals("(-42+text)", ReikaStringParser.parseStringFormat("(%s)," + inner));
+        assertEquals("text%", resolve("PARSE_STRING_FORMAT(text%%)"));
+        assertEquals("text", resolve("PARSE_STRING_FORMAT( %s , " + method("text") + " )"));
+    }
+
+    @Test void malformedFormatArgumentsAndWrappersFailWithExpressionContext() {
+        for (String expression : List.of("PARSE_STRING_FORMAT", "PARSE_STRING_FORMAT(%s," + field("INT"),
+                "PARSE_STRING_FORMAT(text))", "PARSE_STRING_FORMAT(text)(more)",
+                "PARSE_STRING_FORMAT(%s,)", "PARSE_STRING_FORMAT(%s,unknown)",
+                "PARSE_STRING_FORMAT(%s," + field("INT") + ",)")) {
+            var error = assertThrows(IllegalArgumentException.class, () -> ReikaStringParser.parseStringFormat(expression));
+            assertTrue(error.getMessage().contains(expression));
+        }
+        assertThrows(IllegalArgumentException.class, () -> ReikaStringParser.parseStringFormat(null));
+        assertThrows(IllegalArgumentException.class, () -> ReikaStringParser.parseStringFormat(" "));
+        assertThrows(IllegalArgumentException.class, () -> resolve("prefix+PARSE_STRING_FORMAT(%s," + field("INT")));
+    }
+
+    @Test void nestedFormatsPreserveInvocationFailuresAndLegacyConcatenation() {
+        String expression = "PARSE_STRING_FORMAT(%s,PARSE_STRING_FORMAT(%s," + method("checkedFailure") + "))";
+        var error = assertThrows(IllegalArgumentException.class, () -> resolve(expression));
+        assertInstanceOf(IOException.class, error.getCause());
+        assertTrue(error.getMessage().contains(method("checkedFailure")));
+        assertSame(FATAL, assertThrows(AssertionError.class,
+                () -> resolve("PARSE_STRING_FORMAT(%s," + method("fatalFailure") + ")")));
+        assertEquals("ordinary(parenthesestext", resolve("ordinary(parentheses+text"));
+        assertEquals(" PARSE_STRING_FORMAT(unclosedtext", resolve(" PARSE_STRING_FORMAT(unclosed+text"));
+        assertEquals("abc", resolve("+a++b+c+"));
+        assertEquals("line\n\ttab", resolve("line\\n+\\ttab"));
+        assertEquals("", resolve(""));
+    }
 }
