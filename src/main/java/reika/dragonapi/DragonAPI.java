@@ -109,12 +109,6 @@ public class DragonAPI extends DragonAPIMod {
         this.finishTiming();
     }
 
-//    todo update overlays to new system
-//     @SubscribeEvent
-//     public static void registerOverlays(RegisterGuiOverlaysEvent event) {
-//        event.registerAboveAll("DebugOverlay", DebugOverlay.getOverlay());
-//    }
-
     @Override
     public String getModId() {
         return MODID;

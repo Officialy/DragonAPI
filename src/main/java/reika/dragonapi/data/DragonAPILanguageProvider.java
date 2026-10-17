@@ -12,6 +12,7 @@ public final class DragonAPILanguageProvider extends LanguageProvider {
 
     @Override
     protected void addTranslations() {
+        add("overlay.dragonapi.debug.enabled", "Debug Mode Enabled!");
         add("warning.dragonapi.settings.header", "You have one or more game settings configured in a manner that is likely to cause gameplay problems in some situations; consider changing them, and please do not report any issues that would not have arisen without that setting. See the next messages for more details. Icons in the top-left corner remain while the settings are relevant.");
         add("warning.dragonapi.settings.muted", "Sounds are muted, despite being used as indicators or warnings in many situations.");
         add("command.dragonapi.debugtest.enabled", "Debug test mode enabled.");
