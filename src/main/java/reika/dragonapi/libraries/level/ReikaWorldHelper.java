@@ -17,6 +17,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.commands.FillBiomeCommand;
 import net.minecraft.util.Mth;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -142,7 +143,7 @@ public class ReikaWorldHelper {
             }
         } else {
             if (world.canSeeSky(pos.above())) {
-                float sun = getSunIntensity(world, true, 0);
+                float sun = getSunIntensity(world, pos, true, 0);
                 int mult = world.isRaining() ? 10 : 20;
                 temp += (sun - 0.75F) * mult;
             }
@@ -654,35 +655,33 @@ public class ReikaWorldHelper {
     }
 
     /**
-     * 1.21.5: Level#getSunAngle(float) was removed. Reproduce the old celestial-angle-in-radians value
-     * from the overworld clock time so downstream brightness math is unchanged.
+     * Legacy position-free entry point. Samples the world origin; positional consumers should
+     * use the BlockPos overload so dimension, timeline and biome angle modifiers are respected.
      */
-    private static float getCelestialAngleRadians(Level world) {
-        double frac = Mth.frac((double) world.getOverworldClockTime() / 24000.0 - 0.25);
-        double d1 = 0.5 - Math.cos(frac * Math.PI) / 2.0;
-        float timeOfDay = (float) ((frac * 2.0 + d1) / 3.0);
-        return timeOfDay * ((float) Math.PI * 2F);
+    public static float getSunIntensity(Level world, boolean weather, float ptick) {
+        return getSunIntensity(world, BlockPos.ZERO, weather, ptick);
     }
 
     /**
-     * Get the sun brightness as a fraction from 0-1. Args: World, whether to apply weather modulation
+     * Normalized sunlight at a block's center using the native 26.3 sun angle in degrees.
+     * Environment attributes are sampled at the current tick; ptick interpolates weather.
+     * Client sky effects should use their camera probe and the angle overload for smooth angles.
      */
-    public static float getSunIntensity(Level world, boolean weather, float ptick) {
-        float ang = getCelestialAngleRadians(world);
-        float base = 1.0F - (Mth.cos(ang * (float) Math.PI * 2.0F) * 2.0F + 0.2F);
+    public static float getSunIntensity(Level world, BlockPos pos, boolean weather, float ptick) {
+        float angle = world.environmentAttributes().getValue(EnvironmentAttributes.SUN_ANGLE, pos);
+        return getSunIntensity(angle, weather ? world.getRainLevel(ptick) : 0, weather ? world.getThunderLevel(ptick) : 0);
+    }
 
-        if (base < 0.0F)
-            base = 0.0F;
-
-        if (base > 1.0F)
-            base = 1.0F;
-
-        base = 1.0F - base;
-        if (weather) {
-            base = (float) (base * (1.0D - world.getRainLevel(ptick) * 5.0F / 16.0D));
-            base = (float) (base * (1.0D - world.getThunderLevel(ptick) * 5.0F / 16.0D));
-        }
-        return base * 0.8F + 0.2F;
+    /**
+     * Original normalized 0-1 sunlight curve, with the native angle converted to radians once.
+     * Rain and rain-weighted thunder are 0-1 strengths (Level.getRainLevel/getThunderLevel).
+     * This is sunlight intensity, so callers supply any desired ambient brightness floor.
+     */
+    public static float getSunIntensity(float sunAngleDegrees, float rain, float weightedThunder) {
+        float radians = sunAngleDegrees * ((float)Math.PI / 180F);
+        float base = 1F - Mth.clamp(1F - (Mth.cos(radians) * 2F + 0.2F), 0F, 1F);
+        base = (float)(base * (1D - rain * 5F / 16D));
+        return (float)(base * (1D - weightedThunder * 5F / 16D));
     }
 
     /**
