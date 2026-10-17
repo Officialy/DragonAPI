@@ -2068,3 +2068,29 @@ Local checkpoint only. D58 remains open; checklist 44 complete / 119 open / 163.
 The owner's pre-existing .idea/workspace.xml change is preserved separately.
 Next confirmed defect: CommutativePair's unordered equality currently disagrees
 with its generated, order-sensitive record hashCode.
+
+## D58q — Commutative pair hash-key contract (2026-10-18)
+
+Restored CommutativePair.hashCode to the exact commutative sum in original
+DragonAPI de1bcf1f:Instantiable/Data/Immutable/CommutativePair.java. The record
+port preserved unordered equality but accidentally inherited an order-sensitive
+record hash, making reversed equal keys unreliable in hash collections. Equality
+now uses CommutativePair<?> rather than a raw pattern; order-independent equality,
+component accessors, repeated values and the original MisuseException null policy
+are preserved. Integer overflow remains the original Java int sum behavior.
+
+Three regressions verify reversed/equal-distinct keys with actual HashMap get,
+replacement and HashSet deduplication/removal across 25 signed/extreme hash pairs;
+repeated components, distinct keys with colliding hashes, unrelated/null equality
+and all null-constructor combinations. All 262 family units pass (208 DragonAPI,
+34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft), zero failures/errors/skips;
+clean process exit in 1m 51s. Evidence: build/d58q-pair-keys.log and
+build/d58q-proof.json. This is a pure Java key-contract change; D58p separately
+records the immediately preceding 101 native tests and strict mixin baseline.
+The backlog's current target header now matches committed NeoForge 26.3.0.76;
+dated historical version evidence remains intact.
+
+Local checkpoint only. D58 remains open; checklist remains 44 complete / 119 open /
+163 total. The owner's IDE workspace change is preserved outside these commits.
+Next: D63 sunlight normalization/angle conversion against actual 26.3 environment
+attributes, including climate, solar machinery and Luminous Cliffs consumers.

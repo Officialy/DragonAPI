@@ -20,13 +20,19 @@ public record CommutativePair<V>(V o1, V o2) {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof CommutativePair b) {
+        if (o instanceof CommutativePair<?> b) {
             if (b.o1.equals(o1) && b.o2.equals(o2))
                 return true;
             //reverse
             return b.o1.equals(o2) && b.o2.equals(o1);
         }
         return false;
+    }
+
+    /** Both orientations are equal, so retain the original commutative hash sum. */
+    @Override
+    public int hashCode() {
+        return o1.hashCode() + o2.hashCode();
     }
 
 }
