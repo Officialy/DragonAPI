@@ -2033,3 +2033,38 @@ build/mixin-audit/20261017-d58o-final-native/gameTest-GameTestServer.json.
 
 D58o is a local checkpoint. D58 stays OPEN for remaining helper diagnostics and
 integration/UI translations; checklist remains 44 complete / 119 open / 163 total.
+
+## D58p — Sorting helper correctness and bounded pair constraints (2026-10-18)
+
+Fully typed the accepted ReikaSortingHelper API while retaining its public
+List/ArrayList method descriptors and all three sorting operations. Merge sort
+now uses independent working storage, checks exhausted halves before reads,
+passes the supplied comparator recursively and keeps equal elements stable.
+Bubble sort is typed and stops after an unchanged pass. The original commented
+map-key-sort experiment remains preserved as historical source information.
+
+All-pair sorting still compares every unordered pair, but now tracks individual
+occurrences rather than equality-keyed objects. A deterministic topological
+ordering satisfies every strict pair constraint and retains original-index
+priority among available occurrences. Equal-but-distinct objects and duplicates
+cannot collapse in a pair map. Cycles fail explicitly before mutating the input,
+instead of an unbounded swap loop. Comparator failures propagate unchanged;
+merge/all-pair working storage leaves the input intact on comparison failure.
+The pair graph uses quadratic time/storage and no element hashes; debug logging
+retains a structured size diagnostic without eagerly formatting the entire graph.
+
+Five regressions cover seeded natural/reverse ordering, empty/singleton/odd lists,
+exhausted halves, non-Comparable objects, tie identity, repeats, linked/fixed-size
+lists and views, null policies, equal objects with forbidden hashing, comparison
+counts/sign extremes, partial orders, cycle detection and comparator failures.
+Validation: 259 family units (205 DragonAPI, 34 RotaryCraft, 8 ReactorCraft,
+12 ChromatiCraft), zero failures/errors/skips; all 101 native GameTests; strict
+common MixinAudit (30 transformed/two optional absences/14 other-side rows);
+all eight accepted-class guards. Final process exited successfully in 2m 18s.
+Evidence: build/d58p-sorting.log, build/d58p-family-native.log,
+build/d58p-proof.json and build/mixin-audit/20261018-d58p-native/.
+
+Local checkpoint only. D58 remains open; checklist 44 complete / 119 open / 163.
+The owner's pre-existing .idea/workspace.xml change is preserved separately.
+Next confirmed defect: CommutativePair's unordered equality currently disagrees
+with its generated, order-sensitive record hashCode.

@@ -10,147 +10,118 @@
 package reika.dragonapi.libraries.java;
 
 import reika.dragonapi.DragonAPI;
-import reika.dragonapi.instantiable.data.immutable.CommutativePair;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Objects;
+import java.util.PriorityQueue;
 
 public class ReikaSortingHelper {
 
-	private static final boolean debug = false;
+    public static <T extends Comparable<? super T>> void bubbleSort(List<T> list) {
+        bubbleSort(list, Comparator.naturalOrder());
+    }
 
-	public static void bubbleSort(List li) {
-		bubbleSort(li, new DefaultComparator());
-	}
+    public static <T> void bubbleSort(List<T> list, Comparator<? super T> comparator) {
+        Objects.requireNonNull(list, "list");
+        Objects.requireNonNull(comparator, "comparator");
+        for (int end = list.size(); end > 1; end--) {
+            boolean changed = false;
+            for (int index = 1; index < end; index++) {
+                T before = list.get(index - 1);
+                T after = list.get(index);
+                if (comparator.compare(before, after) > 0) {
+                    list.set(index - 1, after);
+                    list.set(index, before);
+                    changed = true;
+                }
+            }
+            if (!changed) return;
+        }
+    }
 
-	public static void bubbleSort(List li, Comparator c) {
-		if (li.size() > 1) {
-			for (int i = 0; i < li.size(); i++) {
-				for (int x = 1; x < li.size() - i; x++) {
-					Object o = li.get(x);
-					Object p = li.get(x - 1);
-					if (c.compare(p, o) > 0) {
-						Object temp = p;
-						li.set(x - 1, o);
-						li.set(x, temp);
-					}
-				}
-			}
-		}
-	}
+    public static <T extends Comparable<? super T>> void mergeSort(List<T> list) {
+        mergeSort(list, Comparator.naturalOrder());
+    }
 
-	public static void mergeSort(List li) {
-		mergeSort(li, new DefaultComparator());
-	}
+    /** Stable merge sort; independent working storage prevents writes from corrupting either half. */
+    public static <T> void mergeSort(List<T> list, Comparator<? super T> comparator) {
+        Objects.requireNonNull(list, "list");
+        Objects.requireNonNull(comparator, "comparator");
+        if (list.size() < 2) return;
+        ArrayList<T> values = new ArrayList<>(list);
+        mergeSort(values, new ArrayList<>(values), 0, values.size(), comparator);
+        replaceContents(list, values);
+    }
 
-	public static void mergeSort(List li, Comparator c) {
-		if (li.size() > 1) {
-			int mid = li.size() / 2;
+    private static <T> void mergeSort(ArrayList<T> values, ArrayList<T> buffer, int start, int end,
+            Comparator<? super T> comparator) {
+        if (end - start < 2) return;
+        int middle = start + (end - start) / 2;
+        mergeSort(values, buffer, start, middle, comparator);
+        mergeSort(values, buffer, middle, end, comparator);
+        int left = start;
+        int right = middle;
+        for (int index = start; index < end; index++) {
+            if (right == end || left < middle && comparator.compare(values.get(left), values.get(right)) <= 0)
+                buffer.set(index, values.get(left++));
+            else
+                buffer.set(index, values.get(right++));
+        }
+        for (int index = start; index < end; index++) values.set(index, buffer.get(index));
+    }
 
-			List left = li.subList(0, mid);
-			List right = li.subList(mid, li.size());
+    public static <T extends Comparable<? super T>> void allPairSort(ArrayList<T> list) {
+        allPairSort(list, Comparator.naturalOrder());
+    }
 
-			mergeSort(left);
-			mergeSort(right);
+    /**
+     * Compares every distinct pair of occurrences once and satisfies all resulting ordering
+     * constraints. Equal comparisons add no constraint; available occurrences retain original
+     * index priority. Cyclic constraints are unsortable and fail before changing the input.
+     * Uses quadratic time and storage for the complete pair graph, without unbounded swap cycles.
+     */
+    public static <T> void allPairSort(ArrayList<T> list, Comparator<? super T> comparator) {
+        Objects.requireNonNull(list, "list");
+        Objects.requireNonNull(comparator, "comparator");
+        int size = list.size();
+        if (size < 2) return;
+        DragonAPI.LOGGER.debug("All-pair sorting {} element occurrences", size);
+        List<List<Integer>> successors = new ArrayList<>(size);
+        int[] predecessors = new int[size];
+        for (int index = 0; index < size; index++) successors.add(new ArrayList<>());
+        for (int first = 0; first < size; first++) {
+            for (int second = first + 1; second < size; second++) {
+                int relation = comparator.compare(list.get(first), list.get(second));
+                if (relation == 0) continue;
+                int before = relation < 0 ? first : second;
+                int after = relation < 0 ? second : first;
+                successors.get(before).add(after);
+                predecessors[after]++;
+            }
+        }
+        PriorityQueue<Integer> available = new PriorityQueue<>();
+        for (int index = 0; index < size; index++) if (predecessors[index] == 0) available.add(index);
+        List<T> sorted = new ArrayList<>(size);
+        while (!available.isEmpty()) {
+            int index = available.remove();
+            sorted.add(list.get(index));
+            for (int after : successors.get(index)) if (--predecessors[after] == 0) available.add(after);
+        }
+        if (sorted.size() != size)
+            throw new IllegalArgumentException("Cannot all-pair sort " + size + " elements: comparator ordering contains a cycle");
+        replaceContents(list, sorted);
+    }
 
-			merge(li, left, right, c);
-		}
-	}
-
-	private static void merge(List li, List left, List right, Comparator c) {
-		int sum = left.size() + right.size();
-		int i = 0;
-		int il = 0;
-		int ir = 0;
-		while (i < sum) {
-			Object ol = left.get(il);
-			Object or = right.get(ir);
-			if (il < left.size() && ir < right.size()) {
-				if (c.compare(ol, or) < 0) {
-					li.set(i, ol);
-					i++;
-					il++;
-				} else {
-					li.set(i, or);
-					i++;
-					ir++;
-				}
-			} else {
-				if (il >= left.size()) {
-					while (ir < right.size()) {
-						li.set(i, or);
-						i++;
-						ir++;
-					}
-				}
-				if (ir >= right.size()) {
-					while (il < left.size()) {
-						li.set(i, ol);
-						il++;
-						i++;
-					}
-				}
-			}
-		}
-	}
-
-	public static void allPairSort(ArrayList li) {
-		allPairSort(li, new DefaultComparator());
-	}
-
-	/**
-	 * Sorts a list by every possible pairing. Very slow but very effective for specialized datasets.
-	 */
-	public static void allPairSort(ArrayList li, Comparator c) {
-		HashMap<ImmutablePair, Integer> map = new HashMap();
-		Collection<CommutativePair> pairs = new ArrayList<>();
-		for (Object o1 : li) {
-			for (Object o2 : li) {
-				CommutativePair cp = new CommutativePair(o1, o2);
-				if (!pairs.contains(cp)) {
-					map.put(new ImmutablePair(o1, o2), c.compare(o1, o2));
-					pairs.add(cp);
-				}
-			}
-		}
-
-		DragonAPI.LOGGER.debug("About to perform a very slow sorting! If your game locks up here, come to Reika with this message!");
-		DragonAPI.LOGGER.debug("Size: " + li.size() + "; Contents: " + li + "; Map: " + map);
-		boolean flag = sortListByPairMap(li, map);
-		int cycles = 1;
-		while (flag) {
-			if (debug)
-				DragonAPI.LOGGER.debug(cycles + " cycles.");
-			flag = sortListByPairMap(li, map);
-			cycles++;
-		}
-	}
-
-	private static boolean sortListByPairMap(ArrayList li, HashMap<ImmutablePair, Integer> map) {
-		for (int i = 0; i < li.size(); i++) {
-			Object o1 = li.get(i);
-			for (int k = 0; k < li.size(); k++) {
-				Object o2 = li.get(k);
-				Integer rel = map.get(new ImmutablePair(o1, o2));
-				if (rel == null)
-					continue;
-				if (debug) {
-					//DragonAPI.LOGGER.debug("Comparing "+o1+" @ "+i+" and "+o2+" @ "+k+"; Map contains "+rel);
-					//DragonAPI.LOGGER.debug("");
-				}
-				if ((rel < 0 && i > k) || (rel > 0 && i < k)) { //swap
-					if (debug) {
-						String s = (rel < 0 && i > k) ? "after when it should be before" : "before when it should be after";
-						DragonAPI.LOGGER.debug("Swapping " + o1 + " and " + o2 + ": o1 was " + s);
-					}
-					li.set(i, o2);
-					li.set(k, o1);
-					return true;
-				}
-			}
-		}
-		return false;
-	}
+    private static <T> void replaceContents(List<T> target, List<T> values) {
+        ListIterator<T> iterator = target.listIterator();
+        for (T value : values) {
+            iterator.next();
+            iterator.set(value);
+        }
+    }
 
 	/*
 	public static void mapKeySort(ArrayList li) {
@@ -165,13 +136,4 @@ public class ReikaSortingHelper {
 		}
 	}
 	 */
-	private static class DefaultComparator implements Comparator<Comparable> {
-
-		@Override
-		public int compare(Comparable o1, Comparable o2) {
-			return o1.compareTo(o2);
-		}
-
-	}
-
 }
