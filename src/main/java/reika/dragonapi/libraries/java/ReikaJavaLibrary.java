@@ -722,17 +722,13 @@ public final class ReikaJavaLibrary {
     }
 
     /**
-     * NOT PERFORMANT
+     * Expensive diagnostic lookup of live platform threads; virtual threads are not enumerated.
+     * Duplicate names may return any match, and a returned thread may terminate after the snapshot.
      */
-    public static Thread getThreadByName(String name) {
-        ThreadGroup tg = getTopLevelThreadGroup();
-        Thread[] all = new Thread[tg.activeCount()];
-        tg.enumerate(all, true);
-        for (Thread t : all) {
-            String n = t.getName();
-            if (n != null && n.equals(name)) {
-                return t;
-            }
+    public static @Nullable Thread getThreadByName(@Nullable String name) {
+        if (name == null) return null;
+        for (Thread thread : Thread.getAllStackTraces().keySet()) {
+            if (name.equals(thread.getName()) && thread.isAlive()) return thread;
         }
         return null;
     }

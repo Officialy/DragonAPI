@@ -1925,3 +1925,42 @@ build/d58l-family-native.log and build/d58l-proof.json.
 D58 remains open for other accepted-helper contracts and untranslated integration/
 UI text. Checklist stays 44 complete / 119 open / 163 total. Local checkpoint only;
 existing owner edits, normal Play configuration and the inactive updater remain.
+
+
+## D58m — Diagnostic thread lookup and JVM utility contracts (2026-10-17)
+
+Thread lookup no longer sizes an array from ThreadGroup.activeCount and then
+ignores enumerate's actual count. That two-snapshot estimate could truncate
+results or leave null slots during thread churn. The supported Java 25
+Thread.getAllStackTraces snapshot supplies live platform-thread references;
+name/aliveness checks return a nullable match without retaining a cache. Null
+queries return null. Duplicate names remain unspecified, and a match can end or
+rename after inspection. This remains an expensive diagnostic helper, with the
+same platform-only scope as ThreadGroup enumeration; virtual threads are not
+silently claimed to be discoverable. getTopLevelThreadGroup behavior is retained.
+Installed JDK 25.0.2 Thread/ThreadGroup sources establish those scope contracts.
+
+JVM arguments now form an immutable typed startup snapshot in VM input order,
+instead of a mutable raw HashSet behind a wrapper. Presence/modifier/integer
+queries retain their formats and missing-result sentinels, with deterministic
+first-prefix selection in VM order. Modifier absence is explicitly nullable.
+Runtime-version and client-launcher errors use contextual logger events/causes;
+existing version and launcher fallback results remain. The obsolete pre-Java-9
+version comment and unused reflection import are removed; current documentation
+matches Runtime.version's component order. Existing heap parsing is retained.
+
+Five regressions cover controlled live/terminated platform-thread lifecycles,
+nested and duplicate-name groups, absent/null lookup, virtual-thread exclusion
+and shared root-group behavior, immutable runtime argument order/presence/defaults,
+and native Java version components/bounds. Tests release and join only their own
+threads; there is no new gameplay hook, scheduler or global thread registry.
+246 family units pass (192 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. All 101 native fixtures, strict common MixinAudit
+(30 transformed bindings, two optional absences) and all eight accepted-class
+guards pass on NeoForge 26.3.0.76; clean exit in 1m 58s. Evidence:
+build/d58m-thread-jvm.log, build/d58m-family-native.log and build/d58m-proof.json.
+
+D58 remains open for remaining helper diagnostics and untranslated integration/
+UI text; D59's broader cache/session/thread ownership audit also remains open.
+Checklist stays 44 complete / 119 open / 163 total. Local checkpoint only;
+existing owner edits, normal Play configuration and inactive updater are preserved.

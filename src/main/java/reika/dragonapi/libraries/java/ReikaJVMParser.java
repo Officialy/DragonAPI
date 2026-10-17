@@ -1,32 +1,34 @@
 package reika.dragonapi.libraries.java;
 
 import reika.dragonapi.client.ClientEnvironment;
+import reika.dragonapi.DragonAPI;
+import org.jspecify.annotations.Nullable;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class ReikaJVMParser {
 
-    private static final HashSet<String> args = new HashSet();
+    private static final Set<String> args = Collections.unmodifiableSet(
+            new LinkedHashSet<>(ManagementFactory.getRuntimeMXBean().getInputArguments()));
 
     private static final int[] version = getJavaVersion();
 
     public static Set<String> getAllArguments() {
-        return Collections.unmodifiableSet(args);
+        return args;
     }
 
     public static boolean isArgumentPresent(String arg) {
         return args.contains(arg);
     }
 
-    public static String getArgumentModifier(String pre) {
+    public static @Nullable String getArgumentModifier(String pre) {
         for (String s : args) {
             if (s.startsWith(pre)) {
                 return s.substring(pre.length());
@@ -79,7 +81,6 @@ public class ReikaJVMParser {
     }
 
     static {
-        args.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
         ReikaJavaLibrary.pConsole("Java Version: "+ Arrays.toString(version));
         ReikaJavaLibrary.pConsole("Heap memory allocation: "+getAllocatedHeapMemory());
         ReikaJavaLibrary.pConsole(args.size()+" Java arguments present: "+args);
@@ -89,16 +90,13 @@ public class ReikaJVMParser {
         try {
             return Runtime.version().version().stream().mapToInt(Integer::intValue).toArray();
         }
-        catch (Exception e) {
-            ReikaJavaLibrary.pConsole("***********************************************************************************************");
-            ReikaJavaLibrary.pConsole("UNABLE TO PARSE JAVA VERSION! ARE YOU USING A NONSTANDARD JVM? THIS IS LIKELY TO BREAK THINGS!");
-            ReikaJavaLibrary.pConsole(getFullJavaInfo());
-            ReikaJavaLibrary.pConsole("***********************************************************************************************");
+        catch (RuntimeException error) {
+            DragonAPI.LOGGER.error("Could not read runtime version components for {}", getFullJavaInfo(), error);
             return new int[] {-1, -1, -1};
         }
     }
 
-    /** 0 for major (7, 8, etc), and 2 for release (eg 55 for 1.7_55) */
+    /** Zero-based Runtime.version() components: feature, interim, update and patch, when present. */
     public static int getJavaVersion(int subindex) {
         if (subindex < 0 || subindex >= version.length)
             throw new IllegalArgumentException("Java version component " + subindex + " is unavailable");
@@ -113,14 +111,13 @@ public class ReikaJVMParser {
         return FMLEnvironment.getDist() == Dist.CLIENT ? getLauncherClient() : "Server";
     }
 
-//
     public static String getLauncherClient() {
         try {
             return ClientEnvironment.launchedVersion();
         }
-        catch (Exception e) {
-            e.printStackTrace();
-            return e.toString();
+        catch (Exception error) {
+            DragonAPI.LOGGER.error("Could not read the client launcher version", error);
+            return error.toString();
         }
     }
 }
