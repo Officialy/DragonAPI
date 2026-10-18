@@ -17,7 +17,6 @@ import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.MisuseException;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.instantiable.data.maps.MultiMap;
-import reika.dragonapi.instantiable.io.EnumSound;
 import reika.dragonapi.instantiable.io.SoundVariant;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 import reika.dragonapi.interfaces.registry.VariableSound;
@@ -135,8 +134,8 @@ public class ReikaSoundHelper {
     }
 
 
-    // These return void and name no client type: ReikaSoundHelper is reached from mod construction
-    // on a dedicated server, so a client type in any of its signatures stops the class loading.
+    // Dedicated-server setup reaches this utility. Its public sound API uses common types;
+    // physical-client implementations stay in ClientSounds behind the distribution guard.
     public static void playClientSound(SoundEnum s, double x, double y, double z, float vol, float pitch) {
         playClientSound(s, x, y, z, vol, pitch, true);
     }

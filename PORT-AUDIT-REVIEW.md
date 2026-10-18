@@ -2409,3 +2409,64 @@ a comment pointing to its ClientEnvironment bridge. Expand the actual mathsci
 library scan and validate server execution/reflection paths before declaring any
 client import a defect. Revisit D13/N08 with a corrected native Iris binding path
 or changed installed artifact, then rerun every required enabled/shadow phase.
+
+
+## D14 - Accepted common/client boundaries and logical chat routing (2026-10-18)
+
+Audited accepted instantiable/data, instantiable/math, instantiable/io,
+libraries/mathsci and libraries/io, including indirect ClientEnvironment and
+ClientSounds bridges and active compiled callers across the family. The initial
+native server probe already passed proportional calculations, spline interpolation
+and public reflection, so client imports were not treated as proof of a crash.
+The full audit/classification is in DragonAPI/docs/common-client-boundary-audit.md;
+accepted reference inventory is build/d14-accepted-callers.json. Data/drawing APIs
+remain intact. Existing physical bridges handle the server-safe boundaries;
+unused client imports in SyncPacket and ReikaSoundHelper are removed.
+
+The indirect review found an actual integrated-server defect in ReikaChatHelper:
+physical CLIENT distribution selected local UI code even on the server thread.
+Restored original logical/effective-side behavior. ServerPlayer-targeted clearing
+always sends CLEARCHAT; untargeted local helpers suppress server-thread UI work.
+Local string/component delivery is implemented in ClientEnvironment and dispatched
+to client main. String splitting/chunking and translation keys/arguments survive,
+with component snapshots taken before queueing. Dedicated-only guards also pass.
+
+EnumSound's setRepeating was a no-op and isLooping always false. Original source
+(de1bcf1f Instantiable/IO/EnumSound.java) requires fluent/idempotent repetition with
+zero delay. Restored the native looping flag and original public final position,
+volume, pitch and attenuation metadata, retaining reference constructors and the
+nonrepeating default. Its owned audit sound reaches the real sound engine with
+looping enabled, then is explicitly stopped. No normal Play fixture runs.
+
+All 281 family units pass (227 DA, 34 RC, 8 ReC, 12 Chroma), zero failures/errors/
+skips; all 105 required native GameTests and eight accepted-class guards pass.
+The expanded native regression covers weight/NBT round-trip, category geometry,
+all spline modes/closure/variable endpoints, common world-context resolution,
+classpath asset access without a client manager/download, dedicated config hash,
+chat/sound guards and API metadata. Final native run passes in 1m 42s. Fresh full
+client passes in 3m 1s, including real integrated-server no-target suppression,
+queued target clearing, worker-originated UI delivery only on render thread,
+exact string splitting and retained translation arguments, restored chat state,
+EnumSound metadata/constructors and actual sound-engine loop state. Previous
+boss/popup/artifact/render/sound/lifecycle fixtures remain passing. A fixture import
+was corrected to the actual 26.3 GuiMessage package before final acceptance.
+
+Evidence: build/d14-proof.json, build/d14-boundary-family-native.log,
+build/d14-boundary-client.log, build/d14-before-native.log,
+build/d14-accepted-callers.json and build/mixin-audit/20261018-d14-boundary-*/.
+Strict mixins remain 30 common transformed/17 other-side/two optional absences,
+47 client transformed/two optional absences. Default audit args are restored and
+normal Play argument hashes match D13. D13/N08 Iris enabled-phase failure stays
+open; no external shader acceptance or standalone hosting claim is added here.
+
+D14 is complete for the accepted port slice. Checklist: 51 complete / 112 open /
+163 total. Local checkpoints only; owner .idea/workspace.xml remains separate.
+Next: D15 FileInputThread's empty run body and original loading/result/error/
+ownership contract, keeping world/resource-manager access on the proper thread.
+
+
+Checkpoint scope note: concurrent ChromatiCraft progression-overlay edits appeared
+while finalizing this batch (PORTING, ChromaClientRenderers, ProgressionOverlay,
+mixin config and a new ProgressionOverlayMixin). They are left separate and
+uncommitted, alongside owner IDE state. D14 validation refers to the exact audit
+snapshots/reports above and does not claim acceptance of those concurrent edits.

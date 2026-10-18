@@ -2,19 +2,19 @@ package reika.dragonapi.instantiable.io;
 
 import net.minecraft.client.resources.sounds.AbstractSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import reika.dragonapi.interfaces.registry.SoundEnum;
 
+/** Physical-client sound-engine adapter; common emission uses ReikaSoundHelper and its client bridge. */
 public class EnumSound extends AbstractSoundInstance {
     public final SoundEnum sound;
 
-    private final double posX;
-    private final double posY;
-    private final double posZ;
-    private final float vol;
-    private final float pit;
-    private final boolean atten;
+    public final double posX;
+    public final double posY;
+    public final double posZ;
+    public final float volume;
+    public final float pitch;
+    public final boolean attenuate;
 
     public EnumSound(SoundEnum obj, SoundInstance ref) {
         this(obj, ref, ref.getAttenuation() != Attenuation.NONE);
@@ -32,9 +32,9 @@ public class EnumSound extends AbstractSoundInstance {
         this.posX = x;
         this.posY = y;
         this.posZ = z;
-        this.vol = vol;
-        this.pit = p;
-        this.atten = att;
+        this.volume = vol;
+        this.pitch = p;
+        this.attenuate = att;
     }
 
     @Override
@@ -54,12 +54,12 @@ public class EnumSound extends AbstractSoundInstance {
 
     @Override
     public float getVolume() {
-        return vol;
+        return volume;
     }
 
     @Override
     public float getPitch() {
-        return pit;
+        return pitch;
     }
 
     @Override
@@ -69,12 +69,12 @@ public class EnumSound extends AbstractSoundInstance {
 
     @Override
     public Attenuation getAttenuation() {
-        return atten ? Attenuation.LINEAR : Attenuation.NONE;
+        return attenuate ? Attenuation.LINEAR : Attenuation.NONE;
     }
 
     @Override
     public boolean isLooping() {
-        return false;
+        return looping;
     }
 
     @Override
@@ -83,6 +83,7 @@ public class EnumSound extends AbstractSoundInstance {
     }
 
     public EnumSound setRepeating() {
+        looping = true;
         return this;
     }
 }

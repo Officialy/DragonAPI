@@ -67,7 +67,23 @@ public final class ClientEnvironment {
     }
 
     public static void clearChat() {
-        Minecraft.getInstance().gui.hud.getChat().clearMessages(true);
+        var minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> minecraft.gui.hud.getChat().clearMessages(true));
+    }
+
+    public static void writeChatString(String message) {
+        var minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            if (minecraft.player != null) reika.dragonapi.libraries.io.ReikaChatHelper.sendChatToPlayer(minecraft.player, message);
+        });
+    }
+
+    public static void writeChatComponent(net.minecraft.network.chat.Component message) {
+        var minecraft = Minecraft.getInstance();
+        var snapshot = message.copy();
+        minecraft.execute(() -> {
+            if (minecraft.player != null) minecraft.player.sendSystemMessage(snapshot);
+        });
     }
 
     /** Opens a resource from the *client* resource manager (assets), not the server's data packs. */

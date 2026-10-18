@@ -23,7 +23,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.core.registries.BuiltInRegistries;
 import reika.dragonapi.APIPacketHandler;
@@ -36,11 +35,16 @@ public final class ReikaChatHelper {
     }
 
     public static void clearChat(ServerPlayer ep) {
-        if (FMLEnvironment.getDist() == Dist.CLIENT) {
-            clearChatGui();
-        } else if (ep != null) {
+        if (ep != null) {
             ReikaPacketHelper.sendDataPacket(DragonAPI.packetChannel, APIPacketHandler.PacketIDs.CLEARCHAT.wireId(), ep);
+        } else if (isLocalClient()) {
+            clearChatGui();
         }
+    }
+
+    private static boolean isLocalClient() {
+        return FMLEnvironment.getDist().isClient()
+                && net.neoforged.fml.util.thread.EffectiveSide.get() == net.neoforged.fml.LogicalSide.CLIENT;
     }
 
 /*    public static void sendChatToAllOnServer(String sg) {
@@ -122,7 +126,7 @@ public final class ReikaChatHelper {
     }
 
     public static void writeString(String sg) {
-        if (FMLEnvironment.getDist() == Dist.CLIENT) {
+        if (isLocalClient()) {
             writeChatString(sg);
         }
     }
@@ -132,20 +136,16 @@ public final class ReikaChatHelper {
      */
 
     private static void writeChatString(String sg) {
-        if (!FMLEnvironment.getDist().isClient())
+        if (!isLocalClient())
             return;
-        Player local = reika.dragonapi.client.ClientEnvironment.player();
-        if (local != null)
-            sendChatToPlayer(local, sg);
+        ClientEnvironment.writeChatString(sg);
     }
 
     /** Sends a component without resolving translations before delivery to the local client. */
     public static void writeComponent(Component message) {
-        if (!FMLEnvironment.getDist().isClient())
+        if (!isLocalClient())
             return;
-        Player local = ClientEnvironment.player();
-        if (local != null)
-            local.sendSystemMessage(message);
+        ClientEnvironment.writeChatComponent(message);
     }
 
     /** Sends the translation key to the local client for resolution in its language. */
