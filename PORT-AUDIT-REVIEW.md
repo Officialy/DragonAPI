@@ -2302,3 +2302,52 @@ build/mixin-audit/20261018-d11-client/.
 D11 is complete. Checklist: 49 complete / 114 open / 163 total. Local checkpoints
 only. Owner .idea/workspace.xml remains separate. Next: D12 popup queue
 encapsulation and per-popup layout/input state with caller and save-ID parity.
+
+
+## D12 - Popup service ownership and native input (2026-10-18)
+
+PopupWriter is now a common warning service rather than a client Screen.
+Its synchronized private queue exposes immutable snapshots and explicit enqueue,
+clear and dismissal operations. Each queued occurrence has a separate identity,
+even for repeated instances of the same Warning, so stale clicks cannot dismiss
+a successor. Original text-based Warning equality/hashing, width bounds, packet
+wire ID/text/width and client instruction text remain intact. Accepted development,
+logout and setting-warning callers migrate together; no public mutable list or
+cursor flag remains. Logical-server registration works in integrated servers as
+well as dedicated processes. Server warnings deliver on native player login with
+per-server/per-player duplicate suppression; delivery history clears at server stop.
+Registered server warnings retain their original process-lifetime scope.
+
+PopupClient owns the named HUD layer and a fresh native PopupScreen for each
+opening. Layout belongs to that screen and exact displayed occurrence. Native
+screen ownership handles cursor release/restoration without global toggles.
+Only Ctrl-held SDL left-button clicks inside a freshly extracted close target can
+dismiss; unrelated screens, other buttons, stale/unextracted targets and hidden
+HUD cannot. Ctrl release/tick, Escape, final dismissal and logout close normally.
+The complete contract and migration are in DragonAPI/docs/popup-writer-port.md.
+
+Four new regressions cover immutable snapshots, ordered/repeated occurrences,
+stale clear/replacement identities and original text/width semantics. All 281
+family units pass (227 DragonAPI, 34 RotaryCraft, 8 ReactorCraft, 12 ChromatiCraft),
+zero failures/errors/skips. All 104 required native GameTests and eight accepted
+class guards pass. Strict mixin audits remain 30 transformed/17 other-side/two
+optional absences on common, and 47 transformed/two optional absences on client.
+The final isolated client passed in 2m 58s, including a real server popup packet,
+text/width/duplicate suppression, live named HUD layer, full icon UVs, independent
+screen ownership, SDL physical Ctrl state, release/tick handling, button/bounds/F1
+guards, stale/unextracted clicks, differing layouts and native logout cleanup.
+Existing graphical fixtures also pass. Normal Play argument hashes are unchanged;
+default audit arguments restored. No external renderer matrix rerun is claimed.
+
+Two failed graphical attempts remain recorded: the first fixture set SDL modifier
+flags instead of the physical key bytes Minecraft reads; the second exposed the
+D11 fixture's assumption that GPU readback completion implies a later game tick.
+The corrected fixture waits for the actual native reset before applying the same
+assertion. Final evidence: build/d12-family-native.log, build/d12-client-accept.log,
+build/d12-proof.json, build/d12-restore-audit-args.log and
+build/mixin-audit/20261018-d12-{native,client-accept}/.
+
+D12 is complete. Checklist: 50 complete / 113 open / 163 total. Local checkpoints
+only; owner .idea/workspace.xml remains separate. D14's broader physical-client
+reachability audit remains open. Next: D13 measurement of IrisCompat in real
+frame/stage paths before deciding whether any caching is justified.

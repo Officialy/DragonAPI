@@ -30,7 +30,7 @@ public class Tests {
 
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, DragonAPI.MODID);
 
-    // 1.21.5: Item.Properties needs setId() before Item.<init> dereferences it via effectiveDescriptionId().
+    // 26.3: Item.Properties needs setId() before Item.<init> dereferences it via effectiveDescriptionId().
     public static final DeferredHolder<Item, Item> TEST_ITEM = ITEMS.register("test_item",
             rl -> new ItemTest(new Item.Properties().setId(ResourceKey.create(Registries.ITEM, rl))));
     public static class ItemTest extends Item {
@@ -46,8 +46,7 @@ public class Tests {
             if (!player.isShiftKeyDown()) {
                 PopupWriter.instance().addMessage("Popup test with a super duper extra fancy long message, to test spacing!");
             } else if (player.isShiftKeyDown()) {
-                if (!PopupWriter.list.isEmpty())
-                    PopupWriter.list.remove(0);
+                PopupWriter.instance().dismissFirst();
             }
 
             return InteractionResult.PASS;

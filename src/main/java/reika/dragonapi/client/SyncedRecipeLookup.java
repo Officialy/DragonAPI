@@ -17,7 +17,7 @@ public final class SyncedRecipeLookup {
             ClientKeyWatcher.reset();
             reika.dragonapi.libraries.ReikaIngredientHelper.clearCache();
             reika.dragonapi.command.BiomeMapCommand.clearClientMaps();
-            reika.dragonapi.auxiliary.PopupWriter.list.clear();
+            PopupClient.clearSession();
         });
     }
     public static RecipeMap recipes() { return recipes; }
