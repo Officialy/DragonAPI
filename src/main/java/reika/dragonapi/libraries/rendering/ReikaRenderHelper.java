@@ -42,7 +42,7 @@ public class ReikaRenderHelper {
     private static float ptick = -1;
     public static double thirdPersonDistance;
 
-    private static int frame = -1;
+    private static long frame = -1;
 
     /**
      * Renders a flat circle in the world. Args: collector, radius, center x,y,z, RGBA, angle step
@@ -327,7 +327,7 @@ public class ReikaRenderHelper {
 
         @Override
         public String getLabel() {
-            return null;
+            return "Render frame timing";
         }
 
     }

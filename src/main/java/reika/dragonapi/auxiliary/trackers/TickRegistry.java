@@ -9,182 +9,98 @@
  ******************************************************************************/
 package reika.dragonapi.auxiliary.trackers;
 
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.client.event.RenderFrameEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-
-import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-// 1.21.5: handlers here are instance methods; class is registered via NeoForge.EVENT_BUS.register(this)
-// in the constructor. Do NOT add @EventBusSubscriber — it requires static @SubscribeEvent methods.
+/** Common tick dispatch; physical-client events are bridged by ClientTickEvents. */
 public class TickRegistry {
-
     public static final TickRegistry instance = new TickRegistry();
-    private final ArrayList<TickHandler> playerTickers = new ArrayList<>();
-    private final ArrayList<TickHandler> worldTickers = new ArrayList<>();
-    private final ArrayList<TickHandler> renderTickers = new ArrayList<>();
-    private final ArrayList<TickHandler> clientTickers = new ArrayList<>();
-    private final ArrayList<TickHandler> serverTickers = new ArrayList<>();
+    private final EnumMap<TickType, CopyOnWriteArrayList<TickHandler>> handlers = new EnumMap<>(TickType.class);
 
     private TickRegistry() {
-//        FMLCommonHandler.instance.bus().register(this);
+        for (TickType type : TickType.values()) handlers.put(type, new CopyOnWriteArrayList<>());
         NeoForge.EVENT_BUS.register(this);
     }
 
-    @SubscribeEvent
-    public void playerTickPre(PlayerTickEvent.Pre evt) {
-        for (TickHandler h : playerTickers) {
-            if (h.canFire(Phase.START)) {
-                h.tick(TickType.PLAYER, evt.getEntity(), Phase.START);
-            }
+    @SubscribeEvent public void playerTickPre(PlayerTickEvent.Pre event) {
+        dispatch(TickType.PLAYER, Phase.START, event.getEntity(), Phase.START);
+    }
+
+    @SubscribeEvent public void playerTickPost(PlayerTickEvent.Post event) {
+        dispatch(TickType.PLAYER, Phase.END, event.getEntity(), Phase.END);
+    }
+
+    @SubscribeEvent public void worldTickPre(LevelTickEvent.Pre event) {
+        dispatch(TickType.WORLD, Phase.START, event.getLevel(), Phase.START);
+    }
+
+    @SubscribeEvent public void worldTickPost(LevelTickEvent.Post event) {
+        dispatch(TickType.WORLD, Phase.END, event.getLevel(), Phase.END);
+    }
+
+    @SubscribeEvent public void serverTickPre(ServerTickEvent.Pre event) {
+        dispatch(TickType.SERVER, Phase.START, Phase.START, event.getServer());
+    }
+
+    @SubscribeEvent public void serverTickPost(ServerTickEvent.Post event) {
+        dispatch(TickType.SERVER, Phase.END, Phase.END, event.getServer());
+    }
+
+    /** Client bridge entry point; original CLIENT payload is [phase]. */
+    public void fireClient(Phase phase) {
+        dispatch(TickType.CLIENT, phase, phase);
+    }
+
+    /** Client bridge entry point; original RENDER payload is [Float partial tick, phase]. */
+    public void fireRender(float partialTick, Phase phase) {
+        dispatch(TickType.RENDER, phase, partialTick, phase);
+    }
+
+    private void dispatch(TickType type, Phase phase, Object... data) {
+        Objects.requireNonNull(phase, "phase");
+        // Each phase sees a stable registration snapshot, including during nested/reentrant registration.
+        for (TickHandler handler : handlers.get(type)) {
+            if (handler.canFire(phase)) handler.tick(type, data.clone());
         }
     }
 
-    @SubscribeEvent
-    public void playerTickPost(PlayerTickEvent.Post evt) {
-        for (TickHandler h : playerTickers) {
-            if (h.canFire(Phase.END)) {
-                h.tick(TickType.PLAYER, evt.getEntity(), Phase.END);
-            }
-        }
+    public void registerTickHandler(TickHandler handler) {
+        Objects.requireNonNull(handler, "handler");
+        for (TickType type : Objects.requireNonNull(handler.getType(), "handler tick types")) handlers.get(type).add(handler);
     }
 
-    @SubscribeEvent
-    public void renderTick(RenderFrameEvent.Pre evt) { // TODO: Verify this is correct event
-        for (TickHandler h : renderTickers) {
-            // Phase concept may have changed in render events
-            h.tick(TickType.RENDER, evt.getPartialTick());
-        }
-    }
-
-    @SubscribeEvent
-    public void clientTickPre(ClientTickEvent.Pre evt) {
-        for (TickHandler h : clientTickers) {
-            if (h.canFire(Phase.START)) {
-                h.tick(TickType.CLIENT, Phase.START);
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public void clientTickPost(ClientTickEvent.Post evt) {
-        for (TickHandler h : clientTickers) {
-            if (h.canFire(Phase.END)) {
-                h.tick(TickType.CLIENT, Phase.END);
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public void worldTickPre(LevelTickEvent.Pre evt) {
-        for (TickHandler h : worldTickers) {
-            if (h.canFire(Phase.START)) {
-                h.tick(TickType.WORLD, evt.getLevel(), Phase.START);
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public void worldTickPost(LevelTickEvent.Post evt) {
-        for (TickHandler h : worldTickers) {
-            if (h.canFire(Phase.END)) {
-                h.tick(TickType.WORLD, evt.getLevel(), Phase.END);
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public void serverTickPre(ServerTickEvent.Pre evt) {
-        for (TickHandler h : serverTickers) {
-            if (h.canFire(Phase.START)) {
-                h.tick(TickType.SERVER, Phase.START, evt.getServer());
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public void serverTickPost(ServerTickEvent.Post evt) {
-        for (TickHandler h : serverTickers) {
-            if (h.canFire(Phase.END)) {
-                h.tick(TickType.SERVER, Phase.END, evt.getServer());
-            }
-        }
-    }
-
-    public void registerTickHandler(TickHandler h) {
-        for (TickType type : h.getType()) {
-            switch (type) {
-                case CLIENT -> clientTickers.add(h);
-                case PLAYER -> playerTickers.add(h);
-                case RENDER -> renderTickers.add(h);
-                case SERVER -> serverTickers.add(h);
-                case WORLD -> worldTickers.add(h);
-/*
-				case ALL:
-					clientTickers.add(h);
-					playerTickers.add(h);
-					renderTickers.add(h);
-					serverTickers.add(h);
-					worldTickers.add(h);
-					break;*/
-            }
-        }
+    /** Remove this handler's registrations by identity, without removing equal-but-distinct handlers. */
+    public void unregisterTickHandler(TickHandler handler) {
+        Objects.requireNonNull(handler, "handler");
+        handlers.values().forEach(list -> list.removeIf(existing -> existing == handler));
     }
 
     public enum TickType {
-        /**
-         * Fired during the world evaluation loop
-         * server side only! ("and client side" is false)
-         * <p>
-         * arg 0 : The world that is ticking
-         */
+        /** Level evaluation: [level, phase]. NeoForge emits both logical sides; consumers retain their own side policy. */
         WORLD,
-        /**
-         * client side
-         * Fired during the render processing phase
-         * arg 0 : float "partial render time"
-         */
+        /** Physical-client frame: [Float pause/freeze-aware partial tick, phase]. */
         RENDER,
-        /**
-         * client side only
-         * Fired once per client tick loop.
-         */
+        /** Physical-client game tick: [phase]. */
         CLIENT,
-        /**
-         * client and server side.
-         * Fired whenever the players update loop runs.
-         * arg 0 : the player
-         * arg 1 : the world the player is in
-         */
+        /** Player update on either logical side: [player, phase]. */
         PLAYER,
-        /**
-         * server side only.
-         * This is the server game tick.
-         * Fired once per tick loop on the server.
-         */
+        /** Server game tick: [phase, server]. The optional server context retains the accepted port's second slot. */
         SERVER
     }
 
-    // Define Phase enum locally to maintain backward compatibility
-    public enum Phase {
-        START, END
-    }
+    public enum Phase { START, END }
 
     public interface TickHandler {
-
         void tick(TickType type, Object... tickData);
-
         EnumSet<TickType> getType();
-
-        boolean canFire(Phase p);
-
+        boolean canFire(Phase phase);
         String getLabel();
-
     }
-
 }

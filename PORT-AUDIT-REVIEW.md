@@ -2223,3 +2223,48 @@ only; the owner's existing .idea/workspace.xml remains separate. D62's historica
 key-label migration and broader V09/remote/shader acceptance remain open. Next is
 D10: current render dispatch passes a DeltaTracker where the accepted partial-tick
 consumer expects Float, and does not honor render handler phase selection.
+
+## D10 — Typed native frame timing and full tick dispatch (2026-10-18)
+
+Completed TickRegistry's phase/timing contract against original DragonAPI
+ de1bcf1f:Auxiliary/Trackers/TickRegistry.java and actual 26.3 RenderFrameEvent,
+DeltaTracker and Minecraft frame-loop sources. Physical-client Pre/Post events
+now live in ClientTickEvents. Common registry verification has no client event
+signatures. RENDER payloads are [Float game-time partial, Phase], with native
+pause/freeze-aware getGameTimeDeltaPartialTick(false); START/END/both canFire
+policies are honored. CLIENT remains [Phase], PLAYER/WORLD retain entity/level
+then phase, and SERVER retains phase then the accepted port's server context.
+
+Queued client setup now registers the original RenderTick clock once. It advances
+only at START, caches the current float, and uses long storage matching its public
+getter. The active Chroma structure-probe decorator now advances its authored
+six-frame color cycle. Copy-on-write per-type lists preserve registration order
+and original multiplicity while allowing safe reentrant/parallel registration.
+Each handler receives an independent argument array. New identity-based removal
+cleans all registrations of that handler without deleting equal-but-distinct ones.
+Handler failures still propagate. Original GameFinishedLoadingEvent, missing from
+the port, is restored once after the first native client tick phase, owned by the
+physical process rather than world/login state. Full contract and source refs:
+DragonAPI/docs/tick-registry-port.md. Other ReikaRenderHelper APIs remain tracked
+under D06; this batch does not claim the entire render library is finished.
+
+Four regressions cover exact payload positions/types, phase filters, argument
+isolation, reentrant registration, multiplicity, identity cleanup and failures.
+All 273 family units pass (219 DragonAPI, 34 RotaryCraft, 8 ReactorCraft,
+12 ChromatiCraft), zero failures/errors/skips. All 104 native GameTests, strict
+common MixinAudit (30 transformed/two optional absences/14 other-side rows) and
+all eight accepted-class guards pass. Final native run exits in 1m 54s.
+The fresh isolated client exits in 2m 34s, confirming actual frame/client phases,
+exact once-per-frame advancement and cached partials, native Timer running/pause/
+freeze/resume, counter values beyond int range, exact-once startup notification,
+and real probe decorator color changes over live frames. Synthetic timer state
+restores and fixture observers unregister. Existing rendering/sound/lifecycle
+checks also pass. Normal Play VM/program argument hashes remain unchanged.
+Evidence: build/d10-tick-units.log, build/d10-final-family-native.log,
+build/d10-final-client.log, build/d10-proof.json and
+build/mixin-audit/20261018-d10-final-native/.
+
+D10 is complete. Checklist: 48 complete / 115 open / 163 total. Local checkpoints
+only; the owner's existing .idea/workspace.xml remains separate. D06 and broader
+D59/V09/remote/shader acceptance stay open. Next is D11's event-owned boss color
+result and its actual modern rendering hook audit.
