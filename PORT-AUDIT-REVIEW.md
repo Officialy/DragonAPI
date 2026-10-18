@@ -2470,3 +2470,33 @@ while finalizing this batch (PORTING, ChromaClientRenderers, ProgressionOverlay,
 mixin config and a new ProgressionOverlayMixin). They are left separate and
 uncommitted, alongside owner IDE state. D14 validation refers to the exact audit
 snapshots/reports above and does not claim acceptance of those concurrent edits.
+
+
+### D15 checkpoint — 2026-10-18: owned file loading and client resource capture
+
+D15 is complete. Historical FileInputThread.run() was also empty, so there was
+no original decoder/result contract to recover. The retained public entry points
+now have a documented one-shot state machine, frozen configuration, caller-owned
+executor, source closure before publication, strict UTF-8, heap PNG decoding,
+namespace-aware XML without external resolution, and detached encoded SOUND bytes.
+Failures and interruptions remain observable; duplicate execution is rejected.
+ClientFileInputs captures pack bytes and delivers results on client main; decoding
+receives detached data only. See DragonAPI/docs/file-input-thread-port.md.
+
+Validation: 290 family unit tests (236 DragonAPI, 34 RotaryCraft, 8 ReactorCraft,
+12 ChromatiCraft), all 106 required dedicated GameTests, and the full isolated
+client suite passed. The native/client cases decode original PNG/OGG assets and
+exercise resource ownership, queued mutation, worker entry, owner-thread success/
+error delivery, rejection and cleanup. Proof: build/d15-proof.json; final full
+client log: build/d15-recipe-check-client.log; units/native: build/d15-accept.log.
+An initial mutable-resource fixture incorrectly enabled direct-pack caching;
+using its existing streaming mode corrected the fixture. A later combined run
+passed all loader checks but failed the existing sixteen-railgun-recipe assertion.
+The full diagnostic rerun passed all sixteen without weakening that assertion;
+the intermittent failure remains unexplained and catalogue diagnostics are kept.
+
+Strict mixin reports: dedicated 30 transformed / 18 other-side / 2 optional absent;
+client 48 transformed / 2 optional absent. These include the current concurrent
+ChromatiCraft progression-overlay snapshot, whose source/ledger edits remain
+separate. Default isolated audit arguments restored; normal Play is unchanged.
+Checklist: 52 complete / 111 open / 163 total. Local checkpoint only.
