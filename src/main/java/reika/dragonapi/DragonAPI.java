@@ -199,12 +199,12 @@ public class DragonAPI extends DragonAPIMod {
 
     public void clientSetup(final FMLClientSetupEvent evt) {
         evt.enqueueWork(() -> {
+            ReikaRenderDispatcher.init();
             TickRegistry.instance.registerTickHandler(reika.dragonapi.auxiliary.trackers.KeyWatcher.KeyTicker.instance);
             TickRegistry.instance.registerTickHandler(new reika.dragonapi.libraries.rendering.ReikaRenderHelper.RenderTick());
         });
         RemoteAssetLoader.instance.checkAndStartDownloads();
         CommandDispatcher<CommandSourceStack> commandDispatcher = ClientCommandHandler.getDispatcher();
-        // ReikaRenderDispatcher.init();
 //            ClientCommandHandler.instance.registerCommand(new ToggleBlockChangePacketCommand());
 //            ClientCommandHandler.instance.registerCommand(new GetLatencyCommand());
 //            ClientCommandHandler.instance.registerCommand(new ClearParticlesCommand());

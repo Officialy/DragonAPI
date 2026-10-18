@@ -2547,3 +2547,66 @@ block-renderer object removed in 26.3. The supported AddSectionGeometryEvent run
 drawing callbacks on meshing workers; GeoStrata ocean spikes already have a BER.
 A full port must preserve registration selection/order and additive vanilla
 behavior while capturing safe inputs and avoiding duplicate spike geometry.
+
+
+### D01 work in progress — 2026-10-18
+
+ReikaRenderDispatcher is being restored through NeoForge 26.3 AddSectionGeometryEvent.
+Production code now preserves direct first-registration-wins and ordered predicate
+fallback, captures full BLOCK vertices on client main, and publishes immutable
+per-layer meshes for worker replay. The accepted GeoStrata ocean-spike consumer
+uses this path; its separate BER registration/class are replaced by the terrain
+renderer while the empty registered BE remains for saved-world compatibility.
+Shared collision/outline geometry moved to a common class with independent fixed
+RNG seed so remote client and server shapes agree. Native client block-dirty events
+invalidate the affected lower column sections for height-dependent tint.
+
+Compilation and four dispatcher/capture unit cases passed. The first full isolated
+client check is running (build/d01-section-first.log); a final family/native/client
+run and matching separate-JVM geometry fingerprints are still required. D01 remains
+unchecked. No claim of acceptance or GPU visual parity yet. Existing owner IDE and
+concurrent ChromatiCraft progression-overlay edits remain outside this work.
+
+
+### D01 complete — 2026-10-18: native terrain registration and ocean spikes
+
+D01 is accepted. ReikaRenderDispatcher uses NeoForge 26.3 AddSectionGeometryEvent
+instead of replacing the removed Minecraft block renderer. It preserves direct
+first-registration-wins, ordered predicate fallback/general duplicates and additive
+vanilla geometry. Copy-on-write registrations and owner-specific removal support
+reentrant selection and cleanup. Client-main capture emits complete native BLOCK
+vertices; immutable per-layer snapshots alone reach meshing workers. Empty geometry
+adds no callback. There is no world/resource/renderer lookup in worker replay.
+
+GeoStrata is the accepted consumer: its original six-face ocean-spike geometry,
+root/tip shape, gray ramp, texture and neighboring light now use translucent
+terrain. The redundant BER is replaced, with the empty BE/type retained for old
+worlds. Collision/outline geometry is common-side and uses an independent fixed
+seed, preserving random ranges while making separate client/server shapes agree.
+The original height term clamps after six segments; tint queries and lower-column
+invalidation are now bounded to that distance, with equivalence checked through
+4096 segments. Native ClientLevel dirty notifications invalidate dependencies
+beyond vanilla's one-block neighbor reach. See
+DragonAPI/docs/section-render-dispatcher-port.md for API/ownership/source details.
+
+Validation: 306 unit cases (244 DA / 8 Geo / 34 RC / 8 ReC / 12 Chroma), all 107
+required dedicated GameTests, and the full isolated client suite passed. The
+fixture verified native registered events, exact common corner occurrences and
+sprite UV bounds, native BLOCK mesh counts [24,48,24], original tint change, no
+duplicate BER, actual native lower-section dirty flag, restored world before
+worker replay against a denied region, and owned worker termination. Independent
+server/client geometry fingerprints both equal 606f734740349413. These are native
+capture/meshing contracts; no screenshot/GPU pixel comparison is claimed.
+Evidence: build/d01-proof.json and build/d01-corners-accept.log.
+
+The first native client run caught use of the old atlas texture location; it was
+corrected to AtlasIds.BLOCKS. The corrected full suite passed, then the final
+bounded-tint/corner/UV/dirty-tracker suite passed on the final functional source.
+Strict reports: dedicated 30 transformed / 18 other-side / 2 optional absent;
+client 48 transformed / 2 optional absent. Default audit arguments restored; normal
+Play argument hashes match D04. Owner IDE and concurrent ChromatiCraft edits stay
+separate. Local checkpoint only. Checklist: 54 complete / 109 open / 163 total.
+
+Next rendering cluster: D02 ThrottleableEffectRenderer and D03 ReikaParticleEngine
+admission, visibility, native batching/rendering and sided lifecycle, following
+the actual 26.3 particle sources and accepted consumers.

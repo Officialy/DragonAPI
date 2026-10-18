@@ -19,6 +19,13 @@ import reika.dragonapi.instantiable.event.client.SkyColorEvent;
  */
 @Mixin(ClientLevel.class)
 public abstract class MixinClientLevel {
+    @Inject(method = "setBlocksDirty", at = @At("TAIL"))
+    private void dragonapi$customModelDependencies(net.minecraft.core.BlockPos pos,
+            net.minecraft.world.level.block.state.BlockState previous, net.minecraft.world.level.block.state.BlockState current,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo callback) {
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new reika.dragonapi.instantiable.event.client.ClientBlockChangedEvent(
+                (ClientLevel)(Object)this, pos, previous, current));
+    }
 	@Inject(method = "addEnvironmentAttributeLayers", at = @At("RETURN"))
 	private void dragonapi$skyColorEvent(EnvironmentAttributeSystem.Builder builder,
 			CallbackInfoReturnable<EnvironmentAttributeSystem.Builder> callback) {
