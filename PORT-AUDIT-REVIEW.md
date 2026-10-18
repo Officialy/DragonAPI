@@ -2610,3 +2610,70 @@ separate. Local checkpoint only. Checklist: 54 complete / 109 open / 163 total.
 Next rendering cluster: D02 ThrottleableEffectRenderer and D03 ReikaParticleEngine
 admission, visibility, native batching/rendering and sided lifecycle, following
 the actual 26.3 particle sources and accepted consumers.
+
+
+### D02 work in progress — 2026-10-18
+
+ThrottleableEffectRenderer now controls each actual native ParticleEngine through
+client mixins instead of replacing Minecraft's final engine/resource manager.
+Admission cancellation precedes native ParticleLimit reservation; exact-class
+delegates share one lifecycle owner, reject cycles and propagate tick/extract/
+level/clear/statistics without duplicate shared-delegate ticks. Native active and
+pending queues use bounded per-sheet FIFO budgets (26.3 SINGLE_QUADS merged the
+old three texture layers), preserving global pending order and native counters.
+Native quad culling uses independent scale-aware AABBs. Insert/debug depth is
+scoped to extraction and copies native/OIT pipeline definitions while retaining
+shader/layout/blend/texture/stencil state. World cleanup retires particles, releases
+delegate state and clears transient layer mappings; no resource cache is recreated.
+
+The four bounded-queue unit regressions and compilation passed. The first client
+fixture compile used the old getMainCamera name and was corrected to mainCamera.
+The actual isolated runtime is live in build/d02-runtime-client.log. D02 remains
+unchecked pending native/client acceptance and the final family/dedicated checks.
+D03 ReikaParticleEngine's custom render-mode/texture/exemption batching is still a
+separate open port; no claim that this restores its commented rendering bodies.
+Owner IDE and concurrent ChromatiCraft edits remain separate.
+
+
+### D02 complete — 2026-10-18: native particle admission and lifecycle
+
+D02 is accepted. The attached ThrottleableEffectRenderer controller preserves the
+actual native engine/ParticleResources instead of replacing Minecraft's final
+field or rebuilding resource caches. Ordered cancellation precedes native limit
+reservation. Exact-class delegates form a single-owner, cycle-free lifecycle tree;
+shared delegates tick/extract/clear once and appear in native statistics. Repeated
+facades share registrations. Native queued/active FIFO budgets retain separate
+legacy texture-sheet limits despite 26.3 merging them into SINGLE_QUADS. Pending
+bursts are bounded before ticking, eviction releases native reservations, and
+scale-aware independent AABBs replace the zero-box/point-only visibility paths.
+
+Rendering stays native. Scoped Insert/debug depth variants preserve native shader,
+defines, blend, vertex/bind-group layouts, texture and stencil data for both normal
+and all OIT pipelines. Weak descriptor caches hold no textures/GPU allocations.
+Tick/clear/extraction owner checks precede native access. Queue clear detaches its
+old generation before callbacks; clearing engines reject reentrant admissions
+through their subtree, so removal callbacks cannot refill old worlds/counters.
+See DragonAPI/docs/particle-throttle-port.md for source/API/phase details.
+
+Final validation: 311 unit cases (249 DA / 8 Geo / 34 RC / 8 ReC / 12 Chroma), all
+107 required dedicated GameTests, and the full isolated client suite passed. Native
+cases exercised actual configured FIFO overflow, cancellation/reservation cleanup,
+exact/shared delegates, cycles/multiple ownership, single ticking and level cleanup,
+statistics, independent bounds and frustum edges, a four-vertex native particle
+mesh, scoped normal/depth/OIT declarations, render suppression, foreign-thread
+mutation rejection with joined worker, and removal-callback cleanup barriers.
+This verifies native extraction/mesh and pipeline state; no debug-key GPU image
+comparison is claimed. Evidence: build/d02-proof.json and
+build/d02-cleanup-final-accept.log.
+
+Initial fixture failures were the removed getMainCamera accessor and comparing
+unordered native bind-group layout membership by list order. mainCamera and full
+layout-set/type comparison corrected those fixtures; all remaining shader/define/
+blend/vertex-layout checks stayed strict. The corrected full suite passed, then
+the owner-check and final cleanup-barrier suites passed. Default audit arguments
+restored and normal Play hashes match D01. Owner IDE/concurrent ChromatiCraft edits
+remain separate. Local checkpoint only. Checklist: 55 complete / 108 open / 163.
+
+D03 remains open: ReikaParticleEngine's custom texture/render-mode/exemption
+batching and initialization still require a full native port. D02's controller
+does not claim restoration of those commented bodies.

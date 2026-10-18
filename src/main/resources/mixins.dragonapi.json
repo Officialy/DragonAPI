@@ -33,6 +33,11 @@
         "defaultRequire": 1
     },
     "client": [
+        "MixinParticleEngine",
+        "MixinSingleQuadParticle",
+        "MixinParticleGroup",
+        "MixinQuadParticleGroup",
+        "MixinQuadParticleRenderState",
         "MixinBossFogColor",
         "MixinBossLightmap",
         "MixinBossColorReset",
