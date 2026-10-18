@@ -7,7 +7,10 @@ import reika.dragonapi.libraries.mathsci.ReikaVectorHelper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 
+/** Mutable geometry owned by its constructing thread; publish {@link #snapshot()} for deferred work. */
 public class TessellatorVertexList {
 
     private ArrayList<TessellatorVertex> data = new ArrayList<>();
@@ -31,19 +34,31 @@ public class TessellatorVertexList {
         data.add(new TessellatorVertex(x, y, z));
     }
 
-    public void addVertexWithUV(double x, double y, double z, float u, float v) {
+    public void addVertex(double x, double y, double z) {
+        vertex(x, y, z);
+    }
+
+    public void addVertexWithUV(double x, double y, double z, double u, double v) {
         data.add(new TessellatorVertex(x, y, z, u, v));
     }
 
-    public void addVertexWithUVColor(double x, double y, double z, float u, float v, int color) {
+    public void addVertexWithUVColor(double x, double y, double z, double u, double v, int color) {
         data.add(new TessellatorVertex(x, y, z, u, v, color));
     }
 
-    public void render() {
-        for (TessellatorVertex v : data) {
-            v.addToTessellator();
-        }
+    /** Explicit destination replaces the removed global Tessellator. The destination owns drawing and inherited attributes. */
+    public void render(VertexSink destination) {
+        Objects.requireNonNull(destination, "destination");
+        snapshot().forEach(destination::vertex);
     }
+
+    /** Immutable geometry for deferred rendering; subsequent edits, push/pop or clear cannot affect it. */
+    public List<VertexData> snapshot() {
+        return data.stream().map(TessellatorVertex::snapshot).toList();
+    }
+
+    @FunctionalInterface public interface VertexSink { void vertex(VertexData vertex); }
+    public record VertexData(double x, double y, double z, double u, double v, int color, boolean hasUV, boolean hasColor) {}
 
     public void reverse() {
         Collections.reverse(data);
@@ -54,8 +69,8 @@ public class TessellatorVertexList {
         private double posY;
         private double posZ;
 
-        private final float posU;
-        private final float posV;
+        private final double posU;
+        private final double posV;
 
         private final int colorData;
 
@@ -67,12 +82,12 @@ public class TessellatorVertexList {
             hasUV = false;
         }
 
-        public TessellatorVertex(double x, double y, double z, float u, float v) {
+        public TessellatorVertex(double x, double y, double z, double u, double v) {
             this(x, y, z, u, v, 0);
             hasColor = false;
         }
 
-        public TessellatorVertex(double x, double y, double z, float u, float v, int color) {
+        public TessellatorVertex(double x, double y, double z, double u, double v, int color) {
             posX = x;
             posY = y;
             posZ = z;
@@ -83,9 +98,12 @@ public class TessellatorVertexList {
             hasColor = true;
         }
 
-        public void addToTessellator() {
-            // TODO: Port to 26.1 rendering API (Tesselator.getBuilder() immediate-mode access removed;
-            // vertices must now be emitted into a BufferBuilder obtained from Tesselator.begin(...)).
+        public void addToTessellator(VertexSink destination) {
+            Objects.requireNonNull(destination, "destination").vertex(snapshot());
+        }
+
+        public VertexData snapshot() {
+            return new VertexData(posX, posY, posZ, posU, posV, colorData, hasUV, hasColor);
         }
 
         @Override

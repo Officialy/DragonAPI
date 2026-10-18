@@ -123,3 +123,8 @@ dedicated GameTests, and the complete isolated client suite passed. See the
 workspace build/d15-proof.json and its referenced logs. One combined run failed
 the existing railgun catalogue assertion after the loader passed; the diagnostic
 full-client rerun passed all sixteen recipes. Its cause remains unresolved.
+
+Follow-up: the D04 full client run reproduced an empty railgun recipe catalogue.
+RotaryRecipeSync omitted the native CRAFTING type requested by its handbook. It
+now explicitly requests that type; a dedicated native-payload regression and the
+full client suite passed with all sixteen recipes, with the original assertion.

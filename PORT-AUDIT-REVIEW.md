@@ -2500,3 +2500,50 @@ client 48 transformed / 2 optional absent. These include the current concurrent
 ChromatiCraft progression-overlay snapshot, whose source/ledger edits remain
 separate. Default isolated audit arguments restored; normal Play is unchanged.
 Checklist: 52 complete / 111 open / 163 total. Local checkpoint only.
+
+
+### D04 checkpoint — 2026-10-18: explicit vertex rendering and crafting sync
+
+D04 is complete. TessellatorVertexList now emits full immutable vertex records to
+an explicit destination. It restores the original addVertex name/double UVs,
+preserves transforms/winding/stack behavior, and offers independent snapshots for
+deferred work. The client-only TessellatorVertexRenderer uses caller-owned native
+buffers or SubmitNodeCollector callbacks with captured geometry/pose, explicit
+initial/final inherited UV/color state, original opaque RGB semantics and caller
+light/overlay/transformed normals. No global tessellator or empty rendering shim
+remains in this helper. Pristine excluded callers await migration to explicit
+destinations. Contract: DragonAPI/docs/tessellator-vertex-list-port.md.
+
+The full client regression reproduced the formerly unexplained railgun catalogue
+failure from D15: the received map contained no railgun crafting recipes. Source
+inspection found RotaryRecipeSync requested machine/smelting types but omitted
+CRAFTING even though the handbook consumes it. It now requests CRAFTING explicitly.
+A registered dedicated regression builds NeoForge's actual RecipeContentPayload
+and requires all sixteen railgun recipes. The unchanged client assertion then
+passed with all sixteen received tiers. This removes dependence on another mod
+requesting handbook crafting data.
+
+Final validation: 294 unit tests (240 DragonAPI / 34 RotaryCraft / 8 ReactorCraft /
+12 ChromatiCraft), all 107 required dragonapi_* GameTests, and the complete isolated
+client suite passed in build/d04-crafting-sync-accept.log. The client checks real
+ENTITY mesh bytes, transformed positions/normals, inherited UV/color, opaque legacy
+RGB, light/overlay, deferred source/pose mutation, replay, empty submissions, explicit
+final attributes and owned memory closure. These prove mesh/collector contracts;
+they do not claim a GPU draw of a migrated legacy ChromatiCraft consumer. Dedicated
+reflection and sink execution preserve common-side geometry availability.
+Proof: build/d04-proof.json. Strict mixins: dedicated 30 transformed / 18 other-side
+/ 2 optional absent; client 48 transformed / 2 optional absent.
+
+Earlier run history is retained: an omitted selector launched all 1392 native tests
+and stalled during vanilla structure clearing; only the verified owned GameTest
+JVM was stopped. A fixture compile used the old quaternion mulPose overload and
+was corrected to 26.3 rotate. The subsequent vertex pass exposed the crafting sync
+bug above. No assertions were weakened. Default isolated audit arguments restored;
+normal Play argument hashes match D14/D15. Owner IDE/concurrent ChromatiCraft edits
+remain separate. Local checkpoint only. Checklist: 53 complete / 110 open / 163.
+
+D01 remains open. Its recovered last-working dispatcher replaced a Minecraft
+block-renderer object removed in 26.3. The supported AddSectionGeometryEvent runs
+drawing callbacks on meshing workers; GeoStrata ocean spikes already have a BER.
+A full port must preserve registration selection/order and additive vanilla
+behavior while capturing safe inputs and avoiding duplicate spike geometry.
