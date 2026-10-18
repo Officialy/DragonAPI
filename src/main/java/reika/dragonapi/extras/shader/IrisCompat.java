@@ -62,11 +62,16 @@ public final class IrisCompat {
 	}
 
 	private static boolean query(boolean shadow) {
+		long started = reika.dragonapi.extras.shader.IrisQueryProfiler.start();
 		Api api = api();
-		if (api == null)
+		if (api == null) {
+			reika.dragonapi.extras.shader.IrisQueryProfiler.record(started, "DragonAPI", shadow, false);
 			return false;
+		}
 		try {
-			return (boolean)(shadow ? api.shadow() : api.enabled()).invoke(api.instance());
+			boolean value = (boolean)(shadow ? api.shadow() : api.enabled()).invoke(api.instance());
+			reika.dragonapi.extras.shader.IrisQueryProfiler.record(started, "DragonAPI", shadow, value);
+			return value;
 		} catch (ReflectiveOperationException e) {
 			throw new IllegalStateException("Cannot query the Iris render pass", e);
 		}
