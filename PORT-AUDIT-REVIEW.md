@@ -2268,3 +2268,37 @@ D10 is complete. Checklist: 48 complete / 115 open / 163 total. Local checkpoint
 only; the owner's existing .idea/workspace.xml remains separate. D06 and broader
 D59/V09/remote/shader acceptance stay open. Next is D11's event-owned boss color
 result and its actual modern rendering hook audit.
+
+
+## D11 - Event-owned boss colors and native hooks (2026-10-18)
+
+BossColorEvent now returns an immutable RGB result belonging to one dispatch.
+Original listener fields, unrestricted float values, 0.7/0.6/0.6 defaults and
+reset notifications are preserved. Removed split static getters had no accepted
+source callers; they were glue for the retired ASM patcher. New client mixins
+restore the actual fog, lightmap and renderer-tick hooks. Fog shares one local
+result before native brightening. Lightmaps retain the native pipeline for default
+colors and use an owned, lazily allocated RGB shader renderer for changed colors.
+That shader preserves native sky/block/night-vision/darkness/gamma math. Its two
+source edits are pinned and checked against the actual 26.3.0.76 source jar.
+See DragonAPI/docs/boss-color-port.md and tools/verify_boss_lightmap_shader.py.
+
+Validation: 277 family units (223 DragonAPI, 34 RotaryCraft, 8 ReactorCraft,
+12 ChromatiCraft), zero failures/errors/skips; all 104 native GameTests; all eight
+accepted-class guards. Strict common audit: 30 transformed, 17 other-side,
+two optional absences. Strict client: 47 transformed, two optional absences.
+Current inventory is 48 mixin classes / 49 target bindings. The isolated client
+passed in 2m 36s, including transformed fog channel isolation/conditional dispatch,
+repeated native reset ticks and GPU readback of all 256 lightmap texels for native
+shader parity, changed RGB, partial darkening and no-update texture preservation.
+Owned GPU resources close and listeners unregister. Existing client fixtures pass.
+The default audit arguments were restored; normal Play argument hashes match the
+previous checkpoint. Jar inspection confirms the custom shader and three mixins
+are packaged. External shader/optional-mod matrices were not rerun in this batch.
+Evidence: build/d11-family-native.log, build/d11-client.log, build/d11-proof.json,
+build/d11-restore-audit-args.log, build/mixin-audit/20261018-d11-native/ and
+build/mixin-audit/20261018-d11-client/.
+
+D11 is complete. Checklist: 49 complete / 114 open / 163 total. Local checkpoints
+only. Owner .idea/workspace.xml remains separate. Next: D12 popup queue
+encapsulation and per-popup layout/input state with caller and save-ID parity.

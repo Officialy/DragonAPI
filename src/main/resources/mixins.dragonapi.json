@@ -33,6 +33,9 @@
         "defaultRequire": 1
     },
     "client": [
+        "MixinBossFogColor",
+        "MixinBossLightmap",
+        "MixinBossColorReset",
         "CameraAccessor",
         "MixinBiomeColors",
         "MixinClientLevel",

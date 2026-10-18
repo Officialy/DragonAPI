@@ -172,3 +172,16 @@ For the full integrated optional listener lifecycle and graphical audit:
 
 The paired run tasks reject existing acceptance reports; choose fresh IDs.
 D56 is complete and checkpointed locally. No push or release publication occurred.
+
+
+## D11 inventory extension (2026-10-18)
+
+Boss fog, lightmap and renderer-tick reset add three client mixins: the current
+inventory is 48 classes / 49 target bindings. Fresh native D11 audit verifies
+30 transformed, 17 other-side and two optional-absent rows. Fresh integrated
+client D11 audit verifies 47 transformed and two optional-absent rows, including
+all three new hooks. The integrated server verifies the same native counts.
+Reports: build/mixin-audit/20261018-d11-native/ and
+build/mixin-audit/20261018-d11-client/. The separate boss-color fixture also
+verifies native fog dispatch and real GPU lightmap output; see boss-color-port.md.
+This extension does not rerun or replace the earlier packaged optional-mod matrix.

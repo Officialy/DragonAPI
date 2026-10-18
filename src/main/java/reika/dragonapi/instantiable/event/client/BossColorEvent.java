@@ -15,56 +15,32 @@ import net.neoforged.bus.api.Event;
 
 
 public class BossColorEvent extends Event {
+    public static final Color DEFAULT = new Color(0.7F, 0.6F, 0.6F);
+    public final float originalRed = DEFAULT.red();
+    public final float originalGreen = DEFAULT.green();
+    public final float originalBlue = DEFAULT.blue();
+    public final boolean isLightmap;
+    public float red = originalRed;
+    public float green = originalGreen;
+    public float blue = originalBlue;
 
-	private static float cachedRed;
-	private static float cachedGreen;
-	private static float cachedBlue;
-	public final float originalRed = 0.7F;
-	public final float originalGreen = 0.6F;
-	public final float originalBlue = 0.6F;
-	public final boolean isLightmap;
-	public float red = originalRed;
-	public float green = originalGreen;
-	public float blue = originalBlue;
+    public BossColorEvent(boolean light) {
+        isLightmap = light;
+    }
 
-	public BossColorEvent(boolean light) {
-		isLightmap = light;
-	}
+    /** One immutable result belongs to this dispatch, including nested or concurrent dispatches. */
+    public static Color fire(boolean lightmap) {
+        BossColorEvent event = new BossColorEvent(lightmap);
+        NeoForge.EVENT_BUS.post(event);
+        return new Color(event.red, event.green, event.blue);
+    }
 
-	public static float fireAndReturnRed_Light() {
-		fire(true);
-		return cachedRed;
-	}
+    public record Color(float red, float green, float blue) {}
 
-	public static float fireAndReturnRed() {
-		fire(false);
-		return cachedRed;
-	}
+    /** Original per-renderer-tick listener cleanup notification; no shared output state remains. */
+    public static void reset() {
+        NeoForge.EVENT_BUS.post(new BossColorResetEvent());
+    }
 
-	public static float returnGreen() {
-		return cachedGreen;
-	}
-
-	public static float returnBlue() {
-		return cachedBlue;
-	}
-
-	private static void fire(boolean b) {
-		BossColorEvent evt = new BossColorEvent(b);
-		NeoForge.EVENT_BUS.post(evt);
-		cachedRed = evt.red;
-		cachedGreen = evt.green;
-		cachedBlue = evt.blue;
-	}
-
-	public static void reset() {
-		BossColorResetEvent evt = new BossColorResetEvent();
-		NeoForge.EVENT_BUS.post(evt);
-	}
-
-	public static class BossColorResetEvent extends Event {
-
-	}
-
+    public static class BossColorResetEvent extends Event {}
 }
-
