@@ -17,6 +17,39 @@ class BoundedParticleQueueTest {
         assertEquals(List.of(1,2),retired);
         assertEquals(List.of(new Entry(group,11),new Entry(group,12)),new ArrayList<>(queue));
     }
+    @Test void exemptEntriesNeitherConsumeBudgetNorEvictCountedEntries() {
+        var group=new Object(); var retired=new ArrayList<Entry>();
+        var queue=new BoundedParticleQueue<Entry,Object>(2,Entry::group,value->value.id()>0,retired::add);
+        var first=new Entry(group,1); var second=new Entry(group,2); var exempt=new Entry(group,-1);
+        queue.add(first); queue.add(second); queue.add(exempt);
+        assertTrue(retired.isEmpty());
+        var third=new Entry(group,3); queue.add(third);
+        assertEquals(List.of(first),retired);
+        assertEquals(List.of(second,exempt,third),new ArrayList<>(queue));
+        var iterator=queue.iterator(); iterator.next(); iterator.next(); iterator.remove();
+        queue.add(new Entry(group,-2)); queue.add(new Entry(group,4));
+        assertEquals(List.of(first,second),retired);
+        queue.clear(); assertTrue(queue.isEmpty());
+    }
+    @Test void mutableExemptionIsFrozenAtAdmissionAndPredicateFailureIsAtomic() {
+        var counted=new java.util.concurrent.atomic.AtomicBoolean(true);
+        var reject=new java.util.concurrent.atomic.AtomicBoolean(false);
+        var group=new Object(); var retired=new ArrayList<Entry>();
+        var queue=new BoundedParticleQueue<Entry,Object>(1,Entry::group,value->{
+            if(reject.get()) throw new IllegalArgumentException("rejected");
+            return counted.get();
+        },retired::add);
+        var first=new Entry(group,1); queue.add(first);
+        counted.set(false); var exempt=new Entry(group,2); queue.add(exempt);
+        counted.set(true); reject.set(true);
+        assertThrows(IllegalArgumentException.class,()->queue.add(new Entry(group,3)));
+        assertEquals(List.of(first,exempt),new ArrayList<>(queue)); assertTrue(retired.isEmpty());
+        reject.set(false); queue.add(new Entry(group,4));
+        assertEquals(List.of(first),retired);
+        assertSame(exempt,queue.poll());
+        queue.add(new Entry(group,5));
+        assertEquals(List.of(first,new Entry(group,4)),retired);
+    }
     private record Entry(Object group,int id) {}
     @Test void oldestPendingOfOnlyTheFullGroupIsRetiredWithoutChangingGlobalOrder() {
         var a=new Object(); var b=new Object(); var retired=new ArrayList<Entry>();

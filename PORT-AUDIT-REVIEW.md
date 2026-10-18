@@ -2677,3 +2677,24 @@ remain separate. Local checkpoint only. Checklist: 55 complete / 108 open / 163.
 D03 remains open: ReikaParticleEngine's custom texture/render-mode/exemption
 batching and initialization still require a full native port. D02's controller
 does not claim restoration of those commented bodies.
+
+
+### D03 prerequisite: exemption-aware particle FIFO (2026-10-18)
+
+Added counted-entry policy to BoundedParticleQueue; existing native D02 callers
+retain the count-every-entry constructor. Exempt particles now retain global FIFO
+order without consuming per-key capacity or evicting ordinary entries. Admission
+freezes the counted flag, and predicate failures leave the existing queue intact.
+Two regressions cover exemption/overflow/removal/clear and mutable/failed admission.
+The seven focused queue tests pass (build/d03-queue-tests.log).
+
+D03 remains unchecked; the custom backend/render-mode/texture port is still in
+progress. Verified 26.3 native rendering contracts and remaining acceptance are
+recorded in DragonAPI/docs/particle-custom-engine-port.md. The original sixth FOG
+flag and 1/255 alpha-clip threshold need restoration; native shaders use 0.1.
+Native standalone textures are supported by the layer texture lookup. No native
+custom renderer completion, GPU acceptance, or backlog count change is claimed.
+
+Full DragonAPI verification also passed: 251 unit cases, zero failures/errors/skips
+(build/d03-queue-full-tests.log). D03 stays open; checklist remains 55 complete /
+108 open / 163. This prerequisite does not alter the active native queue policy.
