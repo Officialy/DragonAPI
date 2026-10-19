@@ -13,12 +13,13 @@ import net.neoforged.neoforge.common.NeoForge;
  * one position.
  *
  * <p>DragonAPI 1.7.10 let listeners replace a block's icon per position; ChromatiCraft used it to draw
- * the Luminous Cliffs' clear shallows with their own water texture. A 26.2 fluid is drawn with one
+ * the Luminous Cliffs' clear shallows with their own water texture. A 26.3 fluid is drawn with one
  * {@link FluidModel} per fluid state, and NeoForge will not let a mod replace vanilla water's, so
  * {@code MixinFluidRenderer} offers the model here, per position, as the fluid is meshed.
  *
- * <p>Fired on chunk-meshing worker threads, once per fluid block per mesh build. Listeners must be
- * thread-safe and must not load chunks.
+ * <p>Fired on chunk-meshing worker threads for terrain, and during client render-state extraction
+ * for contained surfaces such as RotaryCraft reservoirs. Container extraction can occur each frame.
+ * Listeners must be thread-safe, use the supplied view and position, and must not load chunks.
  */
 public class FluidModelEvent extends Event {
 

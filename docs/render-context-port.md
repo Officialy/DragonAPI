@@ -52,15 +52,18 @@ Do not infer a shader profile from a helper's name alone:
 | prepareGeoDraw(alpha) | Disable lighting and texturing; enable blending when alpha is true | Choose untextured vertex layout, shader and per-draw blend state explicitly; alpha=false did not reset existing blend state |
 | exitGeoDraw | Enable lighting/texturing and disable blending | Following submissions own their own pipeline; no global reset shim |
 
-The uncommented full-source inventory has 97 qualified helper calls across 63
-files: disableLighting 17, enableLighting 4, disableEntityLighting 55,
+The uncommented full-source inventory has 95 qualified helper calls across 62
+files after the reservoir migration: disableLighting 16, enableLighting 3, disableEntityLighting 55,
 enableEntityLighting 9, prepareGeoDraw 7, exitGeoDraw 5. Comments and string tokens
 were distinguished from executable source. Excluded legacy call sites remain
 part of migration planning; they were not deleted, commented out or added to the
-build without their dependencies. The inventory is build/d06-full-source-callers.json.
+build without their dependencies. The current inventory is build/d06-reservoir-full-source-callers.json; the earlier
+97-call/63-file inventory remains build/d06-full-source-callers.json.
 
-Compiled bytecode method references identify only RenderBevel and RenderReservoir
-as external users of the legacy helpers. This is narrower than file/class-name
+Compiled bytecode at the matrix checkpoint identified RenderBevel and
+RenderReservoir as external users. After the reservoir port only RenderBevel
+remains, in its dormant face-number method; current evidence is
+build/d06-reservoir-remaining-lighting-callers.json. This is narrower than file/class-name
 matching: the preserved VoidMonster/Render/VoidGrowthRenderer.java has the same
 class identity as a modern replacement and must not be mistaken for its compiled
 implementation. Bytecode inventory: build/d06-active-render-helper-callers.json.
@@ -71,11 +74,10 @@ native submit still has outstanding face-number/compass behavior; removing two
 no-op calls alone would not restore those features.
 
 RenderReservoir's helper calls are in renderLiquid, reached through an obsolete
-public render signature, not native submit. Native submit already owns a separate
-fluid surface, but uses the tile's packed light and entity-translucent pipeline
-without the old emissive-fluid lighting decision. That active path needs an
-explicit lighting profile and source-parity review. The class also retains cover
-and legacy-fluid gaps; these are not made complete by the matrix repair.
+public render signature, not native submit. At the matrix checkpoint native submit owned a separate fluid surface with
+incorrect lighting and tint, while cover and legacy-fluid behavior were missing.
+Those paths are now fully replaced by extracted native rendering state and
+explicit lighting profiles, as detailed in the reservoir milestone below.
 
 ChromatiCraft has accepted explicit pipelines and numerous excluded legacy
 renderers. Their directional-light versus lightmap choices require checking each
@@ -102,3 +104,30 @@ build/d06-matrix-client2.log (3m54s), with MATRIX_CONTEXT_CLIENT_AUDIT_PASS,
 water-composition and full DRAGONAPI_AUDIT_CLIENT_PASS, followed by clean process
 exit. This proves the matrix bridge and full client regression; it does not make
 the still-unported lighting helpers complete. Evidence: build/d06-matrix-proof.json.
+
+
+## Reservoir and independent lighting profile milestone (2026-10-19)
+
+Added EntityLighting profiles separating directional lighting from lightmap use.
+The fully rewritten reservoir renderer now captures native wall/cover/fluid state,
+uses the registered fluid model/tint and selects FULL_BRIGHT for luminous fluids
+instead of relying on the no-op disableLighting. Ordinary fluid uses LIT. Forward
+and all three OIT stages exist for each profile and culling choice. The fluid's
+component renderColor and original world-tint precedence are also restored.
+
+Unit/native mesh/GPU and dedicated results are recorded in
+RotaryCraft/docs/reservoir-renderer-port.md. The no-op call sites in RenderReservoir
+have disappeared because their real behavior is now implemented. RenderBevel and
+excluded legacy callers still require migration; the generic no-op lighting
+helpers are not yet retired. D06 therefore remains open, with no checklist count
+change. The earlier active-consumer inventory is a historical checkpoint.
+
+
+Final reservoir orientation/scene milestone: combined units and native client
+passed in build/d06-reservoir-orientation-client.log (10m38s). World/inventory
+transforms, authored mirroring, all 120 inventory vertices, 32 GPU pipelines and
+both actual transparency modes passed. The configured external-mod dedicated
+profile passed all 1,004 required tests. Full pinned evidence and unchanged Play
+argument hashes are in build/d06-reservoir-proof.json; the per-file contract is
+RotaryCraft/docs/reservoir-renderer-port.md. D06 remains open for no-op API
+retirement and remaining caller migration, with no checklist count change.

@@ -16,6 +16,7 @@ public final class ClientRendering {
     private ClientRendering() {}
 
     public static void register(IEventBus modBus) {
+        modBus.addListener(EntityLighting::register);
         modBus.addListener((net.neoforged.neoforge.client.event.AddClientReloadListenersEvent event) ->
                 event.addListener(net.minecraft.resources.Identifier.parse("dragonapi:direct_assets"), reika.dragonapi.io.DirectResourceManager.getInstance()));
         modBus.addListener((RegisterParticleGroupsEvent event) -> event.register(StringParticleFX.GROUP, TextParticleGroup::new));
