@@ -2762,3 +2762,39 @@ D03 stays unchecked pending improved-transparency scene and screen/water
 composition verification. Checklist now 55 complete / 109 open / 164, including N09.
 Current contract/evidence: DragonAPI/docs/particle-custom-engine-port.md and
 build/d03-proof.json. This is a local milestone, not a full-backlog completion.
+
+
+### N09 completed: composite fixtures, native receivers and mock negotiation (2026-10-19)
+
+Restored the existing RotaryCraft GameTest resource source set to the composite
+launcher through a GameTest-only descriptor. It supplies the existing fuel, ore
+and foreign-material fixtures. Play/client-audit use the main descriptor even
+in mixed invocations; the built RC jar excludes the unique fixture tag.
+This reduced the original 164 family failures to five. Production recipes and
+transfer handlers were preserved. The remaining contracts now use the actual
+bootstrap order (blast furnace/steel before worktable), near/far menu checks,
+valid installed tagged products, native server update payloads, and real client
+receiver fixtures instead of detached server objects. Client-side receive guards
+remain intact and have explicit negative server/detached assertions.
+
+Added shared GameTestPlayers support using NeoForge configureMockConnection before
+real login. Migrated deprecated joined-player factories and configured the raw
+connection factories as well; the latter accounted for 34 remaining Curios payload
+failures after the first migration. Chroma's existing entry points delegate to
+shared support. A native regression checks changeable survival/creative abilities
+and the installed Curios channel. Production packet guards are preserved.
+
+Verified: 318 unit cases, zero failures/errors/skips; all 998 required tests in the
+family-only rotarycraft:* composite profile; all 1,002 in that profile with the
+current external mods. Other namespace/worldgen suites retain separate selectors.
+The mixed client/GameTest run passed MACHINE_SYNC_CLIENT_AUDIT_PASS, native codec
+and ClientLevel radar/sonic updates, untracked contacts, 64-bit fields, partial
+merge and detached guards. Actual client mod roots exclude fixtures. Play argument
+hashes are unchanged; RC jar excludes fixture data. Final family validation was
+retried once after approval review timed out before process creation; it passed.
+
+Evidence/commands: TestInstance/docs/gametest-fixtures-and-mock-players.md and
+build/n09-proof.json. N09 is checked; checklist now 56 complete / 108 open / 164.
+D03 improved-transparency/screen-water composition and N07 real remote sessions
+remain separate outstanding work. Owner IDE/progression-overlay changes stay
+outside this checkpoint.

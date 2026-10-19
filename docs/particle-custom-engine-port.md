@@ -3,7 +3,9 @@
 D03 is in progress. The native backend and original default effects compile and
 have passed native ownership, callback, GPU and regular-frame acceptance. Improved-
 transparency scene composition and screen/water ordering still need verification.
-The wider gameplay GameTest matrix is red and tracked separately as N09.
+N09 has since repaired the wider gameplay test fixtures/contracts: the final
+rotarycraft:* composite profiles pass 998 family-only and 1,002 external-mod tests.
+See TestInstance/docs/gametest-fixtures-and-mock-players.md for current evidence.
 
 ## Native ownership and initialization
 
@@ -102,12 +104,13 @@ used squared distance instead of distance.
   The exact-class test delegate is unregistered and cleared afterward.
 - Dedicated mixin audit: 30 transformed, 24 client bindings correctly classified
   OTHER_SIDE, two optional dependencies absent; no required binding failure.
-- Wider gameplay checks are not green: the family-only composite completed 997
+- At the D03 checkpoint the family-only composite completed 997
   tests with 164 required failures; the external-mod composite completed 1,001
   tests with 209 required failures. Failures include fluid intake, machine input
   sides, progression, menus/sync and external Curios mock-player payload setup.
-  N09 tracks this work. Logs: build/d03-family-dedicated.log and
-  build/d03-dedicated-smoke.log. No gameplay-suite pass is claimed.
+  N09 subsequently repaired this work; the initial diagnostic logs are: build/d03-family-dedicated.log and
+  build/d03-dedicated-smoke.log. Current passing profiles are recorded in
+  build/n09-proof.json and the N09 fixture/contract notes.
 - The standalone RotaryCraft run completed 979 tests with ten required failures;
   several fixtures now require other included mods, so it is not interchangeable
   with the composite all-family profile. The older 107-test checkpoint is a
@@ -135,3 +138,9 @@ an overflow victim was already marked dead. Controller retirement and active cle
 now call remove only for live particles, while still releasing the reservation
 when the actual native queue node is removed. This fixed the double callback;
 client4 passed the unchanged once-only assertion.
+
+N09 follow-up (2026-10-19): final unit verification passed all 318 cases; the
+rotarycraft:* profiles passed 998 family-only and 1,002 external-mod cases. A mixed
+client/GameTest invocation verified client fixture isolation and real ClientLevel
+radar/sonic receivers. Normal Play arguments match the D03 baseline. D03 itself
+remains open for improved-transparency scene and screen/water composition review.
