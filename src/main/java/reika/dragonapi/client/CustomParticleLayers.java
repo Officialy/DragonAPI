@@ -17,6 +17,7 @@ import reika.dragonapi.instantiable.rendering.ReikaParticleEngine.RenderModeFlag
 public final class CustomParticleLayers {
     private static final Identifier SHADER=Identifier.fromNamespaceAndPath("dragonapi","core/custom_particle");
     private static final Map<Integer,Pipelines> PIPELINES=new HashMap<>();
+    private static final java.util.Set<RenderPipeline> SCREEN_PIPELINES=java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
     private static final Map<SingleQuadParticle.Layer,Map<Key,SingleQuadParticle.Layer>> LAYERS=new WeakHashMap<>();
     private static final ThreadLocal<UnaryOperator<SingleQuadParticle.Layer>> CURRENT=new ThreadLocal<>();
     private record Key(Identifier texture,int flags) {}
@@ -47,6 +48,7 @@ public final class CustomParticleLayers {
             return new SingleQuadParticle.Layer(translucent,texture,pipelines.forward,translucent?pipelines.oit:null);
         });
     }
+    public static synchronized boolean isScreenLayer(SingleQuadParticle.Layer layer) { return SCREEN_PIPELINES.contains(layer.pipeline()); }
     private static boolean enabled(int flags,RenderModeFlags flag) { return (flags&flag.mask())!=0; }
     private static RenderPipeline.Builder base(RenderPipeline.Snippet snippet,int flags) {
         var builder=RenderPipeline.builder(snippet).withVertexShader(SHADER).withFragmentShader(SHADER)
@@ -67,6 +69,8 @@ public final class CustomParticleLayers {
         forward.withColorTargetState(target);
         var oit=OitPipelineSet.builder(id,base(RenderPipelines.OIT_PARTICLE_SNIPPET,flags));
         if(!enabled(flags,RenderModeFlags.DEPTH)) oit.withoutDepthTest();
-        return new Pipelines(forward.build(),oit.build());
+        var pipeline=forward.build();
+        if(enabled(flags,RenderModeFlags.ALPHA) && enabled(flags,RenderModeFlags.ADDITIVE)) SCREEN_PIPELINES.add(pipeline);
+        return new Pipelines(pipeline,oit.build());
     }
 }

@@ -1,8 +1,9 @@
 # D03 custom particle engine port
 
 D03 is in progress. The native backend and original default effects compile and
-have passed native ownership, callback, GPU and regular-frame acceptance. Improved-
-transparency scene composition and screen/water ordering still need verification.
+have passed native ownership, callback, GPU and regular-frame acceptance in both
+classic and improved transparency. Controlled screen/water pixel composition still
+needs verification.
 N09 has since repaired the wider gameplay test fixtures/contracts: the final
 rotarycraft:* composite profiles pass 998 family-only and 1,002 external-mod tests.
 See TestInstance/docs/gametest-fixtures-and-mock-players.md for current evidence.
@@ -144,3 +145,34 @@ rotarycraft:* profiles passed 998 family-only and 1,002 external-mod cases. A mi
 client/GameTest invocation verified client fixture isolation and real ClientLevel
 radar/sonic receivers. Normal Play arguments match the D03 baseline. D03 itself
 remains open for improved-transparency scene and screen/water composition review.
+
+
+### Late screen phase (2026-10-19)
+
+The native solid/after-terrain split placed screen layers in the solid phase,
+before translucent terrain. Screen blending requires a separate forward phase:
+its per-channel destination factor cannot be represented by scalar OIT
+transmittance. Custom screen quads now retain native QuadParticleRenderState
+storage separately and submit through a dedicated SimpleFeatureRenderPhase.
+The native QuadParticleFeatureRenderer still owns mesh preparation and drawing.
+The phase participates in native collection draining/reset and prepared grouping.
+Presence checks inspect prepared groups, since submission queues have drained.
+
+Classic rendering executes this phase immediately after native after-terrain
+particles. Improved transparency executes it after the OIT composite in a pass
+that loads the existing main color and opaque scene depth. Neither path clears
+color/depth or writes depth. The original screen blend equation is preserved.
+The regular scalar-alpha layers retain native OIT pipelines and stages.
+
+The isolated client fixture requires both alpha/lit and screen probe extraction
+and a populated, successfully executed screen phase in each transparency mode.
+It restores the initial option and unregisters its private delegate afterward.
+Screen-only native extraction and reset also have explicit regression assertions.
+The first dual-mode run passed in build/d03-late-client.log. Final regression
+acceptance and water composition evidence are recorded in subsequent ledger notes;
+D03 remains open until deterministic screen/water composition is verified.
+
+Final late-phase acceptance: build/d03-late-client-final.log passed in 3m44s,
+including screen-only extraction/storage/reset and both real rendering modes.
+DragonAPI units: 256, zero failures/errors/skips. Play VM/program argument hashes
+match the prior checkpoint. D03 stays open for controlled water pixel composition.
