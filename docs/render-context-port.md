@@ -148,3 +148,27 @@ build/d06-bevel-full-source-callers.json. These are forward migration work, not
 working fixed-function APIs. Apply the source-contract mapping above when each
 subsystem lands; do not resurrect silent no-ops. D06 remains open while those
 caller contracts are unresolved. No checklist count changes in this milestone.
+
+
+## Focus crystal: source context resolves the misleading unlit profile
+
+Original ChromatiCraft 5cde0068c^ proves that focus shards keep GL_LIGHTING enabled
+while disableEntityLighting disables only their lightmap. The base precedes that
+call and retains both systems. EntityLighting.cutout now owns all four lighting
+choices with opaque alpha clipping/depth writes, explicit culling and correct
+lightmap binding. Focus uses LIT for the base and DIRECTIONAL_ONLY for shards.
+Rift black boxes and Crystal Glow inventory cards preserve LIGHTMAP_ONLY; their
+source explicitly disables GL_LIGHTING. The misleading Chroma unlit factory is
+removed after migrating all users. This supersedes the earlier unresolved comment
+review in this document; it does not resolve unrelated excluded source contexts.
+
+ScreenParticleRendering.submitGeometry exposes the existing native forward
+screen-color phase to CustomFeatureRenderer submits. Focus world glows require
+that RGB screen equation on composed scene color; they retain opaque-depth
+testing and no depth writes. Solid item/model draws stay in their native pass.
+All eight cutout profiles, five focus tiers, base/shard models, source normals
+and complete native focus world draws in both transparency modes passed in
+build/d06-focus-final-client.log (5m), along with existing matrix/water/bevel/
+reservoir/full-client acceptance. Native mesh tests caught and now cover missing
+overlay attributes. Full contract: ChromatiCraft/docs/focus-crystal-lighting.md;
+pinned evidence: build/d06-focus-proof.json. D06 and the backlog counts stay open.

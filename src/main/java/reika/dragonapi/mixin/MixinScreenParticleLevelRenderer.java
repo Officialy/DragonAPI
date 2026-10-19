@@ -21,7 +21,7 @@ public abstract class MixinScreenParticleLevelRenderer {
         if(!screen.dragonapi$hasScreenParticles()) return;
         var target=targets.main.get();
         try(var pass=RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-                ()->"DragonAPI screen particles after OIT",target.getColorTextureView(),Optional.empty(),target.getDepthTextureView(),OptionalDouble.empty())) {
+                ()->"DragonAPI screen-color effects after OIT",target.getColorTextureView(),Optional.empty(),target.getDepthTextureView(),OptionalDouble.empty())) {
             RenderSystem.bindDefaultUniforms(pass);
             screen.dragonapi$executeScreenParticles(pass,true);
         }

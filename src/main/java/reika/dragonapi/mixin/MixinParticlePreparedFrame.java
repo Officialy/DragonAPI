@@ -12,7 +12,7 @@ import net.minecraft.client.renderer.feature.phase.FeatureRenderPhase;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.gen.Invoker;
 import reika.dragonapi.client.*;
-/** Execute native prepared quad groups; phase queues have already drained by this point. */
+/** Execute native prepared screen-color feature groups; phase queues have already drained by this point. */
 @Mixin(FeatureRenderDispatcher.PreparedFrame.class)
 public abstract class MixinParticlePreparedFrame implements ScreenParticleFrameAccess {
     @Shadow private FeatureFrameContext context;

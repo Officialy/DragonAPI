@@ -20,6 +20,8 @@ public enum EntityLighting {
     public final boolean lightmap;
     private final Map<Boolean,Pipelines> pipelines=new HashMap<>();
     private final Map<Key,RenderType> types=new HashMap<>();
+    private final Map<Boolean,RenderPipeline> cutoutPipelines=new HashMap<>();
+    private final Map<Key,RenderType> cutoutTypes=new HashMap<>();
     private record Key(Identifier texture,boolean cull) {}
     private record Pipelines(RenderPipeline forward,OitPipelineSet oit) {}
     EntityLighting(boolean directional,boolean lightmap) { this.directional=directional; this.lightmap=lightmap; }
@@ -32,6 +34,21 @@ public enum EntityLighting {
             if(lightmap) setup.useLightmap();
             return RenderType.create("dragonapi_entity_"+name().toLowerCase(java.util.Locale.ROOT),setup.createRenderSetup());
         });
+    }
+    /** Opaque alpha-cutout draw with independent directional and lightmap intent. */
+    public synchronized RenderType cutout(Identifier texture,boolean cull) {
+        return cutoutTypes.computeIfAbsent(new Key(texture,cull),key->{
+            var setup=RenderSetup.builder(cutoutPipeline(cull)).withTexture("Sampler0",texture);
+            if(lightmap) setup.useLightmap();
+            return RenderType.create("dragonapi_entity_cutout_"+name().toLowerCase(java.util.Locale.ROOT),setup.createRenderSetup());
+        });
+    }
+    private synchronized RenderPipeline cutoutPipeline(boolean cull) {
+        return cutoutPipelines.computeIfAbsent(cull,key->configure(RenderPipeline.builder(
+                    lightmap?RenderPipelines.ENTITY_SNIPPET:RenderPipelines.ENTITY_EMISSIVE_SNIPPET))
+                .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_cutout/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")))
+                .withCull(cull).withColorTargetState(ColorTargetState.DEFAULT)
+                .withDepthStencilState(DepthStencilState.DEFAULT).withShaderDefine("ALPHA_CUTOUT",0.1F).build());
     }
     private RenderPipeline.Builder configure(RenderPipeline.Builder builder) {
         builder.withShaderDefine("NO_OVERLAY");
@@ -54,6 +71,10 @@ public enum EntityLighting {
     /** Physical-client registration; all profile/culling declarations are known before drawing. */
     public static void register(RegisterRenderPipelinesEvent event) {
         for(var mode:values()) for(boolean cull:new boolean[]{false,true}) {
+            var cutout=mode.cutoutPipeline(cull);
+            event.registerPipeline(cutout);
+            IrisCompat.assign(cutout,"ENTITIES");
+            IrisCompat.assignShadow(cutout,"SHADOW_ENTITIES");
             var pair=mode.pipelines(cull);
             for(var pipeline:new RenderPipeline[]{pair.forward,pair.oit.depthBoundsPipeline(),pair.oit.transmittancePipeline(),pair.oit.accumulatePipeline()}) {
                 event.registerPipeline(pipeline);
