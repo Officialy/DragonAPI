@@ -22,6 +22,8 @@ public enum EntityLighting {
     private final Map<Key,RenderType> types=new HashMap<>();
     private final Map<Boolean,RenderPipeline> cutoutPipelines=new HashMap<>();
     private final Map<Key,RenderType> cutoutTypes=new HashMap<>();
+    private final Map<Boolean,RenderPipeline> screenPipelines=new HashMap<>();
+    private final Map<Key,RenderType> screenTypes=new HashMap<>();
     private record Key(Identifier texture,boolean cull) {}
     private record Pipelines(RenderPipeline forward,OitPipelineSet oit) {}
     EntityLighting(boolean directional,boolean lightmap) { this.directional=directional; this.lightmap=lightmap; }
@@ -50,6 +52,23 @@ public enum EntityLighting {
                 .withCull(cull).withColorTargetState(ColorTargetState.DEFAULT)
                 .withDepthStencilState(DepthStencilState.DEFAULT).withShaderDefine("ALPHA_CUTOUT",0.1F).build());
     }
+    /** RGB screen blending; world callers submit through ScreenParticleRendering's native forward phase. */
+    public synchronized RenderType screen(Identifier texture,boolean cull) {
+        return screenTypes.computeIfAbsent(new Key(texture,cull),key->{
+            var setup=RenderSetup.builder(screenPipeline(cull)).withTexture("Sampler0",texture);
+            if(lightmap) setup.useLightmap();
+            return RenderType.create("dragonapi_entity_screen_"+name().toLowerCase(java.util.Locale.ROOT),setup.createRenderSetup());
+        });
+    }
+    private synchronized RenderPipeline screenPipeline(boolean cull) {
+        return screenPipelines.computeIfAbsent(cull,key->configure(RenderPipeline.builder(
+                    lightmap?RenderPipelines.ENTITY_SNIPPET:RenderPipelines.ENTITY_EMISSIVE_SNIPPET))
+                .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_screen/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")))
+                .withCull(cull).withColorTargetState(new ColorTargetState(new BlendFunction(BlendFactor.ONE,BlendFactor.ONE_MINUS_SRC_COLOR)))
+                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL,false))
+                // Retain zero-alpha rejection for byte-alpha sprites, without imposing a new 0.1 cutout.
+                .withShaderDefine("ALPHA_CUTOUT",1F/255F).build());
+    }
     private RenderPipeline.Builder configure(RenderPipeline.Builder builder) {
         builder.withShaderDefine("NO_OVERLAY");
         if(!directional) builder.withShaderDefine("NO_CARDINAL_LIGHTING");
@@ -71,6 +90,9 @@ public enum EntityLighting {
     /** Physical-client registration; all profile/culling declarations are known before drawing. */
     public static void register(RegisterRenderPipelinesEvent event) {
         for(var mode:values()) for(boolean cull:new boolean[]{false,true}) {
+            var screen=mode.screenPipeline(cull);
+            event.registerPipeline(screen);
+            IrisCompat.assignWithoutShadow(screen,"ENTITIES");
             var cutout=mode.cutoutPipeline(cull);
             event.registerPipeline(cutout);
             IrisCompat.assign(cutout,"ENTITIES");

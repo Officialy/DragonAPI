@@ -172,3 +172,23 @@ build/d06-focus-final-client.log (5m), along with existing matrix/water/bevel/
 reservoir/full-client acceptance. Native mesh tests caught and now cover missing
 overlay attributes. Full contract: ChromatiCraft/docs/focus-crystal-lighting.md;
 pinned evidence: build/d06-focus-proof.json. D06 and the backlog counts stay open.
+
+
+## Rift/Aurora: lightmap-aware RGB screen profiles
+
+Original Rift source disables GL_LIGHTING but retains the lightmap around its
+rune and halo. EntityLighting.screen now expresses the RGB screen equation with
+all four independent lighting profiles and both culling choices. Rift chooses
+LIGHTMAP_ONLY and supplies complete ENTITY attributes. World glows use the owned
+native forward phase; item/detached draws keep native item collector ownership.
+Aurora's original draw disables both lighting systems, so its unlit sprite shader
+remains appropriate; its native world submission now uses forward screen blending
+and captures its UV animation frame before deferred replay.
+
+Eight screen profile pipelines, source Rift mesh/branch cases, Aurora clock/state
+isolation and both actual world renderers passed in classic and improved
+transparency, together with the full client suite (5m01s). Details:
+ChromatiCraft/docs/rift-aurora-rendering.md; pinned proof:
+build/d06-rift-aurora-proof.json. Existing focus/bevel/reservoir and all twelve
+water screenshot checks passed again. Compiled global-lighting helper inventory
+remains empty. D06 remains open; no checklist count change.
