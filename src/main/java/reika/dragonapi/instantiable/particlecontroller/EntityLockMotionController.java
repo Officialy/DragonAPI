@@ -13,6 +13,7 @@ package reika.dragonapi.instantiable.particlecontroller;
 import reika.dragonapi.interfaces.MotionController;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 
 public class EntityLockMotionController implements MotionController {
@@ -36,7 +37,7 @@ public class EntityLockMotionController implements MotionController {
 		velocityY = maxVelocityY;
 	}
 
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		accelerationY = -1 * 0.125 * (e.getY() - target.getY() - 0.5);
 		velocityY += accelerationY;
 		velocityY = Mth.clamp(velocityY, -maxVelocityY, maxVelocityY);
@@ -45,17 +46,17 @@ public class EntityLockMotionController implements MotionController {
 	}
 
 	@Override
-	public double getMotionX(Entity e) {
+	public double getMotionXFor(ControllerTarget e) {
 		return -(e.getX() - target.getX()) * velocityXZ / e.distanceTo(target);
 	}
 
 	@Override
-	public double getMotionY(Entity e) {
+	public double getMotionYFor(ControllerTarget e) {
 		return -(e.getY() - target.getY() - target.getBbHeight() / 2F) * velocityXZ / e.distanceTo(target);
 	}
 
 	@Override
-	public double getMotionZ(Entity e) {
+	public double getMotionZFor(ControllerTarget e) {
 		return -(e.getZ() - target.getZ()) * velocityXZ / e.distanceTo(target);
 	}
 

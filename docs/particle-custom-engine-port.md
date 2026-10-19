@@ -1,74 +1,137 @@
-# D03 custom particle engine port — work in progress
+# D03 custom particle engine port
 
-D03 remains open. The legacy `ReikaParticleEngine` implementation is not accepted
-into the native rendering slice yet. D02's controller remains the active native
-engine integration. This document records verified migration constraints and the
-completed queue prerequisite; it does not claim the custom renderer is restored.
+D03 is in progress. The native backend and original default effects compile and
+have passed native ownership, callback, GPU and regular-frame acceptance. Improved-
+transparency scene composition and screen/water ordering still need verification.
+The wider gameplay GameTest matrix is red and tracked separately as N09.
 
-## Completed prerequisite
+## Native ownership and initialization
 
-`BoundedParticleQueue` accepts an optional counted-entry predicate. The existing
-three-argument constructor still counts every entry, preserving D02 behavior.
-Exempt entries participate in the global FIFO and all cleanup/iterator operations,
-but never enter the counted bucket and never trigger an eviction. Counted entries
-retain the full configured capacity even when exempt entries are interspersed.
-The predicate is sampled once per offer; changing the original object's exemption
-flag cannot change the bookkeeping of an already admitted node. Key/predicate
-validation happens before eviction. Retirement callbacks still see a coherent
-queue, and clear still detaches the previous generation before callbacks.
+ReikaParticleEngine is a facade with a lazy native ParticleEngine backend. Loading
+its mode API or constructing the default facade does not construct an engine.
+ClientRendering registers the default blur and floating-seed classes after the
+real global engine exists. The backend shares that engine's loaded ParticleResources
+and participates in its exact-class delegation, ticking, extraction and level
+lifecycle. It never constructs an unprepared resource provider or replaces the
+playing engine. Registration is idempotent.
 
-Seven focused tests cover the original five queue contracts plus interspersed
-exemption/overflow/removal/clear and mutable-predicate/failed-admission atomicity.
-Focused verification: `build/d03-queue-tests.log` (successful Gradle run).
+Admission preserves native cancellation and ParticleLimit checks. A rejected
+particle does not acquire a custom ownership ticket. Accepted particles freeze the
+native group, concrete texture identifier, mode bit mask and exemption status.
+Subsequent changes to a caller's builder cannot mutate an admitted batch key.
+Duplicate admission of a currently owned particle identity is rejected.
 
-## Verified native rendering constraints
+One ownership budget covers pending and active particles for each custom key.
+Exempt particles retain FIFO order without consuming capacity or evicting ordinary
+particles. The existing BoundedParticleQueue constructor still counts every entry,
+so ordinary D02 engines retain their previous admission policy. While native groups
+are ticking, overflow marks a victim dead and defers physical removal until the
+iterator is safe. Native death cleanup or the post-tick sweep releases its native
+reservation exactly once; the sweep does not invoke remove callbacks twice.
 
-Reference: generated Minecraft/NeoForge 26.3.0.76 source and resource jars under
-DragonAPI/build/moddev/artifacts. Historical engine reference:
-`git show de1bcf1f:Instantiable/Rendering/ParticleEngine.java` in DragonAPI.
+World changes clear native ownership, tickets and layer instances. Immutable
+pipeline declarations are reused. Statistics include pending and active particles;
+mode keys unused after ticking are pruned.
 
-- The original mode has six flags: ALPHA, LIGHT, ADDITIVE, DEPTH, ALPHACLIP,
-  and FOG. The partial port lost FOG. The legacy alpha-test threshold is 1/255,
-  whereas the native particle fragment shader currently clips below 0.1.
-- Native SingleQuadParticle.Layer supplies texture identity, pipeline, translucency,
-  and all three OIT pipelines. QuadParticleFeatureRenderer resolves its texture
-  through TextureManager.getTexture, so a standalone custom texture is supported;
-  it does not have to be an atlas.
-- Native quad extraction supplies particle positions, quaternion, UV, color, and
-  packed light coordinates. Preserve all of them when mapping a custom mode.
-- Native particle shaders apply lightmap and fog. The feature renderer binds
-  DynamicTransforms, Sampler2 (lightmap), and Sampler0 (layer texture), alongside
-  RenderSystem.bindDefaultUniforms. LIGHT must retain its original entity-lighting
-  meaning; do not silently reinterpret it as just the lightmap toggle.
-- Native Lighting owns a level lighting UBO with two directional lights and a
-  LEVEL entry. Check its binding contract before introducing a Lighting shader
-  dependency; a declared but unbound uniform is not a complete port.
-- OIT has separate depth-bounds, transmittance, and accumulation shaders/states.
-  A mode must preserve its blend/alpha/fog meaning through those passes, including
-  additive modes. An opaque pipeline cannot simply be relabelled translucent.
-- RegisterParticleGroupsEvent adds a group to the render order unconditionally.
-  Registering SINGLE_QUADS again duplicates rendering. Hook existing extraction
-  rather than registering a second builtin group.
-- QuadParticleRenderState.clear retains empty layer keys. Native client assertions
-  must select the expected populated/mapped layer rather than the first map key.
+## Native rendering
 
-## Remaining implementation and acceptance
+The original six flags are restored: ALPHA, LIGHT, ADDITIVE, DEPTH, ALPHACLIP, FOG.
+All particles retain their supplied native positions, orientation, UV, color and
+packed light coordinates. Custom texture identifiers are resolved by the native
+TextureManager through SingleQuadParticle.Layer, including standalone textures.
+Scoped per-particle extraction restores the previous mapping in a finally block;
+the existing Insert-key depth override applies after the custom layer mapping.
 
-Replace eager construction with a lazy native backend sharing the global engine's
-loaded ParticleResources. Preserve exact-class delegation and native cancellation,
-ParticleLimit reservation, ticking, cleanup, and resource lifecycle. Canonical
-batch identities need immutable snapshots of mutable render modes, texture and
-native particle group; keep exemptions stable across pending-to-active transfer.
-Connect the new counted predicate to custom backend admission, not indiscriminately
-to the global engine. Do not mark D03 complete on the queue prerequisite alone.
+- ALPHA controls the pipeline blend state. ALPHA=false disables blending.
+- ADDITIVE retains the original ADDITIVEDARK screen law: source ONE, destination
+  ONE_MINUS_SRC_COLOR. Its alpha equation uses the equivalent alpha-channel
+  factor ONE_MINUS_SRC_ALPHA. Ordinary alpha retains SRC_ALPHA/ONE_MINUS_SRC_ALPHA.
+- DEPTH selects native reverse-Z testing or ALWAYS_PASS. Custom particles never
+  write scene depth.
+- ALPHACLIP restores GL_GREATER with a threshold of 1/255, rather than the native
+  particle shader's 0.1 threshold.
+- FOG independently controls native world fog.
+- LIGHT retains directional/entity lighting and the supplied lightmap coordinates.
+  Unlit particles bypass both. Legacy batches emitted no per-vertex normal; the
+  custom shader uses the default +Z normal. Native bindDefaultUniforms supplies
+  the Lighting buffer, alongside the native particle feature's texture/lightmap
+  bindings.
 
-Restore all mode flags through native pipelines/shaders with deterministic cache
-identities, scoped extraction, standalone textures, and correct OIT behavior.
-Prove normal and exempt per-key limits, mutation after admission, original UV/color/
-light preservation, native resource sharing, world changes, registration lifecycle,
-and actual custom shader compilation/drawing in the isolated client. Keep normal
-Play configuration and the owner's running client untouched.
+Ordinary alpha modes supply native OIT depth-bounds, transmittance and accumulation
+pipelines. Screen modes deliberately use native forward drawing: scalar OIT
+transmittance cannot express their per-channel destination factors exactly.
+This is an explicit routing choice, not an alpha-based approximation of screen
+blending. Relative composition around translucent water and an actual improved-
+transparency scene remain part of rendering review; pipeline compilation alone
+must not be described as proof of those visual results.
 
-Full DragonAPI verification also passed: 251 unit cases, zero failures/errors/skips
-(build/d03-queue-full-tests.log). D03 stays open; checklist remains 55 complete /
-108 open / 163. This prerequisite does not alter the active native queue policy.
+## Default effects and controller input
+
+EntityBlurFX and EntityFloatingSeedsFX are restored from the original bodies.
+Blur retains acceleration, drag/no-slowdown, life freezing, size/color/alpha curves,
+rapid expansion, bounds, collision response, destinations, locks and controllers.
+Native collision shapes replace obsolete Entity collision APIs; position changes
+also update the native bounding box. The floating seed retains its angular targets,
+random freedom, tolerances and polar velocity calculation.
+
+ControllerTarget provides position, true velocity and age to common controller
+code without requiring client particles to inherit Entity. Entity caller wrappers
+and state-only null calls remain available. The shared ParticleController update
+contract lets one object implement motion and position without duplicate updates.
+Accepted Chroma path adapters have been migrated. Corrected partial-port mistakes:
+target/spiral motion used cardinal direction instead of velocity, and attraction
+used squared distance instead of distance.
+
+## Verification and remaining work
+
+- Seven queue regressions cover FIFO/key isolation, iteration, reentrant retirement,
+  detached-generation clearing, exemptions and failed-admission atomicity.
+- Controller regressions cover real velocity, shared spiral behavior, original
+  attraction normalization and old state-only null calls. Mode snapshots are tested.
+- Latest family XML results: 318 cases, zero failures/errors/skips: DragonAPI 256,
+  GeoStrata 8, RotaryCraft 34, ReactorCraft 8, ChromatiCraft 12.
+- The first successful isolated fixture proves native resource identity, immutable
+  modes, UV/light preservation in a real four-vertex mesh, duplicate rejection,
+  combined pending/active capacity, exemptions, original blur/seed ticking, shared
+  controller updates and level cleanup. It compiled 112 GPU pipelines across all
+  64 modes. Evidence: build/d03-native-client2.log.
+- Final isolated client acceptance passed in build/d03-native-client4.log. The
+  stronger fixture verifies retirement while a native group is ticking, immediate
+  combined pending/active capacity, a single remove callback, and actual regular
+  world frames extracting lit ordinary-alpha and screen custom-texture probes.
+  The exact-class test delegate is unregistered and cleared afterward.
+- Dedicated mixin audit: 30 transformed, 24 client bindings correctly classified
+  OTHER_SIDE, two optional dependencies absent; no required binding failure.
+- Wider gameplay checks are not green: the family-only composite completed 997
+  tests with 164 required failures; the external-mod composite completed 1,001
+  tests with 209 required failures. Failures include fluid intake, machine input
+  sides, progression, menus/sync and external Curios mock-player payload setup.
+  N09 tracks this work. Logs: build/d03-family-dedicated.log and
+  build/d03-dedicated-smoke.log. No gameplay-suite pass is claimed.
+- The standalone RotaryCraft run completed 979 tests with ten required failures;
+  several fixtures now require other included mods, so it is not interchangeable
+  with the composite all-family profile. The older 107-test checkpoint is a
+  historical narrower result, not evidence for today's complete registered set.
+- The initial unfiltered composite selected 1,400 tests including long worldgen
+  suites and was stopped by verified audit JVM identity. The default composite
+  launcher now explicitly passes --tests rotarycraft:* to implement its configured
+  namespace selection. Explicit gameTestSelector overrides remain available.
+- Native improved-transparency scene composition and screen/water ordering remain
+  unverified. No pixel-level parity claim is made. Evidence summary:
+  build/d03-proof.json. Backlog: 55 complete / 109 open / 164 after adding N09.
+
+The first attempted client stopped at NeoForge's loading-warning screen because
+of carried-over OnlyIn annotations. Those obsolete annotations were removed;
+physical-client entry points and client-only mixin configuration own sided loading.
+Normal Play uses its separate arguments, saves and immutable launch snapshot;
+these checks use the isolated build/dragonapi-client-audit directory.
+
+Source references: generated Minecraft/NeoForge 26.3.0.76 source and resource jars
+under DragonAPI/build/moddev/artifacts; original DragonAPI commit de1bcf1f,
+Instantiable/Rendering/ParticleEngine.java and Instantiable/Effects/EntityBlurFX.java.
+
+The final callback regression exposed an additional native-stage eviction after
+an overflow victim was already marked dead. Controller retirement and active clear
+now call remove only for live particles, while still releasing the reservation
+when the actual native queue node is removed. This fixed the double callback;
+client4 passed the unchanged once-only assertion.

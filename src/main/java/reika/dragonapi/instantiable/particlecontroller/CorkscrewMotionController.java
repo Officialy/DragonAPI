@@ -13,6 +13,7 @@ package reika.dragonapi.instantiable.particlecontroller;
 import reika.dragonapi.interfaces.PositionController;
 import reika.dragonapi.libraries.mathsci.ReikaPhysicsHelper;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 //incomplete
 public class CorkscrewMotionController implements PositionController {
@@ -47,23 +48,23 @@ public class CorkscrewMotionController implements PositionController {
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		angle += angleSpeed;
 		pos += linearSpeed;
 	}
 
 	@Override
-	public double getPositionX(Entity e) {
+	public double getPositionXFor(ControllerTarget e) {
 		return originX + ReikaPhysicsHelper.polarToCartesian(pos, theta, phi)[0] + spiralRadius * Math.cos(Math.toRadians(angle)) * Math.cos(Math.toRadians(theta));
 	}
 
 	@Override
-	public double getPositionY(Entity e) {
+	public double getPositionYFor(ControllerTarget e) {
 		return originY + ReikaPhysicsHelper.polarToCartesian(pos, theta, phi)[1] + spiralRadius * Math.sin(Math.toRadians(angle)) * Math.sin(Math.toRadians(theta));
 	}
 
 	@Override
-	public double getPositionZ(Entity e) {
+	public double getPositionZFor(ControllerTarget e) {
 		return originZ + ReikaPhysicsHelper.polarToCartesian(pos, theta, phi)[2] + spiralRadius * Math.cos(Math.toRadians(angle)) * Math.cos(Math.toRadians(theta));
 	}
 

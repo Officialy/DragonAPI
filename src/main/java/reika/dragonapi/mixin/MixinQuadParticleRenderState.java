@@ -10,5 +10,5 @@ import reika.dragonapi.client.ParticleDepthLayers;
 @Mixin(QuadParticleRenderState.class)
 public abstract class MixinQuadParticleRenderState {
     @ModifyVariable(method="add",at=@At("HEAD"),argsOnly=true)
-    private SingleQuadParticle.Layer dragonapi$debugDepth(SingleQuadParticle.Layer layer) { return ParticleDepthLayers.map(layer); }
+    private SingleQuadParticle.Layer dragonapi$debugDepth(SingleQuadParticle.Layer layer) { return ParticleDepthLayers.map(reika.dragonapi.client.CustomParticleLayers.mapCurrent(layer)); }
 }

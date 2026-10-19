@@ -9,17 +9,14 @@
  ******************************************************************************/
 package reika.dragonapi.interfaces;
 
-import net.minecraft.client.particle.Particle;
 import net.minecraft.world.entity.Entity;
 
-public interface MotionController {
+public interface MotionController extends ParticleController {
 
-    void update(Entity e);
-
-    double getMotionX(Entity e);
-
-    double getMotionY(Entity e);
-
-    double getMotionZ(Entity e);
-
+    double getMotionXFor(ControllerTarget target);
+    default double getMotionX(Entity entity) { return getMotionXFor(ControllerTarget.of(entity)); }
+    double getMotionYFor(ControllerTarget target);
+    default double getMotionY(Entity entity) { return getMotionYFor(ControllerTarget.of(entity)); }
+    double getMotionZFor(ControllerTarget target);
+    default double getMotionZ(Entity entity) { return getMotionZFor(ControllerTarget.of(entity)); }
 }

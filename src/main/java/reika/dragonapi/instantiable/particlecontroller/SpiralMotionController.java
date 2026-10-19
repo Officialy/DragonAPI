@@ -13,6 +13,7 @@ package reika.dragonapi.instantiable.particlecontroller;
 import reika.dragonapi.interfaces.MotionController;
 import reika.dragonapi.interfaces.PositionController;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 
 public class SpiralMotionController implements PositionController, MotionController {
@@ -47,38 +48,38 @@ public class SpiralMotionController implements PositionController, MotionControl
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		angle += angleVelocity;
 		radius += radiusVelocity;
 	}
 
 	@Override
-	public double getMotionX(Entity e) {
-		return e.getMotionDirection().getStepX();
+	public double getMotionXFor(ControllerTarget e) {
+		return e.getDeltaMovement().x;
 	}
 
 	@Override
-	public double getMotionY(Entity e) {
+	public double getMotionYFor(ControllerTarget e) {
 		return verticalVelocity;
 	}
 
 	@Override
-	public double getMotionZ(Entity e) {
-		return e.getMotionDirection().getStepZ();
+	public double getMotionZFor(ControllerTarget e) {
+		return e.getDeltaMovement().z;
 	}
 
 	@Override
-	public double getPositionX(Entity e) {
+	public double getPositionXFor(ControllerTarget e) {
 		return posX + radius * Math.cos(Math.toRadians(angle));
 	}
 
 	@Override
-	public double getPositionY(Entity e) {
+	public double getPositionYFor(ControllerTarget e) {
 		return e.getY();
 	}
 
 	@Override
-	public double getPositionZ(Entity e) {
+	public double getPositionZFor(ControllerTarget e) {
 		return posZ + radius * Math.sin(Math.toRadians(angle));
 	}
 

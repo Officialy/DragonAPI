@@ -32,7 +32,7 @@ public abstract class MixinParticleEngine implements ParticleEngineAccess {
     @Inject(method="<init>",at=@At("RETURN"))
     private void dragonapi$attach(ClientLevel level,ParticleResources resources,CallbackInfo callback) {
         new ThrottleableEffectRenderer((ParticleEngine)(Object)this);
-        particlesToAdd=new BoundedParticleQueue<>(dragonapi$controller.limit,dragonapi$controller::bucket,dragonapi$controller::retire);
+        particlesToAdd=new BoundedParticleQueue<>(dragonapi$controller.limit,dragonapi$controller::bucket,dragonapi$controller::countsToLimit,dragonapi$controller::retire);
     }
     @Override public ThrottleableEffectRenderer dragonapi$getController() { return dragonapi$controller; }
     @Override public void dragonapi$attachController(ThrottleableEffectRenderer controller) {
@@ -45,9 +45,29 @@ public abstract class MixinParticleEngine implements ParticleEngineAccess {
     @Override public int dragonapi$countOwnedParticles() {
         return particlesToAdd.size()+particles.values().stream().mapToInt(ParticleGroup::size).sum();
     }
+    @Override public java.util.List<Particle> dragonapi$getOwnedParticles() {
+        var owned=new java.util.ArrayList<Particle>(particlesToAdd);
+        for(var group:particles.values()) owned.addAll(((ParticleGroupAccess)group).dragonapi$getParticles());
+        return java.util.List.copyOf(owned);
+    }
+    @Override public boolean dragonapi$removeOwnedParticle(Particle particle) {
+        dragonapi$controller.checkOwner();
+        if(dragonapi$removeIdentity(particlesToAdd,particle)) return true;
+        for(var group:particles.values())
+            if(dragonapi$removeIdentity(((ParticleGroupAccess)group).dragonapi$getParticles(),particle)) return true;
+        return false;
+    }
+    @Unique private static boolean dragonapi$removeIdentity(Queue<Particle> queue,Particle particle) {
+        var iterator=queue.iterator();
+        while(iterator.hasNext()) if(iterator.next()==particle) { iterator.remove(); return true; }
+        return false;
+    }
     @WrapMethod(method="add")
     private void dragonapi$admit(Particle particle,Operation<Void> original) {
-        if(!dragonapi$controller.dispatch(particle)) original.call(particle);
+        if(!dragonapi$controller.dispatch(particle)) {
+            original.call(particle);
+            dragonapi$controller.admitted(particle);
+        }
     }
     @WrapMethod(method="tick")
     private void dragonapi$tick(Operation<Void> original) { dragonapi$controller.checkOwner(); original.call(); dragonapi$controller.tickDelegates(); }
@@ -56,8 +76,8 @@ public abstract class MixinParticleEngine implements ParticleEngineAccess {
         if(!dragonapi$controller.beginClear()) return;
         try {
             for(var group:particles.values())
-                for(var particle:java.util.List.copyOf(((ParticleGroupAccess)group).dragonapi$getParticles())) particle.remove();
-            original.call(); dragonapi$controller.clearDelegates(); ParticleDepthLayers.clearLayers();
+                for(var particle:java.util.List.copyOf(((ParticleGroupAccess)group).dragonapi$getParticles())) if(particle.isAlive()) particle.remove();
+            original.call(); dragonapi$controller.clearDelegates(); ParticleDepthLayers.clearLayers(); reika.dragonapi.client.CustomParticleLayers.clearLayers();
         } finally { dragonapi$controller.finishClear(); }
     }
     @WrapMethod(method="countParticles")

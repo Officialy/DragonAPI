@@ -13,4 +13,6 @@ public interface ParticleEngineAccess {
     ClientLevel dragonapi$getLevel();
     ParticleResources dragonapi$getResources();
     int dragonapi$countOwnedParticles();
+    boolean dragonapi$removeOwnedParticle(net.minecraft.client.particle.Particle particle);
+    java.util.List<net.minecraft.client.particle.Particle> dragonapi$getOwnedParticles();
 }

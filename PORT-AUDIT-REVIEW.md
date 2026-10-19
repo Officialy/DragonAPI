@@ -2698,3 +2698,67 @@ custom renderer completion, GPU acceptance, or backlog count change is claimed.
 Full DragonAPI verification also passed: 251 unit cases, zero failures/errors/skips
 (build/d03-queue-full-tests.log). D03 stays open; checklist remains 55 complete /
 108 open / 163. This prerequisite does not alter the active native queue policy.
+
+
+### D03 native backend/default-effect cluster in progress (2026-10-18)
+
+Replaced the partial custom engine with a lazy facade and native backend sharing
+the global ParticleResources. Restored exact-class default blur/seed registration,
+all six mode flags, immutable admission snapshots (including resource identifiers),
+and native extraction mapping. Native queue hooks now accept an engine policy for
+custom batch identities/exemptions; ordinary D02 engines retain their old policy.
+New native shader declarations restore the original 1/255 alpha threshold and
+independent fog/light flags. Ordinary alpha layers receive three OIT declarations;
+screen-blended layers use native forward drawing to retain ONE/ONE_MINUS_SRC_COLOR
+rather than approximating per-channel transmittance with scalar OIT. Phase ordering
+and actual drawing remain acceptance work; this is not a D03 completion claim.
+
+Ported the original blur and floating-seed effect bodies. Entity/particle controller
+input now uses a common immutable ControllerTarget, retaining Entity caller wrappers
+and state-only null caller behavior. Restored true velocity in target/spiral
+controllers where the partial port had incorrectly substituted cardinal direction.
+Migrated the two accepted Chroma controller implementations without changing their
+paths. Shared update contract keeps combined motion/position updates singular.
+
+255 DragonAPI unit cases pass with zero failures/errors/skips; dependent Chroma and
+TestInstance compilation also passed (build/d03-native-fixture-compile.log). New
+isolated CustomParticleEngineClientChecks covers native extraction/ownership,
+UV/light values, frozen modes/exemptions, real default effects and compilation of
+all 64 mode variants. First client verification is running in
+build/d03-native-client.log. D03 stays open. In particular, immediate combined
+pending+active custom-key budgets and screen-layer phase ordering still require
+review; current queue caps apply individually at each native stage. No runtime or
+GPU acceptance is claimed before the client result is inspected.
+
+
+### D03 native/GPU milestone and expanded GameTest findings (2026-10-19)
+
+Final isolated client passed (build/d03-native-client4.log): one per-key budget
+across pending/active queues, frozen mode/resource/exemption snapshots, duplicate
+rejection, UV/light mesh values, default blur/seed ticking, shared controllers,
+level cleanup, retirement during native iteration with one remove callback, and
+actual regular world frames for lit alpha and screen custom-texture probes.
+112 GPU pipelines compiled across all 64 modes. Carried-over OnlyIn annotations
+were removed after the first run stopped at NeoForge's warning screen. The stronger
+callback fixture then exposed a second remove at active-queue eviction; retirement
+and clear now release ownership without re-removing an already-dead particle.
+
+318 family unit tests pass (DA256/Geo8/RC34/ReC8/Chroma12), zero failures/errors/skips.
+Dedicated mixin report: 30 transformed, 24 OTHER_SIDE, two OPTIONAL_ABSENT.
+Normal Play argument hashes still match D02. Default test argument preparation is
+restored separately; owner IDE/progression-overlay edits remain outside this batch.
+
+The expanded gameplay matrix is red: family-only composite 164 required failures
+in 997 tests; external-mod composite 209 in 1,001. Observed failures include fluid
+intake, machine input sides, progression, menus/sync and Curios mock-player payload
+negotiation. Standalone RC selected 979 tests with ten failures including fixtures
+requiring absent family mods. The historical 107-test result is not evidence for
+the current complete registered set. N09 now tracks these failures explicitly.
+The first unfiltered composite selected 1,400 tests including long worldgen suites
+and was stopped using its verified owned JVM identity. TestInstance now passes an
+explicit default rotarycraft:* native selector; wider selectors remain available.
+
+D03 stays unchecked pending improved-transparency scene and screen/water
+composition verification. Checklist now 55 complete / 109 open / 164, including N09.
+Current contract/evidence: DragonAPI/docs/particle-custom-engine-port.md and
+build/d03-proof.json. This is a local milestone, not a full-backlog completion.

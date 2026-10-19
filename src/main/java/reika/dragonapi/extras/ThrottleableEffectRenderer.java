@@ -19,6 +19,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.world.phys.AABB;
 import reika.dragonapi.DragonOptions;
 import reika.dragonapi.client.ParticleEngineAccess;
+import reika.dragonapi.client.ParticleAdmissionPolicy;
 import reika.dragonapi.client.ParticleLayerAccess;
 import net.minecraft.resources.Identifier;
 
@@ -109,11 +110,15 @@ public final class ThrottleableEffectRenderer {
         for(var owner=forEngine(original);owner!=null;owner=owner.state.parent) if(owner.state.clearing) return true;
         for(var handler:List.copyOf(state.handlers)) if(handler.cancel(particle)) return true;
         var delegate=state.delegates.get(particle.getClass());
-        if(delegate==null) return false;
+        if(delegate==null) {
+            if(original instanceof ParticleAdmissionPolicy policy) policy.validateAdmission(particle);
+            return false;
+        }
         delegate.add(particle); return true;
     }
     /** Native SINGLE_QUADS combines three old layers; retain an independent budget for each texture sheet. */
     public Object bucket(Particle particle) {
+        if(original instanceof ParticleAdmissionPolicy policy) return policy.particleBucket(particle);
         if(particle instanceof SingleQuadParticle) {
             var texture=((ParticleLayerAccess)particle).dragonapi$getLayer().textureAtlasLocation();
             return state.atlasKeys.computeIfAbsent(texture,key->key);
@@ -125,9 +130,20 @@ public final class ThrottleableEffectRenderer {
         requireOwner();
         particles.add(particle); return true;
     }
-    public void retire(Particle particle) {
+    public void admitted(Particle particle) {
+        if(original instanceof ParticleAdmissionPolicy policy) policy.particleAdmitted(particle);
+    }
+    public boolean countsToLimit(Particle particle) {
+        return !(original instanceof ParticleAdmissionPolicy policy) || policy.countsToParticleLimit(particle);
+    }
+    public void releaseRetired(Particle particle) {
+        requireOwner();
+        if(original instanceof ParticleAdmissionPolicy policy) policy.retireParticle(particle);
         particle.getParticleLimit().ifPresent(bound->access(original).dragonapi$changeCount(bound,-1));
-        particle.remove();
+    }
+    public void retire(Particle particle) {
+        releaseRetired(particle);
+        if(particle.isAlive()) particle.remove();
     }
     public void tickDelegates() { requireOwner(); for(var renderer:delegates()) renderer.tick(); }
     public void beginLevelChange() { requireOwner(); state.changingLevel++; }

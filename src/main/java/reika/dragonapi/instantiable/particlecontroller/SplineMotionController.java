@@ -13,6 +13,7 @@ import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.interfaces.PositionController;
 import reika.dragonapi.instantiable.math.Spline;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 import java.util.List;
 
@@ -52,7 +53,7 @@ public class SplineMotionController implements PositionController {
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		if (updateSpline) {
 			spline.update();
 			points = spline.get(32, false);
@@ -60,23 +61,23 @@ public class SplineMotionController implements PositionController {
 		tick++;
 	}
 
-	private int getIndex(Entity e) {
+	private int getIndex(ControllerTarget e) {
 		int t = tick * points.size() / entityLife;
 		return Math.max(0, Math.min(t, points.size() - 1));
 	}
 
 	@Override
-	public double getPositionX(Entity e) {
+	public double getPositionXFor(ControllerTarget e) {
 		return points.get(this.getIndex(e)).xCoord();
 	}
 
 	@Override
-	public double getPositionY(Entity e) {
+	public double getPositionYFor(ControllerTarget e) {
 		return points.get(this.getIndex(e)).yCoord();
 	}
 
 	@Override
-	public double getPositionZ(Entity e) {
+	public double getPositionZFor(ControllerTarget e) {
 		return points.get(this.getIndex(e)).zCoord();
 	}
 

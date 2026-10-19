@@ -12,6 +12,7 @@ package reika.dragonapi.instantiable.particlecontroller;
 
 import reika.dragonapi.interfaces.MotionController;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 
@@ -34,23 +35,23 @@ public class TargetMotionController implements MotionController {
 		force = f;
 	}
 
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 
 	}
 
 	@Override
-	public double getMotionX(Entity e) {
-		return e.getMotionDirection().getStepX() + force * (targetX - e.getX());
+	public double getMotionXFor(ControllerTarget e) {
+		return e.getDeltaMovement().x + force * (targetX - e.getX());
 	}
 
 	@Override
-	public double getMotionY(Entity e) {
-		return e.getMotionDirection().getStepY() + force * (targetY - e.getY());
+	public double getMotionYFor(ControllerTarget e) {
+		return e.getDeltaMovement().y + force * (targetY - e.getY());
 	}
 
 	@Override
-	public double getMotionZ(Entity e) {
-		return e.getMotionDirection().getStepZ() + force * (targetZ - e.getZ());
+	public double getMotionZFor(ControllerTarget e) {
+		return e.getDeltaMovement().z + force * (targetZ - e.getZ());
 	}
 
 }

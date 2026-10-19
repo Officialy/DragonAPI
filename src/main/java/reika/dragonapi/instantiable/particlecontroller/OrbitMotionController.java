@@ -13,6 +13,7 @@ import reika.dragonapi.instantiable.Orbit;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.interfaces.PositionController;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 public class OrbitMotionController implements PositionController {
 
@@ -45,7 +46,7 @@ public class OrbitMotionController implements PositionController {
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		if (trackedEntity != null) {
 			originX = trackedEntity.getX();
 			originY = trackedEntity.getY();
@@ -57,17 +58,17 @@ public class OrbitMotionController implements PositionController {
 	}
 
 	@Override
-	public double getPositionX(Entity e) {
+	public double getPositionXFor(ControllerTarget e) {
 		return position.xCoord();
 	}
 
 	@Override
-	public double getPositionY(Entity e) {
+	public double getPositionYFor(ControllerTarget e) {
 		return position.yCoord();
 	}
 
 	@Override
-	public double getPositionZ(Entity e) {
+	public double getPositionZFor(ControllerTarget e) {
 		return position.zCoord();
 	}
 

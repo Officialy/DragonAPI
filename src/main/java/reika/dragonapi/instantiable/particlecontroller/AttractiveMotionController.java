@@ -13,6 +13,7 @@ package reika.dragonapi.instantiable.particlecontroller;
 import reika.dragonapi.interfaces.MotionController;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 
@@ -45,7 +46,7 @@ public class AttractiveMotionController implements MotionController {
 		velocityY = maxVelocityY;
 	}
 
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		accelerationY = -1 * 0.125 * (e.getY() - targetY - 0.5);
 		velocityY += accelerationY;
 		velocityY = Mth.clamp(velocityY, -maxVelocityY, maxVelocityY);
@@ -54,18 +55,18 @@ public class AttractiveMotionController implements MotionController {
 	}
 
 	@Override
-	public double getMotionX(Entity e) {
-		return -(e.getX() - targetX) * velocityXZ / e.distanceToSqr(targetX, targetY, targetZ);
+	public double getMotionXFor(ControllerTarget e) {
+		return -(e.getX() - targetX) * velocityXZ / e.distanceTo(targetX, targetY, targetZ);
 	}
 
 	@Override
-	public double getMotionY(Entity e) {
+	public double getMotionYFor(ControllerTarget e) {
 		return velocityY;
 	}
 
 	@Override
-	public double getMotionZ(Entity e) {
-		return -(e.getZ() - targetZ) * velocityXZ / e.distanceToSqr(targetX, targetY, targetZ);
+	public double getMotionZFor(ControllerTarget e) {
+		return -(e.getZ() - targetZ) * velocityXZ / e.distanceTo(targetX, targetY, targetZ);
 	}
 
 }

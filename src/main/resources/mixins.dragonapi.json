@@ -34,6 +34,7 @@
     },
     "client": [
         "MixinParticleEngine",
+        "MixinParticleState",
         "MixinSingleQuadParticle",
         "MixinParticleGroup",
         "MixinQuadParticleGroup",

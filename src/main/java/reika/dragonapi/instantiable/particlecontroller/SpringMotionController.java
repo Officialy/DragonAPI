@@ -4,6 +4,7 @@ import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.interfaces.PositionController;
 import reika.dragonapi.libraries.mathsci.ReikaPhysicsHelper;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 public class SpringMotionController implements PositionController {
 
@@ -37,23 +38,23 @@ public class SpringMotionController implements PositionController {
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		tick++;
 		linearPosition = maxAmplitude * Math.pow(Math.E, -damping * tick) * Math.cos(angularSpeed * tick);
 	}
 
 	@Override
-	public double getPositionX(Entity e) {
+	public double getPositionXFor(ControllerTarget e) {
 		return origin.xCoord() + linearPosition * xComponent;
 	}
 
 	@Override
-	public double getPositionY(Entity e) {
+	public double getPositionYFor(ControllerTarget e) {
 		return origin.yCoord() + linearPosition * yComponent;
 	}
 
 	@Override
-	public double getPositionZ(Entity e) {
+	public double getPositionZFor(ControllerTarget e) {
 		return origin.zCoord() + linearPosition * zComponent;
 	}
 

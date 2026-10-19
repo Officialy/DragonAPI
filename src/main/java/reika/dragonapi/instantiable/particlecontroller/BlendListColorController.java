@@ -12,6 +12,7 @@ package reika.dragonapi.instantiable.particlecontroller;
 import reika.dragonapi.instantiable.rendering.ColorBlendList;
 import reika.dragonapi.interfaces.ColorController;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 public class BlendListColorController implements ColorController {
 
@@ -22,13 +23,13 @@ public class BlendListColorController implements ColorController {
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 
 	}
 
 	@Override
-	public int getColor(Entity e) {
-		return colors.getColor(e.tickCount);
+	public int getColorFor(ControllerTarget e) {
+		return colors.getColor(e.age());
 	}
 
 }

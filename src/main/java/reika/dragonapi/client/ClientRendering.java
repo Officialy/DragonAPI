@@ -27,6 +27,10 @@ public final class ClientRendering {
             PlayerSpecificRenderer.instance.loadGlowFiles();
         });
         NeoForge.EVENT_BUS.addListener(ClientRendering::renderPlayer);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientTickEvent.Pre event) -> {
+            if(Minecraft.getInstance().particleEngine!=null)
+                reika.dragonapi.instantiable.rendering.ReikaParticleEngine.defaultCustomEngine.register();
+        });
     }
 
     private static void renderPlayer(RenderPlayerEvent.Post<?> event) {

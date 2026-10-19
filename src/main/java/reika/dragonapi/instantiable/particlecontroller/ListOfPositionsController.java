@@ -12,6 +12,7 @@ package reika.dragonapi.instantiable.particlecontroller;
 import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.interfaces.PositionController;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 import java.util.List;
 
@@ -32,27 +33,27 @@ public class ListOfPositionsController implements PositionController {
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 		tick++;
 	}
 
-	private int getIndex(Entity e) {
+	private int getIndex(ControllerTarget e) {
 		int t = tick * points.size() / entityLife;
 		return Math.min(t, points.size() - 1);
 	}
 
 	@Override
-	public double getPositionX(Entity e) {
+	public double getPositionXFor(ControllerTarget e) {
 		return points.get(this.getIndex(e)).xCoord();
 	}
 
 	@Override
-	public double getPositionY(Entity e) {
+	public double getPositionYFor(ControllerTarget e) {
 		return points.get(this.getIndex(e)).yCoord();
 	}
 
 	@Override
-	public double getPositionZ(Entity e) {
+	public double getPositionZFor(ControllerTarget e) {
 		return points.get(this.getIndex(e)).zCoord();
 	}
 

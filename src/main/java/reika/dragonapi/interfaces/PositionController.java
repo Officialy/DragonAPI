@@ -9,17 +9,14 @@
  ******************************************************************************/
 package reika.dragonapi.interfaces;
 
-import net.minecraft.client.particle.Particle;
 import net.minecraft.world.entity.Entity;
 
-public interface PositionController {
+public interface PositionController extends ParticleController {
 
-    void update(Entity e);
-
-    double getPositionX(Entity e);
-
-    double getPositionY(Entity e);
-
-    double getPositionZ(Entity e);
-
+    double getPositionXFor(ControllerTarget target);
+    default double getPositionX(Entity entity) { return getPositionXFor(ControllerTarget.of(entity)); }
+    double getPositionYFor(ControllerTarget target);
+    default double getPositionY(Entity entity) { return getPositionYFor(ControllerTarget.of(entity)); }
+    double getPositionZFor(ControllerTarget target);
+    default double getPositionZ(Entity entity) { return getPositionZFor(ControllerTarget.of(entity)); }
 }

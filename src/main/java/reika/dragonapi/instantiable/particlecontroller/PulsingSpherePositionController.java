@@ -13,6 +13,7 @@ import reika.dragonapi.instantiable.data.immutable.DecimalPosition;
 import reika.dragonapi.interfaces.PositionController;
 import reika.dragonapi.libraries.mathsci.ReikaPhysicsHelper;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 public class PulsingSpherePositionController implements PositionController {
 
@@ -50,22 +51,22 @@ public class PulsingSpherePositionController implements PositionController {
 	}
 
 	@Override
-	public void update(Entity e) {
-		currentRadius = innerRadius + radiusDelta + radiusDelta * Math.sin(phase + 18 * e.tickCount / (double) cycleLength);
+	public void updateTarget(ControllerTarget e) {
+		currentRadius = innerRadius + radiusDelta + radiusDelta * Math.sin(phase + 18 * e.age() / (double) cycleLength);
 	}
 
 	@Override
-	public double getPositionX(Entity e) {
+	public double getPositionXFor(ControllerTarget e) {
 		return center.xCoord() + currentRadius * cartesian[0];
 	}
 
 	@Override
-	public double getPositionY(Entity e) {
+	public double getPositionYFor(ControllerTarget e) {
 		return center.yCoord() + currentRadius * cartesian[1];
 	}
 
 	@Override
-	public double getPositionZ(Entity e) {
+	public double getPositionZFor(ControllerTarget e) {
 		return center.zCoord() + currentRadius * cartesian[2];
 	}
 

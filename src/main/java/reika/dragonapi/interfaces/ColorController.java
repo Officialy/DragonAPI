@@ -9,13 +9,10 @@
  ******************************************************************************/
 package reika.dragonapi.interfaces;
 
-import net.minecraft.client.particle.Particle;
 import net.minecraft.world.entity.Entity;
 
-public interface ColorController {
+public interface ColorController extends ParticleController {
 
-    void update(Entity e);
-
-    int getColor(Entity e);
-
+    int getColorFor(ControllerTarget target);
+    default int getColor(Entity entity) { return getColorFor(ControllerTarget.of(entity)); }
 }

@@ -13,6 +13,7 @@ import reika.dragonapi.instantiable.formula.MathExpression;
 import reika.dragonapi.interfaces.ColorController;
 import reika.dragonapi.libraries.rendering.ReikaColorAPI;
 import net.minecraft.world.entity.Entity;
+import reika.dragonapi.interfaces.ControllerTarget;
 
 public class FlashColorController implements ColorController {
 
@@ -27,12 +28,12 @@ public class FlashColorController implements ColorController {
 	}
 
 	@Override
-	public void update(Entity e) {
+	public void updateTarget(ControllerTarget e) {
 
 	}
 
 	@Override
-	public int getColor(Entity e) {
+	public int getColorFor(ControllerTarget e) {
 		float f = Math.abs((float) mixFactor.evaluate(System.currentTimeMillis() / 200D));
 		//ReikaJavaLibrary.pConsole(e.ticksExisted+">"+f);
 		return ReikaColorAPI.mixColors(baseColor, flashColor, f);
