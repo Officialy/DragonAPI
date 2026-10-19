@@ -1,8 +1,8 @@
 # D06: explicit rendering context and lighting review
 
 Status: in progress. Matrix getters have been replaced with explicit owned
-snapshots. Lighting migration is still open; the legacy lighting helpers remain
-no-ops and must not be counted as ported. Backlog remains 57 complete / 107 open /
+snapshots. Active lighting callers now use explicit draw state, and the obsolete no-op
+helpers have been removed. Excluded legacy callers still require migration. Backlog remains 57 complete / 107 open /
 164 until the complete D06 contract is implemented and verified.
 
 ## Matrix contract
@@ -131,3 +131,20 @@ profile passed all 1,004 required tests. Full pinned evidence and unchanged Play
 argument hashes are in build/d06-reservoir-proof.json; the per-file contract is
 RotaryCraft/docs/reservoir-renderer-port.md. D06 remains open for no-op API
 retirement and remaining caller migration, with no checklist count change.
+
+
+## Bevel migration and global-helper retirement
+
+The bevel's native path now extracts all mutable state and restores source face
+colors and centered colorblind labels. The intentionally disabled compass remains
+disabled, with its complete geometry preserved. IO fill/line types have native
+OIT pipeline sets. Details: RotaryCraft/docs/bevel-renderer-port.md.
+
+The six no-op lighting/geometry helpers and two unused pseudo-state booleans have
+been removed. The final bytecode inventory has zero references across all eight
+modules (build/d06-bevel-remaining-lighting-callers.json). A preserved source
+inventory still records 93 qualified calls across 61 excluded legacy files:
+build/d06-bevel-full-source-callers.json. These are forward migration work, not
+working fixed-function APIs. Apply the source-contract mapping above when each
+subsystem lands; do not resurrect silent no-ops. D06 remains open while those
+caller contracts are unresolved. No checklist count changes in this milestone.

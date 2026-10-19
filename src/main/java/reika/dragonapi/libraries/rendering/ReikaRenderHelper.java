@@ -38,8 +38,6 @@ import java.util.EnumSet;
 // render event, etc.).
 public class ReikaRenderHelper {
 
-    private static boolean entityLighting;
-    private static boolean generalLighting;
     private static float ptick = -1;
     public static double thirdPersonDistance;
 
@@ -172,45 +170,6 @@ public class ReikaRenderHelper {
                         .setLight(LightCoordsUtil.FULL_BRIGHT);
             }
         });
-    }
-
-    public static void disableLighting() {
-//       todo Minecraft.getInstance().entityentityRenderer.disableLightmap(1);
-//        RenderHelper.disableStandardItemLighting();
-//        GL11.glDisable(GL11.GL_LIGHTING);
-    }
-
-    public static void enableLighting() {
-        enableEntityLighting();
-//        todo RenderHelper.enableStandardItemLighting();
-//     todo   GL11.glEnable(GL11.GL_LIGHTING);
-    }
-
-    public static void disableEntityLighting() {
-//     todo   OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit); //block/sky light grid image
-//        RenderSystem.disableTexture();
-//        todo OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
-    }
-
-    public static void enableEntityLighting() {
-//   todo     OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
-//        RenderSystem.enableTexture();
-//    todo    OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
-    }
-
-    /**
-     * Prepare for drawing primitive geometry by disabling all lighting and textures. Args: Is alpha going to be used
-     */
-    public static void prepareGeoDraw(boolean alpha) {
-        disableLighting();
-//        RenderSystem.disableTexture(); // Removed in 1.21
-        // Alpha blending is now handled through RenderTypes
-    }
-
-    public static void exitGeoDraw() {
-        enableLighting();
-//        RenderSystem.enableTexture(); // Removed in 1.21
-        // Blending is now handled through RenderTypes
     }
 
     /**
