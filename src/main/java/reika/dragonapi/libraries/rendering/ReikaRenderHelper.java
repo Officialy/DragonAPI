@@ -20,7 +20,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
+import reika.dragonapi.instantiable.rendering.RenderMatrixContext;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.auxiliary.trackers.TickRegistry;
 import reika.dragonapi.interfaces.TileModel;
@@ -290,21 +291,26 @@ public class ReikaRenderHelper {
         return ptick;
     }
 
-    public static Matrix4f getModelviewMatrix() {
-        return getMatrix(GL11.GL_MODELVIEW_MATRIX);
+    /**
+     * Capture a world draw using native camera rotation and a camera-relative model pose.
+     * Camera translation belongs in the supplied pose exactly once. GUI/custom passes
+     * should use RenderMatrixContext.capture/compose with their own explicit matrices.
+     */
+    public static RenderMatrixContext captureMatrices(CameraRenderState camera,PoseStack modelPose,TextureTransform texture) {
+        return RenderMatrixContext.compose(camera.viewRotationMatrix,modelPose.last().pose(),
+                camera.projectionMatrix,texture.createMatrix());
     }
 
-    public static Matrix4f getProjectionMatrix() {
-        return getMatrix(GL11.GL_PROJECTION_MATRIX);
+    public static Matrix4f getModelviewMatrix(RenderMatrixContext context) {
+        return context.modelView();
     }
 
-    public static Matrix4f getTextureMatrix() {
-        return getMatrix(GL11.GL_TEXTURE_MATRIX);
+    public static Matrix4f getProjectionMatrix(RenderMatrixContext context) {
+        return context.projection();
     }
 
-    private static Matrix4f getMatrix(int id) {
-        Matrix4f mat = new Matrix4f();
-        return mat; // Return identity for now to prevent crashes
+    public static Matrix4f getTextureMatrix(RenderMatrixContext context) {
+        return context.texture();
     }
 
     public static class RenderTick implements TickRegistry.TickHandler {
