@@ -1,9 +1,9 @@
 # D03 custom particle engine port
 
-D03 is in progress. The native backend and original default effects compile and
-have passed native ownership, callback, GPU and regular-frame acceptance in both
-classic and improved transparency. Controlled screen/water pixel composition still
-needs verification.
+D03 is complete as of 2026-10-19. The native backend and original default effects
+have passed ownership, callback, GPU, real-frame and controlled water-composition
+acceptance in both classic and improved transparency. The final pixel evidence
+and scoped test procedure are recorded below.
 N09 has since repaired the wider gameplay test fixtures/contracts: the final
 rotarycraft:* composite profiles pass 998 family-only and 1,002 external-mod tests.
 See TestInstance/docs/gametest-fixtures-and-mock-players.md for current evidence.
@@ -64,9 +64,10 @@ Ordinary alpha modes supply native OIT depth-bounds, transmittance and accumulat
 pipelines. Screen modes deliberately use native forward drawing: scalar OIT
 transmittance cannot express their per-channel destination factors exactly.
 This is an explicit routing choice, not an alpha-based approximation of screen
-blending. Relative composition around translucent water and an actual improved-
-transparency scene remain part of rendering review; pipeline compilation alone
-must not be described as proof of those visual results.
+blending. A dedicated late native phase executes after translucent terrain in
+classic rendering and after the OIT composite with improved transparency. The
+final acceptance below measures actual composed pixels, in addition to compiling
+pipelines and verifying real phase execution.
 
 ## Default effects and controller input
 
@@ -85,7 +86,7 @@ Accepted Chroma path adapters have been migrated. Corrected partial-port mistake
 target/spiral motion used cardinal direction instead of velocity, and attraction
 used squared distance instead of distance.
 
-## Verification and remaining work
+## Verification milestones
 
 - Seven queue regressions cover FIFO/key isolation, iteration, reentrant retirement,
   detached-generation clearing, exemptions and failed-admission atomicity.
@@ -176,3 +177,50 @@ Final late-phase acceptance: build/d03-late-client-final.log passed in 3m44s,
 including screen-only extraction/storage/reset and both real rendering modes.
 DragonAPI units: 256, zero failures/errors/skips. Play VM/program argument hashes
 match the prior checkpoint. D03 stays open for controlled water pixel composition.
+
+
+## Final pixel composition acceptance (2026-10-19)
+
+D03 is now checked. The full isolated client passed in 4m21s:
+`build/d03-water-client6.log`. Both custom-engine markers, water composition,
+machine-sync, full DRAGONAPI_AUDIT_CLIENT_PASS, logout and server-stop cleanup
+passed, followed by a successful process exit. Checklist: 57 complete / 107 open /
+164. Earlier statements that water composition was unverified are historical
+milestones, superseded by this acceptance.
+
+WaterParticleClientChecks builds a temporary client-only glowstone backdrop and
+actual vanilla water. A native dynamic white texture and known RGB particle
+provide an independent screen-law expectation: S + destination * (1 - S).
+The fixture measures separate dry/water baselines in each rendering mode, then
+checks a depth-tested particle in front of water and a depth-disabled particle
+behind it. An opaque black-concrete wall must occlude the depth-tested particle.
+A seven-by-seven center patch is read from native GPU screenshots; all twelve
+saved PNG measurements were independently reproduced with Pillow.
+
+Maximum absolute channel errors were 0.3822 byte values in classic rendering and
+0.3714 with improved transparency. The opaque-wall patches were exactly identical
+with and without the particle in both modes. Acceptance limits remain nine byte
+values per blend channel and less than three summed RGB byte values for occlusion.
+The measured results are substantially tighter than those limits. Raw samples,
+expected colors, errors, log hash and unchanged Play-argument hashes are recorded
+in `build/d03-water-proof.json`. Captures are in
+`build/dragonapi-client-audit/particle-composition/`.
+
+The controlled comparison uses native client tick-rate freeze to hold water
+animation fixed while rendering continues. Only the private probe engine is
+explicitly ticked to admit each test particle. The prior freeze state, camera
+mode/angles, HUD, transparency option, client blocks, dynamic texture and delegate
+are restored. Block-entity cells are rejected before scene replacement. No server
+world blocks or saved world data are changed. Normal Play arguments retain their
+previous SHA-256 hashes and the owner's active snapshots remain separate.
+
+Fixture development caught three invalid assumptions rather than changing the
+renderer to suit a test: third-person view sampled the player; classic translucent
+terrain writes depth, so a depth-tested particle behind water is occluded; and
+animated water changed the sampled baseline between frames. Native depth behavior
+is preserved. A textured glowstone occluder also varied at texture edges, so the
+strict occlusion control uses low-variation black concrete instead. The current
+26.3 block is selected through Blocks.CONCRETE.pick(DyeColor.BLACK).
+
+Remaining rendering work belongs to separate checklist items, including D06's
+legacy lighting/matrix review and N08's actual owner shader/LOD configuration.
