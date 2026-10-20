@@ -63,13 +63,40 @@ public class FXCollection {
 	 * Emits every effect as a camera-facing quad of position/UV/colour vertices, in the tile's pose; the caller picks
 	 * the render type (V33a: additive-dark or default blend, fullbright, no depth write).
 	 */
-	public void render(VertexConsumer v5, PoseStack.Pose pose, Quaternionf cameraOrientation) {
-		Vector3f right = cameraOrientation.transform(new Vector3f(1, 0, 0));
-		Vector3f up = cameraOrientation.transform(new Vector3f(0, 1, 0));
-		for (BasicFX fx : data) {
-			fx.render(v5, pose, right, up);
-		}
-	}
+    public void render(VertexConsumer vertices, PoseStack.Pose pose, Quaternionf cameraOrientation) {
+        snapshot().render(vertices, pose, cameraOrientation);
+    }
+
+    /** Capture on the collection's client tick/extraction owner before queuing deferred work. */
+    public Snapshot snapshot() {
+        var effects = new ArrayList<Effect>(data.size());
+        for (var fx : data) effects.add(fx.snapshot());
+        return new Snapshot(effects);
+    }
+
+    /** Geometry owns scalar positions, envelope and UVs; it retains no live effects or sprites. */
+    public record Effect(double x, double y, double z, float radius, int color,
+            float u0, float v0, float u1, float v1) {
+        private void render(VertexConsumer out, PoseStack.Pose pose, Vector3f right, Vector3f up) {
+            vertex(out,pose,-right.x*radius-up.x*radius,-right.y*radius-up.y*radius,-right.z*radius-up.z*radius,u1,v1);
+            vertex(out,pose,-right.x*radius+up.x*radius,-right.y*radius+up.y*radius,-right.z*radius+up.z*radius,u1,v0);
+            vertex(out,pose,right.x*radius+up.x*radius,right.y*radius+up.y*radius,right.z*radius+up.z*radius,u0,v0);
+            vertex(out,pose,right.x*radius-up.x*radius,right.y*radius-up.y*radius,right.z*radius-up.z*radius,u0,v1);
+        }
+        private void vertex(VertexConsumer out,PoseStack.Pose pose,float dx,float dy,float dz,float u,float v) {
+            out.addVertex(pose,(float)x+dx,(float)y+dy,(float)z+dz).setUv(u,v).setColor(color);
+        }
+    }
+    public record Snapshot(java.util.List<Effect> effects) {
+        public static final Snapshot EMPTY = new Snapshot(java.util.List.of());
+        public Snapshot { effects = java.util.List.copyOf(effects); }
+        public boolean isEmpty() { return effects.isEmpty(); }
+        public void render(VertexConsumer out,PoseStack.Pose pose,org.joml.Quaternionfc cameraOrientation) {
+            var right=cameraOrientation.transform(new Vector3f(1,0,0));
+            var up=cameraOrientation.transform(new Vector3f(0,1,0));
+            for(var effect:effects) effect.render(out,pose,right,up);
+        }
+    }
 
 	private static class BasicFX {
 
@@ -103,26 +130,13 @@ public class FXCollection {
 			return ticks >= lifespan;
 		}
 
-		private void render(VertexConsumer v5, PoseStack.Pose pose, Vector3f right, Vector3f up) {
-			// V33a's integer division in the rapid-expand test is kept.
-			double fs = rapidExpand ? 0.1*size*(lifespan/(ticks+1) >= 12 ? (ticks+1)*12D/lifespan : 1-(ticks+1)/(double)lifespan) : 0.1*size*Math.sin(Math.toRadians(180D*ticks/lifespan));
-			float f = (float)fs;
-			int color = 0xff000000 | renderColor;
-
-			float u = icon.getU0();
-			float v = icon.getV0();
-			float du = icon.getU1();
-			float dv = icon.getV1();
-
-			this.vertex(v5, pose, -right.x*f-up.x*f, -right.y*f-up.y*f, -right.z*f-up.z*f, du, dv, color);
-			this.vertex(v5, pose, -right.x*f+up.x*f, -right.y*f+up.y*f, -right.z*f+up.z*f, du, v, color);
-			this.vertex(v5, pose, right.x*f+up.x*f, right.y*f+up.y*f, right.z*f+up.z*f, u, v, color);
-			this.vertex(v5, pose, right.x*f-up.x*f, right.y*f-up.y*f, right.z*f-up.z*f, u, dv, color);
-		}
-
-		private void vertex(VertexConsumer v5, PoseStack.Pose pose, float dx, float dy, float dz, float u, float v, int color) {
-			v5.addVertex(pose, (float)posX+dx, (float)posY+dy, (float)posZ+dz).setUv(u, v).setColor(color);
-		}
+        private Effect snapshot() {
+            // Keep V33a's integer division and update-before-expiry semantics.
+            double radius = rapidExpand ? 0.1*size*(lifespan/(ticks+1) >= 12 ? (ticks+1)*12D/lifespan : 1-(ticks+1)/(double)lifespan)
+                    : 0.1*size*Math.sin(Math.toRadians(180D*ticks/lifespan));
+            return new Effect(posX,posY,posZ,(float)radius,0xff000000|renderColor,
+                    icon.getU0(),icon.getV0(),icon.getU1(),icon.getV1());
+        }
 
 	}
 
