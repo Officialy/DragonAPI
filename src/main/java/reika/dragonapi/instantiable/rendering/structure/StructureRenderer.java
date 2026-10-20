@@ -296,7 +296,10 @@ public final class StructureRenderer {
 			return List.of();
 		BlockEntityRenderDispatcher dispatcher = mc.getBlockEntityRenderDispatcher();
 		List<BlockEntityRenderState> states = new ArrayList<>();
+        boolean previousRendering = tileRendering, previousReal = tileRenderingReal;
+        double previousRX = renderRotationX, previousRY = renderRotationY, previousRZ = renderRotationZ;
 		tileRendering = true;
+        tileRenderingReal = false;
 		renderRotationX = rx;
 		renderRotationY = ry;
 		renderRotationZ = rz;
@@ -318,7 +321,9 @@ public final class StructureRenderer {
 			}
 		}
 		finally {
-			tileRendering = false;
+            tileRendering = previousRendering;
+            tileRenderingReal = previousReal;
+            renderRotationX = previousRX; renderRotationY = previousRY; renderRotationZ = previousRZ;
 		}
 		return List.copyOf(states);
 	}
@@ -390,8 +395,18 @@ public final class StructureRenderer {
 	 * {@code finally}.
 	 */
 	public static void setRenderingTiles(boolean rendering) {
-		tileRendering = rendering;
+        setRenderingTiles(rendering, false);
 	}
+
+    /** Distinguishes synthetic guide tiles from callers deliberately previewing live tile data. */
+    public static void setRenderingTiles(boolean rendering, boolean realTiles) {
+        tileRendering = rendering;
+        tileRenderingReal = rendering && realTiles;
+    }
+
+    public static boolean isRenderingRealTiles() {
+        return tileRendering && tileRenderingReal;
+    }
 
 	public static double getRenderRX() {
 		return renderRotationX;
@@ -406,6 +421,7 @@ public final class StructureRenderer {
 	}
 
 	private static boolean tileRendering;
+    private static boolean tileRenderingReal;
 	private static double renderRotationX;
 	private static double renderRotationY;
 	private static double renderRotationZ;

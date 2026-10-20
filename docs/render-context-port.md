@@ -192,3 +192,16 @@ ChromatiCraft/docs/rift-aurora-rendering.md; pinned proof:
 build/d06-rift-aurora-proof.json. Existing focus/bevel/reservoir and all twelve
 water screenshot checks passed again. Compiled global-lighting helper inventory
 remains empty. D06 remains open; no checklist count change.
+
+
+### 2026-10-20: Personal Charger screen depth and preview context
+
+EntityLighting.screen(texture,cull,depthWrite) adds explicit source depth intent;
+the existing overload remains no-write. All 16 screen lighting/cull/depth profiles
+register and GPU-compile. Personal Charger retains lightmap/depth writes in item
+draws and bypasses both lighting systems/no writes in world draws. StructureRenderer
+now distinguishes synthetic/live-data preview context and restores prior flags
+and rotations across nested stand-in extraction, including a throwing hook.
+Native world/mesh/item/preview checks passed in 4m02s; DragonAPI 260 unit cases
+reran clean. Contract: ChromatiCraft/docs/personal-charger-rendering.md; proof:
+build/d06-personal-proof.json. D06 stays open.

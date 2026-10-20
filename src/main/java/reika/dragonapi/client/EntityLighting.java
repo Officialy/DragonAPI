@@ -22,9 +22,11 @@ public enum EntityLighting {
     private final Map<Key,RenderType> types=new HashMap<>();
     private final Map<Boolean,RenderPipeline> cutoutPipelines=new HashMap<>();
     private final Map<Key,RenderType> cutoutTypes=new HashMap<>();
-    private final Map<Boolean,RenderPipeline> screenPipelines=new HashMap<>();
-    private final Map<Key,RenderType> screenTypes=new HashMap<>();
+    private final Map<ScreenSettings,RenderPipeline> screenPipelines=new HashMap<>();
+    private final Map<ScreenKey,RenderType> screenTypes=new HashMap<>();
     private record Key(Identifier texture,boolean cull) {}
+    private record ScreenSettings(boolean cull,boolean depthWrite) {}
+    private record ScreenKey(Identifier texture,boolean cull,boolean depthWrite) {}
     private record Pipelines(RenderPipeline forward,OitPipelineSet oit) {}
     EntityLighting(boolean directional,boolean lightmap) { this.directional=directional; this.lightmap=lightmap; }
 
@@ -54,18 +56,22 @@ public enum EntityLighting {
     }
     /** RGB screen blending; world callers submit through ScreenParticleRendering's native forward phase. */
     public synchronized RenderType screen(Identifier texture,boolean cull) {
-        return screenTypes.computeIfAbsent(new Key(texture,cull),key->{
-            var setup=RenderSetup.builder(screenPipeline(cull)).withTexture("Sampler0",texture);
+        return screen(texture,cull,false);
+    }
+    /** Item/model passes can retain the source depth-write state independently of blending. */
+    public synchronized RenderType screen(Identifier texture,boolean cull,boolean depthWrite) {
+        return screenTypes.computeIfAbsent(new ScreenKey(texture,cull,depthWrite),key->{
+            var setup=RenderSetup.builder(screenPipeline(cull,depthWrite)).withTexture("Sampler0",texture);
             if(lightmap) setup.useLightmap();
             return RenderType.create("dragonapi_entity_screen_"+name().toLowerCase(java.util.Locale.ROOT),setup.createRenderSetup());
         });
     }
-    private synchronized RenderPipeline screenPipeline(boolean cull) {
-        return screenPipelines.computeIfAbsent(cull,key->configure(RenderPipeline.builder(
+    private synchronized RenderPipeline screenPipeline(boolean cull,boolean depthWrite) {
+        return screenPipelines.computeIfAbsent(new ScreenSettings(cull,depthWrite),key->configure(RenderPipeline.builder(
                     lightmap?RenderPipelines.ENTITY_SNIPPET:RenderPipelines.ENTITY_EMISSIVE_SNIPPET))
-                .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_screen/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")))
+                .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_screen/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")+(depthWrite?"_depth_write":"")))
                 .withCull(cull).withColorTargetState(new ColorTargetState(new BlendFunction(BlendFactor.ONE,BlendFactor.ONE_MINUS_SRC_COLOR)))
-                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL,false))
+                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL,depthWrite))
                 // Retain zero-alpha rejection for byte-alpha sprites, without imposing a new 0.1 cutout.
                 .withShaderDefine("ALPHA_CUTOUT",1F/255F).build());
     }
@@ -90,9 +96,11 @@ public enum EntityLighting {
     /** Physical-client registration; all profile/culling declarations are known before drawing. */
     public static void register(RegisterRenderPipelinesEvent event) {
         for(var mode:values()) for(boolean cull:new boolean[]{false,true}) {
-            var screen=mode.screenPipeline(cull);
-            event.registerPipeline(screen);
-            IrisCompat.assignWithoutShadow(screen,"ENTITIES");
+            for(boolean depthWrite:new boolean[]{false,true}) {
+                var screen=mode.screenPipeline(cull,depthWrite);
+                event.registerPipeline(screen);
+                IrisCompat.assignWithoutShadow(screen,"ENTITIES");
+            }
             var cutout=mode.cutoutPipeline(cull);
             event.registerPipeline(cutout);
             IrisCompat.assign(cutout,"ENTITIES");
