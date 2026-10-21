@@ -1,9 +1,12 @@
 package reika.dragonapi.instantiable;
 
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagKey;
 import reika.dragonapi.DragonAPI;
 import reika.dragonapi.exception.RegistrationException;
 import reika.dragonapi.instantiable.data.KeyedItemStack;
@@ -21,6 +24,12 @@ public class ItemMatch {
     private final HashSet<KeyedItemStack> items = new HashSet();
 
     private final ArrayList<ItemStack> displayList = new ArrayList<>();
+
+    /**
+     * 1.7.10 ore-dictionary names became item tags. Tag contents are only known once tags load (often
+     * after a static ItemMatch is built), so tags are tested at match time instead of being expanded.
+     */
+    private final LinkedHashSet<TagKey<Item>> tags = new LinkedHashSet<>();
 
     private ItemMatch() {
 
@@ -48,6 +57,18 @@ public class ItemMatch {
         this.addItem(new KeyedItemStack(is));
     }
 
+    public ItemMatch(TagKey<Item> tag) {
+        tags.add(tag);
+    }
+
+    /** One matcher satisfied by any of the tags (1.7.10's "oreA/oreB" alternative syntax). */
+    @SafeVarargs
+    public static ItemMatch anyOf(TagKey<Item>... tags) {
+        ItemMatch m = new ItemMatch();
+        m.tags.addAll(Arrays.asList(tags));
+        return m;
+    }
+
     public ItemMatch(Collection<ItemStack> c) {
         this.addAll(c);
         if (items.isEmpty())
@@ -61,6 +82,10 @@ public class ItemMatch {
             return new ItemMatch((Item) o);
         } else if (o instanceof ItemStack) {
             return new ItemMatch((ItemStack) o);
+        } else if (o instanceof TagKey<?> t && t.isFor(Registries.ITEM)) {
+            @SuppressWarnings("unchecked")
+            TagKey<Item> tag = (TagKey<Item>) t;
+            return new ItemMatch(tag);
         } else {
             throw new IllegalArgumentException("Invalid item matching type!");
         }
@@ -75,6 +100,7 @@ public class ItemMatch {
     public ItemMatch copy() {
         ItemMatch m = new ItemMatch();
         m.items.addAll(items);
+        m.tags.addAll(tags);
         m.displayList.addAll(displayList);
         return m;
     }
@@ -97,7 +123,16 @@ public class ItemMatch {
 		}
 		return false;
 		 */
-        return is != null && !is.isEmpty() && items.stream().anyMatch(key -> key.match(is));
+        if (is == null || is.isEmpty())
+            return false;
+        for (TagKey<Item> tag : tags)
+            if (is.is(tag))
+                return true;
+        return items.stream().anyMatch(key -> key.match(is));
+    }
+
+    public Set<TagKey<Item>> getTags() {
+        return Collections.unmodifiableSet(tags);
     }
 
     public Set<KeyedItemStack> getItemList() {
@@ -106,12 +141,12 @@ public class ItemMatch {
 
     @Override
     public String toString() {
-        return items.toString();
+        return tags.isEmpty() ? items.toString() : items + " + tags " + tags;
     }
 
     @Override
     public int hashCode() {
-        return items.hashCode();
+        return Objects.hash(items, tags);
     }
 
     @Override
@@ -132,7 +167,7 @@ public class ItemMatch {
 				return false;
 			}
 			 */
-            return m.items.equals(items);
+            return m.items.equals(items) && m.tags.equals(tags);
         } else {
             return false;
         }
@@ -155,6 +190,14 @@ public class ItemMatch {
             li.add(tag);
         }
         NBT.put("display", li);
+
+        li = new ListTag();
+        for (TagKey<Item> tag : tags) {
+            CompoundTag t = new CompoundTag();
+            t.putString("tag", tag.location().toString());
+            li.add(t);
+        }
+        NBT.put("tags", li);
     }
 
     public static ItemMatch load(CompoundTag NBT) {
@@ -174,11 +217,17 @@ public class ItemMatch {
             dis.add(is);
         }
 
-        return new ItemMatch(set, dis);
+        ItemMatch m = new ItemMatch(set, dis);
+        for (Object o : NBT.getListOrEmpty("tags")) {
+            Identifier id = Identifier.tryParse(((CompoundTag) o).getStringOr("tag", ""));
+            if (id != null)
+                m.tags.add(TagKey.create(Registries.ITEM, id));
+        }
+        return m;
     }
 
     public boolean isEmpty() {
-        return items.isEmpty();
+        return items.isEmpty() && tags.isEmpty();
     }
 }
 
