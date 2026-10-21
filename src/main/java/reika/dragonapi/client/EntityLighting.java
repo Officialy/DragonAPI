@@ -24,6 +24,8 @@ public enum EntityLighting {
     private final Map<Key,RenderType> cutoutTypes=new HashMap<>();
     private final Map<ScreenSettings,RenderPipeline> screenPipelines=new HashMap<>();
     private final Map<ScreenKey,RenderType> screenTypes=new HashMap<>();
+    private final Map<Boolean,RenderPipeline> alphaSpritePipelines=new HashMap<>();
+    private final Map<Key,RenderType> alphaSpriteTypes=new HashMap<>();
     private record Key(Identifier texture,boolean cull) {}
     private record ScreenSettings(boolean cull,boolean depthWrite) {}
     private record ScreenKey(Identifier texture,boolean cull,boolean depthWrite) {}
@@ -53,6 +55,21 @@ public enum EntityLighting {
                 .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_cutout/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")))
                 .withCull(cull).withColorTargetState(ColorTargetState.DEFAULT)
                 .withDepthStencilState(DepthStencilState.DEFAULT).withShaderDefine("ALPHA_CUTOUT",0.1F).build());
+    }
+    /** Ordinary alpha blending with the source alpha test disabled; submit world draws in the native forward phase. */
+    public synchronized RenderType alphaSprite(Identifier texture,boolean cull) {
+        return alphaSpriteTypes.computeIfAbsent(new Key(texture,cull),key->{
+            var setup=RenderSetup.builder(alphaSpritePipeline(cull)).withTexture("Sampler0",texture);
+            if(lightmap) setup.useLightmap();
+            return RenderType.create("dragonapi_entity_alpha_sprite_"+name().toLowerCase(java.util.Locale.ROOT),setup.createRenderSetup());
+        });
+    }
+    private synchronized RenderPipeline alphaSpritePipeline(boolean cull) {
+        return alphaSpritePipelines.computeIfAbsent(cull,key->configure(RenderPipeline.builder(
+                    lightmap?RenderPipelines.ENTITY_SNIPPET:RenderPipelines.ENTITY_EMISSIVE_SNIPPET))
+                .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_alpha_sprite/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")))
+                .withCull(cull).withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL,false)).build());
     }
     /** RGB screen blending; world callers submit through ScreenParticleRendering's native forward phase. */
     public synchronized RenderType screen(Identifier texture,boolean cull) {
@@ -96,6 +113,9 @@ public enum EntityLighting {
     /** Physical-client registration; all profile/culling declarations are known before drawing. */
     public static void register(RegisterRenderPipelinesEvent event) {
         for(var mode:values()) for(boolean cull:new boolean[]{false,true}) {
+            var alpha=mode.alphaSpritePipeline(cull);
+            event.registerPipeline(alpha);
+            IrisCompat.assignWithoutShadow(alpha,"ENTITIES");
             for(boolean depthWrite:new boolean[]{false,true}) {
                 var screen=mode.screenPipeline(cull,depthWrite);
                 event.registerPipeline(screen);
