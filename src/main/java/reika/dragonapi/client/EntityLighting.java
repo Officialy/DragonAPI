@@ -24,9 +24,11 @@ public enum EntityLighting {
     private final Map<Key,RenderType> cutoutTypes=new HashMap<>();
     private final Map<ScreenSettings,RenderPipeline> screenPipelines=new HashMap<>();
     private final Map<ScreenKey,RenderType> screenTypes=new HashMap<>();
-    private final Map<Boolean,RenderPipeline> alphaSpritePipelines=new HashMap<>();
-    private final Map<Key,RenderType> alphaSpriteTypes=new HashMap<>();
+    private final Map<AlphaSettings,RenderPipeline> alphaSpritePipelines=new HashMap<>();
+    private final Map<AlphaKey,RenderType> alphaSpriteTypes=new HashMap<>();
     private record Key(Identifier texture,boolean cull) {}
+    private record AlphaSettings(boolean cull,boolean depthWrite,boolean shadow) {}
+    private record AlphaKey(Identifier texture,boolean cull,boolean depthWrite,boolean shadow) {}
     private record ScreenSettings(boolean cull,boolean depthWrite) {}
     private record ScreenKey(Identifier texture,boolean cull,boolean depthWrite) {}
     private record Pipelines(RenderPipeline forward,OitPipelineSet oit) {}
@@ -58,18 +60,29 @@ public enum EntityLighting {
     }
     /** Ordinary alpha blending with the source alpha test disabled; submit world draws in the native forward phase. */
     public synchronized RenderType alphaSprite(Identifier texture,boolean cull) {
-        return alphaSpriteTypes.computeIfAbsent(new Key(texture,cull),key->{
-            var setup=RenderSetup.builder(alphaSpritePipeline(cull)).withTexture("Sampler0",texture);
+        return alphaSprite(texture,cull,false);
+    }
+    /** Source model/item passes can preserve depth writes independently of ordinary alpha blending. */
+    public synchronized RenderType alphaSprite(Identifier texture,boolean cull,boolean depthWrite) {
+        return alphaMaterial(texture,cull,depthWrite,false);
+    }
+    /** Ordinary-alpha model geometry preserves its shadow intent independently of depth writes. */
+    public synchronized RenderType alphaModel(Identifier texture,boolean cull,boolean depthWrite) {
+        return alphaMaterial(texture,cull,depthWrite,true);
+    }
+    private synchronized RenderType alphaMaterial(Identifier texture,boolean cull,boolean depthWrite,boolean shadow) {
+        return alphaSpriteTypes.computeIfAbsent(new AlphaKey(texture,cull,depthWrite,shadow),key->{
+            var setup=RenderSetup.builder(alphaSpritePipeline(cull,depthWrite,shadow)).withTexture("Sampler0",texture);
             if(lightmap) setup.useLightmap();
-            return RenderType.create("dragonapi_entity_alpha_sprite_"+name().toLowerCase(java.util.Locale.ROOT),setup.createRenderSetup());
+            return RenderType.create("dragonapi_entity_alpha_sprite_"+name().toLowerCase(java.util.Locale.ROOT)+(depthWrite?"_depth_write":"")+(shadow?"_model":""),setup.createRenderSetup());
         });
     }
-    private synchronized RenderPipeline alphaSpritePipeline(boolean cull) {
-        return alphaSpritePipelines.computeIfAbsent(cull,key->configure(RenderPipeline.builder(
+    private synchronized RenderPipeline alphaSpritePipeline(boolean cull,boolean depthWrite,boolean shadow) {
+        return alphaSpritePipelines.computeIfAbsent(new AlphaSettings(cull,depthWrite,shadow),key->configure(RenderPipeline.builder(
                     lightmap?RenderPipelines.ENTITY_SNIPPET:RenderPipelines.ENTITY_EMISSIVE_SNIPPET))
-                .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_alpha_sprite/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")))
+                .withLocation(Identifier.fromNamespaceAndPath("dragonapi","entity_alpha_sprite/"+name().toLowerCase(java.util.Locale.ROOT)+"/"+(cull?"culled":"double_sided")+(depthWrite?"_depth_write":"")+(shadow?"_model":"")))
                 .withCull(cull).withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL,false)).build());
+                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL,depthWrite)).build());
     }
     /** RGB screen blending; world callers submit through ScreenParticleRendering's native forward phase. */
     public synchronized RenderType screen(Identifier texture,boolean cull) {
@@ -113,10 +126,12 @@ public enum EntityLighting {
     /** Physical-client registration; all profile/culling declarations are known before drawing. */
     public static void register(RegisterRenderPipelinesEvent event) {
         for(var mode:values()) for(boolean cull:new boolean[]{false,true}) {
-            var alpha=mode.alphaSpritePipeline(cull);
-            event.registerPipeline(alpha);
-            IrisCompat.assignWithoutShadow(alpha,"ENTITIES");
             for(boolean depthWrite:new boolean[]{false,true}) {
+                for(boolean shadow:new boolean[]{false,true}) {
+                    var alpha=mode.alphaSpritePipeline(cull,depthWrite,shadow);event.registerPipeline(alpha);
+                    if(shadow){IrisCompat.assign(alpha,"ENTITIES");IrisCompat.assignShadow(alpha,"SHADOW_ENTITIES");}
+                    else IrisCompat.assignWithoutShadow(alpha,"ENTITIES");
+                }
                 var screen=mode.screenPipeline(cull,depthWrite);
                 event.registerPipeline(screen);
                 IrisCompat.assignWithoutShadow(screen,"ENTITIES");

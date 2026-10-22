@@ -166,6 +166,27 @@ public class TruncatedCube {
 		return li;
 	}
 
+    /** Immutable source surfaces let ordinary-alpha callers preserve each fill/outline pair's draw order. */
+    public record Surface(List<Vec3> triangles,List<Vec3> boundary) {
+        public Surface { triangles=List.copyOf(triangles);boundary=List.copyOf(boundary); }
+    }
+    public List<Surface> surfaces(double x,double y,double z) {
+        var surfaces=new ArrayList<Surface>();
+        for(var direction:FACES) {
+            var fan=getFaceVertices(direction,true,x,y,z);var triangles=new ArrayList<Vec3>();
+            for(int i=1;i<fan.size()-1;i++){triangles.add(fan.getFirst());triangles.add(fan.get(i));triangles.add(fan.get(i+1));}
+            surfaces.add(new Surface(triangles,getFaceVertices(direction,false,x,y,z)));
+        }
+        for(var corner:getCornerVertices(x,y,z))surfaces.add(new Surface(corner,corner));
+        return List.copyOf(surfaces);
+    }
+    public static void renderSurfaceFaces(PoseStack.Pose pose,VertexConsumer out,Surface surface,int color,int light) {
+        for(var point:surface.triangles)vertex(out,pose,point,color,light);
+    }
+    public static void renderSurfaceEdges(PoseStack.Pose pose,VertexConsumer out,Surface surface,int color,float distance,int light) {
+        loop(out,pose,surface.boundary,color,Math.max(.125F,2-.0625F*distance),light);
+    }
+
 	/**
 	 * V33a {@code render(x, y, z, c1, c2, edge, pdist)}: faces and corners in ARGB {@code c1}, and with {@code edge}
 	 * their outlines in {@code c2}. {@code faces} takes position-colour triangles; {@code edges} (may be null when
