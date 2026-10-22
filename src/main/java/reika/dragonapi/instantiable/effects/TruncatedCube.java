@@ -180,31 +180,40 @@ public class TruncatedCube {
 
 	/** The fill: each face as a fan from its centre, then the corner triangles, in ARGB {@code c1}. */
 	public void renderFaces(PoseStack.Pose pose, VertexConsumer faces, double x, double y, double z, int c1) {
+		renderFaces(pose, faces, x, y, z, c1, -1);
+	}
+
+	/** Source lightmap value, independent of directional lighting; -1 retains the caller's original vertex format. */
+	public void renderFaces(PoseStack.Pose pose, VertexConsumer faces, double x, double y, double z, int c1, int light) {
 		for (int i = 0; i < 6; i++) {
 			List<Vec3> fan = this.getFaceVertices(FACES[i], true, x, y, z);
 			Vec3 centre = fan.getFirst();
 			for (int k = 1; k < fan.size()-1; k++) {
-				vertex(faces, pose, centre, c1);
-				vertex(faces, pose, fan.get(k), c1);
-				vertex(faces, pose, fan.get(k+1), c1);
+				vertex(faces, pose, centre, c1, light);
+				vertex(faces, pose, fan.get(k), c1, light);
+				vertex(faces, pose, fan.get(k+1), c1, light);
 			}
 		}
 		for (List<Vec3> tri : this.getCornerVertices(x, y, z)) {
 			for (Vec3 p : tri)
-				vertex(faces, pose, p, c1);
+				vertex(faces, pose, p, c1, light);
 		}
 	}
 
 	/** The outline of every face and corner in ARGB {@code c2}, V33a's width {@code max(1/8, 2 - pdist/16)}. */
 	public void renderEdges(PoseStack.Pose pose, VertexConsumer edges, double x, double y, double z, int c2, float pdist) {
-		float w = Math.max(0.125F, 2F-0.0625F*pdist);
-		for (int i = 0; i < 6; i++)
-			loop(edges, pose, this.getFaceVertices(FACES[i], false, x, y, z), c2, w);
-		for (List<Vec3> tri : this.getCornerVertices(x, y, z))
-			loop(edges, pose, tri, c2, w);
+		renderEdges(pose, edges, x, y, z, c2, pdist, -1);
 	}
 
-	private static void loop(VertexConsumer lines, PoseStack.Pose pose, List<Vec3> points, int color, float width) {
+	public void renderEdges(PoseStack.Pose pose, VertexConsumer edges, double x, double y, double z, int c2, float pdist, int light) {
+		float w = Math.max(0.125F, 2F-0.0625F*pdist);
+		for (int i = 0; i < 6; i++)
+			loop(edges, pose, this.getFaceVertices(FACES[i], false, x, y, z), c2, w, light);
+		for (List<Vec3> tri : this.getCornerVertices(x, y, z))
+			loop(edges, pose, tri, c2, w, light);
+	}
+
+	private static void loop(VertexConsumer lines, PoseStack.Pose pose, List<Vec3> points, int color, float width, int light) {
 		for (int i = 0; i < points.size(); i++) {
 			Vec3 a = points.get(i);
 			Vec3 b = points.get((i+1)%points.size());
@@ -214,13 +223,16 @@ public class TruncatedCube {
 			Vec3 n = b.subtract(a).normalize();
 			lines.addVertex(pose, (float)a.x, (float)a.y, (float)a.z).setColor(color)
 					.setNormal(pose, (float)n.x, (float)n.y, (float)n.z).setLineWidth(width);
+			if (light >= 0) lines.setLight(light);
 			lines.addVertex(pose, (float)b.x, (float)b.y, (float)b.z).setColor(color)
 					.setNormal(pose, (float)n.x, (float)n.y, (float)n.z).setLineWidth(width);
+			if (light >= 0) lines.setLight(light);
 		}
 	}
 
-	private static void vertex(VertexConsumer v5, PoseStack.Pose pose, Vec3 p, int color) {
+	private static void vertex(VertexConsumer v5, PoseStack.Pose pose, Vec3 p, int color, int light) {
 		v5.addVertex(pose, (float)p.x, (float)p.y, (float)p.z).setColor(color);
+		if (light >= 0) v5.setLight(light);
 	}
 
 	private static int indexOf(Direction d) {
